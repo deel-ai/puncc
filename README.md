@@ -16,8 +16,11 @@ pip install virtualenv
 ```
 Then create a virtual environment named puncc, and activate it:
 ```bash
+virtualenv env-puncc
 # Under Mac OS / Linux
 source env-puncc/bin/activate
+# Under Windows
+env-puncc\Scripts\activate
 ```
 
 ## Install puncc
@@ -34,6 +37,8 @@ To use the current virtual environment in jupyter notebook, make sure to add it:
 ```bash
 python -m ipykernel install --user --name=env-puncc
 ```
+
+[comment]: <Later, to uninstall the kernel: jupyter kernelspec uninstall env-puncc>
 
 # Quickstart
 

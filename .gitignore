@@ -1,9 +1,12 @@
 # Byte-compiled / optimized files
-__pycache__/
-common/__pycache__/
-*.egg-info/
-build/
-dist/
+**__pycache__/
+**common/__pycache__/
+**.egg-info/
+**build/
+**dist/
 
 # Editor files
-.vscode
+**.vscode
+
+# Virtual environment
+env-puncc/
