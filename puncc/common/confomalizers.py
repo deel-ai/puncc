@@ -84,12 +84,9 @@ class SplitCP(BaseSplit):
                 y_pred_lower (lower PI bound),
                 y_pred_upper (upper PI bound)
         """
-        (
-            y_pred,
-            y_pred_lower,
-            y_pred_upper,
-            _,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
+        (y_pred, y_pred_lower, y_pred_upper, _,) = self.conformal_predictor.predict(
+            X_test, alpha=alpha
+        )
         return (
             y_pred,
             y_pred_lower,
@@ -167,12 +164,9 @@ class CQR(BaseSplit):
                 y_pred_lower (lower PI bound),
                 y_pred_upper (upper PI bound),
         """
-        (
-            _,
-            y_pred_lower,
-            y_pred_upper,
-            _,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
+        (_, y_pred_lower, y_pred_upper, _,) = self.conformal_predictor.predict(
+            X_test, alpha=alpha
+        )
         return (y_pred_lower, y_pred_upper)
 
 
@@ -183,7 +177,7 @@ class CvPlus:
         """Constructor.
 
         Args:
-            mu_model: conditionnal mean model
+            mu_model: conditional mean model
             K: number of training/calibration folds
         """
         self.predictor = MeanPredictor(mu_model)
@@ -220,197 +214,115 @@ class CvPlus:
                 y_pred_lower (lower PI bound),
                 y_pred_upper (upper PI bound)
         """
-        (
-            y_pred,
-            y_pred_lower,
-            y_pred_upper,
-            _,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
+        (y_pred, y_pred_lower, y_pred_upper, _,) = self.conformal_predictor.predict(
+            X_test, alpha=alpha
+        )
         return (
             y_pred,
             y_pred_lower,
             y_pred_upper,
         )
+
+
+""" 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We implement hereafter methods related to CP, with a relaxation 
+of the exchangeability assumption.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"""
 
 
 class EnbPI:
-    """Ensemble Batch Prediction Intervals method.
+    """Ensemble Batch Prediction Intervals method"""
 
-    Args:
-        model: model (will be duplicated) to be used for ensemble training
-        T: time horizon (from most recent training sample) considered the ensemble learning
-        B: Number of bootstrap models
-    """
-
-    def __init__(self, model, T, B):
-        self.model = model
-        self.T = T
-        self.B = B
-
-    def fit(self, X_train, y_train):
-        # Key: b as bootstrap index. Value: out of bag data
-        self._oob_dict = dict()
-        # Key: b as bootstrap index. Value: bootstrap fitting data
-        self._boot_dict = dict()
-        self._boot_estimators = list()  # f^_b for b in [1,B]
-        horizon_indices = np.arange(self.T)
-        print("Step 1/3 ...")
-        # Construct bootstrap and out-of-bag sets
-        # This is isolated from the fitting loop to identify empty oobs first.
-        # Saves time in case an exception is fired.
-        for b in range(self.B):
-            # Get bootstrap samples with replacement
-            boot = resample(horizon_indices, replace=True, n_samples=self.T)
-            self._boot_dict[b] = boot
-            # Out of bag samples
-            self._oob_dict[b] = [x for x in horizon_indices if x not in boot]
-            # Raise exception is oob is empty
-            if len(self._oob_dict[b]) == 0:
-                raise Exception(
-                    f"Training sample {b} is included in all boostrap sets. Increase number of boostrap models."
-                )
-        # Bootstrapping
-        for b in tqdm(range(self.B)):
-            f_hat_b = deepcopy(self.model)  # Instanciate model
-            # Fit model on most recent data
-            f_hat_b.fit(X_train[-self._boot_dict[b]], y_train[-self._boot_dict[b]])
-            # Store model
-            self._boot_estimators.append(f_hat_b)
-
-        # Bootsrap matrix: lines = time index, columns = oob set
-        # Cell value is 1 if time index is in the oob set
-        print("Step 2/3 ...")
-        self._oob_matrix = np.zeros((self.T, self.B))
-        for i in tqdm(range(self.T)):
-            self._oob_matrix[i] = [
-                1 if i in self._oob_dict[b] else 0 for b in range(self.B)
-            ]
-
-        self.residuals = list()  # list of residuals
-        # Residuals computation
-        print("Step 3/3 ...")
-        for i in tqdm(range(self.T)):
-            f_bs = list()
-            x_i = X_train[[-i]]
-            for b in range(self.B):
-                if self._oob_matrix[i][b] == 1:
-                    f_bs.append(self._boot_estimators[b].predict(x_i))
-            # Case where i is in all bootstrap sample sets (Sb)
-            # Sanity check, this should have been caught before
-            if len(f_bs) == 0:
-                raise Exception(
-                    f"Training sample {i} is included in all boostrap sets. Increase number of boostrap models."
-                )
-            f_phi_loo_x = np.mean(f_bs)
-            # self.residuals.append(np.abs(y_train.iloc[-i] - f_phi_loo_x))
-            self.residuals.append(np.abs(y_train[-i] - f_phi_loo_x))
-        # Weighted oob matrix
-        self._oob_matrix = (
-            self._oob_matrix
-            / np.tile(np.sum(self._oob_matrix, axis=1), (self.B, 1)).transpose()
-        )
-
-    def predict(self, X_test, alpha=0.1, y_true=None, s=None):
-        """Estimate conditionnal mean and interval prediction.
-
-        Args:
-            y_true: if not None, residuals update based on seasonality is performed
-            s: Number of online samples necessary to update the residuals sequence
-        """
-        y_pred_upper_list = list()
-        y_pred_lower_list = list()
-        y_pred_list = list()
-        online_residuals = list()
-        updated_residuals = deepcopy(self.residuals)
-        # Time checkpoint for residuals update
-        t_checkpoint = 0
-
-        w = np.quantile(
-            updated_residuals, (1 - alpha) * (1 + 1 / len(updated_residuals))
-        )
-        for t in tqdm(range(X_test.shape[0])):
-            f_bs = np.array(
-                [self._boot_estimators[b].predict(X_test[[t]]) for b in range(self.B)]
-            )
-            # Compute estimate quantile
-            f_phi_x_loos = np.matmul(self._oob_matrix, f_bs)
-            y_pred = np.quantile(
-                f_phi_x_loos, (1 - alpha) * (1 + 1 / len(f_phi_x_loos))
-            )
-            # Compute residual quantile
-            y_pred_upper = y_pred + w
-            y_pred_lower = y_pred - w
-            # Update prediction / PI lists for the current example
-            y_pred_upper_list.append(y_pred_upper)
-            y_pred_lower_list.append(y_pred_lower)
-            y_pred_list.append(y_pred)
-            if y_true is not None:
-                online_residuals.append(np.abs(y_pred - y_true[t]))
-                # Update residuals based on seasonality
-                if t > 0 and (t - t_checkpoint) % s == 0:
-                    t_checkpoint = t
-                    updated_residuals = updated_residuals[s:]  # Remove s first elements
-                    # Concatenate with fresh residuals
-                    updated_residuals += online_residuals
-                    online_residuals = []  # Reset online residuals
-                    # Compute new residuals quantile
-                    w = np.quantile(
-                        updated_residuals,
-                        (1 - alpha) * (1 + 1 / len(updated_residuals)),
-                    )
-
-        return (
-            np.array(y_pred_list),
-            np.array(y_pred_lower_list),
-            np.array(y_pred_upper_list),
-        )
-
-
-class AdaptiveEnbPI:
-    # """Ensemble Batch Prediction Intervals method, Locally Adaptive version
-
-    def __init__(
-        self, model, T, B, dispersion_model, aggregation_predictor_version_2=True
-    ):
+    def __init__(self, model, B, agg_func_loo=np.mean):
         """constructor
 
         Args:
             model: regression predictor, with '.fit()' and '.predict()' methods
-            T: _description_
-            B: _description_
-            dispersion_model: regression predictor, with '.fit()' and '.predict()' methods
-            aggregation_predictor_version_2: if True, uses version 2 of EnbPI algorithm https://arxiv.org/abs/2010.09107v12
+            B: number of bootstrap models
+            agg_func_loo: aggregation function of LOO estimators. 
+                          - For EnbPI v1 ICML 2021 http://proceedings.mlr.press/v139/xu21h.html:
+                                lambda x: np.quantile(x, (1-alpha)*(1+1/len(x)))
+                          - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12)
+                                np.mean
         """
         self.model = model
-        self.T = T
         self.B = B
+        # Aggregation function of LOO predictions
+        self.agg_func_loo = agg_func_loo
+        # Initialisation of residuals list
+        self.residuals = list()
+        # Boostrapped models list for conditional mean estimation
+        self._boot_estimators = None
+        # Boostrapped models list for mean absolute deviation estimation
+        self._boot_sigma_estimators = None
 
-        # estimate absolute deviation for Y|X=x --> ad = |y - y_pred|
-        self.dispersion_model = dispersion_model
+    def _fit_callback(self, X_train=None, y_train=None, b=None):
+        """Callback process for each iteration of the ensemble training.
+        To be defined by subclasses if further processing is needed.
 
-        # version 1: http://proceedings.mlr.press/v139/xu21h.html
-        #           --> y_pred is 1-alpha quantile of bootstrapped predictions
-        # version 2: https://arxiv.org/pdf/2010.09107.pdf
-        #           --> y_pred is aggregation (mean) of bootstrapped predictions
-        self.aggregation_predictor_version_2 = aggregation_predictor_version_2
+        Args:
+            X_train: batch training features
+            y_train: batch training targets
+            b: iteration index of the bagging
+        """
+        pass
+
+    def _predict_callback(self, X_test=None):
+        """Callback process for additional predictions.
+        To be defined by subclasses if further processing is needed.
+
+        Args:
+            X_train: batch training features
+            y_train: batch training targets
+            b: iteration index of the bagging
+        """
+        pass
+
+    def _compute_pi(self, y_pred, w, *args):
+        """Compute prediction intervals.
+        To be modified by subclasses if further/different processing is needed."""
+        y_pred_batch_upper = y_pred + w
+        y_pred_batch_lower = y_pred - w
+        return y_pred_batch_upper, y_pred_batch_lower
+
+    def _compute_residuals(self, y_pred, y_true, *args):
+        """Residual computation formula"""
+        return np.abs(y_true - y_pred)
+
+    def _compute_boot_residuals(self, X_train, y_train, boot_estimators, *args):
+        """Compute residuals w.r.t the boostrapping.
+        Args:
+            X_train: train features
+            y_train: train targets
+            boot_estimators: list of bootstrap models
+        """
+        f_bs = np.array([boot_estimators[b].predict(X_train) for b in range(self.B)])
+        f_phi_x_loos = np.matmul(self._oob_matrix, f_bs)
+        y_pred = self.agg_func_loo(f_phi_x_loos, axis=0)
+        residuals = self._compute_residuals(y_pred=y_pred, y_true=y_train)
+        print(residuals.shape)
+        print(residuals)
+        return list(residuals)
 
     def fit(self, X_train, y_train):
         self._oob_dict = dict()  # Key: b. Value: out of bag data
         self._boot_estimators = list()  # f^_b for b in [1,B]
-        self._boot_dispersion_estimators = list()  # f^_b for b in [1,B]
-        horizon_indices = np.arange(self.T)
+        self._boot_sigma_estimators = list()  # f^_b for b in [1,B]
+        T = len(X_train)  # Number of samples to be considered during training
+        horizon_indices = np.arange(T)
 
         # === (1) === Do bootstrap sampling, check OOB condition ===
         self._boot_dict = dict()
 
-        # WARNING: this loop could written as a recursion. PLEASE DO NOT DO IT.
         for b in range(self.B):
             # ensure we don't have pathological
             # bootstrap sample: identical to original sample
             oob_sample_is_empty = True
 
             while oob_sample_is_empty:
-                boot = resample(horizon_indices, replace=True, n_samples=self.T)
+                boot = resample(horizon_indices, replace=True, n_samples=T)
                 oob_units = np.setdiff1d(horizon_indices, boot)
                 oob_sample_is_empty = not (
                     len(oob_units) > 0
@@ -423,13 +335,13 @@ class AdaptiveEnbPI:
                     self._boot_dict[b] = boot
                     self._oob_dict[b] = np.setdiff1d(horizon_indices, boot)
 
-        # == create oob_matrix, one row for every i-th training sample
+        # == Create oob_matrix, one row for every i-th training sample
         #   Bootstrap matrix: lines = time index, columns = oob set
         #   Cell value is 1 if time index is in the oob set
         #
-        self._oob_matrix = np.zeros((self.T, self.B))
+        self._oob_matrix = np.zeros((T, self.B))
 
-        for i in tqdm(range(self.T)):
+        for i in tqdm(range(T)):
             oobs_for_i_th_unit = [
                 1 if i in self._oob_dict[b] else 0 for b in range(self.B)
             ]
@@ -444,8 +356,14 @@ class AdaptiveEnbPI:
             else:
                 self._oob_matrix[i] = oobs_for_i_th_unit
 
+        # Weighted oob matrix
+        self._oob_matrix = (
+            self._oob_matrix
+            / np.tile(np.sum(self._oob_matrix, axis=1), (self.B, 1)).transpose()
+        )
+
         # === (2) === Fit predictors on bootstrapped samples
-        print(" === step 1/2: fit predictors on boostrapped data")
+        print(" === step 1/2: fit predictors on boostrapped data ...")
 
         for b in tqdm(range(self.B)):
             # retrieve list of indexes of previously bootstrapped sample
@@ -453,57 +371,24 @@ class AdaptiveEnbPI:
 
             # == (1) fit point predictor
             f_hat_b = deepcopy(self.model)  # Instantiate model
-
-            # WARNING: verify X_train[-boot] indexing. we are missing the 0-th element
-            # --> when x[-s], if 0 is in s, then we always get the 0-th, not
-            # the last element!
-            f_hat_b.fit(X_train[-boot], y_train[-boot])
+            f_hat_b.fit(X_train[boot], y_train[boot])
             self._boot_estimators.append(f_hat_b)  # Store fitted model
-
-            # == (2) Fit dispersion predictor
-            ad_hat_b = deepcopy(self.dispersion_model)  # Instantiate model
-
-            # WARNING: verify X_train[-boot] indexing. we are missing the 0-th element
-            # --> when x[-s], if 0 is in s, then we always get the 0-th, not
-            # the last element!
-            ads = np.abs(y_train[-boot] - f_hat_b.predict(X_train[-boot]))
-            ad_hat_b.fit(X_train[-boot], ads)
-
-            self._boot_dispersion_estimators.append(ad_hat_b)  # Store fitted model
+            self._fit_callback(
+                X_train, y_train, b
+            )  # Callback for further processes, if needed
 
         # === (3) === Residuals computation
-        print(" === step 2/2: compute nonconformity scores")
-        self.residuals = list()  # list of residuals
-
-        # TODO: parallelize from here
-        # from joblib import Parallel, delayed
-        # Parallel(n_jobs=2)(delayed(sqrt)(i ** 2) for i in range(10))
-        #
-        for i in tqdm(range(self.T)):
-            f_bs = list()
-            ad_bs = list()
-            x_i = X_train[[-i]]
-
-            for b in range(self.B):
-                if self._oob_matrix[i][b] == 1:
-                    f_bs.append(self._boot_estimators[b].predict(x_i))
-                    ad_bs.append(self._boot_dispersion_estimators[b].predict(x_i))
-
-            f_phi_loo_x = np.mean(f_bs)
-            ad_phi_loo_x = np.mean(ad_bs)
-
-            self.residuals.append(np.abs(y_train[-i] - f_phi_loo_x) / ad_phi_loo_x)
-
-        # Weighted oob matrix
-        self._oob_matrix = (
-            self._oob_matrix
-            / np.tile(np.sum(self._oob_matrix, axis=1), (self.B, 1)).transpose()
+        print(" === step 2/2: compute nonconformity scores ...")
+        residuals = self._compute_boot_residuals(
+            X_train, y_train, self._boot_estimators, self._boot_sigma_estimators
         )
+        self.residuals += residuals
 
     def predict(self, X_test, alpha=0.1, y_true=None, s=None):
-        """Estimate conditionnal mean and interval prediction.
+        """Estimate conditional mean and interval prediction.
 
         Args:
+            X_test: features of new samples
             alpha: miscoverage level, acceptable statistical error
             y_true: if not None, residuals update based on seasonality is performed
             s: Number of online samples necessary to update the residuals sequence
@@ -511,81 +396,123 @@ class AdaptiveEnbPI:
         y_pred_upper_list = list()
         y_pred_lower_list = list()
         y_pred_list = list()
-        online_residuals = list()
-        updated_residuals = deepcopy(self.residuals)
+        updated_residuals = list(deepcopy(self.residuals))
 
-        # Time checkpoint for residuals update
-        t_checkpoint = 0
+        # Residuals 1-alpha th quantile
+        w = np.quantile(self.residuals, (1 - alpha) * (1 + 1 / len(self.residuals)))
 
-        w = np.quantile(
-            updated_residuals, (1 - alpha) * (1 + 1 / len(updated_residuals))
-        )
+        if y_true is None or (y_true is not None and s is None):
+            n_batches = 1
+            s = len(X_test)
 
-        for t in tqdm(range(X_test.shape[0])):
-            f_bs = np.array(
-                [self._boot_estimators[b].predict(X_test[[t]]) for b in range(self.B)]
-            )
-            ad_bs = np.array(
-                [
-                    self._boot_dispersion_estimators[b].predict(X_test[[t]])
-                    for b in range(self.B)
-                ]
-            )
+        elif y_true is not None and s is not None:
+            n_batches = len(y_true) // s
 
-            # Compute estimate quantile
-            f_phi_x_loos = np.matmul(self._oob_matrix, f_bs)
-            ad_phi_x_loos = np.matmul(self._oob_matrix, ad_bs)
-
-            if self.aggregation_predictor_version_2 == False:
-                # EnbPI v1: ICML 2021 http://proceedings.mlr.press/v139/xu21h.html
-                y_pred = np.quantile(
-                    f_phi_x_loos, (1 - alpha) * (1 + 1 / len(f_phi_x_loos))
-                )
+        # Inference is performed by batch
+        for i in np.arange(n_batches):
+            if i == n_batches - 1:
+                X_batch = X_test[i * s :]
+                y_true_batch = y_true[i * s :] if y_true is not None else None
             else:
-                # TODO: implement Lines 13 (modified emp. quantile for conformalization)
-                # EnbPI v2: inference pred by aggregation (https://arxiv.org/abs/2010.09107v12)
-                y_pred = np.mean(f_phi_x_loos)
+                X_batch = X_test[i * s : (i + 1) * s]
+                y_true_batch = (
+                    y_true[i * s : (i + 1) * s] if y_true is not None else None
+                )
 
-            # Compute residual quantile
-            y_pred_upper = y_pred + w * np.mean(ad_phi_x_loos)
-            y_pred_lower = y_pred - w * np.mean(ad_phi_x_loos)
+            f_bs = np.array(
+                [self._boot_estimators[b].predict(X_batch) for b in range(self.B)]
+            )
+            f_phi_x_loos = np.matmul(self._oob_matrix, f_bs)
+            y_pred_batch = self.agg_func_loo(f_phi_x_loos, axis=0)
 
-            # Update prediction / PI lists for the current example
-            y_pred_upper_list.append(y_pred_upper)
-            y_pred_lower_list.append(y_pred_lower)
-            y_pred_list.append(y_pred)
+            # Auxiliary prediction computed by the predict callback
+            # Will be passed as argument for computing prediction intervals
+            aux_pred_batch = self._predict_callback(X_batch)
 
+            y_pred_batch_upper, y_pred_batch_lower = self._compute_pi(
+                y_pred_batch, w, aux_pred_batch
+            )
+
+            # Update prediction / PI lists for the current batch
+            y_pred_upper_list += list(y_pred_batch_upper)
+            y_pred_lower_list += list(y_pred_batch_lower)
+            y_pred_list += list(y_pred_batch)
+
+            # Update residuals
             if y_true is not None:
-                # TODO: ([Luca] I think)
-                # uses old dispersion predictor to normalize new y_true points
-                # ad_bs_test = np.array(
-                #     [
-                #         self._boot_dispersion_estimators[b].predict(X_test[[t]])
-                #         for b in range(self.B)
-                #     ]
-                # )
-
-                ad_phi_x_loos = np.matmul(self._oob_matrix, ad_bs)
-                ad_estimate = np.mean(ad_phi_x_loos)
-                online_residuals.append(np.abs(y_pred - y_true[t]) / ad_estimate)
-
-                # Update residuals based on seasonality
-                if t > 0 and (t - t_checkpoint) % s == 0:
-                    t_checkpoint = t
-                    updated_residuals = updated_residuals[s:]  # Remove s first elements
-
-                    # Concatenate with fresh residuals
-                    updated_residuals += online_residuals
-                    online_residuals = []  # Reset online residuals
-
-                    # Compute new residuals quantile
-                    w = np.quantile(
-                        updated_residuals,
-                        (1 - alpha) * (1 + 1 / len(updated_residuals)),
-                    )
+                residuals = self._compute_residuals(
+                    y_pred_batch, y_true_batch, aux_pred_batch
+                )
+                updated_residuals = updated_residuals[s:]
+                updated_residuals += list(residuals)
+                w = np.quantile(
+                    updated_residuals, (1 - alpha) * (1 + 1 / len(updated_residuals)),
+                )
 
         return (
             np.array(y_pred_list),
             np.array(y_pred_lower_list),
             np.array(y_pred_upper_list),
         )
+
+
+class AdaptiveEnbPI(EnbPI):
+    # """Ensemble Batch Prediction Intervals method, Locally Adaptive version
+    def __init__(self, model, dispersion_model, B, agg_func_loot=np.mean):
+        super().__init__(model, B, agg_func_loot)
+        self.dispersion_model = dispersion_model
+
+    def _compute_pi(self, y_pred, w, sigma_pred):
+        """Compute prediction intervals.
+        To be modified by subclasses if further/different processing is needed."""
+        y_pred_batch_upper = y_pred + w * sigma_pred
+        y_pred_batch_lower = y_pred - w * sigma_pred
+        return y_pred_batch_upper, y_pred_batch_lower
+
+    def _compute_residuals(self, y_pred, y_true, sigma_pred):
+        return np.abs(y_true - y_pred) / sigma_pred
+
+    def _compute_boot_residuals(
+        self, X_train, y_train, boot_estimators, boot_disp_estimators
+    ):
+        """Compute residuals w.r.t the boostrapping.
+        Args:
+            X_train: train features
+            y_train: train targets
+            boot_estimators: list of bootstrap models
+            boot_disp_estimators: list of bootstrap dispersion models
+        """
+        f_bs = np.array([boot_estimators[b].predict(X_train) for b in range(self.B)])
+        sigma_bs = np.array(
+            [boot_disp_estimators[b].predict(X_train) for b in range(self.B)]
+        )
+        f_phi_x_loos = np.matmul(self._oob_matrix, f_bs)
+        sigma_phi_x_loos = np.matmul(self._oob_matrix, sigma_bs)
+
+        y_pred = self.agg_func_loo(f_phi_x_loos, axis=0)
+        sigma_pred = np.mean(sigma_phi_x_loos, axis=0)
+
+        residuals = self._compute_residuals(
+            y_pred=y_pred, sigma_pred=sigma_pred, y_true=y_train
+        )
+        print(residuals.shape)
+        print(residuals)
+        return list(residuals)
+
+    def _fit_callback(self, X_train, y_train, b):
+        # retrieve list of indexes of previously bootstrapped sample
+        boot = self._boot_dict[b]
+        f_hat_b = self._boot_estimators[b]
+        # Fit dispersion predictor
+        sigma_hat_b = deepcopy(self.dispersion_model)  # Instantiate model
+        sigmas = np.abs(y_train[boot] - f_hat_b.predict(X_train[boot]))
+        sigma_hat_b.fit(X_train[boot], sigmas)
+        self._boot_sigma_estimators.append(sigma_hat_b)  # Store fitted model
+
+    def _predict_callback(self, X_test=None):
+        sigma_bs = np.array(
+            [self._boot_sigma_estimators[b].predict(X_test) for b in range(self.B)]
+        )
+        sigma_phi_x_loos = np.matmul(self._oob_matrix, sigma_bs)
+        sigma_pred = np.mean(sigma_phi_x_loos, axis=0)
+        return sigma_pred
