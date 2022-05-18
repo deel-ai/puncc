@@ -144,21 +144,21 @@ from sklearn import linear_model
 from conformalization import ConformalPredictor
 from predictor import MeanPredictor
 from calibration import MeanCalibrator
-from utils import kfold_random_split
+from splitter import KFoldSplit
 
 # Regression linear model
 model = linear_model.LinearRegression()
 
-# Definition of mean-based predictor, a mean-based calibrator and a K-fold split  
+# Definition of mean-based predictor, a mean-based calibrator and a K-fold splitter  
 # (This will be explained later)
 mean_predictor = MeanPredictor(model) # Predictor
 mean_calibrator = MeanCalibrator() # Calibrator
-kfold_split = kfold_random_split(K=10) # Splitter
+kfold_splitter = KFoldSplitter(K=20, random_state=42) # Splitter
 
 # Conformal prediction canvas
 conformal_predictor = ConformalPredictor(predictor=mean_predictor, 
                                          calibrator=mean_calibrator, 
-                                         splitter=kfold_split)
+                                         splitter=kfold_splitter)
 ```
 `puncc.conformalization.ConformalPredictor` implements two methods:
 * A `fit` method that fits the predictor model and computes nonconformity scores accodingly to the calibrator and to the data split strategy provided by the splitter 
@@ -177,11 +177,11 @@ y_pred, y_pred_low, y_pred_high, sigma_pred = conformal_predictor.predict(X_new,
 
 ## Predictor
 
-The `puncc.predictor.BasePredictor` class is a wrapper for regression models that aims to standardize their interface and force compliance with the previously presented requirements:
+The `puncc.prediction.BasePredictor` class is a wrapper for regression models that aims to standardize their interface and force compliance with the previously presented requirements:
 * The models have to implement the `fit` and `predict` methods
 * The models have to operate on datasets formated as numpy arrays (in `_format`)
 
-Any specific preprocessing should be included in a **subclass** of `puncc.predictor.BasePredictor`.
+Any specific preprocessing should be included in a **subclass** of `puncc.prediction.BasePredictor`.
 
 A special attention is to be directed towards the `predict` method.
 
@@ -202,13 +202,13 @@ If the model does not estimate some of these values, they are substituted by `No
 
 ```python
 class QuantilePredictor(BasePredictor):
-    def __init__(self, q_lo_model, q_hi_model):
+    def __init__(self, q_lo_model, q_hi_model, is_trained=False):
         """
         Args:
             q_lo_model: lower quantile model
             q_hi_model: upper quantile model
         """
-        super().__init__()
+        super().__init__(is_trained)
         self.q_lo_model = q_lo_model
         self.q_hi_model = q_hi_model
 
@@ -234,13 +234,13 @@ class QuantilePredictor(BasePredictor):
         return None, y_pred_lower, y_pred_upper, None
 ``` 
 
-To cover a large range of conformal prediction methods, three subclasses of `puncc.predictor.BasePredictor` have been implemented: 
+To cover a large range of conformal prediction methods, three subclasses of `puncc.prediction.BasePredictor` have been implemented: 
 
-* `puncc.predictor.MeanPredictor`: wrapper of point-based models   
-* `puncc.predictor.MeanVarPredictor`: wrapper of point-based models that also estimates variability statistics (e.g., standard deviation)  
-* `puncc.predictor.QuantilePredictor`: wrapper of specific interval-based models that estimate upper and lower quantiles of the data generating distribution 
+* `puncc.prediction.MeanPredictor`: wrapper of point-based models   
+* `puncc.prediction.MeanVarPredictor`: wrapper of point-based models that also estimates variability statistics (e.g., standard deviation)  
+* `puncc.prediction.QuantilePredictor`: wrapper of specific interval-based models that estimate upper and lower quantiles of the data generating distribution 
 
-PS: User-defined predictors have to subclass `puncc.predictor.BasePredictor` and redefine its methods.
+PS: User-defined predictors have to subclass `puncc.prediction.BasePredictor` and redefine its methods.
 
 ## Calibrator
 
@@ -258,11 +258,11 @@ PS: User-defined calibrators have to subclass `puncc.calibration.Calibrator` and
 
 In conformal prediction, the assignement of data to fitting and calibration sets is motivated by two criteria: data availability and computational resources. If quality data is abundant, we can split the training samples into disjoint subsets $D_{fit}$ and $D_{calib}$. When data is scarce, a cross-validation strategy is preferred but is more ressources consuming as different models are trained and nonconformity scores are computed for different disjoint folds.
 
-The two plans are implemented in `puncc.utils` module. 
-* `puncc.utils.random_split`: assignement of samples in $D_{fit}$ and $D_{calib}$
-* `puncc.utils.kfold_random_split`: assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy 
+The two plans are implemented in `puncc.splitting` module. 
+* `puncc.splitting.RandomSplitter`: assignement of samples in $D_{fit}$ and $D_{calib}$
+* `puncc.splitting.KFoldSplitter`: assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy 
 
 These methods produce **iterables** that are used by the `ConformalPredictor` instance.
 
-Additionnaly, if the user already implemted a split plan, the obtained data asignement is wrapped in `puncc.utils.identity_split` to produce iterables. 
+Additionnaly, if the user already implemted a split plan, the obtained data asignement is wrapped in `puncc.splitting.IdSplitter` to produce iterables. 
 

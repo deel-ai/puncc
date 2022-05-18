@@ -3,7 +3,7 @@ This module implements utility functions.
 """
 import numpy as np
 from typing import Iterable
-import sklearn
+import matplotlib.pyplot as plt
 import sys
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
@@ -12,64 +12,25 @@ EPSILON = sys.float_info.min  # small value to avoid underflow
 """
 ========================= Aggregation functions =========================
 """
-def agg_list(l: Iterable):
+
+
+def agg_list(a: Iterable):
     try:
-        return np.concatenate(l, axis=0)
+        return np.concatenate(a, axis=0)
     except ValueError:
         return None
 
 
-def agg_func(l: Iterable):
+def agg_func(a: Iterable):
     try:
-        return np.mean(l, axis=0)
+        return np.mean(a, axis=0)
     except TypeError:
         return None
-
-"""
-========================= Splitters =========================
-"""
-
-def identity_split(X_fit, y_fit, X_calib, y_calib):
-    """Identity splitter that wraps an already existing data assignment"""
-
-    def iterable_split(X, y):
-        """X and y are placeholders."""
-        iterable = [(X_fit, y_fit, X_calib, y_calib)]
-        return iterable
-
-    return iterable_split
-
-
-def random_split(ratio):
-    """Random splitter that assign samples given a ratio"""
-
-    def iterable_split(X, y):
-        rng = np.random.RandomState(0)
-        fit_sample = rng.rand(len(X)) > ratio
-        cal_sample = np.invert(fit_sample)
-        return [(X[fit_sample], y[fit_sample], X[cal_sample], y[cal_sample])]
-
-    return iterable_split
-
-
-def kfold_random_split(K, random_state=None):
-    """Splitter that randomly assign data into K folds"""
-    kfold = sklearn.model_selection.KFold(K, shuffle=True, random_state=random_state)
-
-    def iterable_split(X, y):
-        iterable = []
-        for fit, calib in kfold.split(X):
-            iterable.append((X[fit], y[fit], X[calib], y[calib]))
-        return iterable
-
-    return iterable_split
-
 
 
 """
 ========================= Visualization =========================
 """
-import matplotlib.pyplot as plt
 
 plt.rcParams["figure.figsize"] = [8, 8]
 plt.rcParams["font.family"] = "Times New Roman"
@@ -77,6 +38,7 @@ plt.rcParams["ytick.labelsize"] = 15
 plt.rcParams["xtick.labelsize"] = 15
 plt.rcParams["axes.labelsize"] = 15
 plt.rcParams["legend.fontsize"] = 15
+
 
 def plot_prediction_interval(
     y_true: np.array,
@@ -88,7 +50,8 @@ def plot_prediction_interval(
     sort_X: bool = False,
     **kwargs,
 ) -> None:
-    """Plot prediction intervals whose bounds are given by y_pred_lower and y_pred_upper.
+    """Plot prediction intervals whose bounds are given by y_pred_lower
+    and y_pred_upper.
     True values and point estimates are also plotted if given as argument.
 
     Args:
@@ -132,7 +95,9 @@ def plot_prediction_interval(
     else:
         miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
 
-    label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
+    label = (
+        "Observation" if y_pred_upper is None else "Observation (inside PI)"
+    )
     plt.plot(
         X[~miscoverage],
         y_true[~miscoverage],
@@ -144,7 +109,9 @@ def plot_prediction_interval(
         zorder=20,
     )
 
-    label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
+    label = (
+        "Observation" if y_pred_upper is None else "Observation (outside PI)"
+    )
     plt.plot(
         X[miscoverage],
         y_true[miscoverage],
@@ -194,7 +161,8 @@ def plot_sorted_pi(
     y_pred: np.array = None,
     **kwargs,
 ) -> None:
-    """Plot prediction intervals in an ordered fashion (lowest to largest width), showing the upper and lower bounds for each prediction.
+    """Plot prediction intervals in an ordered fashion (lowest to largest width)
+    showing the upper and lower bounds for each prediction.
     Args:
         y_true: label true values.
         y_pred_lower: lower bounds of the prediction interval.
@@ -215,10 +183,10 @@ def plot_sorted_pi(
         figsize = kwargs["figsize"]
     else:
         figsize = (15, 6)
-    if "loc" not in kwargs.keys():
-        loc = kwargs["loc"]
-    else:
-        loc = "upper left"
+    # if "loc" not in kwargs.keys():
+    #     loc = kwargs["loc"]
+    # else:
+    #     loc = "upper left"
     plt.figure(figsize=figsize)
 
     if X is None:
@@ -240,7 +208,8 @@ def plot_sorted_pi(
     # True values
     plt.plot(
         X[~misscoverage],
-        y_true[sorted_order][~misscoverage] - y_pred[sorted_order][~misscoverage],
+        y_true[sorted_order][~misscoverage]
+        - y_pred[sorted_order][~misscoverage],
         color="darkgreen",
         marker="o",
         markersize=2,
@@ -251,7 +220,8 @@ def plot_sorted_pi(
 
     plt.plot(
         X[misscoverage],
-        y_true[sorted_order][misscoverage] - y_pred[sorted_order][misscoverage],
+        y_true[sorted_order][misscoverage]
+        - y_pred[sorted_order][misscoverage],
         color="red",
         marker="o",
         markersize=2,
@@ -289,6 +259,7 @@ def plot_sorted_pi(
 """
 ========================= Metrics =========================
 """
+
 
 def average_coverage(y_true, y_pred_lower, y_pred_upper):
     return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()

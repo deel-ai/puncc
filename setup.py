@@ -4,7 +4,7 @@ setup(
     name="puncc",
     version="1.0dev",
     description="Predictive Uncertainty Calibration and Conformalization Library",
-    author="Mouhcine Mendil",
+    author="IRT Saint Exupery",
     author_email="mouhcine.mendil@irt-saintexupery.com",
     packages=find_packages(),
     install_requires=[
@@ -20,7 +20,7 @@ setup(
         "scikit-learn>=1.0.2",
         "scipy>=1.8.0",
         "seaborn>=0.11.2",
-        "tqdm>=4.63.0"
+        "tqdm>=4.63.0",
     ],
     license="MIT",
 )

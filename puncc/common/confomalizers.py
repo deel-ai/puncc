@@ -3,15 +3,19 @@ This module implements usual conformal prediction wrappers.
 """
 
 
-from puncc.calibration import MeanCalibrator, MeanVarCalibrator, QuantileCalibrator
-from puncc.predictor import MeanPredictor, MeanVarPredictor, QuantilePredictor
-from puncc.conformalization import ConformalPredictor
 from copy import deepcopy
 import numpy as np
 from typing import Tuple
 from tqdm import tqdm
 from sklearn.utils import resample
-from puncc.utils import identity_split, kfold_random_split
+from puncc.calibration import (
+    MeanCalibrator,
+    MeanVarCalibrator,
+    QuantileCalibrator,
+)
+from puncc.prediction import MeanPredictor, MeanVarPredictor, QuantilePredictor
+from puncc.conformalization import ConformalPredictor
+from puncc.splitting import IdSplitter, KFoldSplitter
 
 
 class BaseSplit:
@@ -20,7 +24,8 @@ class BaseSplit:
         predictor: point-based or interval-based model wrapper
         calibrator: nonconformity computation strategy and interval predictor
         splitter: fit/calibration split strategy
-        train: if False, predictor model will not be trained and will be used as is
+        train: if False, prediction model(s) will not be trained and will
+               be used as is
 
     """
 
@@ -31,7 +36,11 @@ class BaseSplit:
         self.train = train
 
     def fit(
-        self, X_fit: np.array, y_fit: np.array, X_calib: np.array, y_calib: np.array
+        self,
+        X_fit: np.array,
+        y_fit: np.array,
+        X_calib: np.array,
+        y_calib: np.array,
     ):
         """This method fits the models to the fit data (X_fit, y_fit)
         and computes residuals on (X_calib, y_calib).
@@ -43,12 +52,11 @@ class BaseSplit:
             y_calib: labels from the calibration dataset
 
         """
-        id_gen = identity_split(X_fit, y_fit, X_calib, y_calib)
+        id_gen = IdSplitter(X_fit, y_fit, X_calib, y_calib)
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=id_gen,
-            train=self.train,
         )
         self.conformal_predictor.fit(None, None)
 
@@ -64,6 +72,8 @@ class SplitCP(BaseSplit):
 
         Args:
             mu_model: Conditional mean model
+            train: if False, prediction model(s) will not be trained and will
+                   be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanPredictor(mu_model)
@@ -71,8 +81,8 @@ class SplitCP(BaseSplit):
         self.conformal_predictor = None
 
     def predict(self, X_test, alpha) -> Tuple[np.array]:
-        """Estimate conditional mean and prediction interval (w.r.t target miscoverage alpha)
-        for new samples.
+        """Estimate conditional mean and prediction interval
+        (w.r.t target miscoverage alpha) for new samples.
 
         Args:
             X_test: features of new samples
@@ -106,10 +116,12 @@ class LocallyAdaptiveCP(BaseSplit):
         Args:
             mu_model: conditional mean model
             sigma_model: mean absolute deviation model
+            train: if False, prediction model(s) will not be trained and will
+                   be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanVarPredictor(
-            mu_model=mu_model, sigma_model=sigma_model, gaussian=False
+            mu_model=mu_model, sigma_model=sigma_model
         )
         self.calibrator = MeanVarCalibrator()
         self.conformal_predictor = None
@@ -148,9 +160,13 @@ class CQR(BaseSplit):
         Args:
             q_hi_model: higher quantile model
             q_lo_model: lower quantile model
+            train: if False, prediction model(s) will not be trained and will
+                   be used as is
         """
         super().__init__(train=train)
-        self.predictor = QuantilePredictor(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
+        self.predictor = QuantilePredictor(
+            q_hi_model=q_hi_model, q_lo_model=q_lo_model
+        )
         self.calibrator = QuantileCalibrator()
         self.conformal_predictor = None
 
@@ -179,26 +195,31 @@ class CQR(BaseSplit):
 class CvPlus:
     """Cross-validation plus wrapper."""
 
-    def __init__(self, mu_model, K, train=True):
+    def __init__(self, mu_model, K, train=True, random_state=None):
         """Constructor.
 
         Args:
             mu_model: conditional mean model
             K: number of training/calibration folds
+            train: if False, prediction model(s) will not be trained and will
+                   be used as is
+            random_state: seed to control random folds
+
         """
         self.predictor = MeanPredictor(mu_model)
         self.calibrator = MeanCalibrator()
-        kfold_gen = kfold_random_split(K=K)
+        kfold_splits = KFoldSplitter(K=K, random_state=random_state)
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
-            splitter=kfold_gen,
-            train=train,
+            splitter=kfold_splits,
+            agg_func=np.mean,
         )
 
     def fit(self, X_train, y_train):
         """This method fits the ensemble models based on the K-fold plan.
-        The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
+        The out-of-bag folds are used to computes residuals
+        on (X_calib, y_calib).
 
         Args:
             X_train: features from the train dataset
@@ -207,8 +228,8 @@ class CvPlus:
         self.conformal_predictor.fit(X_train, y_train)
 
     def predict(self, X_test, alpha):
-        """Estimate conditional mean and prediction interval (w.r.t target miscoverage alpha)
-        for new samples.
+        """Estimate conditional mean and prediction interval
+        (w.r.t target miscoverage alpha) for new samples.
 
         Args:
             X_test: features of new samples
@@ -233,9 +254,9 @@ class CvPlus:
         )
 
 
-""" 
+"""
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-We implement hereafter methods related to CP, with a relaxation 
+We implement hereafter methods related to CP, with a relaxation
 of the exchangeability assumption.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
@@ -244,16 +265,20 @@ of the exchangeability assumption.
 class EnbPI:
     """Ensemble Batch Prediction Intervals method"""
 
-    def __init__(self, model, B, agg_func_loo=np.mean):
+    def __init__(
+        self, model, B: int, agg_func_loo=np.mean, random_seed: int = None
+    ):
         """constructor
 
         Args:
-            model: regression predictor, implementing '.fit()' and '.predict()' methods
+            model: object implementing '.fit()' and '.predict()' methods
             B: number of bootstrap models
             agg_func_loo: aggregation function of LOO estimators.
-                - For EnbPI v1 ICML 2021 http://proceedings.mlr.press/v139/xu21h.html:
-                   lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
-                - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
+              - For EnbPI v1 ICML 2021
+                http://proceedings.mlr.press/v139/xu21h.html:
+                lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
+              - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
+            random_seed: determines random generation
         """
         self.model = model
         self.B = B
@@ -265,6 +290,8 @@ class EnbPI:
         self._boot_estimators = None
         # Boostrapped models list for mean absolute deviation estimation
         self._boot_sigma_estimators = None
+        # Randome seed
+        self.random_state = random_seed
 
     def _fit_callback(self, X_train=None, y_train=None, b=None):
         """Callback process for each iteration of the ensemble training.
@@ -290,7 +317,7 @@ class EnbPI:
 
     def _compute_pi(self, y_pred, w, *args):
         """Compute prediction intervals.
-        To be modified by subclasses if further/different processing is needed."""
+        To be modified by subclasses if different processing is needed."""
         y_pred_batch_upper = y_pred + w
         y_pred_batch_lower = y_pred - w
         return y_pred_batch_upper, y_pred_batch_lower
@@ -299,7 +326,9 @@ class EnbPI:
         """Residual computation formula"""
         return np.abs(y_true - y_pred)
 
-    def _compute_boot_residuals(self, X_train, y_train, boot_estimators, *args):
+    def _compute_boot_residuals(
+        self, X_train, y_train, boot_estimators, *args
+    ):
         """Compute residuals w.r.t the boostrap aggregation.
         Args:
             X_train: train features
@@ -307,7 +336,9 @@ class EnbPI:
             boot_estimators: list of bootstrap models
         """
         # Predictions on X_train by each bootstrap estimator
-        boot_preds = [boot_estimators[b].predict(X_train) for b in range(self.B)]
+        boot_preds = [
+            boot_estimators[b].predict(X_train) for b in range(self.B)
+        ]
         boot_preds = np.array(boot_preds)
         # Approximation of LOO predictions:
         #   For each training sample X_i, the LOO estimate is built from
@@ -331,7 +362,12 @@ class EnbPI:
             # In case bootstrap is identical to original set, OOB is empty.
             oob_is_empty = True
             while oob_is_empty:
-                boot = resample(horizon_indices, replace=True, n_samples=T)
+                boot = resample(
+                    horizon_indices,
+                    replace=True,
+                    n_samples=T,
+                    random_state=self.random_state,
+                )
                 oob_units = np.setdiff1d(horizon_indices, boot)
                 oob_is_empty = len(oob_units) == 0
             # OOB is not empty, proceed
@@ -376,7 +412,10 @@ class EnbPI:
         # === (3) === Residuals computation
         print(" === step 2/2: computing nonconformity scores ...")
         residuals = self._compute_boot_residuals(
-            X_train, y_train, self._boot_estimators, self._boot_sigma_estimators
+            X_train,
+            y_train,
+            self._boot_estimators,
+            self._boot_sigma_estimators,
         )
         self.residuals += residuals
 
@@ -386,8 +425,10 @@ class EnbPI:
         Args:
             X_test: features of new samples
             alpha: miscoverage level, acceptable statistical error
-            y_true: if not None, residuals update based on seasonality is performed
-            s: Number of online samples necessary to update the residuals sequence
+            y_true: if not None, residuals update based on seasonality is
+                    performed
+            s: Number of online samples necessary to update the residuals
+               sequence
         """
         y_pred_upper_list = list()
         y_pred_lower_list = list()
@@ -418,7 +459,10 @@ class EnbPI:
                 )
             # Matrix containing batch predictions of each bootstrap model
             boot_preds = np.array(
-                [self._boot_estimators[b].predict(X_batch) for b in range(self.B)]
+                [
+                    self._boot_estimators[b].predict(X_batch)
+                    for b in range(self.B)
+                ]
             )
             # Approximation of LOO predictions
             loo_preds = np.matmul(self._oob_matrix, boot_preds)
@@ -464,7 +508,7 @@ class AdaptiveEnbPI(EnbPI):
 
     def _compute_pi(self, y_pred, w, sigma_pred):
         """Compute prediction intervals.
-        To be modified by subclasses if further/different processing is needed."""
+        To be modified by subclasses if different processing is needed."""
         y_pred_batch_upper = y_pred + w * sigma_pred
         y_pred_batch_lower = y_pred - w * sigma_pred
         return y_pred_batch_upper, y_pred_batch_lower
@@ -508,7 +552,10 @@ class AdaptiveEnbPI(EnbPI):
 
     def _predict_callback(self, X_test=None):
         sigma_bs = np.array(
-            [self._boot_sigma_estimators[b].predict(X_test) for b in range(self.B)]
+            [
+                self._boot_sigma_estimators[b].predict(X_test)
+                for b in range(self.B)
+            ]
         )
         sigma_phi_x_loos = np.matmul(self._oob_matrix, sigma_bs)
         sigma_pred = np.mean(sigma_phi_x_loos, axis=0)
