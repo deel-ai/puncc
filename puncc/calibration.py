@@ -55,7 +55,9 @@ class MeanCalibrator(Calibrator):
         self.name = "MeanCalibrator"
         self._residuals = None
 
-    def estimate(self, y_true: np.array, y_pred: np.array, *args, **kwargs) -> None:
+    def estimate(
+        self, y_true: np.array, y_pred: np.array, *args, **kwargs
+    ) -> None:
         """Compute residuals on calibration set.
         Args:
             y_true: true values
@@ -86,7 +88,12 @@ class MeanVarCalibrator(Calibrator):
         self._residuals = None
 
     def estimate(
-        self, y_true: np.array, y_pred: np.array, sigma_pred: np.array, *args, **kwargs
+        self,
+        y_true: np.array,
+        y_pred: np.array,
+        sigma_pred: np.array,
+        *args,
+        **kwargs
     ) -> None:
         """Compute residuals on calibration set.
         Args:
@@ -99,7 +106,12 @@ class MeanVarCalibrator(Calibrator):
         self._residuals = self._residuals / (sigma_pred + EPSILON)
 
     def calibrate(
-        self, y_pred: np.array, sigma_pred: np.array, alpha: float, *args, **kwargs
+        self,
+        y_pred: np.array,
+        sigma_pred: np.array,
+        alpha: float,
+        *args,
+        **kwargs
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:

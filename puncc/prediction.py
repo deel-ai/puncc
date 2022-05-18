@@ -5,14 +5,19 @@ This module provides wrappings for ML models.
 from abc import ABC, abstractmethod
 import numpy as np
 
-class BasePredictor(ABC):
-    """Abstract structure of a base predictor class."""
 
-    def __init__(self):
-        self.is_trained = False
+class BasePredictor(ABC):
+    """Abstract structure of a base predictor class.
+
+    Attributes:
+        is_trained: boolean flag that informs if the models are pre-trained
+    """
+
+    def __init__(self, is_trained=False):
+        self.is_trained = is_trained
 
     def _format(self, X: np.array, y: np.array):
-        """Format data to be consistent with the the fit and predict methods.
+        """Format data to be consistent with the fit and predict methods.
         Args:
             X: features
             y: labels
@@ -42,39 +47,48 @@ class BasePredictor(ABC):
 
 
 class MeanPredictor(BasePredictor):
-    def __init__(self, mu_model):
-        super().__init__()
-        self.name = "MeanPredictor"
-        self.mu_model = mu_model
+    """Wrapper of conditional mean models.
 
-    def _format(self, X, y):
-        return X, y
+    Attributes:
+        mu_model: conditional mean model
+        is_trained: boolean flag that informs if the models are pre-trained
+    """
+
+    def __init__(self, mu_model, is_trained=False):
+        self.mu_model = mu_model
+        super().__init__(is_trained)
 
     def fit(self, X, y, **kwargs):
-        self.mu_model.fit(X, y)
+        self.mu_model.fit(X, y, **kwargs)
         self.is_trained = True
 
-    def predict(self, X, **kwargs):
+    def predict(self, X):
         y_pred = self.mu_model.predict(X)
         return y_pred, None, None, None
 
 
 class MeanVarPredictor(BasePredictor):
-    def __init__(self, mu_model, sigma_model, gaussian=False):
-        super().__init__()
-        self.name = "MeanVarPredictor"
+    """Wrapper of joint conditional mean and mean absolute dispertion models.
+
+    Attributes:
+        mu_model: conditional mean model
+        sigma_model: mean absolute dispertion model
+        is_trained: boolean flag that informs if the models are pre-trained
+    """
+
+    def __init__(self, mu_model, sigma_model, is_trained=False):
         self.mu_model = mu_model
         self.sigma_model = sigma_model
-        self.gaussian = gaussian
+        super().__init__(is_trained)
 
     def fit(self, X, y, **kwargs):
-        self.mu_model.fit(X, y)
+        self.mu_model.fit(X, y, **kwargs)
         y_pred = self.mu_model.predict(X)
         residual = np.abs(y - y_pred)
-        self.sigma_model.fit(X, residual)
+        self.sigma_model.fit(X, residual, **kwargs)
         self.is_trained = True
-        
-    def predict(self, X, **kwargs):
+
+    def predict(self, X):
         y_pred = self.mu_model.predict(X)
         sigma_pred = self.sigma_model.predict(X)
         y_pred_lower, y_pred_upper = None, None
@@ -82,23 +96,25 @@ class MeanVarPredictor(BasePredictor):
 
 
 class QuantilePredictor(BasePredictor):
-    def __init__(self, q_lo_model, q_hi_model):
-        """
-        Args:
-            q_lo_model: lower quantile model
-            q_hi_model: upper quantile model
-        """
-        super().__init__()
-        self.name = "QuantilePredictor"
+    """Wrapper of upper and lower quantiles models.
+
+    Attributes:
+        q_lo_model: lower quantile model
+        q_hi_model: upper quantile model
+        is_trained: boolean flag that informs if the models are pre-trained
+    """
+
+    def __init__(self, q_lo_model, q_hi_model, is_trained=False):
         self.q_lo_model = q_lo_model
         self.q_hi_model = q_hi_model
+        super().__init__(is_trained)
 
     def fit(self, X, y, **kwargs):
-        self.q_lo_model.fit(X, y)
-        self.q_hi_model.fit(X, y)
+        self.q_lo_model.fit(X, y, **kwargs)
+        self.q_hi_model.fit(X, y, **kwargs)
         self.is_trained = True
 
-    def predict(self, X, **kwargs):
+    def predict(self, X):
         y_pred_lower = self.q_lo_model.predict(X)
         y_pred_upper = self.q_hi_model.predict(X)
         return None, y_pred_lower, y_pred_upper, None

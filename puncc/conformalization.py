@@ -1,26 +1,20 @@
 """
-This module implements uncerntainty quantification's workflow.
+This module provides the canvas for conformal prediction.
 """
 
 
 from puncc.calibration import Calibrator
-from puncc.predictor import BasePredictor
+from puncc.prediction import BasePredictor
 import numpy as np
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Boolean
 from copy import deepcopy
 from puncc.utils import agg_func
 import matplotlib.pyplot as plt
 
-plt.rcParams["figure.figsize"] = [8, 8]
-plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams["ytick.labelsize"] = 12
-plt.rcParams["xtick.labelsize"] = 12
-plt.rcParams["axes.labelsize"] = 12
-plt.rcParams["legend.fontsize"] = 15
-
 
 class CvAggregation:
-    """This class enables to aggregate predictions and calibrations from different K-folds."""
+    """This class enables to aggregate predictions and calibrations
+    from different K-folds."""
 
     def __init__(self, K, agg_func=agg_func) -> None:
         self.K = K  # Number of K-folds
@@ -39,9 +33,12 @@ class CvAggregation:
         Returns:
             Dict of residual. Key: K-fold index, value: residuals iterable.
         """
-        return {k: calibrator._residuals for k, calibrator in self.calibrators.items()}
+        return {
+            k: calibrator._residuals
+            for k, calibrator in self.calibrators.items()
+        }
 
-    def predict(self, X, alpha, beta):
+    def predict(self, X, alpha):
         assert (
             self.predictors.keys() == self.calibrators.keys()
         ), "K-fold predictors are not well calibrated."
@@ -54,9 +51,9 @@ class CvAggregation:
         )
 
         for k in self.predictors.keys():
-            y_pred, y_pred_lower, y_pred_upper, sigma_pred = self.predictors[k].predict(
-                X, beta=beta
-            )
+            y_pred, y_pred_lower, y_pred_upper, sigma_pred = self.predictors[
+                k
+            ].predict(X)
 
             y_preds.append(y_pred)
             sigma_preds.append(sigma_pred)
@@ -100,7 +97,7 @@ class ConformalPredictor:
         predictor: point-based or interval-based model wrapper
         calibrator: nonconformity computation strategy and interval predictor
         splitter: fit/calibration split strategy
-        train: if False, predictor model will not be trained and will be used as is
+        train: if False, prediction model(s) will not be (re)trained
     """
 
     def __init__(
@@ -109,39 +106,38 @@ class ConformalPredictor:
         predictor: BasePredictor,
         splitter: Iterable,
         agg_func: Callable = agg_func,
-        train: bool = True,
-        name: str = "ConformalPredictor",
+        train: Boolean = True,
     ):
         self.calibrator = calibrator
         self.predictor = predictor
         self.splitter = splitter
         self.agg_func = agg_func
         self.train = train
-        self.name = name
 
     def get_residuals(self):
         return self._cv_aggregation.get_residuals()
 
     def fit(self, X, y, **kwargs):
 
-        iterable = self.splitter(X, y)
+        splits = self.splitter(X, y)
 
         predictor = deepcopy(self.predictor)
         calibrator = deepcopy(self.calibrator)
 
-        self._cv_aggregation = CvAggregation(K=len(iterable), agg_func=self.agg_func)
+        self._cv_aggregation = CvAggregation(
+            K=len(splits), agg_func=self.agg_func
+        )
 
-        if len(iterable) > 1:
+        if len(splits) > 1:
             if not self.train:
                 raise Exception(
-                    "Inconsistent train argument with the cross-validation strategy. "
+                    "Model already trained. This is inconsistent with the"
+                    + "cross-validation strategy."
                 )
-        # if not self.train and not predictor.is_trained:
-        #    raise Exception("Model is not trained. ")
 
-        for i, (X_fit, y_fit, X_calib, y_calib) in enumerate(iterable):
+        for i, (X_fit, y_fit, X_calib, y_calib) in enumerate(splits):
             if self.train:
-                predictor.fit(X_fit, y_fit)  # Fit K-fold predictor
+                predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
             self._cv_aggregation.append_predictor(i, predictor)
 
             if self.calibrator is not None:
@@ -161,14 +157,19 @@ class ConformalPredictor:
             self._cv_aggregation.append_calibrator(i, calibrator)
 
     def predict(self, X: np.array, alpha, **kwargs):
-        return self._cv_aggregation.predict(X, alpha, alpha)
+        return self._cv_aggregation.predict(X, alpha)
 
     def hist_residuals(self, alpha, xlim=None, delta_space=0.03, **kwargs):
-        """Visualize the histogram of residuals. If the miscoverage rate 'alpha' is given,
-        plot the corresponding residual quantile.
+        """Visualize the histogram of residuals. If the miscoverage rate
+        'alpha' is given, plot the corresponding residual quantile.
         """
         residuals_dict = self.get_residuals()
         K = len(residuals_dict.keys())
+        plt.rcParams["font.family"] = "Times New Roman"
+        plt.rcParams["ytick.labelsize"] = 12
+        plt.rcParams["xtick.labelsize"] = 12
+        plt.rcParams["axes.labelsize"] = 12
+        plt.rcParams["legend.fontsize"] = 15
         figsize = kwargs["figsize"] if "figsize" in kwargs.keys() else (15, 6)
         del kwargs["figsize"]  # Remove figsize entry
         if K == 1:
@@ -181,7 +182,9 @@ class ConformalPredictor:
                 residuals_Q = np.quantile(
                     residuals, (1 - alpha) * (1 + 1 / len(residuals))
                 )
-                plt.axvline(residuals_Q, color="k", linestyle="dashed", linewidth=2)
+                plt.axvline(
+                    residuals_Q, color="k", linestyle="dashed", linewidth=2
+                )
                 plt.text(
                     residuals_Q * 0.98,
                     max_ylim * (-delta_space),
@@ -198,7 +201,9 @@ class ConformalPredictor:
             else:
                 plt.ylabel("Occurence")
         else:
-            fig, ax = plt.subplots(nrows=K // 2 + K % 2, ncols=2, figsize=figsize)
+            fig, ax = plt.subplots(
+                nrows=K // 2 + K % 2, ncols=2, figsize=figsize
+            )
             ax = ax.flatten()
             for k in residuals_dict.keys():
                 residuals = residuals_dict[k]
