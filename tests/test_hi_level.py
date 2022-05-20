@@ -1,9 +1,10 @@
-from random import random
 import pytest
+import numpy as np
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from puncc.utils import average_coverage
+
 from puncc.common.confomalizers import (
     SplitCP,
     LocallyAdaptiveCP,
@@ -127,7 +128,20 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_enbpi(diabetes_data, alpha, random_state):
-    assert True
+    # Get data
+    (X_train, X_test, y_train, y_test) = diabetes_data
+    # Create RF regression object
+    rf_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
+    enbpi = EnbPI(rf_model, B=30, agg_func_loo=np.mean)
+    enbpi.fit(X_train, y_train)
+    y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
+        X_test, alpha=alpha, y_true=y_test, s=None
+    )
+    # Compute marginal coverage
+    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
+    assert (y_pred is not None) and (coverage >= 1 - alpha)
 
 
 @pytest.mark.parametrize(
@@ -135,4 +149,20 @@ def test_enbpi(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_adaptive_enbpi(diabetes_data, alpha, random_state):
-    assert True
+    # Get data
+    (X_train, X_test, y_train, y_test) = diabetes_data
+    # Create RF regression object
+    rf_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
+    var_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
+    aenbpi = AdaptiveEnbPI(rf_model, var_model, B=30, agg_func_loo=np.mean)
+    aenbpi.fit(X_train, y_train)
+    y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
+        X_test, alpha=alpha, y_true=y_test, s=None
+    )
+    # Compute marginal coverage
+    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
+    assert (y_pred is not None) and (coverage >= 1 - alpha)
