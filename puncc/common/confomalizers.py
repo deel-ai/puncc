@@ -16,6 +16,7 @@ from puncc.calibration import (
 from puncc.prediction import MeanPredictor, MeanVarPredictor, QuantilePredictor
 from puncc.conformalization import ConformalPredictor
 from puncc.splitting import IdSplitter, KFoldSplitter
+from puncc.utils import agg_func
 
 
 class BaseSplit:
@@ -213,7 +214,7 @@ class CvPlus:
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=kfold_splits,
-            agg_func=np.mean,
+            agg_func=agg_func,
         )
 
     def fit(self, X_train, y_train):
