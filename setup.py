@@ -1,26 +1,34 @@
 from setuptools import setup, find_packages
 
+requirements = [
+    "joblib>=1.1.0",
+    "matplotlib>=3.5.1",
+    "numpy>=1.22.3",
+    "scikit-learn>=1.0.2",
+    "scipy>=1.8.0",
+    "seaborn>=0.11.2",
+    "tqdm>=4.63.0",
+]
+
+
 setup(
     name="puncc",
     version="1.0dev",
-    description="Predictive Uncertainty Calibration and Conformalization Library",
+    description="Predictive Uncertainty Calibration and Conformalization Lib",
     author="IRT Saint Exupery",
     author_email="mouhcine.mendil@irt-saintexupery.com",
     packages=find_packages(),
-    install_requires=[
-        "ipykernel>=6.9.1",
-        "ipython>=8.1.1",
-        "joblib>=1.1.0",
-        "jupyter-client>=7.1.2",
-        "jupyter-core>=4.9.2",
-        "jupyterthemes>=0.20.0",
-        "matplotlib>=3.5.1",
-        "matplotlib-inline>=0.1.3",
-        "numpy>=1.22.3",
-        "scikit-learn>=1.0.2",
-        "scipy>=1.8.0",
-        "seaborn>=0.11.2",
-        "tqdm>=4.63.0",
-    ],
+    install_requires=requirements,
+    extras_require={
+        "interactive": [
+            "ipykernel>=6.9.1",
+            "ipython>=8.1.1",
+            "jupyter-client>=7.1.2",
+            "jupyter-core>=4.9.2",
+            "jupyterthemes>=0.20.0",
+            "matplotlib-inline>=0.1.3",
+        ],
+        "dev": ["flake8>=4.0.1", "pytest>=7.1.2", "pytest-cov>=3.0.0"],
+    },
     license="MIT",
 )

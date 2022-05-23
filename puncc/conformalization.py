@@ -6,7 +6,7 @@ This module provides the canvas for conformal prediction.
 from puncc.calibration import Calibrator
 from puncc.prediction import BasePredictor
 import numpy as np
-from typing import Iterable, Callable, Boolean
+from typing import Iterable, Callable
 from copy import deepcopy
 from puncc.utils import agg_func
 import matplotlib.pyplot as plt
@@ -106,7 +106,7 @@ class ConformalPredictor:
         predictor: BasePredictor,
         splitter: Iterable,
         agg_func: Callable = agg_func,
-        train: Boolean = True,
+        train: bool = True,
     ):
         self.calibrator = calibrator
         self.predictor = predictor
