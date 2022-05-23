@@ -19,15 +19,19 @@ Then create a virtual environment named puncc, and activate it:
 virtualenv env-puncc
 # Under Mac OS / Linux
 source env-puncc/bin/activate
-# Under Windows
-env-puncc\Scripts\activate
 ```
 
 ## Install puncc
+Install puncc and requirements
 
-Install puncc and requirements:
+### For users:
 ```bash
-python setup.py install
+pip install -e .[interactive]
+```
+
+### For developers:
+```bash
+pip install -e .[dev]
 ```
 
 ## Jupyter notebook
