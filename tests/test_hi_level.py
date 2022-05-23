@@ -134,6 +134,7 @@ def test_enbpi(diabetes_data, alpha, random_state):
     rf_model = RandomForestRegressor(
         n_estimators=100, random_state=random_state
     )
+    # Fit and conformalize
     enbpi = EnbPI(rf_model, B=30, agg_func_loo=np.mean)
     enbpi.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
@@ -158,6 +159,7 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     var_model = RandomForestRegressor(
         n_estimators=100, random_state=random_state
     )
+    # Fit and conformalize
     aenbpi = AdaptiveEnbPI(rf_model, var_model, B=30, agg_func_loo=np.mean)
     aenbpi.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(

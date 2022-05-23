@@ -10,6 +10,21 @@ requirements = [
     "tqdm>=4.63.0",
 ]
 
+interactive_requirements = [
+    "ipykernel>=6.9.1",
+    "ipython>=8.1.1",
+    "jupyter-client>=7.1.2",
+    "jupyter-core>=4.9.2",
+    "jupyterthemes>=0.20.0",
+    "matplotlib-inline>=0.1.3",
+]
+
+dev_requirements = [
+    "flake8>=4.0.1",
+    "pytest>=7.1.2",
+    "pytest-cov>=3.0.0",
+    "black==22.3.0",
+]
 
 setup(
     name="puncc",
@@ -20,15 +35,8 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     extras_require={
-        "interactive": [
-            "ipykernel>=6.9.1",
-            "ipython>=8.1.1",
-            "jupyter-client>=7.1.2",
-            "jupyter-core>=4.9.2",
-            "jupyterthemes>=0.20.0",
-            "matplotlib-inline>=0.1.3",
-        ],
-        "dev": ["flake8>=4.0.1", "pytest>=7.1.2", "pytest-cov>=3.0.0"],
+        "interactive": interactive_requirements,
+        "dev": dev_requirements,
     },
     license="MIT",
 )
