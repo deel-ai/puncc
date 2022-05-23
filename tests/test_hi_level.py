@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from puncc.utils import average_coverage
 
-from puncc.common.confomalizers import (
+from puncc.common.conformalizers import (
     SplitCP,
     LocallyAdaptiveCP,
     CQR,
