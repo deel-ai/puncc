@@ -38,6 +38,16 @@ class CvAggregation:
             for k, calibrator in self.calibrators.items()
         }
 
+    def get_weights(self):
+        """Get a dictionnary of normalized weights computed on the K-folds
+        Returns:
+            Dict of normalized weights. Key: K-fold index,
+                                        value: residuals iterable.
+        """
+        return {
+            k: calibrator.weights for k, calibrator in self.calibrators.items()
+        }
+
     def predict(self, X, alpha):
         assert (
             self.predictors.keys() == self.calibrators.keys()
@@ -65,6 +75,7 @@ class CvAggregation:
                     y_pred_lower=y_pred_lower,
                     y_pred_upper=y_pred_upper,
                     sigma_pred=sigma_pred,
+                    X=X,
                 )
 
             y_pred_lowers.append(y_pred_lower)
@@ -76,7 +87,6 @@ class CvAggregation:
             y_pred_upper = y_pred_uppers[0]
             sigma_pred = sigma_preds[0]
         else:  # K-Fold Split
-            # @TODO Handle case ((1 - alpha) * (1 + 1 / self.K)) > 1
             y_pred = self.agg_func(y_preds)
             y_pred_lower = np.quantile(
                 y_pred_lowers, (1 - alpha) * (1 + 1 / self.K), axis=0
@@ -117,6 +127,9 @@ class ConformalPredictor:
     def get_residuals(self):
         return self._cv_aggregation.get_residuals()
 
+    def get_weights(self):
+        return self._cv_aggregation.get_weights()
+
     def fit(self, X, y, **kwargs):
 
         splits = self.splitter(X, y)
@@ -153,6 +166,7 @@ class ConformalPredictor:
                     y_pred_lower=y_pred_lower,
                     y_pred_upper=y_pred_upper,
                     sigma_pred=sigma_pred,
+                    X=X_calib,
                 )
             self._cv_aggregation.append_calibrator(i, calibrator)
 

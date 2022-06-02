@@ -9,6 +9,32 @@ import sys
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
+def w_quantile(a, alpha, w=None):
+    """Weighted empirical quantile.
+
+    Args:
+        a: array of samples
+        alpha: Quantile to compute, which must be between 0 and 1
+        w: matrix of weight.
+           If w is None, np.quantile is returned. Otherwise, w columns
+           must be of same size as argument lenght of a
+    Returns:
+        weighted empirical quantile
+    """
+    if alpha < 0 or alpha > 1:  # Sanity check
+        raise ValueError("Alpha must land between 0 and 1.")
+    # Regular Empirical Quantile
+    if w is None:
+        return np.quantile(a, alpha)
+    # Empirical Weighted Quantile
+    sorted_idxs = np.argsort(a)
+    sorted_cumsum_w = np.cumsum(w[:, sorted_idxs], axis=1)
+    weighted_quantile_idxs = [
+        sorted_idxs[sorted_cumsum_w[i] >= alpha][0] for i in range(len(w))
+    ]
+    return np.array([a[idx] for idx in weighted_quantile_idxs])
+
+
 """
 ========================= Aggregation functions =========================
 """

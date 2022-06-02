@@ -2,15 +2,38 @@
 This module implements different calibration methods.
 """
 from abc import ABC, abstractmethod
-from puncc.utils import EPSILON
+from tkinter import E
+from puncc.utils import EPSILON, w_quantile
 import numpy as np
 
 
 class Calibrator(ABC):
     """Abstract structure of a Calibrator class."""
 
-    def __init__(self):
-        pass
+    def __init__(self, w_estimator):
+        self._residuals = None
+        self._w_estimator = w_estimator
+        self.weights = None
+
+    def compute_weights(self, X):
+        """Compute and normalizes weight of the nonconformity distribution
+        based on the provided w estimator.
+        Args:
+            X: features array
+        """
+        if self._w_estimator is None:
+            raise RuntimeError(
+                "Weight estimator is None."
+                + "Please provide a valid function."
+            )
+        w = self._w_estimator(X)
+        len_calib = len(self._w_calib)
+        sum_w_calib = np.sum(self._w_calib)
+        w_norm = np.zeros((len(X), len_calib + 1))
+        for i in range(len(X)):
+            w_norm[i, :len_calib] = self._w_calib / (sum_w_calib + w[i])
+            w_norm[i, len_calib] = w[i] / (sum_w_calib + w[i])
+        return w_norm
 
     @abstractmethod
     def estimate(
@@ -19,6 +42,7 @@ class Calibrator(ABC):
         y_pred: np.array,
         y_pred_lower: np.array,
         y_pred_upper: np.array,
+        X: np.array = None,
     ) -> None:
         """Compute residuals on calibration set.
         Args:
@@ -26,6 +50,7 @@ class Calibrator(ABC):
             y_pred: predicted values
             y_pred_lower: lower bound of the prediction interval
             y_pred_upper: upper bound of the prediction interval
+            X: features array
         """
         pass
 
@@ -36,6 +61,7 @@ class Calibrator(ABC):
         y_pred_lower: np.array,
         y_pred_upper: np.array,
         alpha: float,
+        X: np.array = None,
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:
@@ -43,6 +69,7 @@ class Calibrator(ABC):
             y_pred_lower: lower bound of the prediction interval
             y_pred_upper: upper bound of the prediction interval
             alpha: maximum miscoverage target
+            X: features array
         Returns:
             y_lower, y_upper
         """
@@ -50,13 +77,16 @@ class Calibrator(ABC):
 
 
 class MeanCalibrator(Calibrator):
-    def __init__(self):
-        super().__init__()
-        self.name = "MeanCalibrator"
-        self._residuals = None
+    def __init__(self, w_estimator=None):
+        super().__init__(w_estimator)
 
     def estimate(
-        self, y_true: np.array, y_pred: np.array, *args, **kwargs
+        self,
+        y_true: np.array,
+        y_pred: np.array,
+        X: np.array = None,
+        *args,
+        **kwargs
     ) -> None:
         """Compute residuals on calibration set.
         Args:
@@ -64,8 +94,17 @@ class MeanCalibrator(Calibrator):
             y_pred: predicted values
         """
         self._residuals = np.abs(y_true - y_pred)
+        if self._w_estimator is not None:
+            self._w_calib = self._w_estimator(X)
 
-    def calibrate(self, y_pred: np.array, alpha: float, *args, **kwargs):
+    def calibrate(
+        self,
+        y_pred: np.array,
+        alpha: float,
+        X: np.array = None,
+        *args,
+        **kwargs
+    ):
         """Compute calibrated prediction intervals for new examples.
         Args:
             y_pred: predicted values
@@ -73,25 +112,33 @@ class MeanCalibrator(Calibrator):
         Returns:
             y_lower, y_upper
         """
-        residuals_Q = np.quantile(
-            self._residuals, (1 - alpha) * (1 + 1 / len(self._residuals))
-        )
+        if self._w_estimator is None:
+            residuals_Q = np.quantile(
+                self._residuals, (1 - alpha) * (1 + 1 / len(self._residuals))
+            )
+        else:
+            self.weights = self.compute_weights(X)
+            residuals_Q = w_quantile(
+                np.concatenate((self._residuals, [np.inf])),
+                1 - alpha,
+                w=self.weights,
+            )
+            print(self.weights)
         y_pred_lower = y_pred - residuals_Q
         y_pred_upper = y_pred + residuals_Q
         return y_pred_lower, y_pred_upper
 
 
 class MeanVarCalibrator(Calibrator):
-    def __init__(self):
-        super().__init__()
-        self.name = "MeanVarCalibrator"
-        self._residuals = None
+    def __init__(self, w_estimator=None):
+        super().__init__(w_estimator)
 
     def estimate(
         self,
         y_true: np.array,
         y_pred: np.array,
         sigma_pred: np.array,
+        X: np.array = None,
         *args,
         **kwargs
     ) -> None:
@@ -110,6 +157,7 @@ class MeanVarCalibrator(Calibrator):
         y_pred: np.array,
         sigma_pred: np.array,
         alpha: float,
+        X: np.array = None,
         *args,
         **kwargs
     ):
@@ -121,25 +169,32 @@ class MeanVarCalibrator(Calibrator):
         Returns:
             y_lower, y_upper
         """
-        residuals_Q = np.quantile(
-            self._residuals, (1 - alpha) * (1 + 1 / len(self._residuals))
-        )
+        if self._w_estimator is None:
+            residuals_Q = np.quantile(
+                self._residuals, (1 - alpha) * (1 + 1 / len(self._residuals))
+            )
+        else:
+            self.weights = self.compute_weights(X)
+            residuals_Q = w_quantile(
+                np.concatenate((self._residuals, [np.inf])),
+                1 - alpha,
+                w=self.weights,
+            )
         y_pred_upper = y_pred + sigma_pred * residuals_Q
         y_pred_lower = y_pred - sigma_pred * residuals_Q
         return y_pred_lower, y_pred_upper
 
 
 class QuantileCalibrator(Calibrator):
-    def __init__(self):
-        super().__init__()
-        self._residuals = None
-        self.name = "QuantileCalibrator"
+    def __init__(self, w_estimator=None):
+        super().__init__(w_estimator)
 
     def estimate(
         self,
         y_true: np.array,
         y_pred_lower: np.array,
         y_pred_upper: np.array,
+        X: np.array = None,
         *args,
         **kwargs
     ) -> None:
@@ -159,6 +214,7 @@ class QuantileCalibrator(Calibrator):
         y_pred_lower: np.array,
         y_pred_upper: np.array,
         alpha: float,
+        X: np.array = None,
         *args,
         **kwargs
     ):
@@ -170,9 +226,17 @@ class QuantileCalibrator(Calibrator):
         Returns:
             y_lower, y_upper
         """
-        self.residuals_Q = np.quantile(
-            self._residuals, (1 - alpha) * (1 + 1 / len(self._residuals))
-        )
-        y_pred_upper = y_pred_upper + self.residuals_Q
-        y_pred_lower = y_pred_lower - self.residuals_Q
+        if self._w_estimator is None:
+            residuals_Q = np.quantile(
+                self._residuals, (1 - alpha) * (1 + 1 / len(self._residuals))
+            )
+        else:
+            self.weights = self.compute_weights(X)
+            residuals_Q = w_quantile(
+                np.concatenate((self._residuals, [np.inf])),
+                1 - alpha,
+                w=self.weights,
+            )
+        y_pred_upper = y_pred_upper + residuals_Q
+        y_pred_lower = y_pred_lower - residuals_Q
         return y_pred_lower, y_pred_upper

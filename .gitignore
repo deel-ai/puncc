@@ -10,3 +10,6 @@
 
 # Virtual environment
 env-puncc/
+
+# Local demo files
+**demo/
