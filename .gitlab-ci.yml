@@ -15,7 +15,16 @@ before_script:
   - source venv/bin/activate
   - pip install -e .[dev]
 
-test-hi-level:
-  stage: test
+stages: 
+  - test_low_api
+  - test_hi_api
+
+test-lo:
+  stage: test_low_api
   script:
-    - pytest
+    - pytest tests/test_lo_level.py
+
+test-hi:
+  stage: test_hi_api
+  script:
+    - pytest tests/test_hi_level.py

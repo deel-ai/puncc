@@ -108,6 +108,50 @@ class SplitCP(BaseSplit):
         )
 
 
+class WeightedSplitCP(BaseSplit):
+    """Split Conformal Prediction wrapper."""
+
+    def __init__(self, mu_model, w_estimator, train=True):
+        """Constructor.
+
+        Args:
+            mu_model: Conditional mean model
+            w_estimator: weight estimator of nonconformity scores distribution
+            train: if False, prediction model(s) will not be trained and will
+                   be used as is
+        """
+        super().__init__(train=train)
+        self.predictor = MeanPredictor(mu_model)
+        self.calibrator = MeanCalibrator(w_estimator=w_estimator)
+        self.conformal_predictor = None
+
+    def predict(self, X_test, alpha) -> Tuple[np.array]:
+        """Estimate conditional mean and prediction interval
+        (w.r.t target miscoverage alpha) for new samples.
+
+        Args:
+            X_test: features of new samples
+            alpha: target miscoverage
+
+        Returns:
+            A tuple composed of:
+                y_pred (conditional mean),
+                y_pred_lower (lower PI bound),
+                y_pred_upper (upper PI bound)
+        """
+        (
+            y_pred,
+            y_pred_lower,
+            y_pred_upper,
+            _,
+        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
+        return (
+            y_pred,
+            y_pred_lower,
+            y_pred_upper,
+        )
+
+
 class LocallyAdaptiveCP(BaseSplit):
     """Locally Adaptive Conformal Prediction wrapper."""
 
