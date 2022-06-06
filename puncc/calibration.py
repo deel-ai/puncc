@@ -123,7 +123,6 @@ class MeanCalibrator(Calibrator):
                 1 - alpha,
                 w=self.weights,
             )
-            print(self.weights)
         y_pred_lower = y_pred - residuals_Q
         y_pred_upper = y_pred + residuals_Q
         return y_pred_lower, y_pred_upper
