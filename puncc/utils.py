@@ -14,7 +14,7 @@ def quantile(a, alpha, w=None):
 
     Args:
         a: vector of n samples
-        alpha: target quantile. Must be in the open interval ]0, 1[.
+        alpha: target quantile. Must be in the open interval (0, 1).
         w: vector of size n
            By default, w is None and equal weights = 1/m are associated.
     Returns:
@@ -27,13 +27,15 @@ def quantile(a, alpha, w=None):
         raise NotImplementedError(f"a dimension {a.ndim} should be 1.")
     if w is not None and w.ndim > 1:
         raise NotImplementedError(f"w dimension {w.ndim} should be 1.")
-    if len(w) != len(a):
-        error = "M and W must have the same shape:" + f"{len(a)} != {len(w)}"
-        raise RuntimeError(error)
 
     # Case of None weights: assign equal values
     if w is None:
         w = np.ones_like(a) / len(a)
+
+    # Sanity check
+    if len(w) != len(a):
+        error = "M and W must have the same shape:" + f"{len(a)} != {len(w)}"
+        raise RuntimeError(error)
 
     # Normalization check
     norm_condition = np.isclose(np.sum(w, axis=-1), 1, atol=1e-6)
