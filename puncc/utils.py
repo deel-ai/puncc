@@ -9,30 +9,46 @@ import sys
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
-def w_quantile(a, alpha, w=None):
-    """Weighted empirical quantile.
+def quantile(a, alpha, w=None):
+    """Alpha-th empirical weighted quantile estimator.
 
     Args:
-        a: array of samples
-        alpha: Quantile to compute, which must be between 0 and 1
-        w: matrix of weight.
-           If w is None, np.quantile is returned. Otherwise, w columns
-           must be of same size as argument lenght of a
+        a: vector of n samples
+        alpha: target quantile. Must be in the open interval ]0, 1[.
+        w: vector of size n
+           By default, w is None and equal weights = 1/m are associated.
     Returns:
-        weighted empirical quantile
+        Weighted empirical quantile
     """
-    if alpha < 0 or alpha > 1:  # Sanity check
-        raise ValueError("Alpha must land between 0 and 1.")
-    # Regular Empirical Quantile
+    # Sanity checks
+    if alpha <= 0 or alpha >= 1:
+        raise ValueError("Alpha must be in the open interval ]0, 1[.")
+    if a.ndim > 1:
+        raise NotImplementedError(f"a dimension {a.ndim} should be 1.")
+    if w is not None and w.ndim > 1:
+        raise NotImplementedError(f"w dimension {w.ndim} should be 1.")
+    if len(w) != len(a):
+        error = "M and W must have the same shape:" + f"{len(a)} != {len(w)}"
+        raise RuntimeError(error)
+
+    # Case of None weights: assign equal values
     if w is None:
-        return np.quantile(a, alpha)
+        w = np.ones_like(a) / len(a)
+
+    # Normalization check
+    norm_condition = np.isclose(np.sum(w, axis=-1), 1, atol=1e-6)
+    if ~np.all(norm_condition):
+        error = (
+            f"W is not normalized. Sum of weights on"
+            + f"rows is {np.sum(w, axis=-1)}"
+        )
+        raise RuntimeError(error)
+
     # Empirical Weighted Quantile
-    sorted_idxs = np.argsort(a)
-    sorted_cumsum_w = np.cumsum(w[:, sorted_idxs], axis=1)
-    weighted_quantile_idxs = [
-        sorted_idxs[sorted_cumsum_w[i] >= alpha][0] for i in range(len(w))
-    ]
-    return np.array([a[idx] for idx in weighted_quantile_idxs])
+    sorted_idxs = np.argsort(a)  # rows are sorted in ascending order
+    sorted_cumsum_w = np.cumsum(w[sorted_idxs])
+    weighted_quantile_idxs = sorted_idxs[sorted_cumsum_w >= alpha][0]
+    return a[weighted_quantile_idxs]
 
 
 """
@@ -57,13 +73,6 @@ def agg_func(a: Iterable):
 """
 ========================= Visualization =========================
 """
-
-plt.rcParams["figure.figsize"] = [8, 8]
-plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams["ytick.labelsize"] = 15
-plt.rcParams["xtick.labelsize"] = 15
-plt.rcParams["axes.labelsize"] = 15
-plt.rcParams["legend.fontsize"] = 15
 
 
 def plot_prediction_interval(
