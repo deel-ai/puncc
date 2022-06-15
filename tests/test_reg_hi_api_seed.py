@@ -17,11 +17,11 @@ from puncc.common.conformalizers import (
 
 
 RESULTS = {
-    "scp": {"cov": 0.95, "width": 215.58},
-    "wscp": {"cov": 0.97, "width": 241.99},
-    "lacp": {"cov": 0.96, "width": 336.38},
-    "cqr": {"cov": 0.9, "width": 236.6},
-    "cv+": {"cov": 0.87, "width": 239.69},
+    "scp": {"cov": 0.95, "width": 218.98},
+    "wscp": {"cov": 0.97, "width": 245.59},
+    "lacp": {"cov": 0.96, "width": 347.87},
+    "cqr": {"cov": 0.9, "width": 237.8},
+    "cv+": {"cov": 0.91, "width": 281.97},
     "enbpi": {"cov": 0.9, "width": 222.05},
     "aenbpi": {"cov": 0.91, "width": 286.64},
 }
@@ -86,13 +86,15 @@ def test_w_split_cp(diabetes_data, alpha, random_state):
     # Create linear regression object
     regr_model = linear_model.LinearRegression()
     # CP method initialization
-    split_cp = WeightedSplitCP(regr_model, w_estimator)
+    w_split_cp = WeightedSplitCP(regr_model, w_estimator)
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    split_cp.fit(X_fit, y_fit, X_calib, y_calib)
+    w_split_cp.fit(X_fit, y_fit, X_calib, y_calib)
     # The predict method infers prediction intervals with respect to
     # the risk alpha
-    y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+    y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(
+        X_test, alpha=alpha
+    )
     assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)

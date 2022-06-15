@@ -28,9 +28,13 @@ def quantile(a, alpha, w=None):
     if w is not None and w.ndim > 1:
         raise NotImplementedError(f"w dimension {w.ndim} should be 1.")
 
-    # Case of None weights: assign equal values
+    # Case of None weights
     if w is None:
-        w = np.ones_like(a) / len(a)
+        return np.quantile(a, alpha, method="higher")
+        ## An equivalent method would be to assign equal values to w
+        ## and carry on with the computations.
+        ## np.quantile is however more optimized.
+        # w = np.ones_like(a) / len(a)
 
     # Sanity check
     if len(w) != len(a):
