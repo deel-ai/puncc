@@ -311,7 +311,7 @@ class EnbPI:
     """Ensemble Batch Prediction Intervals method"""
 
     def __init__(
-        self, model, B: int, agg_func_loo=np.mean, random_seed: int = None
+        self, model, B: int, agg_func_loo=np.mean, random_state: int = None
     ):
         """constructor
 
@@ -323,7 +323,7 @@ class EnbPI:
                 http://proceedings.mlr.press/v139/xu21h.html:
                 lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
               - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
-            random_seed: determines random generation
+            random_state: determines random generation
         """
         self.model = model
         self.B = B
@@ -336,7 +336,7 @@ class EnbPI:
         # Boostrapped models list for mean absolute deviation estimation
         self._boot_sigma_estimators = None
         # Randome seed
-        self.random_state = random_seed
+        self.random_state = random_state
 
     def _fit_callback(self, X_train=None, y_train=None, b=None):
         """Callback process for each iteration of the ensemble training.
@@ -411,7 +411,7 @@ class EnbPI:
                     horizon_indices,
                     replace=True,
                     n_samples=T,
-                    random_state=self.random_state,
+                    random_state=self.random_state + b,
                 )
                 oob_units = np.setdiff1d(horizon_indices, boot)
                 oob_is_empty = len(oob_units) == 0
@@ -547,8 +547,15 @@ class EnbPI:
 
 class AdaptiveEnbPI(EnbPI):
     # """Ensemble Batch Prediction Intervals method, Locally Adaptive version
-    def __init__(self, model, dispersion_model, B, agg_func_loo=np.mean):
-        super().__init__(model, B, agg_func_loo)
+    def __init__(
+        self,
+        model,
+        dispersion_model,
+        B,
+        agg_func_loo=np.mean,
+        random_state=None,
+    ):
+        super().__init__(model, B, agg_func_loo, random_state=random_state)
         self.dispersion_model = dispersion_model
 
     def _compute_pi(self, y_pred, w, sigma_pred):

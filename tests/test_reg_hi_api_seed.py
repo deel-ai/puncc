@@ -3,7 +3,7 @@ import numpy as np
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from puncc.utils import average_coverage
+from puncc.utils import average_coverage, sharpness
 
 from puncc.common.conformalizers import (
     SplitCP,
@@ -16,8 +16,15 @@ from puncc.common.conformalizers import (
 )
 
 
-def coverage_condition(empirical_cov, alpha):
-    return empirical_cov >= 1 - alpha - 0.05  # 5% margin
+RESULTS = {
+    "scp": {"cov": 0.95, "width": 215.58},
+    "wscp": {"cov": 0.97, "width": 241.99},
+    "lacp": {"cov": 0.96, "width": 336.38},
+    "cqr": {"cov": 0.9, "width": 236.6},
+    "cv+": {"cov": 0.87, "width": 239.69},
+    "enbpi": {"cov": 0.9, "width": 222.05},
+    "aenbpi": {"cov": 0.91, "width": 286.64},
+}
 
 
 @pytest.mark.parametrize(
@@ -41,9 +48,12 @@ def test_split_cp(diabetes_data, alpha, random_state):
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert (y_pred is not None) and coverage_condition(coverage, alpha)
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["scp"] == res
 
 
 @pytest.mark.parametrize(
@@ -83,9 +93,12 @@ def test_w_split_cp(diabetes_data, alpha, random_state):
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert (y_pred is not None) and coverage_condition(coverage, alpha)
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["wscp"] == res
 
 
 @pytest.mark.parametrize(
@@ -112,13 +125,12 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     y_pred, y_pred_lower, y_pred_upper, var_pred = la_cp.predict(
         X_test, alpha=alpha
     )
+    assert (y_pred is not None) and (var_pred is not None)
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert (
-        (y_pred is not None)
-        and (var_pred is not None)
-        and coverage_condition(coverage, alpha)
-    )
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["lacp"] == res
 
 
 @pytest.mark.parametrize(
@@ -146,7 +158,9 @@ def test_cqr(diabetes_data, alpha, random_state):
     y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert coverage_condition(coverage, alpha)
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["cqr"] == res
 
 
 @pytest.mark.parametrize(
@@ -161,13 +175,16 @@ def test_cv_plus(diabetes_data, alpha, random_state):
         n_estimators=100, random_state=random_state
     )
     # CP method initialization
-    cv_cp = CvPlus(rf_model, K=20)
+    cv_cp = CvPlus(rf_model, K=20, random_state=random_state)
     # Fit and conformalize
     cv_cp.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert (y_pred is not None) and coverage_condition(coverage, 2 * alpha)
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["cv+"] == res
 
 
 @pytest.mark.parametrize(
@@ -182,14 +199,19 @@ def test_enbpi(diabetes_data, alpha, random_state):
         n_estimators=100, random_state=random_state
     )
     # Fit and conformalize
-    enbpi = EnbPI(rf_model, B=30, agg_func_loo=np.mean)
+    enbpi = EnbPI(
+        rf_model, B=30, agg_func_loo=np.mean, random_state=random_state
+    )
     enbpi.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )
+    assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert (y_pred is not None) and coverage_condition(coverage, alpha)
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["enbpi"] == res
 
 
 @pytest.mark.parametrize(
@@ -207,11 +229,20 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
         n_estimators=100, random_state=random_state
     )
     # Fit and conformalize
-    aenbpi = AdaptiveEnbPI(rf_model, var_model, B=30, agg_func_loo=np.mean)
+    aenbpi = AdaptiveEnbPI(
+        rf_model,
+        var_model,
+        B=30,
+        agg_func_loo=np.mean,
+        random_state=random_state,
+    )
     aenbpi.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )
+    assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    assert (y_pred is not None) and coverage_condition(coverage, alpha)
+    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["aenbpi"] == res
