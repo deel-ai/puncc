@@ -9,20 +9,48 @@ import sys
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
-def quantile(a, alpha, w=None):
+def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
+    """Check if the value of alpha is consistent with the size of calibration
+    set.
+    The quantiles are inflated by a factor (1+1/n) and have to be in
+    the open interval (0,1). From this, we derive the condition:
+        - alpha => 1/(n+1) given that 0 <= (1-alpha)*(1+1/n) <= 1
+    If complement_check is set, we consider an additional condition:
+        - alpha <= n/(n+1) given that 0 <= alpha*(1+1/n) <= 1
+
+    Args:
+        alpha: target quantile.
+        n: size of the calibration dataset.
+        complement_check: complementary check to compute the alpha*(1+1/n)-th
+                          quantile, required by some methods such as jk+.
+
+    """
+    if alpha < 1 / (n + 1):
+        raise ValueError(
+            f"Alpha is too small: (alpha={alpha}, n={n}) {alpha} < {1/(n+1)}. "
+            + "Increase alpha or the size of the calibration set."
+        )
+    if complement_check and alpha > n / (n + 1):
+        raise ValueError(
+            f"Alpha is too small: (alpha={alpha}, n={n}) {alpha} < {n/(n+1)}. "
+            + "Decrease alpha or increase the size of the calibration set."
+        )
+
+
+def quantile(a, q, w=None):
     """Alpha-th empirical weighted quantile estimator.
 
     Args:
         a: vector of n samples
-        alpha: target quantile. Must be in the open interval (0, 1).
+        q: target quantile. Must be in the open interval (0, 1).
         w: vector of size n
            By default, w is None and equal weights = 1/m are associated.
     Returns:
         Weighted empirical quantile
     """
     # Sanity checks
-    if alpha <= 0 or alpha >= 1:
-        raise ValueError("Alpha must be in the open interval ]0, 1[.")
+    if q <= 0 or q >= 1:
+        raise ValueError("q must be in the open interval (0, 1).")
     if a.ndim > 1:
         raise NotImplementedError(f"a dimension {a.ndim} should be 1.")
     if w is not None and w.ndim > 1:
@@ -30,7 +58,7 @@ def quantile(a, alpha, w=None):
 
     # Case of None weights
     if w is None:
-        return np.quantile(a, alpha, method="higher")
+        return np.quantile(a, q=q, interpolation="higher")
         ## An equivalent method would be to assign equal values to w
         ## and carry on with the computations.
         ## np.quantile is however more optimized.
@@ -53,7 +81,7 @@ def quantile(a, alpha, w=None):
     # Empirical Weighted Quantile
     sorted_idxs = np.argsort(a)  # rows are sorted in ascending order
     sorted_cumsum_w = np.cumsum(w[sorted_idxs])
-    weighted_quantile_idxs = sorted_idxs[sorted_cumsum_w >= alpha][0]
+    weighted_quantile_idxs = sorted_idxs[sorted_cumsum_w >= q][0]
     return a[weighted_quantile_idxs]
 
 

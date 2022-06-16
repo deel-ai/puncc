@@ -2,7 +2,7 @@
 This module implements different calibration methods.
 """
 from abc import ABC, abstractmethod
-from puncc.utils import EPSILON, quantile
+from puncc.utils import EPSILON, quantile, check_alpha_calib
 import numpy as np
 
 
@@ -51,7 +51,6 @@ class Calibrator(ABC):
             y_pred_upper: upper bound of the prediction interval
             X: features array
         """
-        pass
 
     @abstractmethod
     def calibrate(
@@ -113,6 +112,9 @@ class MeanCalibrator(Calibrator):
         Returns:
             y_lower, y_upper
         """
+        # Check consistency of alpha w.r.t to the size of calibration data
+        check_alpha_calib(alpha=alpha, n=self.calib_size)
+
         residuals_Qs = list()
         self.weights = self.compute_weights(X, self.calib_size)
         for w in self.weights:
@@ -171,6 +173,9 @@ class MeanVarCalibrator(Calibrator):
         Returns:
             y_lower, y_upper
         """
+        # Check consistency of alpha w.r.t to the size of calibration data
+        check_alpha_calib(alpha=alpha, n=self.calib_size)
+
         if self._w_estimator is not None:
             self.weights = self.compute_weights(X, self.calib_size)
         residuals_Q = quantile(
@@ -226,6 +231,9 @@ class QuantileCalibrator(Calibrator):
         Returns:
             y_lower, y_upper
         """
+        # Check consistency of alpha w.r.t to the size of calibration data
+        check_alpha_calib(alpha=alpha, n=self.calib_size)
+
         if self._w_estimator is not None:
             self.weights = self.compute_weights(X, self.calib_size)
         residuals_Q = quantile(
