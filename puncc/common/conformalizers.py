@@ -260,6 +260,7 @@ class CvPlus:
             calibrator=self.calibrator,
             splitter=kfold_splits,
             agg_func=agg_func,
+            method="cv+",
         )
 
     def fit(self, X_train, y_train):

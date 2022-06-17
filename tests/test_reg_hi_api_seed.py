@@ -21,7 +21,7 @@ RESULTS = {
     "wscp": {"cov": 0.97, "width": 245.59},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.9, "width": 237.8},
-    "cv+": {"cov": 0.91, "width": 281.97},
+    "cv+": {"cov": 0.9, "width": 231.04},
     "enbpi": {"cov": 0.9, "width": 222.05},
     "aenbpi": {"cov": 0.91, "width": 286.64},
 }
@@ -180,8 +180,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     cv_cp = CvPlus(rf_model, K=20, random_state=random_state)
     # Fit and conformalize
     cv_cp.fit(X_train, y_train)
-    y_pred, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
+    _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
     width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)

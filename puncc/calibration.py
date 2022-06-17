@@ -84,13 +84,13 @@ class MeanCalibrator(Calibrator):
         y_pred: np.array,
         X: np.array = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Compute residuals on calibration set.
         Args:
             y_true: true values
             y_pred: predicted values
-            X: features array
+            X: calibration features array
         """
         self._residuals = np.abs(y_true - y_pred)
         if self._w_estimator is not None:
@@ -103,12 +103,13 @@ class MeanCalibrator(Calibrator):
         alpha: float,
         X: np.array = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:
             y_pred: predicted values
             alpha: maximum miscoverage target
+            X: test features array
         Returns:
             y_lower, y_upper
         """
@@ -141,14 +142,14 @@ class MeanVarCalibrator(Calibrator):
         sigma_pred: np.array,
         X: np.array = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Compute residuals on calibration set.
         Args:
             y_true: true values
             y_pred: predicted values
             sigma_pred: predicted absolute deviations
-            X: features array
+            X: calibration features array
         """
         self._residuals = np.abs(y_true - y_pred)
         # Epsilon addition improves numerical stability
@@ -162,14 +163,14 @@ class MeanVarCalibrator(Calibrator):
         alpha: float,
         X: np.array = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:
             y_pred: predicted values
             sigma_pred: predicted absolute deviations
             alpha: maximum miscoverage target
-            X: features array
+            X: test features array
         Returns:
             y_lower, y_upper
         """
@@ -199,14 +200,14 @@ class QuantileCalibrator(Calibrator):
         y_pred_upper: np.array,
         X: np.array = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Compute residuals on calibration set.
         Args:
             y_pred: predicted values
             y_pred_lower: lower bound of the prediction interval
             y_pred_upper: upper bound of the prediction interval
-            X: features array
+            X: calibration features array
         """
         self._residuals = np.maximum(
             y_pred_lower - y_true,
@@ -221,13 +222,14 @@ class QuantileCalibrator(Calibrator):
         alpha: float,
         X: np.array = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:
             y_pred_lower: lower bound of the prediction interval
             y_pred_upper: upper bound of the prediction interval
             alpha: maximum miscoverage target
+            X: test features array
         Returns:
             y_lower, y_upper
         """
@@ -244,3 +246,195 @@ class QuantileCalibrator(Calibrator):
         y_pred_upper = y_pred_upper + residuals_Q
         y_pred_lower = y_pred_lower - residuals_Q
         return y_pred_lower, y_pred_upper
+
+
+class MetaCalibrator(Calibrator):
+    """Meta calibrator that combines the estimations nonconformity
+    scores by each K-Fold calibrator and produces associated prediction
+    intervals.
+
+    Attributes:
+        kfold_calibrators_dict: dictionarry of calibrators for each K-fold
+                                (disjoint calibration subsets). Each calibrator
+                                needs to priorly estimate the nonconformity
+                                scores w.r.t to the associated K-fold
+                                calibration set.
+
+    """
+
+    def __init__(self, kfold_calibrators: dict):
+        self.kfold_calibrators_dict = kfold_calibrators
+
+    def estimate(self, *args, **kwargs):
+        error_msg = (
+            "Each KFold calibrator should have priorly "
+            + "estimated the residuals."
+        )
+        if self.kfold_calibrators_dict is None:
+            raise RuntimeError("Calibrators not defined.")
+        for calibrator in self.kfold_calibrators_dict.values():
+            if calibrator._residuals is None:
+                raise RuntimeError(error_msg)
+
+    @abstractmethod
+    def calibrate(
+        self,
+        kfold_predictors: dict(),
+        alpha: float,
+        X: np.array = None,
+    ):
+        """Compute calibrated prediction intervals for new examples.
+        Args:
+            kfold_predictors: dictionnary of predictors trained for each K-fold
+                              fitting subset.
+            alpha: maximum miscoverage target
+            X: test features array
+        Returns:
+            y_lower, y_upper
+        """
+        raise NotImplementedError
+
+
+class CvPlusCalibrator(MetaCalibrator):
+    """Meta calibrator that combines the estimations nonconformity
+    scores by each K-Fold calibrator and produces associated prediction
+    intervals.
+
+    Attributes:
+        kfold_calibrators_dict: dictionarry of calibrators for each K-fold
+                                (disjoint calibration subsets). Each calibrator
+                                needs to priorly estimate the nonconformity
+                                scores w.r.t to the associated K-fold
+                                calibration set.
+
+    """
+
+    def calibrate(
+        self,
+        kfold_predictors: dict(),
+        alpha: float,
+        X: np.array = None,
+    ):
+        """Compute calibrated prediction intervals for new examples.
+        Args:
+            kfold_predictors: dictionnary of predictors trained for each K-fold
+                              fitting subset.
+            alpha: maximum miscoverage target
+            X: test features array
+        Returns:
+            y_lower, y_upper
+        """
+        concat_residuals_lo = None
+        concat_residuals_hi = None
+        for k, predictor in kfold_predictors.items():
+            # Predictions
+            y_pred, _, _, _ = predictor.predict(X)
+            y_pred = np.reshape(y_pred, (len(y_pred), 1))
+
+            # Residuals
+            residuals = self.kfold_calibrators_dict[k]._residuals
+            residuals = np.reshape(residuals, (1, len(residuals)))
+
+            if concat_residuals_lo is None or concat_residuals_hi is None:
+                concat_residuals_lo = y_pred - residuals
+                concat_residuals_hi = y_pred + residuals
+            else:
+                concat_residuals_lo = np.concatenate(
+                    [concat_residuals_lo, y_pred - residuals], axis=1
+                )
+
+                concat_residuals_hi = np.concatenate(
+                    [concat_residuals_hi, y_pred + residuals], axis=1
+                )
+
+        y_pred_lower = np.quantile(
+            concat_residuals_lo, alpha, axis=1, interpolation="lower"
+        )
+
+        y_pred_upper = np.quantile(
+            concat_residuals_hi, 1 - alpha, axis=1, interpolation="higher"
+        )
+
+        return y_pred_lower, y_pred_upper
+
+
+class AggregationCalibrator(MetaCalibrator):
+    """Meta calibrator that combines the estimations nonconformity
+    scores by each K-Fold calibrator and produces associated prediction
+    intervals.
+
+    Attributes:
+        kfold_calibrators_dict: dictionarry of calibrators for each K-fold
+                                (disjoint calibration subsets). Each calibrator
+                                needs to priorly estimate the nonconformity
+                                scores w.r.t to the associated K-fold
+                                calibration set.
+
+    """
+
+    def __init__(self, kfold_calibrators: dict, agg_func):
+        super().__init__(kfold_calibrators=kfold_calibrators)
+        self.agg_func = agg_func
+
+    def calibrate(
+        self,
+        kfold_predictors: dict(),
+        alpha: float,
+        X: np.array = None,
+    ):
+        y_preds, y_pred_lowers, y_pred_uppers, sigma_preds = (
+            list(),
+            list(),
+            list(),
+            list(),
+        )
+
+        ## Recover K-fold estimator and predict response for the points X
+        for k, predictor in kfold_predictors.items():
+            (
+                y_pred,
+                y_pred_lower,
+                y_pred_upper,
+                sigma_pred,
+            ) = predictor.predict(X)
+
+            y_preds.append(y_pred)
+            sigma_preds.append(sigma_pred)
+
+            calibrator = self.kfold_calibrators_dict[k]
+            if calibrator is not None:
+                calibrator = self.kfold_calibrators_dict[k]
+                (y_pred_lower, y_pred_upper) = calibrator.calibrate(
+                    y_pred=y_pred,
+                    alpha=alpha,
+                    y_pred_lower=y_pred_lower,
+                    y_pred_upper=y_pred_upper,
+                    sigma_pred=sigma_pred,
+                    X=X,
+                )
+
+            y_pred_lowers.append(y_pred_lower)
+            y_pred_uppers.append(y_pred_upper)
+
+        # Number of splits
+        K = len(kfold_predictors.keys())
+
+        ## Aggregation of prediction
+        if K == 1:  # Simple Split
+            y_pred = y_preds[0]
+            y_pred_lower = y_pred_lowers[0]
+            y_pred_upper = y_pred_uppers[0]
+            sigma_pred = sigma_preds[0]
+        else:  # K-Fold Split
+            y_pred = self.agg_func(y_preds)
+            y_pred_lower = np.quantile(
+                y_pred_lowers, (1 - alpha) * (1 + 1 / K), axis=0
+            )
+
+            y_pred_upper = np.quantile(
+                y_pred_uppers, (1 - alpha) * (1 + 1 / K), axis=0
+            )
+            sigma_pred = self.agg_func(sigma_preds)
+        if True in np.isnan(y_pred_lower):
+            raise Exception
+        return (y_pred, y_pred_lower, y_pred_upper, sigma_pred)
