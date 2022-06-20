@@ -111,12 +111,13 @@ class SplitCP(BaseSplit):
 class WeightedSplitCP(BaseSplit):
     """Split Conformal Prediction wrapper."""
 
-    def __init__(self, mu_model, w_estimator, train=True):
+    def __init__(self, mu_model, w_estimator=None, train=True):
         """Constructor.
 
         Args:
             mu_model: Conditional mean model
             w_estimator: weight estimator of nonconformity scores distribution
+                         By default, equal weights.
             train: if False, prediction model(s) will not be trained and will
                    be used as is
         """
@@ -259,6 +260,7 @@ class CvPlus:
             calibrator=self.calibrator,
             splitter=kfold_splits,
             agg_func=agg_func,
+            method="cv+",
         )
 
     def fit(self, X_train, y_train):

@@ -3,7 +3,11 @@ This module provides the canvas for conformal prediction.
 """
 
 
-from puncc.calibration import Calibrator
+from puncc.calibration import (
+    Calibrator,
+    CvPlusCalibrator,
+    AggregationCalibrator,
+)
 from puncc.prediction import BasePredictor
 import numpy as np
 from typing import Iterable, Callable
@@ -14,13 +18,38 @@ import matplotlib.pyplot as plt
 
 class CvAggregation:
     """This class enables to aggregate predictions and calibrations
-    from different K-folds."""
+    from different K-folds.
 
-    def __init__(self, K, agg_func=agg_func) -> None:
+    Attributes:
+        K: number of folds
+        predictors: collection of predictors fitted on the K-folds
+        calibrators: collection of calibrators fitted on the K-folds
+        agg_func: function called to aggregate the predictions of the K-folds
+                  estimators. Used only when method is 'aggregation'.
+        method: method to handle the ensemble prediction and calibration.
+                  - 'aggregation': aggregate the k-fold estimators using
+                                   agg_func. The PI bounds are computed as the
+                                   quantiles of the k-fold PI bounds.
+                  - 'cv+': follow cv+ procedure to construct PIs based on the
+                                   k-fold estimators
+    """
+
+    def __init__(
+        self,
+        K: int,
+        agg_func: Callable = agg_func,
+        method: str = "aggregation",
+    ) -> None:
         self.K = K  # Number of K-folds
         self.predictors = dict()
         self.calibrators = dict()
         self.agg_func = agg_func
+        if method not in ("aggregation", "cv+"):
+            return NotImplemented(
+                f"Method {method} is not implemented. "
+                + "Please choose between 'aggregation' and 'cv+'."
+            )
+        self.method = method
 
     def append_predictor(self, id, predictor):
         self.predictors[id] = deepcopy(predictor)
@@ -53,52 +82,24 @@ class CvAggregation:
             self.predictors.keys() == self.calibrators.keys()
         ), "K-fold predictors are not well calibrated."
 
-        y_preds, y_pred_lowers, y_pred_uppers, sigma_preds = (
-            list(),
-            list(),
-            list(),
-            list(),
-        )
-
-        for k in self.predictors.keys():
-            y_pred, y_pred_lower, y_pred_upper, sigma_pred = self.predictors[
-                k
-            ].predict(X)
-
-            y_preds.append(y_pred)
-            sigma_preds.append(sigma_pred)
-
-            if self.calibrators[k] is not None:
-                y_pred_lower, y_pred_upper = self.calibrators[k].calibrate(
-                    y_pred=y_pred,
-                    alpha=alpha,
-                    y_pred_lower=y_pred_lower,
-                    y_pred_upper=y_pred_upper,
-                    sigma_pred=sigma_pred,
-                    X=X,
-                )
-
-            y_pred_lowers.append(y_pred_lower)
-            y_pred_uppers.append(y_pred_upper)
-
-        if self.K == 1:  # Simple Split
-            y_pred = y_preds[0]
-            y_pred_lower = y_pred_lowers[0]
-            y_pred_upper = y_pred_uppers[0]
-            sigma_pred = sigma_preds[0]
-        else:  # K-Fold Split
-            y_pred = self.agg_func(y_preds)
-            y_pred_lower = np.quantile(
-                y_pred_lowers, (1 - alpha) * (1 + 1 / self.K), axis=0
+        if self.method == "cv+":
+            cvp_calibrator = CvPlusCalibrator(self.calibrators)
+            y_pred_lower, y_pred_upper = cvp_calibrator.calibrate(
+                self.predictors, alpha=alpha, X=X
             )
+            return (None, y_pred_lower, y_pred_upper, None)
 
-            y_pred_upper = np.quantile(
-                y_pred_uppers, (1 - alpha) * (1 + 1 / self.K), axis=0
+        elif self.method == "aggregation":
+            agg_calibrator = AggregationCalibrator(
+                self.calibrators, self.agg_func
             )
-            sigma_pred = self.agg_func(sigma_preds)
-        if True in np.isnan(y_pred_lower):
-            raise Exception
-        return (y_pred, y_pred_lower, y_pred_upper, sigma_pred)
+            return agg_calibrator.calibrate(self.predictors, alpha=alpha, X=X)
+
+        else:
+            return RuntimeError(
+                f"Method {self.method} is not implemented"
+                + "Please choose between 'aggregation' and 'cv+'."
+            )
 
 
 class ConformalPredictor:
@@ -108,6 +109,16 @@ class ConformalPredictor:
         calibrator: nonconformity computation strategy and interval predictor
         splitter: fit/calibration split strategy
         train: if False, prediction model(s) will not be (re)trained
+        agg_func: In case the splitter is a K-fold-like strategy, agg_func is
+                  called to aggregate the predictions of the K-folds
+                  estimators. Used only when method is 'aggregation'.
+        method: method to handle the ensemble prediction and calibration
+                in case the splitter is a K-fold-like strategy.
+                    - 'aggregation': aggregate the k-fold estimators using
+                            agg_func. The PI bounds are computed as the
+                            quantiles of the k-fold PI bounds.
+                    - 'cv+': follow cv+ procedure to construct PIs based on the
+                            k-fold estimators
     """
 
     def __init__(
@@ -116,12 +127,14 @@ class ConformalPredictor:
         predictor: BasePredictor,
         splitter: Iterable,
         agg_func: Callable = agg_func,
+        method: str = "aggregation",
         train: bool = True,
     ):
         self.calibrator = calibrator
         self.predictor = predictor
         self.splitter = splitter
         self.agg_func = agg_func
+        self.method = method
         self.train = train
 
     def get_residuals(self):
@@ -138,7 +151,7 @@ class ConformalPredictor:
         calibrator = deepcopy(self.calibrator)
 
         self._cv_aggregation = CvAggregation(
-            K=len(splits), agg_func=self.agg_func
+            K=len(splits), agg_func=self.agg_func, method=self.method
         )
 
         if len(splits) > 1:
@@ -194,7 +207,9 @@ class ConformalPredictor:
             min_ylim, max_ylim = plt.ylim()
             if alpha:
                 residuals_Q = np.quantile(
-                    residuals, (1 - alpha) * (1 + 1 / len(residuals))
+                    residuals,
+                    (1 - alpha) * (1 + 1 / len(residuals)),
+                    interpolation="higher",
                 )
                 plt.axvline(
                     residuals_Q, color="k", linestyle="dashed", linewidth=2
