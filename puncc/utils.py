@@ -12,14 +12,14 @@ EPSILON = sys.float_info.min  # small value to avoid underflow
 def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
     """Check if the value of alpha is consistent with the size of calibration
     set.
-    The quantiles are inflated by a factor (1+1/n) and have to be in
-    the open interval (0,1). From this, we derive the condition:
+    The quantile order are inflated by a factor (1+1/n) and have to be in
+    the interval [0,1]. From this, we derive the condition:
         - alpha => 1/(n+1) given that 0 <= (1-alpha)*(1+1/n) <= 1
     If complement_check is set, we consider an additional condition:
         - alpha <= n/(n+1) given that 0 <= alpha*(1+1/n) <= 1
 
     Args:
-        alpha: target quantile.
+        alpha: target quantile order.
         n: size of the calibration dataset.
         complement_check: complementary check to compute the alpha*(1+1/n)-th
                           quantile, required by some methods such as jk+.
@@ -32,21 +32,21 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
         )
     if complement_check and alpha > n / (n + 1):
         raise ValueError(
-            f"Alpha is too small: (alpha={alpha}, n={n}) {alpha} < {n/(n+1)}. "
+            f"Alpha is too large: (alpha={alpha}, n={n}) {alpha} < {n/(n+1)}. "
             + "Decrease alpha or increase the size of the calibration set."
         )
 
 
 def quantile(a, q, w=None):
-    """Alpha-th empirical weighted quantile estimator.
+    """Estimate the q-th empirical weighted quantiles.
 
     Args:
         a: vector of n samples
-        q: target quantile. Must be in the open interval (0, 1).
+        q: target quantile order. Must be in the open interval [0, 1].
         w: vector of size n
            By default, w is None and equal weights = 1/m are associated.
     Returns:
-        Weighted empirical quantile
+        Weighted empirical quantiles
     """
     # Sanity checks
     if q <= 0 or q >= 1:
@@ -66,7 +66,7 @@ def quantile(a, q, w=None):
 
     # Sanity check
     if len(w) != len(a):
-        error = "M and W must have the same shape:" + f"{len(a)} != {len(w)}"
+        error = "a and w must have the same shape:" + f"{len(a)} != {len(w)}"
         raise RuntimeError(error)
 
     # Normalization check

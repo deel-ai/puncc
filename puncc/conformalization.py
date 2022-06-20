@@ -207,7 +207,9 @@ class ConformalPredictor:
             min_ylim, max_ylim = plt.ylim()
             if alpha:
                 residuals_Q = np.quantile(
-                    residuals, (1 - alpha) * (1 + 1 / len(residuals))
+                    residuals,
+                    (1 - alpha) * (1 + 1 / len(residuals)),
+                    interpolation="higher",
                 )
                 plt.axvline(
                     residuals_Q, color="k", linestyle="dashed", linewidth=2
