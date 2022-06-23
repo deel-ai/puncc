@@ -173,6 +173,7 @@ class ConformalPredictor:
                     y_pred_upper,
                     sigma_pred,
                 ) = predictor.predict(X_calib)
+
                 calibrator.estimate(
                     y_true=y_calib,
                     y_pred=y_pred,
@@ -181,6 +182,7 @@ class ConformalPredictor:
                     sigma_pred=sigma_pred,
                     X=X_calib,
                 )
+
             self._cv_aggregation.append_calibrator(i, calibrator)
 
     def predict(self, X: np.array, alpha, **kwargs):
@@ -199,12 +201,14 @@ class ConformalPredictor:
         plt.rcParams["legend.fontsize"] = 15
         figsize = kwargs["figsize"] if "figsize" in kwargs.keys() else (15, 6)
         del kwargs["figsize"]  # Remove figsize entry
+
         if K == 1:
             fig = plt.figure(figsize=figsize)
             residuals = residuals_dict[0]
             max_residual = np.max(residuals)
             plt.hist(residuals, **kwargs)
             min_ylim, max_ylim = plt.ylim()
+
             if alpha:
                 residuals_Q = np.quantile(
                     residuals,
@@ -220,15 +224,18 @@ class ConformalPredictor:
                     r"$\mathbf{\delta^{\alpha}}$",
                 )
             plt.xlabel("Residuals")
+
             if xlim:
                 plt.xlim(xlim)
             else:
                 plt.xlim([0, max_residual])
+
             if "density" in kwargs.keys() and kwargs["density"] is True:
                 plt.ylabel("Occurence Ratio")
                 plt.yticks(np.arange(0, 1.1, step=0.1))
             else:
                 plt.ylabel("Occurence")
+                
         else:
             fig, ax = plt.subplots(
                 nrows=K // 2 + K % 2, ncols=2, figsize=figsize
