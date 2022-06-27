@@ -13,10 +13,10 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
     """Check if the value of alpha is consistent with the size of calibration
     set.
     The quantile order are inflated by a factor (1+1/n) and have to be in
-    the interval [0,1]. From this, we derive the condition:
-        - alpha => 1/(n+1) given that 0 <= (1-alpha)*(1+1/n) <= 1
+    the interval (0,1]. From this, we derive the condition:
+        - 1 > alpha => 1/(n+1) given that 0 < (1-alpha)*(1+1/n) <= 1
     If complement_check is set, we consider an additional condition:
-        - alpha <= n/(n+1) given that 0 <= alpha*(1+1/n) <= 1
+        - 0 < alpha <= n/(n+1) given that 0 < alpha*(1+1/n) <= 1
 
     Args:
         alpha: target quantile order.
@@ -30,10 +30,21 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
             f"Alpha is too small: (alpha={alpha}, n={n}) {alpha} < {1/(n+1)}. "
             + "Increase alpha or the size of the calibration set."
         )
+    if alpha >= 1:
+        raise ValueError(
+            f"Alpha={alpha} is too large."
+            + "Decrease alpha such that alpha < 1."
+        )
     if complement_check and alpha > n / (n + 1):
         raise ValueError(
             f"Alpha is too large: (alpha={alpha}, n={n}) {alpha} < {n/(n+1)}. "
             + "Decrease alpha or increase the size of the calibration set."
+        )
+
+    if complement_check and alpha <= 0:
+        raise ValueError(
+            f"Alpha={alpha} is too small."
+            + "Increase alpha such that alpha > 0."
         )
 
 

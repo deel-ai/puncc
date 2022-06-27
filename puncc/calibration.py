@@ -126,8 +126,8 @@ class MeanCalibrator(Calibrator):
             )
             residuals_Qs.append(residuals_Q)
         residuals_Qs = np.array(residuals_Qs)
-        y_pred_lower = y_pred - residuals_Q
-        y_pred_upper = y_pred + residuals_Q
+        y_pred_lower = y_pred - residuals_Qs
+        y_pred_upper = y_pred + residuals_Qs
         return y_pred_lower, y_pred_upper
 
 
