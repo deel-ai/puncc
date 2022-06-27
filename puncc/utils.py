@@ -2,7 +2,7 @@
 This module implements utility functions.
 """
 import numpy as np
-from typing import Iterable
+from typing import Iterable, Tuple, Optional
 import matplotlib.pyplot as plt
 import sys
 
@@ -48,6 +48,59 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
         )
 
 
+def get_min_max_alpha_calib(
+    n: int, two_sided_conformalization: bool = False
+) -> Optional[Tuple[float, float]]:
+    """Get the greatest alpha in (0,1) that is consistent with the size of calibration
+    set. Recall that while true Conformal Prediction (CP, Vovk et al 2005) is defined only on (0,1)
+    (bounds not included), there maybe cases where we must handle alpha=0 or 1
+    (e.g. Adaptive Conformal Inference, Gibbs & Candès 2021).
+
+    This function computes the admissible range of alpha for split CP (Papadopoulos et al 2002,
+    Lei et al 2018) and the Jackknife-plus (Barber et al 2019).
+    For more CP method, see the literature and update this function.
+
+    In Split Conformal prediction we take the index := ceiling( (1-alpha)(n+1) )-th element
+    from the __sorted__ nonconformity scores as the margin of error.
+    We must have 1 <= index <= n ( = len(calibration_set)) which boils down to: 1/(n+1) <= alpha < 1.
+
+    In the case of cv-plus and jackknife-plus (Barber et al 2019), we need:
+        1. ceiling( (1-alpha)(n+1) )-th element of scores
+        2. floor(     (alpha)(n+1) )-th element of scores
+
+    The argument two_sided_conformalization=True, ensures the indexes are within
+    range for this special case: 1/(n+1) <= alpha <= n/(n+1)
+
+    Args:
+        n [int]: size of the calibration dataset.
+        two_sided_conformalization [bool]: alpha threshold for two-sided quantile of jackknife+ (Barber et al 2021).
+
+    Raises:
+        ValueError -- must have integer n, boolean two_sided_conformalization and n>=1
+
+    Returns:
+        Optional[Tuple[float, float]] -- lower and upper bounds for alpha (miscoverage probability)
+    """
+    if isinstance(n, int) and isinstance(two_sided_conformalization, bool) and n >= 1:
+        # Special case: Conformal Prediction with jackknife-plus (Barber et al 2019)
+        if two_sided_conformalization:
+            return (1 / (n + 1), n / (n + 1))
+        # Base case: split conformal prediction (e.g. Lei et al 2019)
+        else:
+            return (1 / (n + 1), 1)
+    else:
+        if not isinstance(n, int):
+            raise ValueError(
+                f"Invalid input: need isinstance(n, int)==True but received {type(n)=}"
+            )
+        elif not isinstance(two_sided_conformalization, bool):
+            raise ValueError(
+                f"Invalid input: need isinstance(two_sided_conformalization, bool)==True but received {type(two_sided_conformalization)=}"
+            )
+        elif n < 1:
+            raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
+
+
 def quantile(a, q, w=None):
     """Estimate the q-th empirical weighted quantiles.
 
@@ -84,8 +137,7 @@ def quantile(a, q, w=None):
     norm_condition = np.isclose(np.sum(w, axis=-1), 1, atol=1e-6)
     if ~np.all(norm_condition):
         error = (
-            f"W is not normalized. Sum of weights on"
-            + f"rows is {np.sum(w, axis=-1)}"
+            f"W is not normalized. Sum of weights on" + f"rows is {np.sum(w, axis=-1)}"
         )
         raise RuntimeError(error)
 
@@ -175,9 +227,7 @@ def plot_prediction_interval(
     else:
         miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
 
-    label = (
-        "Observation" if y_pred_upper is None else "Observation (inside PI)"
-    )
+    label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
     plt.plot(
         X[~miscoverage],
         y_true[~miscoverage],
@@ -189,9 +239,7 @@ def plot_prediction_interval(
         zorder=20,
     )
 
-    label = (
-        "Observation" if y_pred_upper is None else "Observation (outside PI)"
-    )
+    label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
     plt.plot(
         X[miscoverage],
         y_true[miscoverage],
@@ -288,8 +336,7 @@ def plot_sorted_pi(
     # True values
     plt.plot(
         X[~misscoverage],
-        y_true[sorted_order][~misscoverage]
-        - y_pred[sorted_order][~misscoverage],
+        y_true[sorted_order][~misscoverage] - y_pred[sorted_order][~misscoverage],
         color="darkgreen",
         marker="o",
         markersize=2,
@@ -300,8 +347,7 @@ def plot_sorted_pi(
 
     plt.plot(
         X[misscoverage],
-        y_true[sorted_order][misscoverage]
-        - y_pred[sorted_order][misscoverage],
+        y_true[sorted_order][misscoverage] - y_pred[sorted_order][misscoverage],
         color="red",
         marker="o",
         markersize=2,
