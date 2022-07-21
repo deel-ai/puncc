@@ -41,6 +41,7 @@ class Calibrator(ABC):
         y_pred: np.array,
         y_pred_lower: np.array,
         y_pred_upper: np.array,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
     ) -> None:
         """Compute residuals on calibration set.
@@ -59,6 +60,7 @@ class Calibrator(ABC):
         y_pred_lower: np.array,
         y_pred_upper: np.array,
         alpha: float,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
     ):
         """Compute calibrated prediction intervals for new examples.
@@ -82,6 +84,7 @@ class MeanCalibrator(Calibrator):
         self,
         y_true: np.array,
         y_pred: np.array,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
         *args,
         **kwargs,
@@ -101,6 +104,7 @@ class MeanCalibrator(Calibrator):
         self,
         y_pred: np.array,
         alpha: float,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
         *args,
         **kwargs,
@@ -140,6 +144,7 @@ class MeanVarCalibrator(Calibrator):
         y_true: np.array,
         y_pred: np.array,
         sigma_pred: np.array,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
         *args,
         **kwargs,
@@ -161,6 +166,7 @@ class MeanVarCalibrator(Calibrator):
         y_pred: np.array,
         sigma_pred: np.array,
         alpha: float,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
         *args,
         **kwargs,
@@ -198,6 +204,7 @@ class QuantileCalibrator(Calibrator):
         y_true: np.array,
         y_pred_lower: np.array,
         y_pred_upper: np.array,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
         *args,
         **kwargs,
@@ -220,6 +227,7 @@ class QuantileCalibrator(Calibrator):
         y_pred_lower: np.array,
         y_pred_upper: np.array,
         alpha: float,
+        # TODO: [Luca] why None? shouldn't X be mandatory?
         X: np.array = None,
         *args,
         **kwargs,
@@ -278,14 +286,14 @@ class MetaCalibrator(Calibrator):
     @abstractmethod
     def calibrate(
         self,
-        kfold_predictors: dict(),
+        kfold_predictors: dict,
         alpha: float,
         X: np.array = None,
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:
             kfold_predictors: dictionnary of predictors trained for each K-fold
-                              fitting subset.
+                fitting subset.
             alpha: maximum miscoverage target
             X: test features array
         Returns:
@@ -310,14 +318,14 @@ class CvPlusCalibrator(MetaCalibrator):
 
     def calibrate(
         self,
-        kfold_predictors: dict(),
+        kfold_predictors: dict,
         alpha: float,
         X: np.array = None,
     ):
         """Compute calibrated prediction intervals for new examples.
         Args:
             kfold_predictors: dictionnary of predictors trained for each K-fold
-                              fitting subset.
+                fitting subset.
             alpha: maximum miscoverage target
             X: test features array
         Returns:
@@ -325,6 +333,7 @@ class CvPlusCalibrator(MetaCalibrator):
         """
         concat_residuals_lo = None
         concat_residuals_hi = None
+
         for k, predictor in kfold_predictors.items():
             # Predictions
             y_pred, _, _, _ = predictor.predict(X)
@@ -341,17 +350,22 @@ class CvPlusCalibrator(MetaCalibrator):
                 concat_residuals_lo = np.concatenate(
                     [concat_residuals_lo, y_pred - residuals], axis=1
                 )
-
                 concat_residuals_hi = np.concatenate(
                     [concat_residuals_hi, y_pred + residuals], axis=1
                 )
 
         y_pred_lower = np.quantile(
-            concat_residuals_lo, alpha, axis=1, interpolation="lower"
+            concat_residuals_lo,
+            alpha,
+            axis=1,
+            method="lower",
         )
 
         y_pred_upper = np.quantile(
-            concat_residuals_hi, 1 - alpha, axis=1, interpolation="higher"
+            concat_residuals_hi,
+            1 - alpha,
+            axis=1,
+            method="higher",
         )
 
         return y_pred_lower, y_pred_upper
@@ -377,16 +391,12 @@ class AggregationCalibrator(MetaCalibrator):
 
     def calibrate(
         self,
-        kfold_predictors: dict(),
+        kfold_predictors: dict,
         alpha: float,
+        # TODO: [Luca] why do we have a None here? without X, this should immediately fail, right?
         X: np.array = None,
     ):
-        y_preds, y_pred_lowers, y_pred_uppers, sigma_preds = (
-            list(),
-            list(),
-            list(),
-            list(),
-        )
+        y_preds, y_pred_lowers, y_pred_uppers, sigma_preds = [], [], [], []
 
         ## Recover K-fold estimator and predict response for the points X
         for k, predictor in kfold_predictors.items():
@@ -400,7 +410,13 @@ class AggregationCalibrator(MetaCalibrator):
             y_preds.append(y_pred)
             sigma_preds.append(sigma_pred)
 
+            # TODO: clarify with comments. What is calibrator here?
+            # What do we expect?
             calibrator = self.kfold_calibrators_dict[k]
+
+            # TODO: __else__ what? do we append None?
+            # Should we check type of calibrator? and raise InputError because we
+            # should have got a valid (what?) at instantiation?
             if calibrator is not None:
                 calibrator = self.kfold_calibrators_dict[k]
                 (y_pred_lower, y_pred_upper) = calibrator.calibrate(
@@ -426,10 +442,24 @@ class AggregationCalibrator(MetaCalibrator):
             sigma_pred = sigma_preds[0]
         else:  # K-Fold Split
             y_pred = self.agg_func(y_preds)
+
+            # TODO: fix quantile to use [method='higher']
             y_pred_lower = np.quantile(y_pred_lowers, (1 - alpha) * (1 + 1 / K), axis=0)
 
+            # TODO:
+            # WARNING: should this be [alpha], instead of [(1 - alpha)] ??
             y_pred_upper = np.quantile(y_pred_uppers, (1 - alpha) * (1 + 1 / K), axis=0)
+
             sigma_pred = self.agg_func(sigma_preds)
+
+        # TODO: explicit Exception message
+        # TODO: maybe better, raise ValueError/SomethingError
+        # [Luca: why is this check even here for? I guess if quantile does not
+        # return value, which is due to bad alpha (e.g. too small), which should be checked
+        # somewhere else?]
+        # [Luca: ok, this could also be to the possibility of having prediction==None above
+        # We must handle that first.]
         if True in np.isnan(y_pred_lower):
             raise Exception
+
         return (y_pred, y_pred_lower, y_pred_upper, sigma_pred)
