@@ -74,7 +74,7 @@ class SplitCP(BaseSplit):
         Args:
             mu_model: Conditional mean model
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanPredictor(mu_model)
@@ -117,9 +117,9 @@ class WeightedSplitCP(BaseSplit):
         Args:
             mu_model: Conditional mean model
             w_estimator: weight estimator of nonconformity scores distribution
-                         By default, equal weights.
+                By default, equal weights.
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanPredictor(mu_model)
@@ -163,7 +163,7 @@ class LocallyAdaptiveCP(BaseSplit):
             mu_model: conditional mean model
             sigma_model: mean absolute deviation model
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanVarPredictor(mu_model=mu_model, sigma_model=sigma_model)
@@ -205,7 +205,7 @@ class CQR(BaseSplit):
             q_hi_model: higher quantile model
             q_lo_model: lower quantile model
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
         self.predictor = QuantilePredictor(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
@@ -244,7 +244,7 @@ class CvPlus:
             mu_model: conditional mean model
             K: number of training/calibration folds
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
             random_state: seed to control random folds
 
         """
@@ -315,10 +315,10 @@ class EnbPI:
             model: object implementing '.fit()' and '.predict()' methods
             B: number of bootstrap models
             agg_func_loo: aggregation function of LOO estimators.
-              - For EnbPI v1 ICML 2021
-                http://proceedings.mlr.press/v139/xu21h.html:
-                lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
-              - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
+                - For EnbPI v1 ICML 2021
+                    http://proceedings.mlr.press/v139/xu21h.html:
+                    lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
+                - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
             random_state: determines random generation
         """
         self.model = model

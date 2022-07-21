@@ -21,7 +21,7 @@ class Calibrator(ABC):
         Args:
             X: features array
             w_estimator: weight function. By default, equal weights are
-                         associated with samples mass density.
+                associated with samples mass density.
         """
         if self._w_estimator is None:  # equal weights
             return np.ones((len(X), calib_size + 1)) / (calib_size + 1)
