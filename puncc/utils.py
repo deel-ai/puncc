@@ -32,8 +32,7 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
         )
     if alpha >= 1:
         raise ValueError(
-            f"Alpha={alpha} is too large."
-            + "Decrease alpha such that alpha < 1."
+            f"Alpha={alpha} is too large. Decrease alpha such that alpha < 1."
         )
     if complement_check and alpha > n / (n + 1):
         raise ValueError(
@@ -43,8 +42,7 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
 
     if complement_check and alpha <= 0:
         raise ValueError(
-            f"Alpha={alpha} is too small."
-            + "Increase alpha such that alpha > 0."
+            f"Alpha={alpha} is too small. Increase alpha such that alpha > 0."
         )
 
 
@@ -95,7 +93,8 @@ def get_min_max_alpha_calib(
             )
         elif not isinstance(two_sided_conformalization, bool):
             raise ValueError(
-                f"Invalid input: need isinstance(two_sided_conformalization, bool)==True but received {type(two_sided_conformalization)=}"
+                f"Invalid input: need isinstance(two_sided_conformalization, bool)==True"
+                + f" but received {type(two_sided_conformalization)=}"
             )
         elif n < 1:
             raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
@@ -108,7 +107,7 @@ def quantile(a, q, w=None):
         a: vector of n samples
         q: target quantile order. Must be in the open interval [0, 1].
         w: vector of size n
-           By default, w is None and equal weights = 1/m are associated.
+            By default, w is None and equal weights = 1/m are associated.
     Returns:
         Weighted empirical quantiles
     """
@@ -122,7 +121,7 @@ def quantile(a, q, w=None):
 
     # Case of None weights
     if w is None:
-        return np.quantile(a, q=q, interpolation="higher")
+        return np.quantile(a, q=q, method="higher")
         ## An equivalent method would be to assign equal values to w
         ## and carry on with the computations.
         ## np.quantile is however more optimized.
@@ -148,9 +147,9 @@ def quantile(a, q, w=None):
     return a[weighted_quantile_idxs]
 
 
-"""
-========================= Aggregation functions =========================
-"""
+#
+# ========================= Aggregation functions =========================
+#
 
 
 def agg_list(a: Iterable):
@@ -167,9 +166,9 @@ def agg_func(a: Iterable):
         return None
 
 
-"""
-========================= Visualization =========================
-"""
+#
+# ========================= Visualization =========================
+#
 
 
 def plot_prediction_interval(
@@ -382,9 +381,12 @@ def plot_sorted_pi(
     plt.show()
 
 
-"""
-========================= Metrics =========================
-"""
+#
+# ========================= Metrics =========================
+#
+
+# TODO: add comments, explain their formula, how to interpret.
+# TODO: add docstrings
 
 
 def average_coverage(y_true, y_pred_lower, y_pred_upper):
