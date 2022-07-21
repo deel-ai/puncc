@@ -1,6 +1,6 @@
-"""
-This module provides the canvas for conformal prediction.
-"""
+#
+# This module provides the canvas for conformal prediction.
+#
 
 
 from puncc.calibration import (
@@ -25,13 +25,13 @@ class CvAggregation:
         predictors: collection of predictors fitted on the K-folds
         calibrators: collection of calibrators fitted on the K-folds
         agg_func: function called to aggregate the predictions of the K-folds
-                  estimators. Used only when method is 'aggregation'.
+            estimators. Used only when method is 'aggregation'.
         method: method to handle the ensemble prediction and calibration.
-                  - 'aggregation': aggregate the k-fold estimators using
-                                   agg_func. The PI bounds are computed as the
-                                   quantiles of the k-fold PI bounds.
-                  - 'cv+': follow cv+ procedure to construct PIs based on the
-                                   k-fold estimators
+            - 'aggregation': aggregate the k-fold estimators using
+                agg_func. The PI bounds are computed as the
+                quantiles of the k-fold PI bounds.
+            - 'cv+': follow cv+ procedure to construct PIs based on the
+                k-fold estimators
     """
 
     def __init__(
@@ -44,6 +44,7 @@ class CvAggregation:
         self.predictors = dict()
         self.calibrators = dict()
         self.agg_func = agg_func
+
         if method not in ("aggregation", "cv+"):
             return NotImplemented(
                 f"Method {method} is not implemented. "
@@ -62,10 +63,7 @@ class CvAggregation:
         Returns:
             Dict of residual. Key: K-fold index, value: residuals iterable.
         """
-        return {
-            k: calibrator._residuals
-            for k, calibrator in self.calibrators.items()
-        }
+        return {k: calibrator._residuals for k, calibrator in self.calibrators.items()}
 
     def get_weights(self):
         """Get a dictionnary of normalized weights computed on the K-folds
@@ -73,9 +71,7 @@ class CvAggregation:
             Dict of normalized weights. Key: K-fold index,
                                         value: residuals iterable.
         """
-        return {
-            k: calibrator.weights for k, calibrator in self.calibrators.items()
-        }
+        return {k: calibrator.weights for k, calibrator in self.calibrators.items()}
 
     def predict(self, X, alpha):
         assert (
@@ -90,9 +86,7 @@ class CvAggregation:
             return (None, y_pred_lower, y_pred_upper, None)
 
         elif self.method == "aggregation":
-            agg_calibrator = AggregationCalibrator(
-                self.calibrators, self.agg_func
-            )
+            agg_calibrator = AggregationCalibrator(self.calibrators, self.agg_func)
             return agg_calibrator.calibrate(self.predictors, alpha=alpha, X=X)
 
         else:
@@ -110,22 +104,22 @@ class ConformalPredictor:
         splitter: fit/calibration split strategy
         train: if False, prediction model(s) will not be (re)trained
         agg_func: In case the splitter is a K-fold-like strategy, agg_func is
-                  called to aggregate the predictions of the K-folds
-                  estimators. Used only when method is 'aggregation'.
+            called to aggregate the predictions of the K-folds
+            estimators. Used only when method is 'aggregation'.
         method: method to handle the ensemble prediction and calibration
-                in case the splitter is a K-fold-like strategy.
-                    - 'aggregation': aggregate the k-fold estimators using
-                            agg_func. The PI bounds are computed as the
-                            quantiles of the k-fold PI bounds.
-                    - 'cv+': follow cv+ procedure to construct PIs based on the
-                            k-fold estimators
+            in case the splitter is a K-fold-like strategy.
+                - 'aggregation': aggregate the k-fold estimators using
+                    agg_func. The PI bounds are computed as the
+                    quantiles of the k-fold PI bounds.
+                - 'cv+': follow cv+ procedure to construct PIs based on the
+                    k-fold estimators
     """
 
     def __init__(
         self,
         calibrator: Calibrator,
         predictor: BasePredictor,
-        splitter: Iterable,
+        splitter,  # <-- [TODO] what type do we expect here? Not [Iterable]
         agg_func: Callable = agg_func,
         method: str = "aggregation",
         train: bool = True,
@@ -144,7 +138,6 @@ class ConformalPredictor:
         return self._cv_aggregation.get_weights()
 
     def fit(self, X, y, **kwargs):
-
         splits = self.splitter(X, y)
 
         predictor = deepcopy(self.predictor)
@@ -174,6 +167,9 @@ class ConformalPredictor:
                     sigma_pred,
                 ) = predictor.predict(X_calib)
 
+                # TODO: [sigma_pred] not in calibrator.estimate() definition.
+                # Fix estimate() definition to accept sigma_pred or change the function itself?
+                # Maybe this stuff hangs around from previous versions?
                 calibrator.estimate(
                     y_true=y_calib,
                     y_pred=y_pred,
@@ -185,7 +181,7 @@ class ConformalPredictor:
 
             self._cv_aggregation.append_calibrator(i, calibrator)
 
-    def predict(self, X: np.array, alpha, **kwargs):
+    def predict(self, X: np.ndarray, alpha, **kwargs):
         return self._cv_aggregation.predict(X, alpha)
 
     def hist_residuals(self, alpha, xlim=None, delta_space=0.03, **kwargs):
@@ -213,11 +209,9 @@ class ConformalPredictor:
                 residuals_Q = np.quantile(
                     residuals,
                     (1 - alpha) * (1 + 1 / len(residuals)),
-                    interpolation="higher",
+                    method="higher",
                 )
-                plt.axvline(
-                    residuals_Q, color="k", linestyle="dashed", linewidth=2
-                )
+                plt.axvline(residuals_Q, color="k", linestyle="dashed", linewidth=2)
                 plt.text(
                     residuals_Q * 0.98,
                     max_ylim * (-delta_space),
@@ -235,11 +229,9 @@ class ConformalPredictor:
                 plt.yticks(np.arange(0, 1.1, step=0.1))
             else:
                 plt.ylabel("Occurence")
-                
+
         else:
-            fig, ax = plt.subplots(
-                nrows=K // 2 + K % 2, ncols=2, figsize=figsize
-            )
+            fig, ax = plt.subplots(nrows=K // 2 + K % 2, ncols=2, figsize=figsize)
             ax = ax.flatten()
             for k in residuals_dict.keys():
                 residuals = residuals_dict[k]
