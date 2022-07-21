@@ -1,6 +1,7 @@
-"""
-This module implements utility functions.
-"""
+#
+# This module implements utility functions.
+#
+
 import numpy as np
 from typing import Iterable, Tuple, Optional
 import matplotlib.pyplot as plt
@@ -22,7 +23,7 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
         alpha: target quantile order.
         n: size of the calibration dataset.
         complement_check: complementary check to compute the alpha*(1+1/n)-th
-                          quantile, required by some methods such as jk+.
+            quantile, required by some methods such as jk+.
 
     """
     if alpha < 1 / (n + 1):
@@ -93,8 +94,7 @@ def get_min_max_alpha_calib(
             )
         elif not isinstance(two_sided_conformalization, bool):
             raise ValueError(
-                f"Invalid input: need isinstance(two_sided_conformalization, bool)==True"
-                + f" but received {type(two_sided_conformalization)=}"
+                f"Invalid input: need isinstance(two_sided_conformalization, bool)==True but received {type(two_sided_conformalization)=}"
             )
         elif n < 1:
             raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
@@ -172,12 +172,12 @@ def agg_func(a: Iterable):
 
 
 def plot_prediction_interval(
-    y_true: np.array,
-    y_pred_lower: np.array,
-    y_pred_upper: np.array,
-    X: np.array = None,
-    y_pred: np.array = None,
-    save_path: str = None,
+    y_true: np.ndarray,
+    y_pred_lower: np.ndarray,
+    y_pred_upper: np.ndarray,
+    X: Optional[np.ndarray] = None,
+    y_pred: Optional[np.ndarray] = None,
+    save_path: Optional[str] = None,
     sort_X: bool = False,
     **kwargs,
 ) -> None:
@@ -190,7 +190,7 @@ def plot_prediction_interval(
         y_pred_lower: lower bounds of the prediction interval.
         y_pred_upper: upper bounds of the prediction interval.
         X <optionnal>: abscisse vector.
-        y_pred <optionnal>: predicted values.
+        y_pred <optional>: predicted values.
         kwargs: plot parameters.
     """
 
@@ -217,7 +217,10 @@ def plot_prediction_interval(
         sorted_idx = np.argsort(X)
         X = X[sorted_idx]
         y_true = y_true[sorted_idx]
-        y_pred = y_pred[sorted_idx]
+
+        if y_pred is not None:
+            y_pred = y_pred[sorted_idx]
+
         y_pred_lower = y_pred_lower[sorted_idx]
         y_pred_upper = y_pred_upper[sorted_idx]
 
@@ -226,30 +229,33 @@ def plot_prediction_interval(
     else:
         miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
 
-    label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
-    plt.plot(
-        X[~miscoverage],
-        y_true[~miscoverage],
-        "darkgreen",
-        marker="X",
-        markersize=2,
-        linewidth=0,
-        label=label,
-        zorder=20,
-    )
+    if X is not None:
+        label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
+        plt.plot(
+            X[~miscoverage],
+            y_true[~miscoverage],
+            "darkgreen",
+            marker="X",
+            markersize=2,
+            linewidth=0,
+            label=label,
+            zorder=20,
+        )
 
-    label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
-    plt.plot(
-        X[miscoverage],
-        y_true[miscoverage],
-        color="red",
-        marker="o",
-        markersize=2,
-        linewidth=0,
-        label=label,
-        zorder=20,
-    )
-    if y_pred_upper is not None and y_pred_lower is not None:
+    if X is not None:
+        label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
+        plt.plot(
+            X[miscoverage],
+            y_true[miscoverage],
+            color="red",
+            marker="o",
+            markersize=2,
+            linewidth=0,
+            label=label,
+            zorder=20,
+        )
+
+    if (y_pred_upper is not None) and (y_pred_lower is not None) and (X is not None):
         plt.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
         plt.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
         plt.fill_between(
@@ -281,11 +287,11 @@ def plot_prediction_interval(
 
 
 def plot_sorted_pi(
-    y_true: np.array,
-    y_pred_lower: np.array,
-    y_pred_upper: np.array,
-    X: np.array = None,
-    y_pred: np.array = None,
+    y_true: np.ndarray,
+    y_pred_lower: np.ndarray,
+    y_pred_upper: np.ndarray,
+    X: Optional[np.ndarray] = None,
+    y_pred: Optional[np.ndarray] = None,
     **kwargs,
 ) -> None:
     """Plot prediction intervals in an ordered fashion (lowest to largest width)
@@ -329,13 +335,13 @@ def plot_sorted_pi(
         label="Prediction",
     )
 
-    misscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
-    misscoverage = misscoverage[sorted_order]
+    miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
+    miscoverage = miscoverage[sorted_order]
 
     # True values
     plt.plot(
-        X[~misscoverage],
-        y_true[sorted_order][~misscoverage] - y_pred[sorted_order][~misscoverage],
+        X[~miscoverage],
+        y_true[sorted_order][~miscoverage] - y_pred[sorted_order][~miscoverage],
         color="darkgreen",
         marker="o",
         markersize=2,
@@ -345,8 +351,8 @@ def plot_sorted_pi(
     )
 
     plt.plot(
-        X[misscoverage],
-        y_true[sorted_order][misscoverage] - y_pred[sorted_order][misscoverage],
+        X[miscoverage],
+        y_true[sorted_order][miscoverage] - y_pred[sorted_order][miscoverage],
         color="red",
         marker="o",
         markersize=2,
