@@ -16,13 +16,13 @@ before_script:
   - pip install -e .[dev]
 
 stages: 
-  - test_low_api
+  # - test_low_api
   - test_hi_api
 
-test-lo:
-  stage: test_low_api
-  script:
-    - pytest tests/test_reg_lo_api.py
+# test-lo:
+#   stage: test_low_api
+#   script:
+#     - pytest tests/test_reg_lo_api.py
 
 test-hi:
   stage: test_hi_api

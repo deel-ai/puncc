@@ -18,7 +18,7 @@ from puncc.common.conformalizers import (
 
 RESULTS = {
     "scp": {"cov": 0.95, "width": 218.98},
-    "wscp": {"cov": 0.97, "width": 245.59},
+    "wscp": {"cov": 0.97, "width": 241.99},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.9, "width": 237.8},
     "cv+": {"cov": 0.9, "width": 231.04},
@@ -60,7 +60,7 @@ def test_split_cp(diabetes_data, alpha, random_state):
     "alpha, random_state",
     [(0.1, 42)],
 )
-def test_w_split_cp(diabetes_data, alpha, random_state):
+def test_ne_split_cp(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
     # split train data into fit and calibration

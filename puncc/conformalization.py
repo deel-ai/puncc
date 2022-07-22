@@ -213,7 +213,7 @@ class ConformalPredictor:
                 residuals_Q = np.quantile(
                     residuals,
                     (1 - alpha) * (1 + 1 / len(residuals)),
-                    interpolation="higher",
+                    method="higher",
                 )
                 plt.axvline(
                     residuals_Q, color="k", linestyle="dashed", linewidth=2
@@ -235,7 +235,7 @@ class ConformalPredictor:
                 plt.yticks(np.arange(0, 1.1, step=0.1))
             else:
                 plt.ylabel("Occurence")
-                
+
         else:
             fig, ax = plt.subplots(
                 nrows=K // 2 + K % 2, ncols=2, figsize=figsize

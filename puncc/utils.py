@@ -122,7 +122,7 @@ def quantile(a, q, w=None):
 
     # Case of None weights
     if w is None:
-        return np.quantile(a, q=q, interpolation="higher")
+        return np.quantile(a, q=q, method="higher")
         ## An equivalent method would be to assign equal values to w
         ## and carry on with the computations.
         ## np.quantile is however more optimized.
