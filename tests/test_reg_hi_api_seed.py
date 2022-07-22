@@ -18,7 +18,7 @@ from puncc.common.conformalizers import (
 
 RESULTS = {
     "scp": {"cov": 0.95, "width": 218.98},
-    "wscp": {"cov": 0.97, "width": 241.99},
+    "nescp": {"cov": 0.97, "width": 241.99},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.9, "width": 237.8},
     "cv+": {"cov": 0.9, "width": 231.04},
@@ -100,7 +100,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
     width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["wscp"] == res
+    assert RESULTS["nescp"] == res
 
 
 @pytest.mark.parametrize(
