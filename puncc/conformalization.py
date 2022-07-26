@@ -211,6 +211,9 @@ class ConformalPredictor:
                     (1 - alpha) * (1 + 1 / len(residuals)),
                     method="higher",
                 )
+                plt.axvline(
+                    residuals_Q, color="k", linestyle="dashed", linewidth=2
+                )
                 plt.axvline(residuals_Q, color="k", linestyle="dashed", linewidth=2)
                 plt.text(
                     residuals_Q * 0.98,

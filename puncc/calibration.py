@@ -275,7 +275,8 @@ class MetaCalibrator(Calibrator):
 
     def estimate(self, *args, **kwargs):
         error_msg = (
-            "Each KFold calibrator should have priorly " + "estimated the residuals."
+            "Each KFold calibrator should have priorly "
+            + "estimated the residuals."
         )
         if self.kfold_calibrators_dict is None:
             raise RuntimeError("Calibrators not defined.")
@@ -355,17 +356,11 @@ class CvPlusCalibrator(MetaCalibrator):
                 )
 
         y_pred_lower = np.quantile(
-            concat_residuals_lo,
-            alpha,
-            axis=1,
-            method="lower",
+            concat_residuals_lo, alpha, axis=1, method="lower"
         )
 
         y_pred_upper = np.quantile(
-            concat_residuals_hi,
-            1 - alpha,
-            axis=1,
-            method="higher",
+            concat_residuals_hi, 1 - alpha, axis=1, method="higher"
         )
 
         return y_pred_lower, y_pred_upper
@@ -442,14 +437,13 @@ class AggregationCalibrator(MetaCalibrator):
             sigma_pred = sigma_preds[0]
         else:  # K-Fold Split
             y_pred = self.agg_func(y_preds)
+            y_pred_lower = np.quantile(
+                y_pred_lowers, (1 - alpha) * (1 + 1 / K), axis=0
+            )
 
-            # TODO: fix quantile to use [method='higher']
-            y_pred_lower = np.quantile(y_pred_lowers, (1 - alpha) * (1 + 1 / K), axis=0)
-
-            # TODO:
-            # WARNING: should this be [alpha], instead of [(1 - alpha)] ??
-            y_pred_upper = np.quantile(y_pred_uppers, (1 - alpha) * (1 + 1 / K), axis=0)
-
+            y_pred_upper = np.quantile(
+                y_pred_uppers, (1 - alpha) * (1 + 1 / K), axis=0
+            )
             sigma_pred = self.agg_func(sigma_preds)
 
         # TODO: explicit Exception message
