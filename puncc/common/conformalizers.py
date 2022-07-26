@@ -74,7 +74,7 @@ class SplitCP(BaseSplit):
         Args:
             mu_model: Conditional mean model
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanPredictor(mu_model)
@@ -117,9 +117,9 @@ class WeightedSplitCP(BaseSplit):
         Args:
             mu_model: Conditional mean model
             w_estimator: weight estimator of nonconformity scores distribution
-                         By default, equal weights.
+                By default, equal weights.
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
         self.predictor = MeanPredictor(mu_model)
@@ -163,12 +163,10 @@ class LocallyAdaptiveCP(BaseSplit):
             mu_model: conditional mean model
             sigma_model: mean absolute deviation model
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
-        self.predictor = MeanVarPredictor(
-            mu_model=mu_model, sigma_model=sigma_model
-        )
+        self.predictor = MeanVarPredictor(mu_model=mu_model, sigma_model=sigma_model)
         self.calibrator = MeanVarCalibrator()
         self.conformal_predictor = None
 
@@ -207,12 +205,10 @@ class CQR(BaseSplit):
             q_hi_model: higher quantile model
             q_lo_model: lower quantile model
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
         """
         super().__init__(train=train)
-        self.predictor = QuantilePredictor(
-            q_hi_model=q_hi_model, q_lo_model=q_lo_model
-        )
+        self.predictor = QuantilePredictor(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
         self.calibrator = QuantileCalibrator()
         self.conformal_predictor = None
 
@@ -248,7 +244,7 @@ class CvPlus:
             mu_model: conditional mean model
             K: number of training/calibration folds
             train: if False, prediction model(s) will not be trained and will
-                   be used as is
+                be used as is
             random_state: seed to control random folds
 
         """
@@ -312,19 +308,17 @@ of the exchangeability assumption.
 class EnbPI:
     """Ensemble Batch Prediction Intervals method"""
 
-    def __init__(
-        self, model, B: int, agg_func_loo=np.mean, random_state: int = None
-    ):
+    def __init__(self, model, B: int, agg_func_loo=np.mean, random_state: int = None):
         """constructor
 
         Args:
             model: object implementing '.fit()' and '.predict()' methods
             B: number of bootstrap models
             agg_func_loo: aggregation function of LOO estimators.
-              - For EnbPI v1 ICML 2021
-                http://proceedings.mlr.press/v139/xu21h.html:
-                lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
-              - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
+                - For EnbPI v1 ICML 2021
+                    http://proceedings.mlr.press/v139/xu21h.html:
+                    lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
+                - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
             random_state: determines random generation
         """
         self.model = model
@@ -373,9 +367,7 @@ class EnbPI:
         """Residual computation formula"""
         return np.abs(y_true - y_pred)
 
-    def _compute_boot_residuals(
-        self, X_train, y_train, boot_estimators, *args
-    ):
+    def _compute_boot_residuals(self, X_train, y_train, boot_estimators, *args):
         """Compute residuals w.r.t the boostrap aggregation.
         Args:
             X_train: train features
@@ -383,9 +375,7 @@ class EnbPI:
             boot_estimators: list of bootstrap models
         """
         # Predictions on X_train by each bootstrap estimator
-        boot_preds = [
-            boot_estimators[b].predict(X_train) for b in range(self.B)
-        ]
+        boot_preds = [boot_estimators[b].predict(X_train) for b in range(self.B)]
         boot_preds = np.array(boot_preds)
         # Approximation of LOO predictions:
         #   For each training sample X_i, the LOO estimate is built from
@@ -473,16 +463,28 @@ class EnbPI:
             X_test: features of new samples
             alpha: miscoverage level, acceptable statistical error
             y_true: if not None, residuals update based on seasonality is
-                    performed
+                performed
             s: Number of online samples necessary to update the residuals
-               sequence
+                sequence
         """
         y_pred_upper_list = list()
         y_pred_lower_list = list()
         y_pred_list = list()
         updated_residuals = list(deepcopy(self.residuals))
 
-        # Residuals 1-alpha th quantile
+        # WARNING: following the paper of Xu et al 2021,
+        # we should __NOT__ look for the (1-alpha)(1+1/N) empirical quantile, unlike with
+        # proper Conformal Prediction: __it seems__ like we only care about estimating the
+        # (1-alpha) quantile.
+        #
+        # That is, we do not need to compute the quantile from the empirical CDF of
+        # errors, but we can use estimation techniques.
+        #
+        # Here, using the default implementation of numpy.quantile(), we use
+        # the argument: np.quantile(..., method='linear').
+        #
+        # TODO: go back to EnbPI-v1 paper and double check what above.
+        #
         res_quantile = np.quantile(
             self.residuals, (1 - alpha) * (1 + 1 / len(self.residuals))
         )
@@ -506,10 +508,7 @@ class EnbPI:
                 )
             # Matrix containing batch predictions of each bootstrap model
             boot_preds = np.array(
-                [
-                    self._boot_estimators[b].predict(X_batch)
-                    for b in range(self.B)
-                ]
+                [self._boot_estimators[b].predict(X_batch) for b in range(self.B)]
             )
             # Approximation of LOO predictions
             loo_preds = np.matmul(self._oob_matrix, boot_preds)
@@ -528,6 +527,12 @@ class EnbPI:
             y_pred_lower_list += list(y_pred_batch_lower)
             y_pred_list += list(y_pred_batch)
 
+            # TODO: see comment above. We probably should remove the
+            # correction (1-alpha)(1+1/ncalib) to just (1-alpha).
+            # Xu uses different theory, not needing inflating quantiles
+            # to get finite sample guarantees and all the conformal machinery
+            # in place
+            #
             # Update residuals
             if y_true is not None:
                 residuals = self._compute_residuals(
@@ -606,10 +611,7 @@ class AdaptiveEnbPI(EnbPI):
 
     def _predict_callback(self, X_test=None):
         sigma_bs = np.array(
-            [
-                self._boot_sigma_estimators[b].predict(X_test)
-                for b in range(self.B)
-            ]
+            [self._boot_sigma_estimators[b].predict(X_test) for b in range(self.B)]
         )
         sigma_phi_x_loos = np.matmul(self._oob_matrix, sigma_bs)
         sigma_pred = np.mean(sigma_phi_x_loos, axis=0)
