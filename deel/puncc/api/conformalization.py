@@ -3,12 +3,12 @@
 #
 
 
-from deel.puncc.calibration import (
+from deel.puncc.api.calibration import (
     BaseCalibrator,
     CvPlusCalibrator,
 )
-from deel.puncc.splitting import BaseSplitter
-from deel.puncc.prediction import BasePredictor
+from deel.puncc.api.splitting import BaseSplitter
+from deel.puncc.api.prediction import BasePredictor
 import numpy as np
 from copy import deepcopy
 

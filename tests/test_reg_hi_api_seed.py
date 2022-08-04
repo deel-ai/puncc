@@ -3,9 +3,9 @@ import numpy as np
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from deel.puncc.utils import average_coverage, sharpness
+from deel.puncc.api.utils import average_coverage, sharpness
 
-from deel.puncc.common.conformalizers import (
+from deel.puncc.regression import (
     SplitCP,
     WeightedSplitCP,
     LocallyAdaptiveCP,

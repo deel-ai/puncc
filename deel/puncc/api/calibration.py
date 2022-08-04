@@ -3,8 +3,8 @@ This module implements the core Calibrator interface and different
 calibration methods.
 """
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
-from deel.puncc.utils import EPSILON, quantile, check_alpha_calib
+from typing import Optional
+from deel.puncc.api.utils import EPSILON, quantile, check_alpha_calib
 import numpy as np
 
 

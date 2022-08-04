@@ -4,9 +4,9 @@ import numpy as np
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from deel.puncc.utils import average_coverage
+from deel.puncc.api.utils import average_coverage
 
-from deel.puncc import conformalization, calibration, prediction, splitting
+from deel.puncc.api import conformalization, calibration, prediction, splitting
 
 
 def coverage_condition(empirical_cov, alpha):

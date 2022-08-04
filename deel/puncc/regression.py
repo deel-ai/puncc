@@ -8,14 +8,14 @@ import numpy as np
 from typing import Tuple
 from tqdm import tqdm
 from sklearn.utils import resample
-from deel.puncc.calibration import (
+from deel.puncc.api.calibration import (
     MeanCalibrator,
     MeanVarCalibrator,
     QuantileCalibrator,
 )
-from deel.puncc.prediction import MeanPredictor, MeanVarPredictor, QuantilePredictor
-from deel.puncc.conformalization import ConformalPredictor
-from deel.puncc.splitting import IdSplitter, KFoldSplitter
+from deel.puncc.api.prediction import MeanPredictor, MeanVarPredictor, QuantilePredictor
+from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.splitting import IdSplitter, KFoldSplitter
 
 
 class BaseSplit:
