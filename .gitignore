@@ -13,3 +13,6 @@ env-puncc/
 
 # Local demo files
 **demo/
+
+# tests
+tests/seed_demos.ipynb
