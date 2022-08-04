@@ -3,7 +3,8 @@
 #
 
 import numpy as np
-from typing import Iterable, Tuple, Optional
+from typing import Tuple, Optional
+import matplotlib
 import matplotlib.pyplot as plt
 import sys
 
@@ -152,23 +153,33 @@ def quantile(a, q, w=None):
 #
 
 
-def agg_list(a: Iterable):
+def agg_list(a: np.ndarray):
     try:
         return np.concatenate(a, axis=0)
     except ValueError:
         return None
 
 
-def agg_func(a: Iterable):
-    try:
-        return np.mean(a, axis=0)
-    except TypeError:
-        return None
-
-
 #
 # ========================= Visualization =========================
 #
+
+SMALL_SIZE = 8
+MEDIUM_SIZE = 10
+BIGGER_SIZE = 12
+LARGE_SIZE = 15
+HUGE_SIZE = 16
+
+
+custom_rc_params = {
+    "font.family": "Times New Roman",
+    "ytick.labelsize": BIGGER_SIZE,
+    "xtick.labelsize": BIGGER_SIZE,
+    "axes.labelsize": LARGE_SIZE,
+    "legend.fontsize": LARGE_SIZE,
+    "axes.titlesize": HUGE_SIZE,
+    "lines.linewidth": 2,
+}
 
 
 def plot_prediction_interval(
@@ -205,11 +216,8 @@ def plot_prediction_interval(
         loc = "upper left"
     plt.figure(figsize=figsize)
 
-    plt.rcParams["font.family"] = "Times New Roman"
-    plt.rcParams["ytick.labelsize"] = 15
-    plt.rcParams["xtick.labelsize"] = 15
-    plt.rcParams["axes.labelsize"] = 15
-    plt.rcParams["legend.fontsize"] = 16
+    # Custom matplotlib style sheet
+    matplotlib.rcParams.update(custom_rc_params)
 
     if X is None:
         X = np.arange(len(y_true))
@@ -308,7 +316,7 @@ def plot_sorted_pi(
     if y_pred is None:
         y_pred = (y_pred_upper + y_pred_lower) / 2
 
-    width = np.abs(y_pred_upper - y_pred_lower)
+    width = np.abs(y_pred_upper - y_pred_lower)  # type: ignore
     sorted_order = np.argsort(width)
 
     # Figure configuration

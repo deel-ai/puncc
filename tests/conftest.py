@@ -10,7 +10,7 @@ def diabetes_data():
     diabetes_X, diabetes_y = datasets.load_diabetes(return_X_y=True)
 
     # Use only one feature
-    diabetes_X = diabetes_X[:, np.newaxis, 2]
+    diabetes_X = diabetes_X[:, np.newaxis, 2]  # type: ignore
 
     # Split the data into training/testing sets
     X_train = diabetes_X[:-100]

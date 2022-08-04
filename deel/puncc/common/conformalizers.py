@@ -8,15 +8,14 @@ import numpy as np
 from typing import Tuple
 from tqdm import tqdm
 from sklearn.utils import resample
-from puncc.calibration import (
+from deel.puncc.calibration import (
     MeanCalibrator,
     MeanVarCalibrator,
     QuantileCalibrator,
 )
-from puncc.prediction import MeanPredictor, MeanVarPredictor, QuantilePredictor
-from puncc.conformalization import ConformalPredictor
-from puncc.splitting import IdSplitter, KFoldSplitter
-from puncc.utils import agg_func
+from deel.puncc.prediction import MeanPredictor, MeanVarPredictor, QuantilePredictor
+from deel.puncc.conformalization import ConformalPredictor
+from deel.puncc.splitting import IdSplitter, KFoldSplitter
 
 
 class BaseSplit:
@@ -30,18 +29,17 @@ class BaseSplit:
 
     """
 
-    def __init__(self, train):
-        self.predictor = None
-        self.calibrator = None
-        self.conformal_predictor = None
+    def __init__(self, predictor, calibrator, train):
+        self.predictor = predictor
+        self.calibrator = calibrator
         self.train = train
 
     def fit(
         self,
-        X_fit: np.array,
-        y_fit: np.array,
-        X_calib: np.array,
-        y_calib: np.array,
+        X_fit: np.ndarray,
+        y_fit: np.ndarray,
+        X_calib: np.ndarray,
+        y_calib: np.ndarray,
     ):
         """This method fits the models to the fit data (X_fit, y_fit)
         and computes residuals on (X_calib, y_calib).
@@ -59,7 +57,7 @@ class BaseSplit:
             calibrator=self.calibrator,
             splitter=id_gen,
         )
-        self.conformal_predictor.fit(None, None)
+        self.conformal_predictor.fit(X=None, y=None)  # type: ignore
 
     def predict(self, X_test, alpha):
         raise NotImplementedError
@@ -76,12 +74,9 @@ class SplitCP(BaseSplit):
             train: if False, prediction model(s) will not be trained and will
                 be used as is
         """
-        super().__init__(train=train)
-        self.predictor = MeanPredictor(mu_model)
-        self.calibrator = MeanCalibrator()
-        self.conformal_predictor = None
+        super().__init__(MeanPredictor(mu_model), MeanCalibrator(), train=train)
 
-    def predict(self, X_test, alpha) -> Tuple[np.array]:
+    def predict(self, X_test, alpha) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Estimate conditional mean and prediction interval
         (w.r.t target miscoverage alpha) for new samples.
 
@@ -97,36 +92,43 @@ class SplitCP(BaseSplit):
         """
         (
             y_pred,
-            y_pred_lower,
-            y_pred_upper,
-            _,
+            y_lo,
+            y_hi,
+            var_pred,
         ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-        return (
-            y_pred,
-            y_pred_lower,
-            y_pred_upper,
-        )
+
+        return y_pred, y_lo, y_hi
 
 
 class WeightedSplitCP(BaseSplit):
     """Split Conformal Prediction wrapper."""
 
-    def __init__(self, mu_model, w_estimator=None, train=True):
+    def __init__(self, mu_model, w_estimator=None, weight_method="barber", train=True):
         """Constructor.
 
         Args:
             mu_model: Conditional mean model
             w_estimator: weight estimator of nonconformity scores distribution
                 By default, equal weights.
+            weight_method: method to normalize weights: ['barber', 'tibshirani']
             train: if False, prediction model(s) will not be trained and will
                 be used as is
         """
-        super().__init__(train=train)
-        self.predictor = MeanPredictor(mu_model)
-        self.calibrator = MeanCalibrator(w_estimator=w_estimator)
-        self.conformal_predictor = None
 
-    def predict(self, X_test, alpha) -> Tuple[np.array]:
+        self.predictor = MeanPredictor(mu_model)
+
+        if weight_method not in ("barber", "tibshirani"):
+            error_msg = f"{weight_method} is not implemented. Please choose either 'barber' or 'tibshirani'"
+            raise NotImplementedError(error_msg)
+
+        self.calibrator = MeanCalibrator(
+            weight_func=w_estimator, weight_method=weight_method
+        )
+        super().__init__(
+            predictor=self.predictor, calibrator=self.calibrator, train=train
+        )
+
+    def predict(self, X_test, alpha) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Estimate conditional mean and prediction interval
         (w.r.t target miscoverage alpha) for new samples.
 
@@ -142,35 +144,35 @@ class WeightedSplitCP(BaseSplit):
         """
         (
             y_pred,
-            y_pred_lower,
-            y_pred_upper,
-            _,
+            y_lo,
+            y_hi,
+            var_pred,
         ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-        return (
-            y_pred,
-            y_pred_lower,
-            y_pred_upper,
-        )
+        return y_pred, y_lo, y_hi
 
 
 class LocallyAdaptiveCP(BaseSplit):
     """Locally Adaptive Conformal Prediction wrapper."""
 
-    def __init__(self, mu_model, sigma_model, train=True):
+    def __init__(self, mu_model, var_model, train=True):
         """Constructor.
 
         Args:
             mu_model: conditional mean model
-            sigma_model: mean absolute deviation model
+            var_model: mean absolute deviation model
             train: if False, prediction model(s) will not be trained and will
                 be used as is
         """
-        super().__init__(train=train)
-        self.predictor = MeanVarPredictor(mu_model=mu_model, sigma_model=sigma_model)
-        self.calibrator = MeanVarCalibrator()
-        self.conformal_predictor = None
 
-    def predict(self, X_test, alpha) -> Tuple[np.array]:
+        self.predictor = MeanVarPredictor(mu_model=mu_model, var_model=var_model)
+        self.calibrator = MeanVarCalibrator()
+        super().__init__(
+            predictor=self.predictor, calibrator=self.calibrator, train=train
+        )
+
+    def predict(
+        self, X_test, alpha
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Estimate conditional mean, mean absolute deviation,
         and prediction interval (w.r.t target miscoverage alpha)
         for new samples.
@@ -184,21 +186,21 @@ class LocallyAdaptiveCP(BaseSplit):
                 y_pred (conditional mean),
                 y_pred_lower (lower PI bound),
                 y_pred_upper (upper PI bound),
-                sigma_pred (mean absolute deviation)
+                var_pred (mean absolute deviation)
         """
         (
             y_pred,
             y_pred_lower,
             y_pred_upper,
-            sigma_pred,
+            var_pred,
         ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-        return (y_pred, y_pred_lower, y_pred_upper, sigma_pred)
+        return (y_pred, y_pred_lower, y_pred_upper, var_pred)
 
 
 class CQR(BaseSplit):
     """Conformalized Quantile Regression wrapper."""
 
-    def __init__(self, q_hi_model, q_lo_model, train=True):
+    def __init__(self, q_hi_model, q_lo_model, train: bool = True):
         """Constructor.
 
         Args:
@@ -207,12 +209,15 @@ class CQR(BaseSplit):
             train: if False, prediction model(s) will not be trained and will
                 be used as is
         """
-        super().__init__(train=train)
         self.predictor = QuantilePredictor(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
         self.calibrator = QuantileCalibrator()
-        self.conformal_predictor = None
+        super().__init__(
+            predictor=self.predictor, calibrator=self.calibrator, train=train
+        )
 
-    def predict(self, X_test, alpha):
+    def predict(
+        self, X_test: np.ndarray, alpha: float
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Estimate prediction interval (w.r.t target miscoverage alpha)
         for new samples.
 
@@ -226,27 +231,24 @@ class CQR(BaseSplit):
                 y_pred_upper (upper PI bound),
         """
         (
-            _,
+            y_pred,
             y_pred_lower,
             y_pred_upper,
-            _,
+            var_pred,
         ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-        return (y_pred_lower, y_pred_upper)
+        return y_pred_lower, y_pred_upper
 
 
 class CvPlus:
     """Cross-validation plus wrapper."""
 
-    def __init__(self, mu_model, K, train=True, random_state=None):
+    def __init__(self, mu_model, K: int, random_state=None):
         """Constructor.
 
         Args:
             mu_model: conditional mean model
             K: number of training/calibration folds
-            train: if False, prediction model(s) will not be trained and will
-                be used as is
             random_state: seed to control random folds
-
         """
         self.predictor = MeanPredictor(mu_model)
         self.calibrator = MeanCalibrator()
@@ -255,11 +257,10 @@ class CvPlus:
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=kfold_splits,
-            agg_func=agg_func,
             method="cv+",
         )
 
-    def fit(self, X_train, y_train):
+    def fit(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
         """This method fits the ensemble models based on the K-fold plan.
         The out-of-bag folds are used to computes residuals
         on (X_calib, y_calib).
@@ -270,7 +271,9 @@ class CvPlus:
         """
         self.conformal_predictor.fit(X_train, y_train)
 
-    def predict(self, X_test, alpha):
+    def predict(
+        self, X_test: np.ndarray, alpha: float
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Estimate conditional mean and prediction interval
         (w.r.t target miscoverage alpha) for new samples.
 
@@ -308,7 +311,7 @@ of the exchangeability assumption.
 class EnbPI:
     """Ensemble Batch Prediction Intervals method"""
 
-    def __init__(self, model, B: int, agg_func_loo=np.mean, random_state: int = None):
+    def __init__(self, model, B: int, agg_func_loo=np.mean, random_state=None):
         """constructor
 
         Args:
@@ -395,15 +398,24 @@ class EnbPI:
         self._boot_dict = dict()
 
         for b in range(self.B):
+
             # Ensure we don't have pathological bootstrap sampling
             # In case bootstrap is identical to original set, OOB is empty.
             oob_is_empty = True
+            random_state_b = (
+                None if self.random_state is None else self.random_state + b
+            )
+
+            boot = None  # Initialization
+            oob_units = None  # Initialization
+
+            # Randomly sample bootstrap sets until the out-of-bag is not empty
             while oob_is_empty:
                 boot = resample(
                     horizon_indices,
                     replace=True,
                     n_samples=T,
-                    random_state=self.random_state + b,
+                    random_state=random_state_b,
                 )
                 oob_units = np.setdiff1d(horizon_indices, boot)
                 oob_is_empty = len(oob_units) == 0
@@ -485,9 +497,7 @@ class EnbPI:
         #
         # TODO: go back to EnbPI-v1 paper and double check what above.
         #
-        res_quantile = np.quantile(
-            self.residuals, (1 - alpha) * (1 + 1 / len(self.residuals))
-        )
+        res_quantile = np.quantile(self.residuals, (1 - alpha), method="linear")
 
         if y_true is None or (y_true is not None and s is None):
             n_batches = 1
@@ -495,6 +505,12 @@ class EnbPI:
 
         elif y_true is not None and s is not None:
             n_batches = len(y_true) // s
+
+        else:
+            raise RuntimeError("Cannot determine batch size.")
+
+        if self._boot_estimators is None:  # Sanity check
+            raise RuntimeError("Fatal error: _boot_estimators is None.")
 
         # Inference is performed by batch
         for i in np.arange(n_batches):
@@ -602,14 +618,22 @@ class AdaptiveEnbPI(EnbPI):
     def _fit_callback(self, X_train, y_train, b):
         # retrieve list of indexes of previously bootstrapped sample
         boot = self._boot_dict[b]
+        if self._boot_estimators is None:  # Sanity check
+            raise RuntimeError("Fatal error: _boot_estimators is None.")
         f_hat_b = self._boot_estimators[b]
         # Fit dispersion predictor
         sigma_hat_b = deepcopy(self.dispersion_model)  # Instantiate model
         sigmas = np.abs(y_train[boot] - f_hat_b.predict(X_train[boot]))
         sigma_hat_b.fit(X_train[boot], sigmas)
+        # Sanity check
+        if self._boot_sigma_estimators is None:
+            raise RuntimeError("Fatal error: _boot_estimators is None.")
         self._boot_sigma_estimators.append(sigma_hat_b)  # Store fitted model
 
     def _predict_callback(self, X_test=None):
+        # Sanity check
+        if self._boot_sigma_estimators is None:
+            raise RuntimeError("Fatal error: _boot_estimators is None.")
         sigma_bs = np.array(
             [self._boot_sigma_estimators[b].predict(X_test) for b in range(self.B)]
         )

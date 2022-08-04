@@ -3,11 +3,11 @@ This module provides data splitting schemes.
 """
 
 from abc import ABC
-import sklearn
+from sklearn import model_selection
 import numpy as np
 
 
-class Splitter(ABC):
+class BaseSplitter(ABC):
     """Abstract structure of a splitter. A splitter provides a function
     that assignes data points to fit and calibration sets.
 
@@ -15,25 +15,25 @@ class Splitter(ABC):
         random_state: seed to control random generation
     """
 
-    def __init__(self, random_state=None):
+    def __init__(self, random_state=None) -> None:
         self.random_state = random_state
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> tuple[np.ndarray]:
         raise NotImplementedError("Use a subclass of Splitter.")
 
 
-class IdSplitter(Splitter):
+class IdSplitter(BaseSplitter):
     """Identity splitter that wraps an already existing data assignment."""
 
     def __init__(self, X_fit, y_fit, X_calib, y_calib):
         super().__init__(random_state=None)
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, X=None, Y=None):
         return self._split
 
 
-class RandomSplitter(Splitter):
+class RandomSplitter(BaseSplitter):
     """Random splitter that assign samples given a ratio.
 
     Attributes:
@@ -52,7 +52,7 @@ class RandomSplitter(Splitter):
         return [(X[fit_idxs], y[fit_idxs], X[cal_idxs], y[cal_idxs])]
 
 
-class KFoldSplitter(Splitter):
+class KFoldSplitter(BaseSplitter):
     """KFold data splitter.
 
     Attributes:
@@ -60,15 +60,15 @@ class KFoldSplitter(Splitter):
         random_state: seed to control random generation
     """
 
-    def __init__(self, K, random_state=None):
+    def __init__(self, K: int, random_state=None) -> None:
         self.K = K
         super().__init__(random_state=random_state)
 
     def __call__(self, X, y):
-        kfold = sklearn.model_selection.KFold(
+        kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state
         )
-        splits = list()
+        folds = list()
         for fit, calib in kfold.split(X):
-            splits.append((X[fit], y[fit], X[calib], y[calib]))
-        return splits
+            folds.append((X[fit], y[fit], X[calib], y[calib]))
+        return folds

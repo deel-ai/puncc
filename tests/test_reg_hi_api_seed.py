@@ -3,9 +3,9 @@ import numpy as np
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from puncc.utils import average_coverage, sharpness
+from deel.puncc.utils import average_coverage, sharpness
 
-from puncc.common.conformalizers import (
+from deel.puncc.common.conformalizers import (
     SplitCP,
     WeightedSplitCP,
     LocallyAdaptiveCP,
@@ -72,16 +72,14 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
         n_estimators=100, random_state=random_state
     )
     X_calib_test = np.concatenate((X_calib, X_test))
-    y_calib_test = np.concatenate(
-        (np.zeros_like(y_calib), np.ones_like(y_test))
-    )
+    y_calib_test = np.concatenate((np.zeros_like(y_calib), np.ones_like(y_test)))
     calib_test_classifier.fit(
         X=X_calib_test,
         y=y_calib_test,
     )
 
     def w_estimator(X):
-        return calib_test_classifier.predict_proba(X)[:, 1]
+        return calib_test_classifier.predict_proba(X)[:, 1]  # type: ignore
 
     # Create linear regression object
     regr_model = linear_model.LinearRegression()
@@ -92,9 +90,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     w_split_cp.fit(X_fit, y_fit, X_calib, y_calib)
     # The predict method infers prediction intervals with respect to
     # the risk alpha
-    y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(
-        X_test, alpha=alpha
-    )
+    y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -117,16 +113,12 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     # Create linear regression object
     regr_model = linear_model.LinearRegression()
     # Create RF regression object
-    var_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
+    var_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     # CP method initialization
     la_cp = LocallyAdaptiveCP(regr_model, var_model)
     # Fit and conformalize
     la_cp.fit(X_fit, y_fit, X_calib, y_calib)
-    y_pred, y_pred_lower, y_pred_upper, var_pred = la_cp.predict(
-        X_test, alpha=alpha
-    )
+    y_pred, y_pred_lower, y_pred_upper, var_pred = la_cp.predict(X_test, alpha=alpha)
     assert (y_pred is not None) and (var_pred is not None)
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -147,12 +139,8 @@ def test_cqr(diabetes_data, alpha, random_state):
         X_train, y_train, random_state=random_state
     )
     # Create RF regression models for the upper and lower quantiles
-    q_hi_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    q_lo_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
+    q_hi_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    q_lo_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     # CP method initialization
     crq = CQR(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
     # Fit and conformalize
@@ -173,9 +161,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
     # Create RF regression object
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     # CP method initialization
     cv_cp = CvPlus(rf_model, K=20, random_state=random_state)
     # Fit and conformalize
@@ -196,13 +182,9 @@ def test_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
     # Create RF regression object
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     # Fit and conformalize
-    enbpi = EnbPI(
-        rf_model, B=30, agg_func_loo=np.mean, random_state=random_state
-    )
+    enbpi = EnbPI(rf_model, B=30, agg_func_loo=np.mean, random_state=random_state)
     enbpi.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
@@ -223,12 +205,8 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
     # Create RF regression object
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    var_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    var_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     # Fit and conformalize
     aenbpi = AdaptiveEnbPI(
         rf_model,

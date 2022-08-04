@@ -24,11 +24,12 @@ dev_requirements = [
     "pytest>=7.1.2",
     "pytest-cov>=3.0.0",
     "black==22.3.0",
+    "pre-commit",
 ]
 
 setup(
     name="puncc",
-    version="1.0dev",
+    version="0.1dev",
     description="Predictive Uncertainty Calibration and Conformalization Lib",
     author="IRT Saint Exupery",
     author_email="mouhcine.mendil@irt-saintexupery.com",
