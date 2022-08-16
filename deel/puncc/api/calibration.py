@@ -2,6 +2,7 @@
 This module implements the core Calibrator interface and different 
 calibration methods.
 """
+
 from abc import ABC, abstractmethod
 from typing import Optional
 from deel.puncc.api.utils import EPSILON, quantile, check_alpha_calib
@@ -10,14 +11,14 @@ import numpy as np
 
 def tibshirani_weights(*, X, weight_func, weights_calib):
     """Compute and normalize inference weights of the nonconformity distribution
-    based on Tibshirani el al. http://arxiv.org/abs/1904.06019
-    Args:
-        X: features array
-        weight_func: weight function. By default, equal weights are
-            associated with samples mass density.
-        weights_calib: weights assigned to the calibration samples
-    Returns:
-        normalized weights
+    based on `Tibshirani el al. <http://arxiv.org/abs/1904.06019>`_.
+
+    :param ndarray X: features array
+    :param callable weight_func: weight function. By default, equal weights are associated with samples mass density.
+    :param ndarray weights_calib: weights assigned to the calibration samples.
+
+    :returns: normalized weights.
+    :rtype: ndarray
     """
     calib_size = len(weights_calib)
     if weight_func is None:  # equal weights
@@ -35,14 +36,14 @@ def tibshirani_weights(*, X, weight_func, weights_calib):
 
 def barber_weights(*, X, weight_func, weights_calib):
     """Compute and normalize inference weights of the nonconformity distribution
-    based on Barber et al. https://arxiv.org/abs/2202.13415
-    Args:
-        X: features array
-        weight_func: weight function. By default, equal weights are
-            associated with samples mass density
-        weights_calib: weights assigned to the calibration samples
-    Returns:
-        normalized weights
+    based on `Barber et al. <https://arxiv.org/abs/2202.13415>`_.
+
+    :param ndarray X: features array
+    :param callable, optional weight_func: weight function. By default, equal weights are associated with samples mass density.
+    :param ndarray weights_calib: weights assigned to the calibration samples.
+
+    :returns: normalized weights.
+    :rtype: ndarray
     """
     calib_size = len(weights_calib)
     # Computation of normalized weights
@@ -56,7 +57,14 @@ def barber_weights(*, X, weight_func, weights_calib):
 
 
 class BaseCalibrator(ABC):
-    """Abstract structure of a Calibrator class."""
+    """Abstract structure of a Calibrator class.
+
+
+    :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
+    :param str weight_method: weight normalization method ["equi", "barber", "tibshirani"]; Default value is "equi", defaults to "equi"
+
+    :raises NotImplementedError: provided :data:`weight_method` is not suitable.
+    """
 
     def __init__(self, weight_func=None, weight_method: str = "equi"):
         self._residuals = None
@@ -72,10 +80,8 @@ class BaseCalibrator(ABC):
         elif weight_method == "tibshirani":
             self._weight_norm = tibshirani_weights
         else:
-            error_msg = (
-                f"{weight_method} is not implemented. Choose 'barber' or 'tibshirani'."
-            )
-            raise NotImplemented(error_msg)
+            error_msg = f"{weight_method} is not implemented. Choose 'equi', 'barber' or 'tibshirani'."
+            raise NotImplementedError(error_msg)
 
     @abstractmethod
     def _nconf_score(
@@ -86,6 +92,24 @@ class BaseCalibrator(ABC):
         y_pred_lo: Optional[np.ndarray] = None,
         y_pred_hi: Optional[np.ndarray] = None,
     ) -> np.ndarray:
+        """Method that specifies and compute nonconformity scores.
+
+        :param ndarray y_true: true values.
+        :param ndarray, optional y_pred: predicted values, defaults to None
+        :param ndarray, optional var_pred: variability predictions, defaults to None
+        :param ndarray, optional y_pred_lo: lower bound of the prediction interval, defaults to None
+        :param ndarray, optional y_pred_hi: upper bound of the prediction interval, defaults to None
+
+        .. WARNING::
+            All arguments except :data:`y_true` are optional depending of how nonconformity scores are specified.
+            Some arguments may be required once the score is determined; in such case, an exception is raised if
+            they are not provided.
+
+        :returns: nonconformity scores.
+        :rtype: ndarray
+
+        :raises RuntimeError: error if some optional arguments are required.
+        """
         raise NotImplementedError()
 
     @abstractmethod
@@ -98,9 +122,25 @@ class BaseCalibrator(ABC):
         y_pred_lo: Optional[np.ndarray] = None,
         y_pred_hi: Optional[np.ndarray] = None,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """Ancillary method called by :meth:`calibrate` to compute prediction intervals w.r.t a nonconformity quantile.
+
+        :param ndarray nconf_quantiles: quantile of nonconformity scores.
+        :param ndarray, optional y_pred: predicted values, defaults to None.
+        :param ndarray, optional var_pred: variability predictions, defaults to None.
+        :param ndarray, optional y_pred_lo: lower bound of the prediction interval, defaults to None.
+        :param ndarray, optional y_pred_hi: upper bound of the prediction interval, defaults to None.
+
+        :returns: lower and upper bounds of the prediction intervals.
+        :rtype: tuple[ndarray, ndarray]
+        """
         raise NotImplementedError()
 
     def get_weights(self):
+        """Getter for the weights associated to new examples
+
+        :returns: weights on inference examples.
+        :rtype: ndarray
+        """
         return self._weights_inference
 
     def fit(
@@ -113,14 +153,20 @@ class BaseCalibrator(ABC):
         y_pred_lo: Optional[np.ndarray] = None,
         y_pred_hi: Optional[np.ndarray] = None,
     ) -> None:
-        """Compute nonconformity scores on the calibration set.
-        Args:
-            y_true: true values
-            y_pred: predicted values
-            X: features array
-            var_pred: variability predictions
-            y_pred_lo: lower bound of the prediction interval
-            y_pred_hi: upper bound of the prediction interval
+        """Compute and store nonconformity scores on the calibration set.
+
+        :param ndarray y_true: true values.
+        :param ndarray y_pred: predicted values.
+        :param ndarray X: features array.
+        :param ndarray var_pred: variability predictions.
+        :param ndarray y_pred_lo: lower bound of the prediction interval.
+        :param ndarray y_pred_hi: upper bound of the prediction interval.
+
+        .. WARNING::
+            Optional argument :data:`X` should be provided if the class attribute :data:`weight_func` is not default (None).
+
+        :raises RuntimeError: Optional argument :data:`X` not provided but the class attribute :data:`weight_func` is not default (None).
+
         """
         self._residuals = self._nconf_score(
             y_true=y_true,
@@ -130,7 +176,7 @@ class BaseCalibrator(ABC):
             y_pred_hi=y_pred_hi,
         )
         self._len_calib = len(self._residuals)
-        if self.weight_method is "equi":  # chosen method is equiprobable weights
+        if self.weight_method == "equi":  # chosen method is equiprobable weights
             self._weights_calib = np.ones((self._len_calib))
         elif self.weight_func is not None:
             if X is None:
@@ -151,16 +197,20 @@ class BaseCalibrator(ABC):
         y_pred_hi: Optional[np.ndarray] = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Compute calibrated prediction intervals for new examples.
-        Args:
-            alpha: significance level
-            y_pred: predicted values
-            X: features array
-            var_pred: variability predictions
-            y_pred_lo: lower bound of the prediction interval
-            y_pred_hi: upper bound of the prediction interval
-            alpha: maximum miscoverage target
-        Returns:
-            y_lower, y_upper
+
+        :param float alpha: significance level (max miscoverage target).
+        :param ndarray y_pred: predicted values.
+        :param ndarray X: features array.
+        :param ndarray var_pred: variability predictions.
+        :param ndarray y_pred_lo: lower bound of the prediction interval.
+        :param ndarray y_pred_hi: upper bound of the prediction interval.
+
+        :returns: y_lower, y_upper.
+        :rtype: tuple[ndarray, ndarray]
+
+        :raises RuntimeError: :meth:`calibrate` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the calibration set.
+
         """
         if self._residuals is None:
             raise RuntimeError("Run 'fit' method before calling 'calibrate'.")
@@ -321,12 +371,7 @@ class MetaCalibrator(ABC):
     scores from each K-Fold calibrator and produces associated prediction
     intervals.
 
-    Attributes:
-        kfold_calibrators_dict: dictionarry of calibrators for each K-fold
-                                (disjoint calibration subsets). Each calibrator
-                                needs to priorly estimate the nonconformity
-                                scores w.r.t the associated calibration fold.
-
+    :param dict kfold_calibrators_dict: dictionarry of calibrators for each K-fold (disjoint calibration subsets). Each calibrator needs to priorly estimate the nonconformity scores w.r.t the associated calibration fold.
     """
 
     def __init__(self, kfold_calibrators: dict):
@@ -360,12 +405,13 @@ class MetaCalibrator(ABC):
         alpha: float,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Compute calibrated prediction intervals for new examples X.
-        Args:
-            X: test features array
-            kfold_predictors_dict: dictionnary of predictors trained for each fold on the fit subset.
-            alpha: maximum miscoverage target
-        Returns:
-            Prediction interval's bounds: y_lo, y_hi
+
+        :param ndarray X: test features array.
+        :param dict kfold_predictors_dict: dictionnary of predictors trained for each fold on the fit subset.
+        :param float alpha: maximum miscoverage target.
+
+        :returns: Prediction interval's bounds y_lo, y_hi.
+        :rtype: tuple[ndarray, ndarray]
         """
         raise NotImplementedError()
 
@@ -390,15 +436,6 @@ class CvPlusCalibrator(MetaCalibrator):
         kfold_predictors_dict: dict,
         alpha: float,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Compute calibrated prediction intervals for new examples.
-        Args:
-            X: test features array
-            kfold_predictors_dict: dictionary of predictors trained for each K-fold
-                fitting subset.
-            alpha: maximum miscoverage target
-        Returns:
-            y_lo, y_hi
-        """
         concat_residuals_lo = None
         concat_residuals_hi = None
 

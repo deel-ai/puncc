@@ -6,10 +6,17 @@
 **dist/
 
 # Editor files
-**.vscode
+#**.vscode
+*~
+.vscode
 
 # Virtual environment
 env-puncc/
 
 # Local demo files
 **demo/
+
+# Documentation build
+.tox
+docs/build
+docs/source/modules.rst

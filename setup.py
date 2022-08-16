@@ -24,7 +24,10 @@ dev_requirements = [
     "pytest>=7.1.2",
     "pytest-cov>=3.0.0",
     "black==22.3.0",
-    "pre-commit",
+    "pre-commit>=2.20.0",
+    "sphinx>=5.1.1",
+    "sphinx-rtd-theme>=1.0.0",
+    "sphinx-autodoc-typehints>=1.19.2",
 ]
 
 setup(

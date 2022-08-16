@@ -19,14 +19,12 @@ from deel.puncc.api.splitting import IdSplitter, KFoldSplitter
 
 
 class BaseSplit:
-    """
-    Attributes:
-        predictor: point-based or interval-based model wrapper
-        calibrator: nonconformity computation strategy and interval predictor
-        splitter: fit/calibration split strategy
-        train: if False, prediction model(s) will not be trained and will
-               be used as is
+    """Interface of conformal prediction methods based on a split calibration/test scheme.
 
+    :param deel.puncc.prediction.BasePredictor predictor: point-based or interval-based model wrapper.
+    :param deel.puncc.calibration.BaseCalibrator calibrator: nonconformity computation strategy and interval predictor.
+    :param deel.puncc.prediction.BaseSplitter splitter: fit/calibration split strategy.
+    :param boom train: if False, prediction model(s) will not be trained and will be used as is.
     """
 
     def __init__(self, predictor, calibrator, train):
@@ -44,12 +42,10 @@ class BaseSplit:
         """This method fits the models to the fit data (X_fit, y_fit)
         and computes residuals on (X_calib, y_calib).
 
-        Args:
-            X_fit: features from the fit dataset
-            y_fit: labels from the fit dataset
-            X_calib: features from the calibration dataset
-            y_calib: labels from the calibration dataset
-
+        :param ndarray X_fit: features from the fit dataset.
+        :param ndarray y_fit: labels from the fit dataset.
+        :param ndarray X_calib: features from the calibration dataset.
+        :param ndarray y_calib: labels from the calibration dataset.
         """
         id_gen = IdSplitter(X_fit, y_fit, X_calib, y_calib)
         self.conformal_predictor = ConformalPredictor(
@@ -64,31 +60,25 @@ class BaseSplit:
 
 
 class SplitCP(BaseSplit):
-    """Split Conformal Prediction wrapper."""
+    """Split conformal prediction method.
+
+    :param object mu_model: conditional mean model.
+    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
+
+    """
 
     def __init__(self, mu_model, train=True):
-        """Constructor.
-
-        Args:
-            mu_model: Conditional mean model
-            train: if False, prediction model(s) will not be trained and will
-                be used as is
-        """
         super().__init__(MeanPredictor(mu_model), MeanCalibrator(), train=train)
 
     def predict(self, X_test, alpha) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Estimate conditional mean and prediction interval
         (w.r.t target miscoverage alpha) for new samples.
 
-        Args:
-            X_test: features of new samples
-            alpha: target miscoverage
+        :param ndarray X_test: features of new samples.
+        :param float alpha: target maximum miscoverage.
 
-        Returns:
-            A tuple composed of:
-                y_pred (conditional mean),
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound)
+        :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
+        :rtype: tuple[ndarray, ndarray, ndarray]
         """
         (
             y_pred,
@@ -101,19 +91,15 @@ class SplitCP(BaseSplit):
 
 
 class WeightedSplitCP(BaseSplit):
-    """Split Conformal Prediction wrapper."""
+    """Weighted split conformal prediction method.
+
+    :param object mu_model: conditional mean model.
+    :param object w_estimator: weight estimator of nonconformity scores distribution, defaults to None (equal weights).
+    :param str weight_method: method to normalize weights: ['barber', 'tibshirani'], defaults to 'barber'
+    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
+    """
 
     def __init__(self, mu_model, w_estimator=None, weight_method="barber", train=True):
-        """Constructor.
-
-        Args:
-            mu_model: Conditional mean model
-            w_estimator: weight estimator of nonconformity scores distribution
-                By default, equal weights.
-            weight_method: method to normalize weights: ['barber', 'tibshirani']
-            train: if False, prediction model(s) will not be trained and will
-                be used as is
-        """
 
         self.predictor = MeanPredictor(mu_model)
 
@@ -132,15 +118,11 @@ class WeightedSplitCP(BaseSplit):
         """Estimate conditional mean and prediction interval
         (w.r.t target miscoverage alpha) for new samples.
 
-        Args:
-            X_test: features of new samples
-            alpha: target miscoverage
+        :param ndarray X_test: features of new samples.
+        :param float alpha: target maximum miscoverage.
 
-        Returns:
-            A tuple composed of:
-                y_pred (conditional mean),
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound)
+        :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
+        :rtype: tuple[ndarray, ndarray, ndarray]
         """
         (
             y_pred,
@@ -152,17 +134,14 @@ class WeightedSplitCP(BaseSplit):
 
 
 class LocallyAdaptiveCP(BaseSplit):
-    """Locally Adaptive Conformal Prediction wrapper."""
+    """Locally adaptive conformal prediction method.
+
+    :param object mu_model: conditional mean model.
+    :param object var_model: mean absolute deviation model.
+    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
+    """
 
     def __init__(self, mu_model, var_model, train=True):
-        """Constructor.
-
-        Args:
-            mu_model: conditional mean model
-            var_model: mean absolute deviation model
-            train: if False, prediction model(s) will not be trained and will
-                be used as is
-        """
 
         self.predictor = MeanVarPredictor(mu_model=mu_model, var_model=var_model)
         self.calibrator = MeanVarCalibrator()
@@ -173,20 +152,13 @@ class LocallyAdaptiveCP(BaseSplit):
     def predict(
         self, X_test, alpha
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Estimate conditional mean, mean absolute deviation,
-        and prediction interval (w.r.t target miscoverage alpha)
-        for new samples.
+        """Estimate conditional mean, mean absolute deviation and prediction interval (w.r.t target miscoverage alpha) for new samples.
 
-        Args:
-            X_test: features of new samples
-            alpha: target miscoverage
+        :param ndarray X_test: features of new samples.
+        :param float alpha: target maximum miscoverage.
 
-        Returns:
-            A tuple composed of:
-                y_pred (conditional mean),
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound),
-                var_pred (mean absolute deviation)
+        :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound), y_pred_upper (upper PI bound) and var_pred (absolute mean deviation).
+        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
         """
         (
             y_pred,
@@ -198,17 +170,15 @@ class LocallyAdaptiveCP(BaseSplit):
 
 
 class CQR(BaseSplit):
-    """Conformalized Quantile Regression wrapper."""
+    """Conformalized quantile regression method.
+
+    :param object q_hi_model: higher quantile model.
+    :param object q_lo_model: lower quantile model.
+    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
+    """
 
     def __init__(self, q_hi_model, q_lo_model, train: bool = True):
-        """Constructor.
 
-        Args:
-            q_hi_model: higher quantile model
-            q_lo_model: lower quantile model
-            train: if False, prediction model(s) will not be trained and will
-                be used as is
-        """
         self.predictor = QuantilePredictor(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
         self.calibrator = QuantileCalibrator()
         super().__init__(
@@ -218,17 +188,13 @@ class CQR(BaseSplit):
     def predict(
         self, X_test: np.ndarray, alpha: float
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Estimate prediction interval (w.r.t target miscoverage alpha)
-        for new samples.
+        """Estimate prediction intervals (w.r.t target miscoverage alpha) for new samples.
 
-        Args:
-            X_test: features of new samples
-            alpha: target miscoverage
+        :param ndarray X_test: features of new samples.
+        :param float alpha: target maximum miscoverage.
 
-        Returns:
-            A tuple composed of:
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound),
+        :returns: A tuple composed of y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
+        :rtype: tuple[ndarray, ndarray]
         """
         (
             y_pred,
@@ -240,16 +206,15 @@ class CQR(BaseSplit):
 
 
 class CvPlus:
-    """Cross-validation plus wrapper."""
+    """Cross-validation plus method.
+
+    :param object mu_model: conditional mean model.
+    :param int K: number of training/calibration folds.
+    :param int random_state: seed to control random folds.
+    """
 
     def __init__(self, mu_model, K: int, random_state=None):
-        """Constructor.
 
-        Args:
-            mu_model: conditional mean model
-            K: number of training/calibration folds
-            random_state: seed to control random folds
-        """
         self.predictor = MeanPredictor(mu_model)
         self.calibrator = MeanCalibrator()
         kfold_splits = KFoldSplitter(K=K, random_state=random_state)
@@ -262,12 +227,10 @@ class CvPlus:
 
     def fit(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
         """This method fits the ensemble models based on the K-fold plan.
-        The out-of-bag folds are used to computes residuals
-        on (X_calib, y_calib).
+        The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
 
-        Args:
-            X_train: features from the train dataset
-            y_train: labels from the train dataset
+        :param ndarray X_train: features from the train dataset.
+        :param ndarray y_train: labels from the train dataset.
         """
         self.conformal_predictor.fit(X_train, y_train)
 
@@ -277,15 +240,11 @@ class CvPlus:
         """Estimate conditional mean and prediction interval
         (w.r.t target miscoverage alpha) for new samples.
 
-        Args:
-            X_test: features of new samples
-            alpha: target miscoverage
+        :param ndarray X_test: features of new samples.
+        :param float alpha: target maximum miscoverage.
 
-        Returns:
-            A tuple composed of:
-                y_pred (conditional mean),
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound)
+        :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
+        :rtype: tuple[ndarray, ndarray, ndarray]
         """
         (
             y_pred,
@@ -309,21 +268,20 @@ of the exchangeability assumption.
 
 
 class EnbPI:
-    """Ensemble Batch Prediction Intervals method"""
+    """Ensemble batch prediction intervals method
+
+    :param object model: object implementing '.fit()' and '.predict()' methods
+    :param int B: number of bootstrap models
+    :param func agg_func_loo: aggregation function of LOO estimators.
+    :param int random_state: determines random generation.
+
+    .. note::
+        *Xu et al.* defined two aggregation functions of leave-one-out estimators:
+            * For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_: :code:`lambda x, *args: np.quantile(x, alpha, *args)`
+            * For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
+    """
 
     def __init__(self, model, B: int, agg_func_loo=np.mean, random_state=None):
-        """constructor
-
-        Args:
-            model: object implementing '.fit()' and '.predict()' methods
-            B: number of bootstrap models
-            agg_func_loo: aggregation function of LOO estimators.
-                - For EnbPI v1 ICML 2021
-                    http://proceedings.mlr.press/v139/xu21h.html:
-                    lambda x, *args: np.quantile(x, (1-alpha)*(1+1/len(x)), *args)
-                - For EnbPI v2 (https://arxiv.org/abs/2010.09107v12): np.mean
-            random_state: determines random generation
-        """
         self.model = model
         self.B = B
         # Aggregation function of LOO predictions
@@ -339,43 +297,57 @@ class EnbPI:
 
     def _fit_callback(self, X_train=None, y_train=None, b=None):
         """Callback process for each iteration of the ensemble training.
-        To be defined by subclasses if further processing is needed.
+        To be defined if further processing is needed.
 
-        Args:
-            X_train: batch training features
-            y_train: batch training targets
-            b: iteration index of the bagging
+        :param ndarray X_train: batch training features
+        :param ndarray y_train: batch training targets
+        :param int b: iteration index of the bagging
         """
         pass
 
     def _predict_callback(self, X_test=None):
         """Callback process for additional predictions.
-        To be defined by subclasses if further processing is needed.
+        To be defined if further processing is needed.
 
-        Args:
-            X_train: batch training features
-            y_train: batch training targets
-            b: iteration index of the bagging
+        :param ndarray X_train: batch training features.
+        :param ndarray y_train: batch training targets.
+        :param int b: iteration index of the bagging.
         """
         pass
 
     def _compute_pi(self, y_pred, w, *args):
         """Compute prediction intervals.
-        To be modified by subclasses if different processing is needed."""
+
+        :param ndarray y_pred: predicted values.
+        :param ndarray w: residuals' quantiles.
+
+        :returns: prediction intervals.
+        :rtype: tuple[ndarray, ndarray]
+        """
         y_pred_batch_upper = y_pred + w
         y_pred_batch_lower = y_pred - w
         return y_pred_batch_upper, y_pred_batch_lower
 
     def _compute_residuals(self, y_pred, y_true, *args):
-        """Residual computation formula"""
+        """Residual computation formula.
+
+        :param ndarray y_pred: predicted values.
+        :param ndarray y_true: true values.
+
+        :returns: residuals.
+        :rtype: ndarray
+        """
         return np.abs(y_true - y_pred)
 
     def _compute_boot_residuals(self, X_train, y_train, boot_estimators, *args):
         """Compute residuals w.r.t the boostrap aggregation.
         Args:
-            X_train: train features
-            y_train: train targets
-            boot_estimators: list of bootstrap models
+        :param ndarray X_train: train features.
+        :param ndarray y_train: train targets.
+        :param list[objects] boot_estimators: list of bootstrap models.
+
+        :returns: residuals.
+        :rtype: list[ndarray]
         """
         # Predictions on X_train by each bootstrap estimator
         boot_preds = [boot_estimators[b].predict(X_train) for b in range(self.B)]
@@ -388,6 +360,13 @@ class EnbPI:
         return list(residuals)
 
     def fit(self, X_train, y_train):
+        """Fit B bootstrap models on the bootstrap bags and respectively compute/store residuals on out-of-bag samples.
+
+        :param ndarray X_train: training feature set
+        :param ndarray y_train: training label set
+
+        :raises RuntimeError: in case of empty out-of-bag.
+        """
         self._oob_dict = dict()  # Key: b. Value: out of bag weighted index
         self._boot_estimators = list()  # f^_b for b in [1,B]
         self._boot_sigma_estimators = list()  # sigma^_b for b in [1,B]
@@ -435,7 +414,7 @@ class EnbPI:
             # Verify OOB-ness for all i-th training samples;
             # raise an exception otherwise.
             if np.sum(oobs_for_i_th_unit) == 0:
-                raise Exception(
+                raise RuntimeError(
                     f"Training sample {i} is included in all boostrap sets."
                     + ' Increase "B", the number of boostrap models.'
                 )
@@ -471,13 +450,13 @@ class EnbPI:
     def predict(self, X_test, alpha=0.1, y_true=None, s=None):
         """Estimate conditional mean and interval prediction.
 
-        Args:
-            X_test: features of new samples
-            alpha: miscoverage level, acceptable statistical error
-            y_true: if not None, residuals update based on seasonality is
-                performed
-            s: Number of online samples necessary to update the residuals
-                sequence
+        :param ndarray X_test: features of new samples.
+        :param ndarray y_true: if not None, residuals update based on seasonality is performed.
+        :param float alpha: target maximum miscoverage.
+        :param int s: Number of online samples necessary to update the residuals sequence.
+
+        :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
+        :rtype: tuple[ndarray, ndarray, ndarray]
         """
         y_pred_upper_list = list()
         y_pred_lower_list = list()
@@ -569,7 +548,20 @@ class EnbPI:
 
 
 class AdaptiveEnbPI(EnbPI):
-    # """Ensemble Batch Prediction Intervals method, Locally Adaptive version
+    """Locally adaptive version ensemble batch prediction intervals method.
+
+    :param object model: object implementing '.fit()' and '.predict()' methods
+    :param object dispersion_model: variability model
+    :param int B: number of bootstrap models
+    :param func agg_func_loo: aggregation function of LOO estimators.
+    :param int random_state: determines random generation.
+
+    .. note::
+        *Xu et al.* defined two aggregation functions of leave-one-out estimators:
+            * For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_: :code:`lambda x, *args: np.quantile(x, alpha, *args)`
+            * For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
+    """
+
     def __init__(
         self,
         model,
@@ -583,24 +575,34 @@ class AdaptiveEnbPI(EnbPI):
 
     def _compute_pi(self, y_pred, w, sigma_pred):
         """Compute prediction intervals.
-        To be modified by subclasses if different processing is needed."""
+
+        :param ndarray y_pred: predicted values.
+        :param ndarray w: residuals' quantiles.
+        :param ndarray sigma_pred: predicted variability.
+
+        :returns: prediction intervals.
+        :rtype: tuple[ndarray, ndarray]
+        """
+
         y_pred_batch_upper = y_pred + w * sigma_pred
         y_pred_batch_lower = y_pred - w * sigma_pred
         return y_pred_batch_upper, y_pred_batch_lower
 
     def _compute_residuals(self, y_pred, y_true, sigma_pred):
+        """Residual computation formula.
+
+        :param ndarray y_pred: predicted values.
+        :param ndarray y_true: true values.
+        :param ndarray sigma_pred: predicted variability.
+
+        :returns: residuals.
+        :rtype: ndarray
+        """
         return np.abs(y_true - y_pred) / sigma_pred
 
     def _compute_boot_residuals(
         self, X_train, y_train, boot_estimators, boot_disp_estimators
     ):
-        """Compute residuals w.r.t the boostrapping.
-        Args:
-            X_train: train features
-            y_train: train targets
-            boot_estimators: list of bootstrap models
-            boot_disp_estimators: list of bootstrap dispersion models
-        """
         boot_preds = np.array(
             [boot_estimators[b].predict(X_train) for b in range(self.B)]
         )
