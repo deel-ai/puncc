@@ -15,15 +15,17 @@ from copy import deepcopy
 
 class ConformalPredictor:
     """Conformal predictor class.
-    Attributes:
-        predictor: point-based or interval-based model wrapper
-        calibrator: nonconformity computation strategy and interval predictor
-        splitter: fit/calibration split strategy
-        method: method to handle the ensemble prediction and calibration
-                in case the splitter is a K-fold-like strategy.
-                - 'cv+': follow cv+ procedure to construct PIs based on the
-                    k-fold estimators
-        train: if False, prediction model(s) will not be (re)trained
+
+    :param deel.puncc.api.prediction.BasePredictor predictor: point-based or interval-based model wrapper.
+    :param deel.puncc.api.prediction.BaseCalibrator calibrator: nonconformity computation strategy and interval predictor.
+    :param deel.puncc.api.prediction.BaseSplitter splitter: fit/calibration split strategy.
+    :param str method: method to handle the ensemble prediction and calibration in case the splitter is a K-fold-like strategy. Defaults to 'cv+' to follow cv+ procedure.
+    :param bool train: if False, prediction model(s) will not be (re)trained. Defaults to True.
+
+    .. WARNING::
+        if a K-Fold-like splitter is provided with the :data:`train` attribute set to True, an exception is raised.
+        The models have to be trained during the call :meth:`fit`.
+
     """
 
     def __init__(
@@ -42,16 +44,40 @@ class ConformalPredictor:
         self._cv_cp_agg = None
 
     def get_residuals(self):
+        """Getter for computed nonconformity scores on the calibration(s) set(s).
+
+        :returns: dictionary of nonconformity scores indexed by the fold index.
+        :rtype: dict
+
+        :raises RuntimeError: :meth:`fit` needs to be called before :meth:`get_residuals`.
+        """
         if self._cv_cp_agg is None:
             return RuntimeError("Error: call 'fit' method first.")
         return self._cv_cp_agg.get_residuals()
 
     def get_weights(self):
+        """Getter for weights associated to calibration samples.
+
+        :returns: dictionary of weights indexed by the fold index.
+        :rtype: dict
+
+        :raises RuntimeError: :meth:`fit` needs to be called before :meth:`get_weights`.
+        """
         if self._cv_cp_agg is None:
             return RuntimeError("Error: call 'fit' method first.")
         return self._cv_cp_agg.get_weights()
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:
+        """Fit the model(s) and estimate the nonconformity scores.
+
+        If the splitter is an instance of :class:`deel.puncc.splitting.KFoldSplitter`, the fit operates on each fold separately. Thereafter, the predictions and nonconformity scores are combined accordingly to an aggregation method (cv+ by default).
+
+        :param ndarray X: features.
+        :param ndarray y: labels.
+        :param kwargs: options configuration for the training.
+
+        :raises RuntimeError: inconsistencies between the train status of the model(s) and the :data:`train` class attribute.
+        """
         # Get split folds. Each fold split is a iterable of a quadruple that
         # contains fit and calibration data.
         splits = self.splitter(X, y)
@@ -69,7 +95,7 @@ class ConformalPredictor:
         # In case of multiple split folds, the predictor require training.
         # Having 'self.train' set to False is therefore an inconsistency
         if len(splits) > 1 and not self.train:
-            raise Exception(
+            raise RuntimeError(
                 "Model already trained. This is inconsistent with the"
                 + "cross-validation strategy."
             )
@@ -109,15 +135,12 @@ class ConformalPredictor:
         self, X: np.ndarray, alpha: float
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,]:
         """Predict point, interval and variability estimates for X data.
-        Args:
-            X: features
-            alpha: significance level
-        Returns:
-            A tuple composed of:
-                y_pred (point prediction),
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound),
-                var_pred (variability prediction)
+
+        :param ndarray X: features
+        :param float alpha: significance level (max miscoverage target).
+
+        :returns: A tuple composed of y_pred (point prediction), y_pred_lower (lower PI bound), y_pred_upper (upper PI bound) and var_pred (variability prediction).
+        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
         """
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
@@ -128,15 +151,11 @@ class CrossValCpAggregator:
     """This class enables to aggregate predictions and calibrations
     from different K-folds.
 
-    Attributes:
-        K: number of folds
-        predictors: collection of predictors fitted on the K-folds
-        calibrators: collection of calibrators fitted on the K-folds
-        agg_func: function called to aggregate the predictions of the K-folds
-            estimators. Used only when method is 'aggregation'.
-        method: method to handle the ensemble prediction and calibration.
-                - 'cv+': follow cv+ procedure to construct PIs based on the
-                k-fold estimators
+
+    :param int K: number of folds
+    :param dict _predictors: collection of predictors fitted on the K-folds
+    :param dict _calibrators: collection of calibrators fitted on the K-folds
+    :param str method: method to handle the ensemble prediction and calibration, defaults to 'cv+'.
     """
 
     def __init__(
@@ -161,17 +180,18 @@ class CrossValCpAggregator:
         self._calibrators[id] = deepcopy(calibrator)
 
     def get_residuals(self):
-        """Get a dictionnary of residuals computed on the K-folds
-        Returns:
-            Dict of residual. Key: K-fold index, value: residuals iterable.
+        """Get a dictionnary of residuals computed on the K-folds.
+
+        :returns: dictionary of residual indexed by the K-fold number.
+        :rtype: dict
         """
         return {k: calibrator._residuals for k, calibrator in self._calibrators.items()}
 
     def get_weights(self):
         """Get a dictionnary of normalized weights computed on the K-folds
-        Returns:
-            Dict of normalized weights. Key: K-fold index,
-                                        value: residuals iterable.
+
+        :returns: dictionary of normalized weights indexed by the K-fold number.
+        :rtype: dict
         """
         return {
             k: calibrator.get_weights() for k, calibrator in self._calibrators.items()
@@ -181,15 +201,12 @@ class CrossValCpAggregator:
         self, X: np.ndarray, alpha: float
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:  #  type: ignore
         """Predict point, interval and variability estimates for X data.
-        Args:
-            X: features
-            alpha: significance level
-        Returns:
-            A tuple composed of:
-                y_pred (point prediction),
-                y_pred_lower (lower PI bound),
-                y_pred_upper (upper PI bound),
-                var_pred (variability prediction)
+
+        :param ndarray X: features
+        :param float alpha: significance level (max miscoverage target).
+
+        :returns: A tuple composed of y_pred (point prediction), y_pred_lower (lower PI bound), y_pred_upper (upper PI bound) and var_pred (variability prediction).
+        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()

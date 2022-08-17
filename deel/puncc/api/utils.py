@@ -12,20 +12,18 @@ EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
 def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
-    """Check if the value of alpha is consistent with the size of calibration
-    set.
-    The quantile order are inflated by a factor (1+1/n) and have to be in
-    the interval (0,1]. From this, we derive the condition:
-        - 1 > alpha => 1/(n+1) given that 0 < (1-alpha)*(1+1/n) <= 1
+    """Check if the value of alpha is consistent with the size of calibration set.
+
+    The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in the interval (0,1). From this, we derive the condition:
+        * :math:`0 < (1-alpha)\cdot(1+1/n) < 1 \implies 1 > alpha > 1/(n+1)`
     If complement_check is set, we consider an additional condition:
-        - 0 < alpha <= n/(n+1) given that 0 < alpha*(1+1/n) <= 1
+        - :math:`0 < alpha \cdot (1+1/n) < 1 \implies 0 < alpha < n/(n+1)`
 
-    Args:
-        alpha: target quantile order.
-        n: size of the calibration dataset.
-        complement_check: complementary check to compute the alpha*(1+1/n)-th
-            quantile, required by some methods such as jk+.
+    :param float alpha: target quantile order.
+    :param int n: size of the calibration dataset.
+    :param bool complement_check: complementary check to compute the :math:`alpha \cdot (1+1/n)`-th quantile, required by some methods such as jk+.
 
+    :raises ValueError: if the value of alpha is inconsistent with the size of calibration set.
     """
     if alpha < 1 / (n + 1):
         raise ValueError(
@@ -71,15 +69,13 @@ def get_min_max_alpha_calib(
     The argument two_sided_conformalization=True, ensures the indexes are within
     range for this special case: 1/(n+1) <= alpha <= n/(n+1)
 
-    Args:
-        n [int]: size of the calibration dataset.
-        two_sided_conformalization [bool]: alpha threshold for two-sided quantile of jackknife+ (Barber et al 2021).
+    :param int n: size of the calibration dataset.
+    :param bool two_sided_conformalization: alpha threshold for two-sided quantile of jackknife+ (Barber et al 2021).
 
-    Raises:
-        ValueError -- must have integer n, boolean two_sided_conformalization and n>=1
+    :returns: lower and upper bounds for alpha (miscoverage probability)
+    :rtype: Tuple[float, float]
 
-    Returns:
-        Optional[Tuple[float, float]] -- lower and upper bounds for alpha (miscoverage probability)
+    :raises ValueError: must have integer n, boolean two_sided_conformalization and n>=1
     """
     if isinstance(n, int) and isinstance(two_sided_conformalization, bool) and n >= 1:
         # Special case: Conformal Prediction with jackknife-plus (Barber et al 2019)
@@ -101,16 +97,17 @@ def get_min_max_alpha_calib(
             raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
 
 
-def quantile(a, q, w=None):
+def quantile(a: np.ndarray, q: float, w: np.ndarray = None):  # type: ignore
     """Estimate the q-th empirical weighted quantiles.
 
-    Args:
-        a: vector of n samples
-        q: target quantile order. Must be in the open interval [0, 1].
-        w: vector of size n
-            By default, w is None and equal weights = 1/m are associated.
-    Returns:
-        Weighted empirical quantiles
+    :param ndarray a: vector of n samples
+    :param float q: target quantile order. Must be in the open interval (0, 1).
+    :param ndarray w: vector of size n. By default, w is None and equal weights = 1/m are associated.
+
+    :returns: weighted empirical quantiles.
+    :rtype: ndarray
+
+    :raises NotImplementedError: a must be unidimensional.
     """
     # Sanity checks
     if q <= 0 or q >= 1:
@@ -154,6 +151,13 @@ def quantile(a, q, w=None):
 
 
 def agg_list(a: np.ndarray):
+    """Ancillary function to aggregate array following the axis 0.
+
+    :param ndarray a: array.
+
+    :returns: the concatenated array or None
+    :rtype: ndarray or None
+    """
     try:
         return np.concatenate(a, axis=0)
     except ValueError:
@@ -192,17 +196,14 @@ def plot_prediction_interval(
     sort_X: bool = False,
     **kwargs,
 ) -> None:
-    """Plot prediction intervals whose bounds are given by y_pred_lower
-    and y_pred_upper.
-    True values and point estimates are also plotted if given as argument.
+    """Plot prediction intervals whose bounds are given by y_pred_lower and y_pred_upper. True values and point estimates are also plotted if given as argument.
 
-    Args:
-        y_true: label true values.
-        y_pred_lower: lower bounds of the prediction interval.
-        y_pred_upper: upper bounds of the prediction interval.
-        X <optionnal>: abscisse vector.
-        y_pred <optional>: predicted values.
-        kwargs: plot parameters.
+    :param ndarray y_true: label true values.
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    :param ndarray, optional X: abscisse vector.
+    :param ndarray, optional y_pred: predicted values.
+    :param kwargs: plot configuration parameters.
     """
 
     # Figure configuration
@@ -304,13 +305,13 @@ def plot_sorted_pi(
 ) -> None:
     """Plot prediction intervals in an ordered fashion (lowest to largest width)
     showing the upper and lower bounds for each prediction.
-    Args:
-        y_true: label true values.
-        y_pred_lower: lower bounds of the prediction interval.
-        y_pred_upper: upper bounds of the prediction interval.
-        X <optionnal>: abscisse vector.
-        y_pred <optionnal>: predicted values.
-        kwargs: plot parameters.
+
+    :param ndarray y_true: label true values.
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    :param ndarray, optional X: abscisse vector.
+    :param ndarray, optional y_pred: predicted values.
+    :param kwargs: plot configuration parameters.
     """
 
     if y_pred is None:
@@ -404,13 +405,51 @@ def plot_sorted_pi(
 
 
 def average_coverage(y_true, y_pred_lower, y_pred_upper):
+    """Compute average coverage on several prediction intervals.
+
+    Given a prediction interval i defined by its lower bound y_pred_lower[i] and upper bound y_pred_upper[i], the i-th coverage is:
+
+        * c[i] = 1 if y_pred_lower[i]  <= y_true[i] <= bound y_pred_upper[i]
+        * c[i] = 0 otherwise
+
+    With N the number of example, the average coverage is :math:`1/N \sum_{i=1}^{N} c(i)`.
+
+    :param ndarray y_true: label true values.
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+
+    :returns: Average coverage
+    :rtype: float
+    """
     return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
 
 
 def ace(y_true, y_pred_lower, y_pred_upper, alpha):
+    """Compte the Average Coverage Error (ACE).
+
+    :param ndarray y_true: label true values.
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    :param float alpha: significance level (max miscoverage target).
+
+    .. NOTE::
+        The ACE is the distance between the nominal coverage :math:`1-alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-alpha)`.
+        If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
+
+    :returns: the average coverage error (ACE).
+    :rtype: float
+    """
     cov = average_coverage(y_true, y_pred_lower, y_pred_upper)
     return cov - (1 - alpha)
 
 
 def sharpness(y_pred_lower, y_pred_upper):
+    """Compute the average absolute width of the prediction intervals.
+
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+
+    :returns: average absolute width of the prediction intervals.
+    :rtype: float
+    """
     return (np.abs(y_pred_upper - y_pred_lower)).mean()
