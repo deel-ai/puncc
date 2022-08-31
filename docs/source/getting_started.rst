@@ -2,12 +2,12 @@ Quickstart
 ==================
 
 Let's consider a simple regression problem on diabetes data provided by `Scikit-learn <https://scikit-learn.org/stable/datasets/toy_dataset.html#diabetes-dataset>`_. 
-We want to evaluate the uncertainty associated with the prediction using **conformal prediction**.
+We want to evaluate the uncertainty associated with the prediction using **inductive conformal prediction**.
 
 Data
 ****
 
-Data are assumed to be indepent and identically distributed. For more information, we refer the reader to `link <https://www4.stat.ncsu.edu/~boos/var.select/diabetes.html>`_.
+Data are assumed to be indepent and identically distributed. For more information, the reader is referred to `the documentation <https://www4.stat.ncsu.edu/~boos/var.select/diabetes.html>`_.
 
 Data processing results in three subsets: 
 
@@ -75,6 +75,7 @@ methods are presented :doc:`here <regression>`.
    split_cp.fit(X_fit, y_fit, X_calib, y_calib) 
    # Estimate the prediction interval
    y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+
 
 .. code-block:: python
 
