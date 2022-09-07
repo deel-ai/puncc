@@ -50,7 +50,7 @@ We propose two ways of defining and using conformal prediction wrappers:
 - A fast way based on preconfigured conformal prediction wrappers
 - A flexible way based of full customization of the prediction model, the residual computation and the fit/calibration data split plan
 
-A comparison of both approaches is provided [here](doc/quickstart.ipynb) for a simple regression problem. A showcase of basic uncertainty quantification features for the first approach is given hereafter.
+A comparison of both approaches is provided [here](docs/quickstart.ipynb) for a simple regression problem. A showcase of basic uncertainty quantification features for the first approach is given hereafter.
 
 ## Data
 ```python
