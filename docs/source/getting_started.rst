@@ -1,7 +1,7 @@
 Quickstart
 ==================
 
-Let's consider a simple regression problem on diabetes data provided by `Scikit-learn <https://scikit-learn.org/stable/datasets/toy_dataset.html#diabetes-dataset>`_. 
+Let's consider a simple regression problem on diabetes data provided by `Scikit-learn <https://scikit-learn.org/stable/datasets/toy_dataset.html#diabetes-dataset>`_.
 We want to evaluate the uncertainty associated with the prediction using **inductive conformal prediction**.
 
 Data
@@ -9,11 +9,11 @@ Data
 
 Data are assumed to be indepent and identically distributed. For more information, the reader is referred to `the documentation <https://www4.stat.ncsu.edu/~boos/var.select/diabetes.html>`_.
 
-Data processing results in three subsets: 
+Data processing results in three subsets:
 
-* Fit subset :math:`{\cal D_{fit}}` to train the model 
+* Fit subset :math:`{\cal D_{fit}}` to train the model
 * Calibration subset :math:`{\cal D_{calib}}` on which nonconformity scores are computed
-* Test subset :math:`{\cal D_{test}}` to evaluate the validity and efficiency of the prediction intervals 
+* Test subset :math:`{\cal D_{test}}` to evaluate the validity and efficiency of the prediction intervals
 
 .. code-block:: python
 
@@ -41,9 +41,9 @@ Data processing results in three subsets:
 Linear regression
 *****************
 
-We consider a simple linear regression model from 
-`scikit-learn regression module <https://scikit-learn.org/stable/modules/linear_model.html>`_, 
-to be trained later on :math:`{\cal D_{fit}}` and approximate the conditional 
+We consider a simple linear regression model from
+`scikit-learn regression module <https://scikit-learn.org/stable/modules/linear_model.html>`_,
+to be trained later on :math:`{\cal D_{fit}}` and approximate the conditional
 mean :math:`\mathbb{E}[Y|X]`:
 
 .. code-block:: python
@@ -57,7 +57,7 @@ mean :math:`\mathbb{E}[Y|X]`:
 Conformal prediction
 **************************
 
-For this example, the prediction intervals are obtained throught the split 
+For this example, the prediction intervals are obtained throught the split
 conformal prediction method provided by :mod:`deel.puncc.regression`. Other
 methods are presented :doc:`here <regression>`.
 
@@ -67,12 +67,12 @@ methods are presented :doc:`here <regression>`.
    from deel.puncc.regression import SplitCP
 
    # Coverage target is 1-alpha = 90%
-   alpha=.1 
+   alpha=.1
    # Instanciate the split cp wrapper on the linear model
-   split_cp = SplitCP(regr) 
+   split_cp = SplitCP(regr)
    # Train model on the fitting dataset and compute residuals on the calibration
    # dataset
-   split_cp.fit(X_fit, y_fit, X_calib, y_calib) 
+   split_cp.fit(X_fit, y_fit, X_calib, y_calib)
    # Estimate the prediction interval
    y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 
