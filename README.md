@@ -54,7 +54,6 @@ A comparison of both approaches is provided [here](doc/quickstart.ipynb) for a s
 
 ## Data
 ```python
-
 import numpy as np
 from sklearn import datasets
 
@@ -88,7 +87,7 @@ regr = linear_model.LinearRegression()
 
 ## Split conformal prediction
 ``` python
-from puncc.common.confomalizers import SplitCP
+from deel.puncc.regression import SplitCP
 
 # Coverage target is 1-alpha = 90%
 alpha=.1
@@ -104,7 +103,7 @@ y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 ## Results
 
 ```python
-from puncc.utils import plot_prediction_interval
+from deel.puncc.api.utils import plot_prediction_interval
 
 # Figure of the prediction bands
 
@@ -119,36 +118,36 @@ plot_prediction_interval(
     loc="upper left")
 ```
 
-![90% Prediction Interval with the Split Conformal Prediction Method](doc/results_quickstart_split_cp_pi.png)
+![90% Prediction Interval with the Split Conformal Prediction Method](docs/source/results_quickstart_split_cp_pi.png)
 
 
 # Architecture Overview
 
-As mentionned [before](#quickstart), the present implementation enables a turnkey solution and a fully customized approach to conformal prediction. The former is as simple as calling the conformal prediction wrappers in `puncc.common.conformalizers` (as in [here](#split-conformal-prediction)). The currently implemented wrappers are the following:
-* `puncc.common.conformalizers.SplitCP`: Split Conformal Prediction
-* `puncc.common.conformalizers.LocallyAdaptiveCP`: Locally Adaptive Conformal Prediction
-* `puncc.common.conformalizers.CQR`: Conformalized Quantile Regression
-* `puncc.common.conformalizers.CvPlus`: CV + (cross-validation)
-* `puncc.common.conformalizers.EnbPI`: Ensemble Batch Prediction Intervals method
+As mentionned [before](#quickstart), the present implementation enables a turnkey solution and a fully customized approach to conformal prediction. The former is as simple as calling the conformal prediction wrappers in `deel.puncc.regression` (as in [here](#split-conformal-prediction)). The currently implemented wrappers are the following:
+* `deel.puncc.regression.SplitCP`: Split Conformal Prediction
+* `deel.puncc.regression.LocallyAdaptiveCP`: Locally Adaptive Conformal Prediction
+* `deel.puncc.regression.CQR`: Conformalized Quantile Regression
+* `deel.puncc.regression.CvPlus`: CV + (cross-validation)
+* `deel.puncc.regression.EnbPI`: Ensemble Batch Prediction Intervals method
 
 Each of these wrappers conformalize point-based or interval-based models that are passed as argument in the object constructor. Such models **need** to implement the `fit` and `predict` methods and operate on numpy arrays. We will see later how to use models even when these requirements are not met (e.g., using pytorch and tensorflow on time series).
 
-The **fully customized** approach offers more flexibility into defining conformal prediction wrappers. Let's say we want to fit/calibrate a neural-network interval-estimator with a cross-validation plan; or that we want to experiment different user-defined nonconformity scores. In such cases and others, the user can fully construct their wrappers using the proposed **Predictor-Calibrator-Splitter** paradigm. It boils down to assembling into `puncc.conformalization.ConformalPredictor`:
+The **fully customized** approach offers more flexibility into defining conformal prediction wrappers. Let's say we want to fit/calibrate a neural-network interval-estimator with a cross-validation plan; or that we want to experiment different user-defined nonconformity scores. In such cases and others, the user can fully construct their wrappers using the proposed **Predictor-Calibrator-Splitter** paradigm. It boils down to assembling into `puncc.api.conformalization.ConformalPredictor`:
 1) Regression model(s)
 2) An estimator of nonconformity scores for construction/calibration of prediction intervals
 3) A strategy of data assignement into fitting and calibration sets.
 
 ## ConformalPredictor
 
-`puncc.conformalization.ConformalPredictor` is the canvas of conformal prediction wrappers. An object instance is constructed by, as we will explain later, a predictor, a calibrator and a splitter:
+`deel.puncc.api.conformalization.ConformalPredictor` is the canvas of conformal prediction wrappers. An object instance is constructed by, as we will explain later, a predictor, a calibrator and a splitter:
 
 ```python
 # Imports
 from sklearn import linear_model
-from conformalization import ConformalPredictor
-from predictor import MeanPredictor
-from calibration import MeanCalibrator
-from splitter import KFoldSplit
+from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.predictor import MeanPredictor
+from deel.puncc.api.calibration import MeanCalibrator
+from deel.puncc.api.splitter import KFoldSplit
 
 # Regression linear model
 model = linear_model.LinearRegression()
@@ -164,7 +163,7 @@ conformal_predictor = ConformalPredictor(predictor=mean_predictor,
                                          calibrator=mean_calibrator,
                                          splitter=kfold_splitter)
 ```
-`puncc.conformalization.ConformalPredictor` implements two methods:
+`deel.puncc.api.conformalization.ConformalPredictor` implements two methods:
 * A `fit` method that fits the predictor model and computes nonconformity scores accodingly to the calibrator and to the data split strategy provided by the splitter
 
 ```python
@@ -181,11 +180,11 @@ y_pred, y_pred_low, y_pred_high, sigma_pred = conformal_predictor.predict(X_new,
 
 ## Predictor
 
-The `puncc.prediction.BasePredictor` class is a wrapper for regression models that aims to standardize their interface and force compliance with the previously presented requirements:
+The `deel.puncc.api.prediction.BasePredictor` class is a wrapper for regression models that aims to standardize their interface and force compliance with the previously presented requirements:
 * The models have to implement the `fit` and `predict` methods
 * The models have to operate on datasets formated as numpy arrays (in `_format`)
 
-Any specific preprocessing should be included in a **subclass** of `puncc.prediction.BasePredictor`.
+Any specific preprocessing should be included in a **subclass** of `deel.puncc.api.prediction.BasePredictor`.
 
 A special attention is to be directed towards the `predict` method.
 
@@ -238,34 +237,34 @@ class QuantilePredictor(BasePredictor):
         return None, y_pred_lower, y_pred_upper, None
 ```
 
-To cover a large range of conformal prediction methods, three subclasses of `puncc.prediction.BasePredictor` have been implemented:
+To cover a large range of conformal prediction methods, three subclasses of `deel.puncc.api.prediction.BasePredictor` have been implemented:
 
-* `puncc.prediction.MeanPredictor`: wrapper of point-based models
-* `puncc.prediction.MeanVarPredictor`: wrapper of point-based models that also estimates variability statistics (e.g., standard deviation)
-* `puncc.prediction.QuantilePredictor`: wrapper of specific interval-based models that estimate upper and lower quantiles of the data generating distribution
+* `deel.puncc.api.prediction.MeanPredictor`: wrapper of point-based models
+* `deel.puncc.api.prediction.MeanVarPredictor`: wrapper of point-based models that also estimates variability statistics (e.g., standard deviation)
+* `deel.puncc.api.prediction.QuantilePredictor`: wrapper of specific interval-based models that estimate upper and lower quantiles of the data generating distribution
 
-PS: User-defined predictors have to subclass `puncc.prediction.BasePredictor` and redefine its methods.
+PS: User-defined predictors have to subclass `deel.puncc.api.prediction.BasePredictor` and redefine its methods.
 
 ## Calibrator
 
-The `puncc.calibration.Calibrator` is meant to compute **nonconformity scores** (e.g., residuals) on the calibration dataset (`puncc.calibration.Calibrator.estimate` method) and uses them to **construct** and/or **calibrate** prediction intervals (`puncc.calibration.Calibrator.calibrate` method).
+The `deel.puncc.api.calibration.Calibrator` is meant to compute **nonconformity scores** (e.g., residuals) on the calibration dataset (`deel.puncc.api.calibration.Calibrator.estimate` method) and uses them to **construct** and/or **calibrate** prediction intervals (`deel.puncc.api.calibration.Calibrator.calibrate` method).
 
-To cover a large range of conformal prediction methods, three subclasses of `puncc.calibration.Calibrator` have been implemented:
+To cover a large range of conformal prediction methods, three subclasses of `deel.puncc.api.calibration.Calibrator` have been implemented:
 
-* `puncc.calibration.MeanCalibrator`: constructs prediction intervals based on point predictions by adding and substracting quantiles of mean absolute deviations
-* `puncc.calibration.MeanVarCalibrator`: constructs prediction intervals based on point predictions and dispersion estimations by adding and substracting quantiles of **scaled** mean absolute deviations
-* `puncc.calibration.QuantileCalibrator`: calibrates quantile-based prediction intervals by shrinking or dialating them accordingly to the quantiles of nonconformity scores
+* `deel.puncc.api.calibration.MeanCalibrator`: constructs prediction intervals based on point predictions by adding and substracting quantiles of mean absolute deviations
+* `deel.puncc.api.calibration.MeanVarCalibrator`: constructs prediction intervals based on point predictions and dispersion estimations by adding and substracting quantiles of **scaled** mean absolute deviations
+* `deel.puncc.api.calibration.QuantileCalibrator`: calibrates quantile-based prediction intervals by shrinking or dialating them accordingly to the quantiles of nonconformity scores
 
-PS: User-defined calibrators have to subclass `puncc.calibration.Calibrator` and redefine its methods.
+PS: User-defined calibrators have to subclass `deel.puncc.api.calibration.Calibrator` and redefine its methods.
 
 ## Splitter
 
 In conformal prediction, the assignement of data to fitting and calibration sets is motivated by two criteria: data availability and computational resources. If quality data is abundant, we can split the training samples into disjoint subsets $D_{fit}$ and $D_{calib}$. When data is scarce, a cross-validation strategy is preferred but is more ressources consuming as different models are trained and nonconformity scores are computed for different disjoint folds.
 
-The two plans are implemented in `puncc.splitting` module.
-* `puncc.splitting.RandomSplitter`: assignement of samples in $D_{fit}$ and $D_{calib}$
-* `puncc.splitting.KFoldSplitter`: assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy
+The two plans are implemented in `deel.puncc.api.splitting` module.
+* `deel.puncc.api.splitting.RandomSplitter`: assignement of samples in $D_{fit}$ and $D_{calib}$
+* `deel.puncc.api.splitting.KFoldSplitter`: assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy
 
 These methods produce **iterables** that are used by the `ConformalPredictor` instance.
 
-Additionnaly, if the user already implemted a split plan, the obtained data asignement is wrapped in `puncc.splitting.IdSplitter` to produce iterables.
+Additionnaly, if the user already implemted a split plan, the obtained data asignement is wrapped in `deel.puncc.api.splitting.IdSplitter` to produce iterables.
