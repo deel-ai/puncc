@@ -493,78 +493,23 @@ class CvPlusCalibrator(MetaCalibrator):
         if concat_residuals_lo is None or concat_residuals_hi is None:
             raise RuntimeError("This should never happen.")
         else:
-            y_lo = np.quantile(concat_residuals_lo, alpha, axis=1, method="lower")
-            y_hi = np.quantile(concat_residuals_hi, 1 - alpha, axis=1, method="higher")
+            # The following "upper" and "lower" quantiles follow the formulas
+            # given in Section 1.2 of:
+            # - Barber et al. 2019, "Predictive inference with the jackknife+"
+            #
+            # The authors define (with slightly misleading notation for "alpha"):
+            #   q_hi(array, alpha) = ceiling( (1-alpha))-th smallest value of sorted(array)
+            #   q_lo(array, alpha) = floor(     (alpha))-th smallest value of sorted(array)
+            #
+            # They point out how:
+            #     q_lo(array, alpha) == (-1) * q_hi( (-1) * array, 1-alpha)
+            #
+            # Here we use the implementation in puncc.utils.quantile that returns
+            # the empirical quantiles that yield the same result as in q_hi(.., ..)
+            y_lo = (-1) * np.quantile(
+                (-1) * concat_residuals_lo, 1 - alpha, axis=1, method="inverted_cdf"
+            )
+            y_hi = np.quantile(
+                concat_residuals_hi, 1 - alpha, axis=1, method="inverted_cdf"
+            )
             return y_lo, y_hi
-
-
-# class AggregatorCalibrator(MetaCalibrator):
-#     """Meta calibrator that combines the estimations nonconformity
-#     scores by each K-Fold calibrator and produces associated prediction
-#     intervals. The point predictions on each fold are aggregated by calling agg_func.
-#     The PI bounds are computed as the (1-alpha)-th quantiles of the k-fold PI bounds.
-
-#     Attributes:
-#         kfold_calibrators_dict: dictionary of calibrators for each K-fold
-#                                 (disjoint calibration subsets). Each calibrator
-#                                 needs to priorly estimate the nonconformity
-#                                 scores w.r.t the associated calibration fold.
-
-#         agg_func: function called to aggregate point predictions.
-#     """
-
-#     def __init__(self, kfold_calibrators: dict, agg_func):
-#         super().__init__(kfold_calibrators=kfold_calibrators)
-#         self.agg_func = agg_func
-
-#     def calibrate(
-#         self,
-#         X: np.ndarray,
-#         kfold_predictors_dict: dict,
-#         alpha: float,
-#     ) -> tuple[np.ndarray, np.ndarray]:
-#         y_preds, y_pred_los, y_pred_his, var_preds = [], [], [], []
-
-#         ## Recover K-fold estimator and predict response for the points X
-#         for k, predictor in kfold_predictors_dict.items():
-#             (
-#                 y_pred,
-#                 y_pred_lo,
-#                 y_pred_hi,
-#                 var_pred,
-#             ) = predictor.predict(X)
-
-#             y_preds.append(y_pred)
-#             var_preds.append(var_pred)
-
-#             # recover prefitted calibrators on each fold
-#             calibrator = self.kfold_calibrators_dict[k]
-
-#             # Compute/calibrate PI
-#             (y_pred_lo, y_pred_hi) = calibrator.calibrate(
-#                 y_pred=y_pred,
-#                 alpha=alpha,
-#                 y_pred_lo=y_pred_lo,
-#                 y_pred_hi=y_pred_hi,
-#                 var_pred=var_pred,
-#                 X=X,
-#             )
-
-#             y_pred_los.append(y_pred_lo)
-#             y_pred_his.append(y_pred_hi)
-
-#         # Number of folds
-#         K = len(kfold_predictors_dict.keys())
-
-#         if K == 1:  # 1-Fold, no aggregation required
-#             y_pred = y_preds[0]
-#             y_pred_lo = y_pred_los[0]
-#             y_pred_hi = y_pred_his[0]
-#             var_pred = var_preds[0]
-#         else:  # K-Fold, aggregate point predictions and PI bounds
-#             y_pred = self.agg_func(y_preds)
-#             y_pred_lo = np.quantile(y_pred_los, (1 - alpha) * (1 + 1 / K), axis=0)
-#             y_pred_hi = np.quantile(y_pred_his, (1 - alpha) * (1 + 1 / K), axis=0)
-#             var_pred = self.agg_func(var_preds)
-
-#         return (y_pred, y_pred_lo, y_pred_hi, var_pred)

@@ -40,12 +40,12 @@ from deel.puncc.regression import WeightedSplitCP
 
 RESULTS = {
     "scp": {"cov": 0.95, "width": 218.98},
-    "nescp": {"cov": 0.97, "width": 241.99},
+    "nescp": {"cov": 0.98, "width": 265.85},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.9, "width": 237.8},
     "cv+": {"cov": 0.9, "width": 231.04},
-    "enbpi": {"cov": 0.9, "width": 222.05},
-    "aenbpi": {"cov": 0.91, "width": 286.64},
+    "enbpi": {"cov": 0.9, "width": 221.5},
+    "aenbpi": {"cov": 0.87, "width": 272.14},
 }
 
 
@@ -66,7 +66,7 @@ def test_split_cp(diabetes_data, alpha, random_state):
     split_cp = SplitCP(regr_model)
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    split_cp.fit(X_fit, y_fit, X_calib, y_calib)
+    split_cp.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
@@ -109,7 +109,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     w_split_cp = WeightedSplitCP(regr_model, w_estimator)
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    w_split_cp.fit(X_fit, y_fit, X_calib, y_calib)
+    w_split_cp.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
@@ -139,7 +139,7 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     # CP method initialization
     la_cp = LocallyAdaptiveCP(regr_model, var_model)
     # Fit and conformalize
-    la_cp.fit(X_fit, y_fit, X_calib, y_calib)
+    la_cp.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
     y_pred, y_pred_lower, y_pred_upper, var_pred = la_cp.predict(X_test, alpha=alpha)
     assert (y_pred is not None) and (var_pred is not None)
     # Compute marginal coverage
@@ -166,7 +166,7 @@ def test_cqr(diabetes_data, alpha, random_state):
     # CP method initialization
     crq = CQR(q_hi_model=q_hi_model, q_lo_model=q_lo_model)
     # Fit and conformalize
-    crq.fit(X_fit, y_fit, X_calib, y_calib)
+    crq.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
     y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
     # Compute marginal coverage
     coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)

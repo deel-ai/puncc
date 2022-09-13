@@ -419,6 +419,10 @@ class EnbPI:
                     n_samples=T,
                     random_state=random_state_b,
                 )
+
+                if boot is None:  # sanity check
+                    raise RuntimeError("Bootstrap dataset is empty.")
+
                 oob_units = np.setdiff1d(horizon_indices, boot)
                 oob_is_empty = len(oob_units) == 0
             # OOB is not empty, proceed

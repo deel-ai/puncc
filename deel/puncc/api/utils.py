@@ -142,7 +142,7 @@ def quantile(a: np.ndarray, q: float, w: np.ndarray = None):  # type: ignore
 
     # Case of None weights
     if w is None:
-        return np.quantile(a, q=q, method="higher")
+        return np.quantile(a, q=q, method="inverted_cdf")
         ## An equivalent method would be to assign equal values to w
         ## and carry on with the computations.
         ## np.quantile is however more optimized.
@@ -292,8 +292,8 @@ def plot_prediction_interval(
         plt.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
         plt.fill_between(
             x=X,
-            y1=y_pred_upper,
-            y2=y_pred_lower,
+            y1=y_pred_upper,  # type: ignore
+            y2=y_pred_lower,  # type: ignore
             alpha=0.2,
             fc="b",
             ec="None",
@@ -422,9 +422,6 @@ def plot_sorted_pi(
 #
 # ========================= Metrics =========================
 #
-
-# TODO: add comments, explain their formula, how to interpret.
-# TODO: add docstrings
 
 
 def average_coverage(y_true, y_pred_lower, y_pred_upper):
