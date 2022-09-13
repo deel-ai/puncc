@@ -6,7 +6,9 @@
 **dist/
 
 # Editor files
-**.vscode
+#**.vscode
+*~
+.vscode
 
 # Virtual environment
 env-puncc/
@@ -14,5 +16,7 @@ env-puncc/
 # Local demo files
 **demo/
 
-# tests
-tests/seed_demos.ipynb
+# Documentation build
+.tox
+docs/build
+docs/source/modules.rst
