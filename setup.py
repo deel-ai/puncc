@@ -20,7 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import setup
 
 requirements = [
@@ -60,7 +60,8 @@ setup(
     description="Predictive Uncertainty Calibration and Conformalization Lib",
     author="IRT Saint Exupery",
     author_email="mouhcine.mendil@irt-saintexupery.com",
-    packages=find_packages(),
+    url="https://github.com/deel-ai/puncc",
+    packages=find_namespace_packages(include=["deel.*"]),
     install_requires=requirements,
     extras_require={
         "interactive": interactive_requirements,
