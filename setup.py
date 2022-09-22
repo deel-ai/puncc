@@ -20,8 +20,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from setuptools import find_namespace_packages
-from setuptools import setup
+from os import path
+
+import setuptools
+
+
+# read the contents of your README file
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
 
 requirements = [
     "joblib>=1.1.0",
@@ -54,18 +62,26 @@ dev_requirements = [
     "tox>=3.25.1",
 ]
 
-setup(
+setuptools.setup(
     name="puncc",
     version="0.1dev",
+    author=", ".join(["Mouhcine Mendil", "Luca Mossina"]),
+    author_email=", ".join(
+        [
+            "mouhcine.mendil@irt-saintexupery.com",
+            "luca.mossina@irt-saintexupery.com",
+        ]
+    ),
     description="Predictive Uncertainty Calibration and Conformalization Lib",
-    author="IRT Saint Exupery",
-    author_email="mouhcine.mendil@irt-saintexupery.com",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/deel-ai/puncc",
-    packages=find_namespace_packages(include=["deel.*"]),
+    packages=setuptools.find_namespace_packages(include=["deel.*"]),
     install_requires=requirements,
     extras_require={
         "interactive": interactive_requirements,
         "dev": dev_requirements,
     },
     license="MIT",
+    python_requires=">=3.8",
 )
