@@ -1,6 +1,25 @@
+<div align="center">
+    <a href="#">
+        <img src="https://img.shields.io/badge/Python-3.8 +-efefef">
+    </a>
+    <a href="#">
+        <img src="https://img.shields.io/badge/License-MIT-efefef">
+    </a>
+</div>
+<br>
+
 Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source library that enables ad-hoc integration of AI models into a theoretically sound uncertainty estimation framework based on conformal prediction. Prediction sets are constructed with guaranteed coverage probability according to a nominal level of error $\alpha$.
 
-# Installation
+## 📚 Table of contents
+
+- [🐾 Instalation](#-installation)
+- [🚀 Quick Start](#-quick-start)
+- [📚 Citation](#-citation)
+- [💻 Contributing](#-contributing)
+- [📝 License](#-license)
+- [🙏 Acknowledgments](#-acknowledgments)
+
+# 🐾 Installation
 
 ## Clone the repo
 
@@ -10,7 +29,7 @@ git clone ssh://git@forge.deel.ai:22012/statistic-guarantees/puncc.git
 
 ## Installation
 
-It is recommended to install puncc in a virtual environment to not mess with you system dependencies.
+It is recommended to install puncc in a virtual environment to not mess with your system's dependencies.
 
 ### Using pip
 
@@ -37,7 +56,7 @@ make prepare-dev
 make prepare-dev
 ```
 
-# Quickstart
+# 🚀 Quickstart
 
 We propose two ways of defining and using conformal prediction wrappers:
 - A fast way based on preconfigured conformal prediction wrappers
@@ -113,7 +132,7 @@ plot_prediction_interval(
 
 ![90% Prediction Interval with the Split Conformal Prediction Method](docs/source/results_quickstart_split_cp_pi.png)
 
-## Citation
+## 📚 Citation
 
 This library was built to support the work presented in our COPA 2022 paper on conformal prediction for timeseries. If you use our library for your work, please cite our paper:
 
@@ -128,36 +147,20 @@ This library was built to support the work presented in our COPA 2022 paper on c
 }
 ```
 
-## Contributing
+## 💻 Contributing
 
 Contributions are welcome! Feel free to report an issue or open a pull
 request. Take a look at our guidelines [here](CONTRIBUTING.md).
 
-## License
+## 🔑 License
+
+The package is released under [MIT](LICENSES/headers/MIT-Clause.txt) license.
 
 Copyright IRT Antoine de Saint Exupéry et Université Paul Sabatier Toulouse III - All
 rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry, CRIAQ
 and ANITI - https://www.deel.ai/
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this
-software and associated documentation files (the "Software"), to deal in the Software
-without restriction, including without limitation the rights to use, copy, modify,
-merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to the following
-conditions:
+## 🙏 Acknowledgments
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-
-## Acknowledgments
-
-This project received funding from the French "Investing for the Future – PIA3" program
-within the Artiﬁcial and Natural Intelligence Toulouse Institute (ANITI). The authors
-gratefully acknowledge the support of the [DEEL project](https://www.deel.ai/).
+<img align="right" src="https://www.deel.ai/wp-content/uploads/2021/05/logo-DEEL.png" width="25%">
+This project received funding from the French ”Investing for the Future – PIA3” program within the Artificial and Natural Intelligence Toulouse Institute (ANITI). The authors gratefully acknowledge the support of the <a href="https://www.deel.ai/"> DEEL </a> project.
