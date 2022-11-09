@@ -1,4 +1,4 @@
-Quickstart
+🚀 Quickstart
 ==================
 
 Let's consider a simple regression problem on diabetes data provided by `Scikit-learn <https://scikit-learn.org/stable/datasets/toy_dataset.html#diabetes-dataset>`_.

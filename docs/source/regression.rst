@@ -1,7 +1,7 @@
 .. _regression:
 
-Regression
-==========
+📈 Regression
+=============
 
 
 Currently implemented conformal prediction methods for regression are listed in this page.

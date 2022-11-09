@@ -13,7 +13,7 @@ Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-sourc
 ## 📚 Table of contents
 
 - [🐾 Instalation](#-installation)
-- [🚀 Quick Start](#-quick-start)
+- [🚀 Quick Start](#-quickstart)
 - [📚 Citation](#-citation)
 - [💻 Contributing](#-contributing)
 - [📝 License](#-license)
