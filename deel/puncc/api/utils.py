@@ -24,14 +24,45 @@
 # This module implements utility functions.
 #
 import sys
+from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
+# import tensorflow as tf
+# import torch
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
+
+
+def supported_types_check(y_pred, y_true=None):
+    if y_true is not None and (type(y_pred) != type(y_true)):
+        raise TypeError(
+            f"y_pred and y_true do not have the same type: {type(y_pred)} vs {type(y_true)} resp."
+        )
+    if isinstance(y_pred, np.ndarray):
+        pass
+    else:
+        import pandas as pd
+
+        if isinstance(y_pred, pd.DataFrame):
+            pass
+
+        else:
+            import tensorflow as tf
+            import torch
+
+            if isinstance(y_pred, tf.Tensor) or isinstance(y_pred, torch.Tensor):
+                pass
+
+            else:
+                raise TypeError(
+                    "Unsupported data type. Please provide a numpy ndarray, a dataframe or a tensor (TensorFlow|torch)."
+                )
 
 
 def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
@@ -120,10 +151,10 @@ def get_min_max_alpha_calib(
             raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
 
 
-def quantile(a: np.ndarray, q: float, w: np.ndarray = None):  # type: ignore
+def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
     """Estimate the q-th empirical weighted quantiles.
 
-    :param ndarray a: vector of n samples
+    :param ndarray|DataFrame|Tensor a: collection of n samples
     :param float q: target quantile order. Must be in the open interval (0, 1).
     :param ndarray w: vector of size n. By default, w is None and equal weights = 1/m are associated.
 
@@ -132,6 +163,26 @@ def quantile(a: np.ndarray, q: float, w: np.ndarray = None):  # type: ignore
 
     :raises NotImplementedError: a must be unidimensional.
     """
+    # type checks:
+    supported_types_check(a)
+    if isinstance(a, np.ndarray):
+        pass
+    else:
+        import pandas as pd
+
+        if isinstance(a, pd.DataFrame):
+            a = a.to_numpy()
+        else:
+            import tensorflow as tf
+            import torch
+
+            if isinstance(a, tf.Tensor):
+                a = a.numpy()
+            elif isinstance(a, torch.Tensor):
+                a = a.cpu().detach().numpy()
+            else:
+                raise RuntimeError("Fatal error.")
+
     # Sanity checks
     if q <= 0 or q >= 1:
         raise ValueError("q must be in the open interval (0, 1).")

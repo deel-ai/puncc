@@ -87,7 +87,7 @@ class BaseCalibrator(ABC):
 
 
     :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
-    :param str weight_method: weight normalization method ["equi", "barber", "tibshirani"]; Default value is "equi", defaults to "equi"
+    :param str weight_method: weight normalization method ["equi", "barber", "tibshirani"]; Default value is "equi".
 
     :raises NotImplementedError: provided :data:`weight_method` is not suitable.
     """
