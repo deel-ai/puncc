@@ -136,12 +136,19 @@ class ConformalPredictor:
                 raise RuntimeError(
                     f"'train' argument is set to 'False' but model is not pre-trained"
                 )
-            if self.calibrator is not None:
-                # Call predictor to estimate predictions
-                y_pred = predictor.predict(X_calib)
-
-                # Compte/calibrate PIs
-                calibrator.fit(y_true=y_calib, y_pred=y_pred)
+            # Call predictor to estimate predictions
+            y_pred = predictor.predict(X_calib)
+            # Fit calibrator
+            calibrator.fit(y_true=y_calib, y_pred=y_pred)
+            # Compute normalized weights of the nonconformity scores
+            # if a weight function is provided
+            if calibrator.weight_func:
+                weights = calibrator.weight_func(X_calib)
+                norm_weights = calibrator.barber_weights(
+                    X=X_calib, weights_calib=weights
+                )
+                # Store the mornalized weights
+                calibrator.set_norm_weights(norm_weights)
             # Add predictor and calibrator to the collection that is used later
             # by the predict method
             self._cv_cp_agg.append_predictor(i, predictor)
@@ -231,8 +238,12 @@ class CrossValCpAggregator:
             for k in self._predictors.keys():
                 predictor = self._predictors[k]
                 calibrator = self._calibrators[k]
+                # Get normalized weights of the nonconformity scores
+                norm_weights = calibrator.get_norm_weights()
                 y_pred = predictor.predict(X=X)
-                y_lo, y_hi = calibrator.calibrate(alpha=alpha, y_pred=y_pred)
+                y_lo, y_hi = calibrator.calibrate(
+                    alpha=alpha, y_pred=y_pred, weights=norm_weights
+                )
                 return (y_pred, y_lo, y_hi)
         else:
             y_pred = None

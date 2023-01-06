@@ -86,24 +86,27 @@ class BaseSplit:
 class SplitCP(BaseSplit):
     """Split conformal prediction method.
 
-    :param object mu_model: conditional mean model.
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param callable weight_func: function that takes as argument an array of
+    features X and returns associated "conformality" weights, defaults to None.
     :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
 
     """
 
-    def __init__(self, predictor, train=True):
+    def __init__(self, predictor, train=True, *, weight_func=None):
         super().__init__(
             predictor,
             BaseCalibrator(
                 nonconf_score_func=abs_nonconf_score,
                 pred_set_func=constant_interval_pred,
+                weight_func=weight_func,
             ),
             train=train,
         )
 
-    def predict(self, X_test: Iterable, alpha) -> Tuple[Iterable]:
-        """Estimate conditional mean and prediction interval
-        (w.r.t target miscoverage alpha) for new samples.
+    def predict(self, X_test: Iterable, alpha) -> Tuple[Iterable, Iterable, Iterable]:
+        """Conformal interval predictions (w.r.t target miscoverage alpha)
+        for new samples.
 
         :param ndarray|DataFrame|Tensor X_test: features of new samples.
         :param float alpha: target maximum miscoverage.

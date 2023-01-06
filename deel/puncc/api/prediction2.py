@@ -26,6 +26,7 @@ This module provides standard wrappings for DL/ML models.
 from abc import ABC
 from abc import abstractmethod
 from copy import deepcopy
+from typing import Any
 from typing import Callable
 from typing import Iterable
 
@@ -35,13 +36,13 @@ import numpy as np
 class BasePredictor:
     """Interface of a base predictor class.
 
-    :param Callable model: prediction model
+    :param Any model: prediction model
     :param bool is_trained: boolean flag that informs if the model is pre-trained
     :param dict compile_kwargs: configuration in case the model needs to be
                                 compiled (for example Keras models).
     """
 
-    def __init__(self, model: Callable, is_trained: bool = False, **compile_kwargs):
+    def __init__(self, model: Any, is_trained: bool = False, **compile_kwargs):
         self.model = model
         self.is_trained = is_trained
         self.compile_kwargs = compile_kwargs

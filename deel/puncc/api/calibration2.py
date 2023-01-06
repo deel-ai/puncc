@@ -59,11 +59,57 @@ def constant_interval_pred(y_pred, scores_quantiles):
 
 
 class BaseCalibrator:
-    def __init__(self, *, nonconf_score_func, pred_set_func):
+    """Calibrator class.
+
+    :param callable nonconf_score_func: nonconformity score function
+    :param callable pred_set_func:
+    :param callable weight_func: function that takes as argument an array of
+    features X and returns associated "conformality" weights, defaults to None.
+
+    :raises NotImplementedError: provided :data:`weight_method` is not suitable.
+    """
+
+    @staticmethod
+    def barber_weights(*, X, weights_calib):
+        """Compute and normalize inference weights of the nonconformity distribution
+        based on `Barber et al. <https://arxiv.org/abs/2202.13415>`.
+
+        :param ndarray X: features array
+        :param ndarray weights_calib: weights assigned to the calibration samples.
+
+        :returns: normalized weights.
+        :rtype: ndarray
+        """
+
+        calib_size = len(weights_calib)
+        # Computation of normalized weights
+        sum_w_calib = np.sum(weights_calib)
+
+        w_norm = np.zeros((len(X), calib_size + 1))
+        for i in range(len(X)):
+            w_norm[i, :calib_size] = weights_calib / (sum_w_calib + 1)
+            w_norm[i, calib_size] = 1 / (sum_w_calib + 1)
+        return w_norm
+
+    def __init__(
+        self,
+        *,
+        nonconf_score_func,
+        pred_set_func,
+        weight_func=None,
+    ):
         self.nonconf_score_func = nonconf_score_func
         self.pred_set_func = pred_set_func
+        self.weight_func = weight_func
         self._len_calib = 0
         self._residuals = None
+        self._norm_weights = None
+
+    def set_norm_weights(self, norm_weights):
+        self._norm_weights = norm_weights
+
+    def get_norm_weights(self):
+        return self._norm_weights
 
     def fit(
         self,
