@@ -27,7 +27,10 @@ from abc import ABC
 from typing import Iterable
 
 import numpy as np
+import pandas as pd
 from sklearn import model_selection
+
+from deel.puncc.api.utils import supported_types_check
 
 
 class BaseSplitter(ABC):
@@ -131,5 +134,13 @@ class KFoldSplitter(BaseSplitter):
         )
         folds = list()
         for fit, calib in kfold.split(X):
-            folds.append((X[fit], y[fit], X[calib], y[calib]))
+            if isinstance(X, pd.DataFrame):
+                if isinstance(y, pd.DataFrame):
+                    folds.append(
+                        (X.iloc[fit], y.iloc[fit], X.iloc[calib], y.iloc[calib])
+                    )
+                else:
+                    folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
+            else:
+                folds.append((X[fit], y[fit], X[calib], y[calib]))
         return folds

@@ -28,7 +28,8 @@ from typing import Iterable
 
 import numpy as np
 
-from deel.puncc.api.calibration2 import BaseCalibrator  # , CvPlusCalibrator
+from deel.puncc.api.calibration2 import BaseCalibrator
+from deel.puncc.api.calibration2 import CvPlusCalibrator
 from deel.puncc.api.prediction2 import BasePredictor
 from deel.puncc.api.splitting2 import BaseSplitter
 
@@ -106,11 +107,6 @@ class ConformalPredictor:
         # Get split folds. Each fold split is a iterable of a quadruple that
         # contains fit and calibration data.
         splits = self.splitter(X, y)
-        # Make local copies of the structure of the predictor and the calibrator.
-        # In case of a K-fold like splitting strategy, these structures are
-        # inherited by the predictor/calibrator used in each fold.
-        predictor = self.predictor.copy()
-        calibrator = deepcopy(self.calibrator)
 
         # The Cross validation aggregator will aggregate the predictors and
         # calibrators fitted on each of the K splits.
@@ -129,6 +125,11 @@ class ConformalPredictor:
         #   2- y_pred is predicted by f_i
         #   3- The calibrator is fitted to approximate the distribution of nonconformity scores
         for i, (X_fit, y_fit, X_calib, y_calib) in enumerate(splits):
+            # Make local copies of the structure of the predictor and the calibrator.
+            # In case of a K-fold like splitting strategy, these structures are
+            # inherited by the predictor/calibrator used in each fold.
+            predictor = self.predictor.copy()
+            calibrator = deepcopy(self.calibrator)
             if self.train:
                 predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
             # Make sure that predictor is already trained if train arg is False
@@ -258,5 +259,5 @@ class CrossValCpAggregator:
 
             else:
                 raise RuntimeError(
-                    f"Method {self.method} is not implemented" + "Please choose 'cv+'."
+                    f"Method {self.method} is not implemented." + "Please choose 'cv+'."
                 )

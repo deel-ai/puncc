@@ -42,7 +42,7 @@ EPSILON = sys.float_info.min  # small value to avoid underflow
 def supported_types_check(y_pred, y_true=None):
     if y_true is not None and (type(y_pred) != type(y_true)):
         raise TypeError(
-            f"y_pred and y_true do not have the same type: {type(y_pred)} vs {type(y_true)} resp."
+            f"elements do not have the same type: {type(y_pred)} vs {type(y_true)}."
         )
     if isinstance(y_pred, np.ndarray):
         pass

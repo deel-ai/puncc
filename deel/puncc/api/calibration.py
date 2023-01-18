@@ -397,7 +397,8 @@ class MetaCalibrator(ABC):
     scores from each K-Fold calibrator and produces associated prediction
     intervals.
 
-    :param dict kfold_calibrators_dict: dictionarry of calibrators for each K-fold (disjoint calibration subsets). Each calibrator needs to priorly estimate the nonconformity scores w.r.t the associated calibration fold.
+    :param dict kfold_calibrators_dict: dictionarry of calibrators for each K-fold (disjoint calibration subsets).
+    Each calibrator needs to priorly estimate the nonconformity scores w.r.t the associated calibration fold.
     """
 
     def __init__(self, kfold_calibrators: dict):
@@ -488,7 +489,6 @@ class CvPlusCalibrator(MetaCalibrator):
                 concat_residuals_hi = np.concatenate(
                     [concat_residuals_hi, y_pred + residuals], axis=1
                 )
-
         # sanity check
         if concat_residuals_lo is None or concat_residuals_hi is None:
             raise RuntimeError("This should never happen.")
