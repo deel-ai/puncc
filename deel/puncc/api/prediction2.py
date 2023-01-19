@@ -125,7 +125,7 @@ class LocallyAdaptivePredictor:
         """
         self.mu_model.fit(X, y, **dictargs1)
         mu_pred = self.mu_model.predict(X)
-        mads = NonConformityScores.MAD(mu_pred, y)
+        mads = NonConformityScores.Regression.MAD(mu_pred, y)
         self.var_model.fit(X, mads, **dictargs2)
         self.is_trained = True
 

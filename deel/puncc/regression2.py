@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements usual conformal prediction wrappers.
+This module implements usual conformal regression wrappers.
 """
 from copy import deepcopy
 from typing import Iterable
@@ -54,8 +54,8 @@ class SplitCP:
     def __init__(self, predictor, train=True, *, weight_func=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=NonConformityScores.MAD,
-            pred_set_func=PredictionSets.CONSTANT_INTERVAL,
+            nonconf_score_func=NonConformityScores.Regression.MAD,
+            pred_set_func=PredictionSets.Regression.CONSTANT_INTERVAL,
             weight_func=weight_func,
         )
         self.train = train
@@ -121,8 +121,8 @@ class LocallyAdaptiveCP(SplitCP):
     def __init__(self, predictor, train=True, *, weight_func=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=NonConformityScores.SCALED_MAD,
-            pred_set_func=PredictionSets.SCALED_INTERVAL,
+            nonconf_score_func=NonConformityScores.Regression.SCALED_MAD,
+            pred_set_func=PredictionSets.Regression.SCALED_INTERVAL,
             weight_func=weight_func,
         )
         self.train = train
@@ -142,8 +142,8 @@ class CQR(SplitCP):
     def __init__(self, predictor, train=True, *, weight_func=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=NonConformityScores.CQR_SCORE,
-            pred_set_func=PredictionSets.CQR_INTERVAL,
+            nonconf_score_func=NonConformityScores.Regression.CQR_SCORE,
+            pred_set_func=PredictionSets.Regression.CQR_INTERVAL,
             weight_func=weight_func,
         )
         self.train = train
@@ -152,7 +152,7 @@ class CQR(SplitCP):
 class CvPlus:
     """Cross-validation plus method.
 
-    :param object mu_model: conditional mean model.
+    :param BasePredictor predictor: a predictor implementing fit and predict.
     :param int K: number of training/calibration folds.
     :param int random_state: seed to control random folds.
     """
@@ -161,8 +161,8 @@ class CvPlus:
 
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=NonConformityScores.MAD,
-            pred_set_func=PredictionSets.CONSTANT_INTERVAL,
+            nonconf_score_func=NonConformityScores.Regression.MAD,
+            pred_set_func=PredictionSets.Regression.CONSTANT_INTERVAL,
             weight_func=None,
         )
         self.splitter = KFoldSplitter(K=K, random_state=random_state)

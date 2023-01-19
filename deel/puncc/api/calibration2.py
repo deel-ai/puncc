@@ -39,147 +39,261 @@ from deel.puncc.api.utils import supported_types_check
 
 
 class NonConformityScores:
-    """Order y_pred, y_true is important here !"""
+    class Classification:
+        @staticmethod
+        def RAPS_SCORE(lambd=0, k_reg=1):
+            def _RAPS_SCORE(Y_pred, y_true):
+                """APS nonconformity score.
+                Given :math:`n` the number of classes,
+                    :math:`Y_\text{{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})`
 
-    @staticmethod
-    def MAD(y_pred, y_true):
-        """Mean Absolute Deviation (MAD).
+                Refer to https://arxiv.org/abs/2009.14193 for details.
 
-        .. math::
-            R = |y_{\text{true}}-y_\text{{pred}}|
+                :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})`
+                    where :math:`P_{\text{C}_i}` is logit associated to class i.
+                :param ndarray|DataFrame|Tensor y_true:
 
-        :param ndarray|DataFrame|Tensor y_pred:
-        :param ndarray|DataFrame|Tensor y_true:
+                :returns: APS nonconformity scores.
+                :rtype: ndarray|DataFrame|Tensor
+                """
 
-        :returns: mean absolute deviation.
-        :rtype: ndarray|DataFrame|Tensor
-        """
-        supported_types_check(y_pred, y_true)
-        diff = y_pred - y_true
-        if isinstance(y_pred, np.ndarray):
-            return np.absolute(diff)
-        elif isinstance(y_pred, pd.DataFrame):
-            return diff.abs()
-        elif isinstance(y_pred, tf.Tensor):
-            return tf.math.abs(diff)
-        elif isinstance(y_pred, torch.Tensor):
-            return torch.abs(diff)
-        else:  # Sanity check, this should never happen.
-            raise RuntimeError("Fatal Error. Type check failed !")
+                supported_types_check(Y_pred, y_true)
+                if not isinstance(Y_pred, np.ndarray):
+                    raise NotImplementedError(
+                        "RAPS nonconformity scores only implemented for ndarrays"
+                    )
+                # Generate rand randomly from a uniform distribution
+                rand = np.random.uniform(size=len(y_true))
+                # Sort classes by descending probability order
+                class_ranking = np.argsort(-Y_pred, axis=1)
+                sorted_proba = -np.sort(-Y_pred, axis=1)
+                # Cumulative probability mass (given the previous class ranking)
+                sorted_cum_mass = sorted_proba.cumsum(axis=1)
+                # Locate position of true label in the classes
+                # sequence ranked by decreasing probability
+                L = [
+                    np.where(class_ranking[i] == y_true[i])[0][0]
+                    for i in range(y_true.shape[0])
+                ]
+                # Threshold of cumulative probability mass to include the real class
+                E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
+                E = [
+                    E[i]
+                    + (rand[i] - 1) * sorted_proba[i, L[i]]
+                    + lambd * np.maximum((L[i] - k_reg + 1), 0)
+                    for i in range(y_true.shape[0])
+                ]
+                return np.array(E)
 
-    @staticmethod
-    def SCALED_MAD(Y_pred, y_true):
-        """Scaled Mean Absolute Deviation (MAD).
+            return _RAPS_SCORE
 
-        .. math::
-            R = \frac{|Y_{\text{true}}-Y_\text{{pred}}|}{\sigma_\text{{pred}}}
+    class Regression:
+        """Order y_pred, y_true is important here !"""
 
-        :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}}=(y_\text{{pred}}, \sigma_\text{{pred}})`
-        :param ndarray|DataFrame|Tensor y_true: point observation.
+        @staticmethod
+        def MAD(y_pred, y_true):
+            """Mean Absolute Deviation (MAD).
 
-        :returns: scaled mean absolute deviation.
-        :rtype: ndarray|DataFrame|Tensor
-        """
-        supported_types_check(Y_pred, y_true)
-        if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
-            raise RuntimeError(
-                f"Each Y_pred must contain a point prediction and a dispersion estimation."
-            )
-        # check y_true is a collection of point observations
-        if len(y_true.shape) != 1:
-            raise RuntimeError(f"Each y_pred must contain a point observation.")
+            .. math::
+                R = |y_{\text{true}}-y_\text{{pred}}|
 
-        if isinstance(Y_pred, pd.DataFrame):
-            y_pred, var_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-        else:
-            y_pred, var_pred = Y_pred[:, 0], Y_pred[:, 1]
-        # MAD then Scaled MAD and computed
-        mad = NonConformityScores.MAD(y_pred, y_true)
-        return mad / (var_pred + EPSILON)
+            :param ndarray|DataFrame|Tensor y_pred:
+            :param ndarray|DataFrame|Tensor y_true:
 
-    @staticmethod
-    def CQR_SCORE(Y_pred, y_true):
-        """CQR nonconformity score.
-           Considering :math:`Y_\text{{pred}} = (q_{\text{lo}}, q_{\text{hi}})`
-        .. math::
-            R = max\{q_{\text{lo}} - y_{\text{true}}, y_{\text{true}} - q_{\text{hi}}\}
+            :returns: mean absolute deviation.
+            :rtype: ndarray|DataFrame|Tensor
+            """
+            supported_types_check(y_pred, y_true)
+            diff = y_pred - y_true
+            if isinstance(y_pred, np.ndarray):
+                return np.absolute(diff)
+            elif isinstance(y_pred, pd.DataFrame):
+                return diff.abs()
+            elif isinstance(y_pred, tf.Tensor):
+                return tf.math.abs(diff)
+            elif isinstance(y_pred, torch.Tensor):
+                return torch.abs(diff)
+            else:  # Sanity check, this should never happen.
+                raise RuntimeError("Fatal Error. Type check failed !")
 
-        :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}} = (q_{\text{lo}}, q_{\text{hi}})`
-            where :math:`q_{\text{lo}}` (resp. :math:`q_{\text{hi}}` is the lower (resp. higher) quantile prediction.
-        :param ndarray|DataFrame|Tensor y_true:
+        @staticmethod
+        def SCALED_MAD(Y_pred, y_true):
+            """Scaled Mean Absolute Deviation (MAD).
 
-        :returns: CQR nonconformity scores.
-        :rtype: ndarray|DataFrame|Tensor
-        """
-        supported_types_check(Y_pred, y_true)
-        if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
-            raise RuntimeError(
-                f"Each Y_pred must contain lower and higher quantiles estimations."
-            )
+            .. math::
+                R = \frac{|Y_{\text{true}}-Y_\text{{pred}}|}{\sigma_\text{{pred}}}
 
-        # check y_true is a collection of point observations
-        if len(y_true.shape) != 1:
-            raise RuntimeError(f"Each y_pred must contain a point observation.")
+            :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}}=(y_\text{{pred}}, \sigma_\text{{pred}})`
+            :param ndarray|DataFrame|Tensor y_true: point observation.
 
-        if isinstance(Y_pred, pd.DataFrame):
-            q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-        else:
-            q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
+            :returns: scaled mean absolute deviation.
+            :rtype: ndarray|DataFrame|Tensor
+            """
+            supported_types_check(Y_pred, y_true)
+            if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+                raise RuntimeError(
+                    f"Each Y_pred must contain a point prediction and a dispersion estimation."
+                )
+            # check y_true is a collection of point observations
+            if len(y_true.shape) != 1:
+                raise RuntimeError(f"Each y_pred must contain a point observation.")
 
-        diff_lo = q_lo - y_true
-        diff_hi = y_true - q_hi
+            if isinstance(Y_pred, pd.DataFrame):
+                y_pred, var_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+            else:
+                y_pred, var_pred = Y_pred[:, 0], Y_pred[:, 1]
+            # MAD then Scaled MAD and computed
+            mad = NonConformityScores.Regression.MAD(y_pred, y_true)
+            return mad / (var_pred + EPSILON)
 
-        if isinstance(diff_lo, np.ndarray):
-            return np.maximum(diff_lo, diff_hi)
-        elif isinstance(diff_lo, pd.DataFrame):
-            raise NotImplementedError(
-                "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
-            )
-        elif isinstance(diff_lo, tf.Tensor):
-            return tf.math.maximum(diff_lo, diff_hi)
-        elif isinstance(diff_lo, torch.Tensor):
-            return torch.maximum(diff_lo, diff_hi)
-        else:  # Sanity check, this should never happen.
-            raise RuntimeError("Fatal Error. Type check failed !")
+        @staticmethod
+        def CQR_SCORE(Y_pred, y_true):
+            """CQR nonconformity score.
+            Considering :math:`Y_\text{{pred}} = (q_{\text{lo}}, q_{\text{hi}})`
+            .. math::
+                R = max\{q_{\text{lo}} - y_{\text{true}}, y_{\text{true}} - q_{\text{hi}}\}
+
+            :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}} = (q_{\text{lo}}, q_{\text{hi}})`
+                where :math:`q_{\text{lo}}` (resp. :math:`q_{\text{hi}}` is the lower (resp. higher) quantile prediction.
+            :param ndarray|DataFrame|Tensor y_true:
+
+            :returns: CQR nonconformity scores.
+            :rtype: ndarray|DataFrame|Tensor
+            """
+            supported_types_check(Y_pred, y_true)
+            if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+                raise RuntimeError(
+                    f"Each Y_pred must contain lower and higher quantiles estimations."
+                )
+
+            # check y_true is a collection of point observations
+            if len(y_true.shape) != 1:
+                raise RuntimeError(f"Each y_pred must contain a point observation.")
+
+            if isinstance(Y_pred, pd.DataFrame):
+                q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+            else:
+                q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
+
+            diff_lo = q_lo - y_true
+            diff_hi = y_true - q_hi
+
+            if isinstance(diff_lo, np.ndarray):
+                return np.maximum(diff_lo, diff_hi)
+            elif isinstance(diff_lo, pd.DataFrame):
+                raise NotImplementedError(
+                    "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
+                )
+            elif isinstance(diff_lo, tf.Tensor):
+                return tf.math.maximum(diff_lo, diff_hi)
+            elif isinstance(diff_lo, torch.Tensor):
+                return torch.maximum(diff_lo, diff_hi)
+            else:  # Sanity check, this should never happen.
+                raise RuntimeError("Fatal Error. Type check failed !")
 
 
 class PredictionSets:
-    @staticmethod
-    def CONSTANT_INTERVAL(y_pred, scores_quantiles):
-        supported_types_check(y_pred)
-        y_lo = y_pred - scores_quantiles
-        y_hi = y_pred + scores_quantiles
-        return y_lo, y_hi
+    class Classification:
+        @staticmethod
+        def RAPS_SET(lambd=0, k_reg=1):
+            def _RAPS_SET(Y_pred, scores_quantiles):
+                pred_len = len(Y_pred)
+                # Generate u randomly from a uniform distribution
+                u = np.random.uniform(size=pred_len)
+                # 1-alpha th empirical quantile of conformity scores
+                tau = scores_quantiles
+                # Rank classes by their probability
+                idx_class_pred_ranking = np.argsort(-Y_pred, axis=1)
+                sorted_proba = -np.sort(-Y_pred, axis=1)
+                sorted_cum_mass = sorted_proba.cumsum(axis=1)
+                # First sorted class for which the cumulative probability mass
+                # exceeds the threshold "tau"
+                penal_proba = [
+                    sorted_proba[i]
+                    + lambd
+                    * np.maximum(
+                        np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
+                        0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
+                    )
+                    for i in range(pred_len)
+                ]
+                penal_cum_proba = [
+                    sorted_cum_mass[i]
+                    + lambd
+                    * np.maximum(
+                        np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
+                        0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
+                    )
+                    for i in range(pred_len)
+                ]
+                L = [
+                    len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1
+                    for i in range(pred_len)
+                ]
+                proba_excess = [
+                    -sorted_cum_mass[i, L[i] - 1]
+                    - lambd * np.maximum(L[i] - k_reg, 0)
+                    + sorted_proba[i, L[i] - 1]
+                    for i in range(pred_len)
+                ]
+                v = [
+                    (tau - proba_excess[i]) / sorted_proba[i, L[i] - 1]
+                    if (L[i] - 1) >= 0
+                    else np.inf
+                    for i in range(pred_len)
+                ]
+                # Build prediction set
+                prediction_sets = list()
+                for i in range(pred_len):
+                    if v[i] <= u[i]:
+                        cut_i = L[i] - 1
+                    else:
+                        cut_i = L[i]
+                    if cut_i < 0:
+                        prediction_sets.append([])
+                    else:
+                        prediction_sets.append(list(idx_class_pred_ranking[i, :cut_i]))
+                return (prediction_sets,)
 
-    @staticmethod
-    def SCALED_INTERVAL(Y_pred, scores_quantiles):
-        supported_types_check(Y_pred)
-        if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
-            raise RuntimeError(
-                f"Each Y_pred must contain a point prediction and a dispersion estimation."
-            )
-        if isinstance(Y_pred, pd.DataFrame):
-            y_pred, var_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-        else:
-            y_pred, var_pred = Y_pred[:, 0], Y_pred[:, 1]
-        y_lo = y_pred - scores_quantiles * var_pred
-        y_hi = y_pred + scores_quantiles * var_pred
-        return y_lo, y_hi
+            return _RAPS_SET
 
-    @staticmethod
-    def CQR_INTERVAL(Y_pred, scores_quantiles):
-        supported_types_check(Y_pred)
-        if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
-            raise RuntimeError(
-                f"Each Y_pred must contain lower and higher quantiles predictions, respectively."
-            )
-        if isinstance(Y_pred, pd.DataFrame):
-            q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-        else:
-            q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
-        y_lo = q_lo - scores_quantiles
-        y_hi = q_hi + scores_quantiles
-        return y_lo, y_hi
+    class Regression:
+        @staticmethod
+        def CONSTANT_INTERVAL(y_pred, scores_quantiles):
+            supported_types_check(y_pred)
+            y_lo = y_pred - scores_quantiles
+            y_hi = y_pred + scores_quantiles
+            return y_lo, y_hi
+
+        @staticmethod
+        def SCALED_INTERVAL(Y_pred, scores_quantiles):
+            supported_types_check(Y_pred)
+            if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+                raise RuntimeError(
+                    f"Each Y_pred must contain a point prediction and a dispersion estimation."
+                )
+            if isinstance(Y_pred, pd.DataFrame):
+                y_pred, var_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+            else:
+                y_pred, var_pred = Y_pred[:, 0], Y_pred[:, 1]
+            y_lo = y_pred - scores_quantiles * var_pred
+            y_hi = y_pred + scores_quantiles * var_pred
+            return y_lo, y_hi
+
+        @staticmethod
+        def CQR_INTERVAL(Y_pred, scores_quantiles):
+            supported_types_check(Y_pred)
+            if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+                raise RuntimeError(
+                    f"Each Y_pred must contain lower and higher quantiles predictions, respectively."
+                )
+            if isinstance(Y_pred, pd.DataFrame):
+                q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+            else:
+                q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
+            y_lo = q_lo - scores_quantiles
+            y_hi = q_hi + scores_quantiles
+            return y_lo, y_hi
 
 
 class BaseCalibrator:
@@ -229,23 +343,6 @@ class BaseCalibrator:
         self._residuals = None
         self._norm_weights = None
 
-    def set_norm_weights(self, norm_weights):
-        """Setter of normalized weights associated to the nonconformity
-        scores on the calibration set.
-
-        :returns: normalized weights array.
-        :rtype: ndarray
-        """
-        self._norm_weights = norm_weights
-
-    def get_norm_weights(self):
-        """Getter of normalized weights associated to the nonconformity
-        scores on the calibration set.
-
-        :param ndarray norm_weights: normalized weights array
-        """
-        return self._norm_weights
-
     def fit(
         self,
         *,
@@ -256,6 +353,7 @@ class BaseCalibrator:
 
         :param ndarray|DataFrame|Tensor y_true: true values.
         :param ndarray|DataFrame|Tensor y_pred: predicted values.
+        :param Any kwargs: keyword arguments for the nonconformity score function.
 
         """
         # TODO check structure match in supported types
@@ -267,8 +365,8 @@ class BaseCalibrator:
         alpha: float,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
-    ) -> tuple[Iterable, Iterable,]:
-        """Compute calibrated prediction intervals for new examples.
+    ) -> tuple[Iterable, Optional[Iterable]]:
+        """Compute calibrated prediction sets for new examples.
 
         :param float alpha: significance level (max miscoverage target).
         :param ndarray|DataFrame|Tensor y_pred: predicted values.
@@ -276,7 +374,9 @@ class BaseCalibrator:
                                  scores. Defaults to None when all the scores
                                  are equiprobable.
 
-        :returns: y_lower, y_upper.
+        :returns: prediction set.
+                  In case of regression, returns (y_lower, y_upper).
+                  In case of classification, returns (classes,).
         :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
 
         :raises RuntimeError: :meth:`calibrate` called before :meth:`fit`.
@@ -307,8 +407,24 @@ class BaseCalibrator:
                 w=w,
             )
             residuals_Qs.append(residuals_Q)
-        y_lo, y_hi = self.pred_set_func(y_pred, scores_quantiles=residuals_Qs)
-        return y_lo, y_hi
+        return self.pred_set_func(y_pred, scores_quantiles=residuals_Qs)
+
+    def set_norm_weights(self, norm_weights):
+        """Setter of normalized weights associated to the nonconformity
+        scores on the calibration set.
+
+        :returns: normalized weights array.
+        :rtype: ndarray
+        """
+        self._norm_weights = norm_weights
+
+    def get_norm_weights(self):
+        """Getter of normalized weights associated to the nonconformity
+        scores on the calibration set.
+
+        :param ndarray norm_weights: normalized weights array
+        """
+        return self._norm_weights
 
 
 class CvPlusCalibrator:
@@ -383,9 +499,11 @@ class CvPlusCalibrator:
             residuals = np.reshape(residuals, (1, len(residuals)))
 
             if concat_y_lo is None or concat_y_hi is None:
-                concat_y_lo, concat_y_hi = PredictionSets.CONSTANT_INTERVAL(y_pred, residuals)  # type: ignore
+                concat_y_lo, concat_y_hi = PredictionSets.Regression.CONSTANT_INTERVAL(y_pred, residuals)  # type: ignore
             else:
-                y_lo, y_hi = PredictionSets.CONSTANT_INTERVAL(y_pred, residuals)
+                y_lo, y_hi = PredictionSets.Regression.CONSTANT_INTERVAL(
+                    y_pred, residuals
+                )
                 concat_y_lo = np.concatenate(
                     [concat_y_lo, y_lo], axis=1  # type: ignore
                 )
@@ -394,19 +512,6 @@ class CvPlusCalibrator:
         if concat_y_lo is None or concat_y_hi is None:
             raise RuntimeError("This should never happen.")
         else:
-            # The following "upper" and "lower" quantiles follow the formulas
-            # given in Section 1.2 of:
-            # - Barber et al. 2019, "Predictive inference with the jackknife+"
-            #
-            # The authors define (with slightly misleading notation for "alpha"):
-            #   q_hi(array, alpha) = ceiling( (1-alpha))-th smallest value of sorted(array)
-            #   q_lo(array, alpha) = floor(     (alpha))-th smallest value of sorted(array)
-            #
-            # They point out how:
-            #     q_lo(array, alpha) == (-1) * q_hi( (-1) * array, 1-alpha)
-            #
-            # Here we use the implementation in puncc.utils.quantile that returns
-            # the empirical quantiles that yield the same result as in q_hi(.., ..)
             y_lo = (-1) * np.quantile(
                 (-1) * concat_y_lo, 1 - alpha, axis=1, method="inverted_cdf"
             )

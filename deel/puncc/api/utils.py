@@ -242,232 +242,139 @@ def agg_list(a: np.ndarray):
 # ========================= Visualization =========================
 #
 
-SMALL_SIZE = 8
-MEDIUM_SIZE = 10
-BIGGER_SIZE = 12
-LARGE_SIZE = 15
-HUGE_SIZE = 16
 
+class Plotting:
 
-custom_rc_params = {
-    "font.family": "Times New Roman",
-    "ytick.labelsize": BIGGER_SIZE,
-    "xtick.labelsize": BIGGER_SIZE,
-    "axes.labelsize": LARGE_SIZE,
-    "legend.fontsize": LARGE_SIZE,
-    "axes.titlesize": HUGE_SIZE,
-    "lines.linewidth": 2,
-}
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 10
+    BIGGER_SIZE = 12
+    LARGE_SIZE = 15
+    HUGE_SIZE = 16
 
+    custom_rc_params = {
+        "font.family": "Times New Roman",
+        "ytick.labelsize": BIGGER_SIZE,
+        "xtick.labelsize": BIGGER_SIZE,
+        "axes.labelsize": LARGE_SIZE,
+        "legend.fontsize": LARGE_SIZE,
+        "axes.titlesize": HUGE_SIZE,
+        "lines.linewidth": 2,
+    }
 
-def plot_prediction_interval(
-    y_true: np.ndarray,
-    y_pred_lower: np.ndarray,
-    y_pred_upper: np.ndarray,
-    X: Optional[np.ndarray] = None,
-    y_pred: Optional[np.ndarray] = None,
-    save_path: Optional[str] = None,
-    sort_X: bool = False,
-    **kwargs,
-) -> None:
-    """Plot prediction intervals whose bounds are given by y_pred_lower and y_pred_upper. True values and point estimates are also plotted if given as argument.
+    @staticmethod
+    def plot_pi(
+        y_true: np.ndarray,
+        y_pred_lower: np.ndarray,
+        y_pred_upper: np.ndarray,
+        X: Optional[np.ndarray] = None,
+        y_pred: Optional[np.ndarray] = None,
+        save_path: Optional[str] = None,
+        sort_X: bool = False,
+        **kwargs,
+    ) -> None:
+        """Plot prediction intervals whose bounds are given by y_pred_lower and y_pred_upper. True values and point estimates are also plotted if given as argument.
 
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param ndarray, optional X: abscisse vector.
-    :param ndarray, optional y_pred: predicted values.
-    :param kwargs: plot configuration parameters.
-    """
+        :param ndarray y_true: label true values.
+        :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+        :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+        :param ndarray, optional X: abscisse vector.
+        :param ndarray, optional y_pred: predicted values.
+        :param kwargs: plot configuration parameters.
+        """
 
-    # Figure configuration
-    if "figsize" in kwargs.keys():
-        figsize = kwargs["figsize"]
-    else:
-        figsize = (15, 6)
-    if "loc" not in kwargs.keys():
-        loc = kwargs["loc"]
-    else:
-        loc = "upper left"
-    plt.figure(figsize=figsize)
+        # Figure configuration
+        if "figsize" in kwargs.keys():
+            figsize = kwargs["figsize"]
+        else:
+            figsize = (15, 6)
+        if "loc" not in kwargs.keys():
+            loc = kwargs["loc"]
+        else:
+            loc = "upper left"
+        plt.figure(figsize=figsize)
 
-    # Custom matplotlib style sheet
-    matplotlib.rcParams.update(custom_rc_params)
+        # Custom matplotlib style sheet
+        matplotlib.rcParams.update(Plotting.custom_rc_params)
 
-    if X is None:
-        X = np.arange(len(y_true))
-    elif sort_X:
-        sorted_idx = np.argsort(X)
-        X = X[sorted_idx]
-        y_true = y_true[sorted_idx]
+        if X is None:
+            X = np.arange(len(y_true))
+        elif sort_X:
+            sorted_idx = np.argsort(X)
+            X = X[sorted_idx]
+            y_true = y_true[sorted_idx]
+
+            if y_pred is not None:
+                y_pred = y_pred[sorted_idx]
+
+            y_pred_lower = y_pred_lower[sorted_idx]
+            y_pred_upper = y_pred_upper[sorted_idx]
+
+        if y_pred_upper is None or y_pred_lower is None:
+            miscoverage = np.array([False for _ in range(len(y_true))])
+        else:
+            miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
+
+        if X is not None:
+            label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
+            plt.plot(
+                X[~miscoverage],
+                y_true[~miscoverage],
+                "darkgreen",
+                marker="X",
+                markersize=2,
+                linewidth=0,
+                label=label,
+                zorder=20,
+            )
+
+        if X is not None:
+            label = (
+                "Observation" if y_pred_upper is None else "Observation (outside PI)"
+            )
+            plt.plot(
+                X[miscoverage],
+                y_true[miscoverage],
+                color="red",
+                marker="o",
+                markersize=2,
+                linewidth=0,
+                label=label,
+                zorder=20,
+            )
+
+        if (
+            (y_pred_upper is not None)
+            and (y_pred_lower is not None)
+            and (X is not None)
+        ):
+            plt.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
+            plt.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
+            plt.fill_between(
+                x=X,
+                y1=y_pred_upper,  # type: ignore
+                y2=y_pred_lower,  # type: ignore
+                alpha=0.2,
+                fc="b",
+                ec="None",
+                label="Prediction Interval",
+            )
 
         if y_pred is not None:
-            y_pred = y_pred[sorted_idx]
+            plt.plot(X, y_pred, color="k", label="Prediction")
 
-        y_pred_lower = y_pred_lower[sorted_idx]
-        y_pred_upper = y_pred_upper[sorted_idx]
+        plt.xlabel("X")
+        plt.ylabel("Y")
 
-    if y_pred_upper is None or y_pred_lower is None:
-        miscoverage = np.array([False for _ in range(len(y_true))])
-    else:
-        miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
+        if "loc" not in kwargs.keys():
+            loc = "upper left"
+        else:
+            loc = kwargs["loc"]
 
-    if X is not None:
-        label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
-        plt.plot(
-            X[~miscoverage],
-            y_true[~miscoverage],
-            "darkgreen",
-            marker="X",
-            markersize=2,
-            linewidth=0,
-            label=label,
-            zorder=20,
-        )
-
-    if X is not None:
-        label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
-        plt.plot(
-            X[miscoverage],
-            y_true[miscoverage],
-            color="red",
-            marker="o",
-            markersize=2,
-            linewidth=0,
-            label=label,
-            zorder=20,
-        )
-
-    if (y_pred_upper is not None) and (y_pred_lower is not None) and (X is not None):
-        plt.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
-        plt.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
-        plt.fill_between(
-            x=X,
-            y1=y_pred_upper,  # type: ignore
-            y2=y_pred_lower,  # type: ignore
-            alpha=0.2,
-            fc="b",
-            ec="None",
-            label="Prediction Interval",
-        )
-
-    if y_pred is not None:
-        plt.plot(X, y_pred, color="k", label="Prediction")
-
-    plt.xlabel("X")
-    plt.ylabel("Y")
-
-    if "loc" not in kwargs.keys():
-        loc = "upper left"
-    else:
-        loc = kwargs["loc"]
-
-    plt.legend(loc=loc)
-    if save_path:
-        plt.savefig(f"{save_path}", format="pdf")
-    else:
-        plt.show()
-
-
-def plot_sorted_pi(
-    y_true: np.ndarray,
-    y_pred_lower: np.ndarray,
-    y_pred_upper: np.ndarray,
-    X: Optional[np.ndarray] = None,
-    y_pred: Optional[np.ndarray] = None,
-    **kwargs,
-) -> None:
-    """Plot prediction intervals in an ordered fashion (lowest to largest width)
-    showing the upper and lower bounds for each prediction.
-
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param ndarray, optional X: abscisse vector.
-    :param ndarray, optional y_pred: predicted values.
-    :param kwargs: plot configuration parameters.
-    """
-
-    if y_pred is None:
-        y_pred = (y_pred_upper + y_pred_lower) / 2
-
-    width = np.abs(y_pred_upper - y_pred_lower)  # type: ignore
-    sorted_order = np.argsort(width)
-
-    # Figure configuration
-    if "figsize" in kwargs.keys():
-        figsize = kwargs["figsize"]
-    else:
-        figsize = (15, 6)
-    # if "loc" not in kwargs.keys():
-    #     loc = kwargs["loc"]
-    # else:
-    #     loc = "upper left"
-    plt.figure(figsize=figsize)
-
-    if X is None:
-        X = np.arange(len(y_pred_lower))
-
-    # True values
-    plt.plot(
-        X,
-        y_pred[sorted_order] - y_pred[sorted_order],
-        color="black",
-        markersize=2,
-        zorder=20,
-        label="Prediction",
-    )
-
-    miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
-    miscoverage = miscoverage[sorted_order]
-
-    # True values
-    plt.plot(
-        X[~miscoverage],
-        y_true[sorted_order][~miscoverage] - y_pred[sorted_order][~miscoverage],
-        color="darkgreen",
-        marker="o",
-        markersize=2,
-        linewidth=0,
-        zorder=20,
-        label="Observation (inside PI)",
-    )
-
-    plt.plot(
-        X[miscoverage],
-        y_true[sorted_order][miscoverage] - y_pred[sorted_order][miscoverage],
-        color="red",
-        marker="o",
-        markersize=2,
-        linewidth=0,
-        zorder=20,
-        label="Observation (outside PI)",
-    )
-
-    # PI Lower bound
-    plt.plot(
-        X,
-        y_pred_lower[sorted_order] - y_pred[sorted_order],
-        "--",
-        label="Prediction Interval Bounds",
-        color="blue",
-        linewidth=1,
-        alpha=0.7,
-    )
-
-    # PI upper bound
-    plt.plot(
-        X,
-        y_pred_upper[sorted_order] - y_pred[sorted_order],
-        "--",
-        color="blue",
-        linewidth=1,
-        alpha=0.7,
-    )
-
-    plt.legend()
-
-    plt.show()
+        plt.legend(loc=loc)
+        if save_path:
+            plt.savefig(f"{save_path}", format="pdf")
+        else:
+            plt.show()
 
 
 #
@@ -475,52 +382,84 @@ def plot_sorted_pi(
 #
 
 
-def average_coverage(y_true, y_pred_lower, y_pred_upper):
-    """Compute average coverage on several prediction intervals.
+class Metrics:
+    class Classification:
+        @staticmethod
+        def mean_coverage(y_true, set_pred):
+            """Compute empirical coverage of the prediction sets.
 
-    Given a prediction interval i defined by its lower bound y_pred_lower[i] and upper bound y_pred_upper[i], the i-th coverage is:
+            :param np.ndarray y_true: Observed label
+            :param Tuple[np.ndarray] set_pred: label prediction set
 
-        * c[i] = 1 if y_pred_lower[i]  <= y_true[i] <= bound y_pred_upper[i]
-        * c[i] = 0 otherwise
+            :returns: Average coverage
+            :rtype: float
+            """
+            counter = 0
+            for y, S in zip(y_true, set_pred):
+                if (S != []) and (y in S):
+                    counter += 1
+            return counter / len(y_true)
 
-    With N the number of example, the average coverage is :math:`1/N \sum_{i=1}^{N} c(i)`.
+        @staticmethod
+        def mean_size(set_pred):
+            """Compute average size of prediction sets.
 
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+            :param Tuple[np.ndarray] set_pred: label prediction set
 
-    :returns: Average coverage
-    :rtype: float
-    """
-    return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
+            :returns: Average size of the prediction sets
+            :rtype: float
+            """
+            return np.mean([len(s) for s in set_pred])
 
+    ## Regression
+    class Regression:
+        @staticmethod
+        def mean_coverage(y_true, y_pred_lower, y_pred_upper):
+            """Compute average coverage on several prediction intervals.
 
-def ace(y_true, y_pred_lower, y_pred_upper, alpha):
-    """Compte the Average Coverage Error (ACE).
+            Given a prediction interval i defined by its lower bound y_pred_lower[i] and upper bound y_pred_upper[i], the i-th coverage is:
 
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param float alpha: significance level (max miscoverage target).
+                * c[i] = 1 if y_pred_lower[i]  <= y_true[i] <= bound y_pred_upper[i]
+                * c[i] = 0 otherwise
 
-    .. NOTE::
-        The ACE is the distance between the nominal coverage :math:`1-alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-alpha)`.
-        If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
+            With N the number of example, the average coverage is :math:`1/N \sum_{i=1}^{N} c(i)`.
 
-    :returns: the average coverage error (ACE).
-    :rtype: float
-    """
-    cov = average_coverage(y_true, y_pred_lower, y_pred_upper)
-    return cov - (1 - alpha)
+            :param ndarray y_true: label true values.
+            :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+            :param ndarray y_pred_upper: upper bounds of the prediction intervals.
 
+            :returns: Average coverage
+            :rtype: float
+            """
+            return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
 
-def sharpness(y_pred_lower, y_pred_upper):
-    """Compute the average absolute width of the prediction intervals.
+        @staticmethod
+        def ace(y_true, y_pred_lower, y_pred_upper, alpha):
+            """Compte the Average Coverage Error (ACE).
 
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+            :param ndarray y_true: label true values.
+            :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+            :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+            :param float alpha: significance level (max miscoverage target).
 
-    :returns: average absolute width of the prediction intervals.
-    :rtype: float
-    """
-    return (np.abs(y_pred_upper - y_pred_lower)).mean()
+            .. NOTE::
+                The ACE is the distance between the nominal coverage :math:`1-alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-alpha)`.
+                If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
+
+            :returns: the average coverage error (ACE).
+            :rtype: float
+            """
+            cov = average_coverage(y_true, y_pred_lower, y_pred_upper)
+            return cov - (1 - alpha)
+
+        @staticmethod
+        def sharpness(y_pred_lower, y_pred_upper):
+            """Compute the average absolute width of the prediction intervals.
+
+            :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+            :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+
+            :returns: average absolute width of the prediction intervals.
+            :rtype: float
+            """
+            return (np.abs(y_pred_upper - y_pred_lower)).mean()

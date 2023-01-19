@@ -242,20 +242,20 @@ class CrossValCpAggregator:
                 # Get normalized weights of the nonconformity scores
                 norm_weights = calibrator.get_norm_weights()
                 y_pred = predictor.predict(X=X)
-                y_lo, y_hi = calibrator.calibrate(
+                set_pred = calibrator.calibrate(
                     alpha=alpha, y_pred=y_pred, weights=norm_weights
                 )
-                return (y_pred, y_lo, y_hi)
+                return (y_pred, *set_pred)
         else:
             y_pred = None
             if self.method == "cv+":
                 cvp_calibrator = CvPlusCalibrator(self._calibrators)
-                y_lo, y_hi = cvp_calibrator.calibrate(
+                set_pred = cvp_calibrator.calibrate(
                     X=X,
                     kfold_predictors_dict=self._predictors,
                     alpha=alpha,
                 )
-                return (y_pred, y_lo, y_hi)  # type: ignore
+                return (y_pred, *set_pred)  # type: ignore
 
             else:
                 raise RuntimeError(
