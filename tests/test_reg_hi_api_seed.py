@@ -27,8 +27,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
-from deel.puncc.api.utils import average_coverage
-from deel.puncc.api.utils import sharpness
+from deel.puncc.metrics import regression_average_coverage
+from deel.puncc.metrics import regression_sharpness
 from deel.puncc.regression import AdaptiveEnbPI
 from deel.puncc.regression import CQR
 from deel.puncc.regression import CvPlus
@@ -72,8 +72,8 @@ def test_split_cp(diabetes_data, alpha, random_state):
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["scp"] == res
 
@@ -115,8 +115,8 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["nescp"] == res
 
@@ -143,8 +143,8 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     y_pred, y_pred_lower, y_pred_upper, var_pred = la_cp.predict(X_test, alpha=alpha)
     assert (y_pred is not None) and (var_pred is not None)
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["lacp"] == res
 
@@ -169,8 +169,8 @@ def test_cqr(diabetes_data, alpha, random_state):
     crq.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
     y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["cqr"] == res
 
@@ -190,8 +190,8 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     cv_cp.fit(X_train, y_train)
     _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["cv+"] == res
 
@@ -213,8 +213,8 @@ def test_enbpi(diabetes_data, alpha, random_state):
     )
     assert y_pred is not None
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["enbpi"] == res
 
@@ -243,7 +243,7 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     )
     assert y_pred is not None
     # Compute marginal coverage
-    coverage = average_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    coverage = regression_average_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["aenbpi"] == res
