@@ -23,110 +23,242 @@
 """
 This module provides standard wrappings for DL/ML models.
 """
-from abc import ABC
-from abc import abstractmethod
-from typing import Callable
+from copy import deepcopy
+from typing import Any
+from typing import Iterable
 
 import numpy as np
 
+from deel.puncc.api import nonconformity_scores
+from deel.puncc.api.utils import supported_types_check
 
-class BasePredictor(ABC):
+
+class BasePredictor:
     """Interface of a base predictor class.
 
-    :param bool is_trained: boolean flag that informs if the models are pre-trained
+    :param Any model: prediction model
+    :param bool is_trained: boolean flag that informs if the model is pre-trained
+    :param dict compile_kwargs: configuration in case the model needs to be
+                                compiled (for example Keras models).
     """
 
-    def __init__(self, is_trained: bool = False):
+    def __init__(self, model: Any, is_trained: bool = False, **compile_kwargs):
+        self.model = model
         self.is_trained = is_trained
+        self.compile_kwargs = compile_kwargs
 
-    @abstractmethod
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:
+        if self.compile_kwargs:
+            self.model.compile(**self.compile_kwargs)
+
+    def fit(self, X: Iterable, y: Iterable, **kwargs) -> None:
         """Fit model to the training data.
 
-        :param ndarray X: train features
-        :param ndarray y: train labels
+        :param ndarray|DataFrame|Tensor X: train features
+        :param ndarray|DataFrame|Tensor y: train labels
+        :param dict kwargs: fit configuration to be passed to the model's fit method
         """
-        raise NotImplementedError()
+        self.model.fit(X, y, **kwargs)
+        self.is_trained = True
 
-    @abstractmethod
-    def predict(
-        self, X: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def predict(self, X: Iterable, **kwargs) -> Iterable:
         """Compute predictions on new examples.
 
-        :param ndarray X: new examples' features.
-        :returns: y_pred, y_lower, y_upper, var_pred.
-        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
+        :param ndarray|DataFrame|Tensor X: new examples' features.
+        :param dict kwargs: predict configuration to be passed to the model's predict method.
+        :returns: y_pred.
+        :rtype: ndarray
         """
-        return None, None, None, None
+        # Remove axis of length one to avoid broadcast in computation
+        # of non-conformity scores
+        return np.squeeze(self.model.predict(X, **kwargs))
+
+    def copy(self):
+        """Returns a copy of the predictor. The underlying model is either
+        cloned (Keras model) or deepcopied (sklearn and similar models).
+
+        :returns: copy_predictor.
+        :rtype: BasePredictor
+        """
+
+        try:
+            model = deepcopy(self.model)
+        except Exception as e:
+
+            # print(e) ## For debug
+            try:
+                import tensorflow as tf
+
+                model = tf.keras.models.clone_model(self.model)
+            except Exception as e:
+                raise RuntimeError(e)
+
+        copy_predictor = BasePredictor(model, **self.compile_kwargs)
+        return copy_predictor
 
 
-class MeanPredictor(BasePredictor):
-    """Wrapper of conditional mean models.
-
-    :param callable mu_model: conditional mean model.
-    :param bool is_trained: boolean flag that informs if the models are pre-trained.
-    """
-
-    def __init__(self, mu_model: Callable, is_trained=False):
-        self.mu_model = mu_model
-        super().__init__(is_trained)
-
-    def fit(self, X, y, **kwargs):
-        self.mu_model.fit(X, y, **kwargs)
-        self.is_trained = True
-
-    def predict(self, X):
-        y_pred = self.mu_model.predict(X)
-        return y_pred, None, None, None
-
-
-class MeanVarPredictor(BasePredictor):
-    """Wrapper of joint conditional mean and mean absolute dispertion models.
-
-    :param callable mu_model: conditional mean model.
-    :param callable var_model: mean absolute dispertion model.
-    :param bool is_trained: boolean flag that informs if the models are pre-trained.
-    """
-
-    def __init__(self, mu_model: Callable, var_model: Callable, is_trained=False):
+class LocallyAdaptivePredictor:
+    def __init__(
+        self,
+        mu_model: Any,
+        var_model: Any,
+        is_trained: bool = False,
+        compile_args1=dict(),
+        compile_args2=dict(),
+    ):
         self.mu_model = mu_model
         self.var_model = var_model
-        super().__init__(is_trained)
+        self.is_trained = is_trained
+        self.compile_args1 = compile_args1
+        self.compile_args2 = compile_args2
 
-    def fit(self, X, y, **kwargs):
-        self.mu_model.fit(X, y, **kwargs)
-        y_pred = self.mu_model.predict(X)
-        residual = np.abs(y - y_pred)
-        self.var_model.fit(X, residual, **kwargs)
+        if len(self.compile_args1.keys()) != 0:
+            self.mu_model.compile(**self.compile_args1)
+
+        if len(self.compile_args2.keys()) != 0:
+            self.var_model.compile(**self.compile_args2)
+
+    def fit(self, X: Iterable, y: Iterable, dictargs1=dict(), dictargs2=dict()) -> None:
+        """Fit model to the training data.
+
+        :param ndarray|DataFrame|Tensor X: train features
+        :param ndarray|DataFrame|Tensor y: train labels
+        :param dict dictargs1: fit configuration to be passed to the mu_model's fit method
+        :param dict dictargs2: fit configuration to be passed to the var_model's fit method
+        """
+        self.mu_model.fit(X, y, **dictargs1)
+        mu_pred = self.mu_model.predict(X)
+        mads = nonconformity_scores.mad(mu_pred, y)
+        self.var_model.fit(X, mads, **dictargs2)
         self.is_trained = True
 
-    def predict(self, X):
-        y_pred = self.mu_model.predict(X)
-        var_pred = self.var_model.predict(X)
-        y_pred_lo, y_pred_hi = None, None
-        return y_pred, y_pred_lo, y_pred_hi, var_pred
+    def predict(self, X, dictargs1=dict(), dictargs2=dict()):
+        mu_pred = self.mu_model.predict(X, **dictargs1)
+        var_pred = self.var_model.predict(X, **dictargs2)
+        supported_types_check(mu_pred, var_pred)
+
+        if isinstance(mu_pred, np.ndarray):
+            Y_pred = np.column_stack((mu_pred, var_pred))
+        else:  # In case the models return something other than an np.ndarray
+            raise NotImplementedError("Predicted values must be of type numpy.ndarray.")
+
+        return np.squeeze(Y_pred)
+
+    def copy(self):
+        """Returns a copy of the predictor. The underlying models are either
+        cloned (Keras model) or deepcopied (sklearn and similar models).
+
+        :returns: copy_predictor.
+        :rtype: LocallyAdaptivePredictor
+        """
+        try:
+            mu_model = deepcopy(self.mu_model)
+        except Exception as e:
+
+            try:
+                import tensorflow as tf
+
+                mu_model = tf.keras.models.clone_model(self.mu_model)
+            except Exception as e:
+                raise RuntimeError(e)
+
+        try:
+            var_model = deepcopy(self.var_model)
+        except Exception as e:
+
+            try:
+                import tensorflow as tf
+
+                var_model = tf.keras.models.clone_model(self.var_model)
+            except Exception as e:
+                raise RuntimeError(e)
+
+        copy_predictor = LocallyAdaptivePredictor(
+            mu_model,
+            var_model,
+            compile_args1=self.compile_args1,
+            compile_args2=self.compile_args2,
+        )
+        return copy_predictor
 
 
-class QuantilePredictor(BasePredictor):
-    """Wrapper of upper and lower quantiles models.
-
-    :param callable q_lo_model: lower quantile model.
-    :param callable q_hi_model: upper quantile model.
-    :param bool is_trained: boolean flag that informs if the models are pre-trained.
-    """
-
-    def __init__(self, q_lo_model: Callable, q_hi_model: Callable, is_trained=False):
+class QuantilePredictor:
+    def __init__(
+        self,
+        q_lo_model: Any,
+        q_hi_model: Any,
+        is_trained: bool = False,
+        compile_args1=dict(),
+        compile_args2=dict(),
+    ):
         self.q_lo_model = q_lo_model
         self.q_hi_model = q_hi_model
-        super().__init__(is_trained)
+        self.is_trained = is_trained
+        self.compile_args1 = compile_args1
+        self.compile_args2 = compile_args2
 
-    def fit(self, X, y, **kwargs):
-        self.q_lo_model.fit(X, y, **kwargs)
-        self.q_hi_model.fit(X, y, **kwargs)
+        if len(self.compile_args1.keys()) != 0:
+            self.q_lo_model.compile(**self.compile_args1)
+
+        if len(self.compile_args2.keys()) != 0:
+            self.q_hi_model.compile(**self.compile_args2)
+
+    def fit(self, X: Iterable, y: Iterable, dictargs1=dict(), dictargs2=dict()) -> None:
+        """Fit model to the training data.
+
+        :param ndarray|DataFrame|Tensor X: train features
+        :param ndarray|DataFrame|Tensor y: train labels
+        :param dict dictargs1: fit configuration to be passed to the q_lo_model's fit method
+        :param dict dictargs2: fit configuration to be passed to the q_hi_model's fit method
+        """
+        self.q_lo_model.fit(X, y, **dictargs1)
+        self.q_hi_model.fit(X, y, **dictargs2)
         self.is_trained = True
 
-    def predict(self, X):
-        y_pred_lo = self.q_lo_model.predict(X)
-        y_pred_hi = self.q_hi_model.predict(X)
-        return None, y_pred_lo, y_pred_hi, None
+    def predict(self, X, dictargs1=dict(), dictargs2=dict()):
+        q_lo_pred = self.q_lo_model.predict(X, **dictargs1)
+        q_hi_pred = self.q_hi_model.predict(X, **dictargs2)
+        supported_types_check(q_lo_pred, q_hi_pred)
+
+        if isinstance(q_lo_pred, np.ndarray):
+            Y_pred = np.column_stack((q_lo_pred, q_hi_pred))
+        else:  # In case the models return something other than an np.ndarray
+            raise NotImplementedError("Predicted values must be of type numpy.ndarray.")
+
+        return np.squeeze(Y_pred)
+
+    def copy(self):
+        """Returns a copy of the predictor. The underlying models are either
+        cloned (Keras model) or deepcopied (sklearn and similar models).
+
+        :returns: copy_predictor.
+        :rtype: LocallyAdaptivePredictor
+        """
+        try:
+            q_lo_model = deepcopy(self.q_lo_model)
+        except Exception as e:
+
+            try:
+                import tensorflow as tf
+
+                q_lo_model = tf.keras.models.clone_model(self.q_lo_model)
+            except Exception as e:
+                raise RuntimeError(e)
+
+        try:
+            q_hi_model = deepcopy(self.q_hi_model)
+        except Exception as e:
+
+            try:
+                import tensorflow as tf
+
+                q_hi_model = tf.keras.models.clone_model(self.q_hi_model)
+            except Exception as e:
+                raise RuntimeError(e)
+
+        copy_predictor = QuantilePredictor(
+            q_lo_model,
+            q_hi_model,
+            compile_args1=self.compile_args1,
+            compile_args2=self.compile_args2,
+        )
+        return copy_predictor

@@ -20,10 +20,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
-# This module provides the canvas for conformal prediction.
-#
+"""
+This module provides the canvas for conformal prediction.
+"""
 from copy import deepcopy
+from typing import Iterable
 
 import numpy as np
 
@@ -36,7 +37,7 @@ from deel.puncc.api.splitting import BaseSplitter
 class ConformalPredictor:
     """Conformal predictor class.
 
-    :param deel.puncc.api.prediction.BasePredictor predictor: point-based or interval-based model wrapper.
+    :param deel.puncc.api.prediction.BasePredictor predictor: model wrapper.
     :param deel.puncc.api.prediction.BaseCalibrator calibrator: nonconformity computation strategy and interval predictor.
     :param deel.puncc.api.prediction.BaseSplitter splitter: fit/calibration split strategy.
     :param str method: method to handle the ensemble prediction and calibration in case the splitter is a K-fold-like strategy. Defaults to 'cv+' to follow cv+ procedure.
@@ -71,8 +72,10 @@ class ConformalPredictor:
 
         :raises RuntimeError: :meth:`fit` needs to be called before :meth:`get_residuals`.
         """
+
         if self._cv_cp_agg is None:
             return RuntimeError("Error: call 'fit' method first.")
+
         return self._cv_cp_agg.get_residuals()
 
     def get_weights(self):
@@ -83,30 +86,31 @@ class ConformalPredictor:
 
         :raises RuntimeError: :meth:`fit` needs to be called before :meth:`get_weights`.
         """
+
         if self._cv_cp_agg is None:
             return RuntimeError("Error: call 'fit' method first.")
+
         return self._cv_cp_agg.get_weights()
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:
+    def fit(
+        self,
+        X: Iterable,
+        y: Iterable,
+        **kwargs,
+    ) -> None:
         """Fit the model(s) and estimate the nonconformity scores.
 
         If the splitter is an instance of :class:`deel.puncc.splitting.KFoldSplitter`, the fit operates on each fold separately. Thereafter, the predictions and nonconformity scores are combined accordingly to an aggregation method (cv+ by default).
 
-        :param ndarray X: features.
-        :param ndarray y: labels.
-        :param kwargs: options configuration for the training.
+        :param ndarray|DataFrame|Tensor X: features.
+        :param ndarray|DataFrame|Tensor y: labels.
+        :param dict kwargs: options configuration for the training.
 
         :raises RuntimeError: inconsistencies between the train status of the model(s) and the :data:`train` class attribute.
         """
         # Get split folds. Each fold split is a iterable of a quadruple that
         # contains fit and calibration data.
         splits = self.splitter(X, y)
-
-        # Make local copies of the structure of the predictor and the calibrator.
-        # In case of a K-fold like splitting strategy, these structures are
-        # inherited by the predictor/calibrator used in each fold.
-        predictor = deepcopy(self.predictor)
-        calibrator = deepcopy(self.calibrator)
 
         # The Cross validation aggregator will aggregate the predictors and
         # calibrators fitted on each of the K splits.
@@ -122,9 +126,15 @@ class ConformalPredictor:
 
         # Core loop: for each split (that contains fit and calib data):
         #   1- The predictor f_i is fitted of (X_fit, y_fit) (if necessary)
-        #   2- The tuple (y_pred, y_pred_lo, y_pred_hi, var_pred) is predicted by f_i
+        #   2- y_pred is predicted by f_i
         #   3- The calibrator is fitted to approximate the distribution of nonconformity scores
         for i, (X_fit, y_fit, X_calib, y_calib) in enumerate(splits):
+            # Make local copies of the structure of the predictor and the calibrator.
+            # In case of a K-fold like splitting strategy, these structures are
+            # inherited by the predictor/calibrator used in each fold.
+            predictor = self.predictor.copy()
+            calibrator = deepcopy(self.calibrator)
+
             if self.train:
                 predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
             # Make sure that predictor is already trained if train arg is False
@@ -132,38 +142,40 @@ class ConformalPredictor:
                 raise RuntimeError(
                     f"'train' argument is set to 'False' but model is not pre-trained"
                 )
-            if self.calibrator is not None:
-                # Call predictor to estimate point, variability and/or
-                # interval predictions
-                (y_pred, y_pred_lo, y_pred_hi, var_pred) = predictor.predict(X_calib)
 
-                # Compte/calibrate PIs
-                calibrator.fit(
-                    y_true=y_calib,
-                    y_pred=y_pred,
-                    X=X_calib,
-                    var_pred=var_pred,
-                    y_pred_lo=y_pred_lo,
-                    y_pred_hi=y_pred_hi,
+            # Call predictor to estimate predictions
+            y_pred = predictor.predict(X_calib)
+            # Fit calibrator
+            calibrator.fit(y_true=y_calib, y_pred=y_pred)
+
+            # Compute normalized weights of the nonconformity scores
+            # if a weight function is provided
+            if calibrator.weight_func:
+                weights = calibrator.weight_func(X_calib)
+                norm_weights = calibrator.barber_weights(
+                    X=X_calib, weights_calib=weights
                 )
+                # Store the mornalized weights
+                calibrator.set_norm_weights(norm_weights)
             # Add predictor and calibrator to the collection that is used later
             # by the predict method
+
             self._cv_cp_agg.append_predictor(i, predictor)
             self._cv_cp_agg.append_calibrator(i, calibrator)
 
-    def predict(
-        self, X: np.ndarray, alpha: float
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray,]:
+    def predict(self, X: Iterable, alpha: float) -> Iterable:
         """Predict point, interval and variability estimates for X data.
 
-        :param ndarray X: features
+        :param ndarray|DataFrame|Tensor X: features.
         :param float alpha: significance level (max miscoverage target).
 
-        :returns: A tuple composed of y_pred (point prediction), y_pred_lower (lower PI bound), y_pred_upper (upper PI bound) and var_pred (variability prediction).
-        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
+        :returns: y_pred.
+        :rtype: ndarray|DataFrame|Tensor
         """
+
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
+
         return self._cv_cp_agg.predict(X, alpha)
 
 
@@ -191,10 +203,11 @@ class CrossValCpAggregator:
             return NotImplemented(
                 f"Method {method} is not implemented. " + "Please choose 'cv+'."
             )
+
         self.method = method
 
     def append_predictor(self, id, predictor):
-        self._predictors[id] = deepcopy(predictor)
+        self._predictors[id] = predictor.copy()
 
     def append_calibrator(self, id, calibrator):
         self._calibrators[id] = deepcopy(calibrator)
@@ -208,7 +221,7 @@ class CrossValCpAggregator:
         return {k: calibrator._residuals for k, calibrator in self._calibrators.items()}
 
     def get_weights(self):
-        """Get a dictionnary of normalized weights computed on the K-folds
+        """Get a dictionnary of normalized weights computed on the K-folds.
 
         :returns: dictionary of normalized weights indexed by the K-fold number.
         :rtype: dict
@@ -217,16 +230,14 @@ class CrossValCpAggregator:
             k: calibrator.get_weights() for k, calibrator in self._calibrators.items()
         }
 
-    def predict(
-        self, X: np.ndarray, alpha: float
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:  #  type: ignore
+    def predict(self, X: Iterable, alpha: float) -> Iterable:  #  type: ignore
         """Predict point, interval and variability estimates for X data.
 
-        :param ndarray X: features
+        :param ndarray|DataFrame|Tensor X: features.
         :param float alpha: significance level (max miscoverage target).
 
-        :returns: A tuple composed of y_pred (point prediction), y_pred_lower (lower PI bound), y_pred_upper (upper PI bound) and var_pred (variability prediction).
-        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
+        :returns: y_pred, y_lower, y_higher.
+        :rtype: Tuple[ndarray|DataFrame|Tensor]
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()
@@ -236,31 +247,31 @@ class CrossValCpAggregator:
 
         # No cross-val strategy if K = 1
         if K == 1:
+
             for k in self._predictors.keys():
                 predictor = self._predictors[k]
                 calibrator = self._calibrators[k]
-                y_pred, y_pred_lo, y_pred_hi, var_pred = predictor.predict(X=X)
-                y_lo, y_hi = calibrator.calibrate(
-                    X=X,
-                    alpha=alpha,
-                    y_pred=y_pred,
-                    var_pred=var_pred,
-                    y_pred_lo=y_pred_lo,
-                    y_pred_hi=y_pred_hi,
+                # Get normalized weights of the nonconformity scores
+                norm_weights = calibrator.get_norm_weights()
+                y_pred = predictor.predict(X=X)
+                set_pred = calibrator.calibrate(
+                    alpha=alpha, y_pred=y_pred, weights=norm_weights
                 )
-                return (y_pred, y_lo, y_hi, var_pred)
+                return (y_pred, *set_pred)
+
         else:
             y_pred = None
+
             if self.method == "cv+":
                 cvp_calibrator = CvPlusCalibrator(self._calibrators)
-                y_lo, y_hi = cvp_calibrator.calibrate(
+                set_pred = cvp_calibrator.calibrate(
                     X=X,
                     kfold_predictors_dict=self._predictors,
                     alpha=alpha,
                 )
-                return (y_pred, y_lo, y_hi, None)  # type: ignore
+                return (y_pred, *set_pred)  # type: ignore
 
             else:
                 raise RuntimeError(
-                    f"Method {self.method} is not implemented" + "Please choose 'cv+'."
+                    f"Method {self.method} is not implemented." + "Please choose 'cv+'."
                 )

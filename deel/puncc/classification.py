@@ -23,22 +23,16 @@
 """
 This module implements usual conformal classification wrappers.
 """
-from copy import deepcopy
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-from sklearn.utils import resample
-from tqdm import tqdm
-
-from deel.puncc.api.calibration2 import BaseCalibrator
-from deel.puncc.api.calibration2 import NonConformityScores
-from deel.puncc.api.calibration2 import PredictionSets
-from deel.puncc.api.conformalization2 import ConformalPredictor
-from deel.puncc.api.prediction2 import BasePredictor
-from deel.puncc.api.splitting2 import IdSplitter
-from deel.puncc.api.splitting2 import KFoldSplitter
+from deel.puncc.api import nonconformity_scores
+from deel.puncc.api import prediction_sets
+from deel.puncc.api.calibration import BaseCalibrator
+from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.splitting import IdSplitter
 
 
 class RAPS:
@@ -54,12 +48,10 @@ class RAPS:
     def __init__(self, predictor, train=True, lambd=0, k_reg=1):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=NonConformityScores.Classification.RAPS_SCORE(
+            nonconf_score_func=nonconformity_scores.raps_score(
                 lambd=lambd, k_reg=k_reg
             ),
-            pred_set_func=PredictionSets.Classification.RAPS_SET(
-                lambd=lambd, k_reg=k_reg
-            ),
+            pred_set_func=prediction_sets.raps_set(lambd=lambd, k_reg=k_reg),
             weight_func=None,
         )
         self.train = train
