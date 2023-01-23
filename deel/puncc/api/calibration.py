@@ -60,11 +60,10 @@ class BaseCalibrator:
         calib_size = len(weights_calib)
         # Computation of normalized weights
         sum_w_calib = np.sum(weights_calib)
-        w_norm = np.zeros((len(X), calib_size + 1))
+        w_norm = np.zeros(calib_size + 1)
 
-        for i in range(len(X)):
-            w_norm[i, :calib_size] = weights_calib / (sum_w_calib + 1)
-            w_norm[i, calib_size] = 1 / (sum_w_calib + 1)
+        w_norm[:calib_size] = weights_calib / (sum_w_calib + 1)
+        w_norm[calib_size] = 1 / (sum_w_calib + 1)
 
         return w_norm
 
@@ -129,26 +128,16 @@ class BaseCalibrator:
         # Check consistency of alpha w.r.t the size of calibration data
         check_alpha_calib(alpha=alpha, n=self._len_calib)
 
-        residuals_Qs = list()
+        # Compute weighted quantiles
+        infty_array = np.array([np.inf])
+        lemma_residuals = np.concatenate((self._residuals, infty_array))
+        residuals_Q = quantile(
+            lemma_residuals,
+            1 - alpha,
+            w=weights,
+        )
 
-        # Fix to factorize the loop on weights:
-        # Enables the loop even when the weights are not provided
-        if weights is None:
-            it_weights = [None]
-        else:
-            it_weights = weights
-
-        for w in it_weights:
-            infty_array = np.array([np.inf])
-            lemma_residuals = np.concatenate((self._residuals, infty_array))
-            residuals_Q = quantile(
-                lemma_residuals,
-                1 - alpha,
-                w=w,
-            )
-            residuals_Qs.append(residuals_Q)
-
-        return self.pred_set_func(y_pred, scores_quantiles=residuals_Qs)
+        return self.pred_set_func(y_pred, scores_quantiles=residuals_Q)
 
     def set_norm_weights(self, norm_weights):
         """Setter of normalized weights associated to the nonconformity

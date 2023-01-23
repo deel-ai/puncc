@@ -463,7 +463,7 @@ class EnbPI:
 class AdaptiveEnbPI(EnbPI):
     """Locally adaptive version ensemble batch prediction intervals method.
 
-    :param LocallyAdaptivePredictor predictor: object implementing '.fit()' and '.predict()' methods
+    :param DualPointPredictor predictor: object implementing '.fit()' and '.predict()' methods
     :param int B: number of bootstrap models
     :param func agg_func_loo: aggregation function of LOO estimators.
     :param int random_state: determines random generation.

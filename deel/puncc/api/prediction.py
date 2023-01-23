@@ -96,7 +96,7 @@ class BasePredictor:
         return copy_predictor
 
 
-class LocallyAdaptivePredictor:
+class DualPointPredictor:
     def __init__(
         self,
         mu_model: Any,
@@ -148,7 +148,7 @@ class LocallyAdaptivePredictor:
         cloned (Keras model) or deepcopied (sklearn and similar models).
 
         :returns: copy_predictor.
-        :rtype: LocallyAdaptivePredictor
+        :rtype: DualPointPredictor
         """
         try:
             mu_model = deepcopy(self.mu_model)
@@ -172,7 +172,7 @@ class LocallyAdaptivePredictor:
             except Exception as e:
                 raise RuntimeError(e)
 
-        copy_predictor = LocallyAdaptivePredictor(
+        copy_predictor = DualPointPredictor(
             mu_model,
             var_model,
             compile_args1=self.compile_args1,
@@ -231,7 +231,7 @@ class QuantilePredictor:
         cloned (Keras model) or deepcopied (sklearn and similar models).
 
         :returns: copy_predictor.
-        :rtype: LocallyAdaptivePredictor
+        :rtype: QuantilePredictor
         """
         try:
             q_lo_model = deepcopy(self.q_lo_model)
