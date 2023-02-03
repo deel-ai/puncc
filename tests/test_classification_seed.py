@@ -29,7 +29,7 @@ from tensorflow.keras.utils import to_categorical
 
 from deel.puncc import metrics
 from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.classification import RAPS
+from deel.puncc.classification import Raps
 
 
 RESULTS = {
@@ -72,7 +72,7 @@ def test_raps(mnist_data, alpha, random_state):
     class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
 
     # RAPS
-    raps_cp = RAPS(class_predictor, k_reg=1, lambd=0)
+    raps_cp = Raps(class_predictor, k_reg=1, lambd=0)
     raps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
     y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None

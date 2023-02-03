@@ -21,8 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the core Calibrator and provides a collection of non-conformity scores and computations of the prediction sets.
+This module implements the core calibrator and provides a collection of nonconformity scores and computation approaches of the prediction sets.
 """
+from typing import Callable
 from typing import Iterable
 from typing import Optional
 
@@ -35,44 +36,73 @@ from deel.puncc.api.utils import quantile
 
 
 class BaseCalibrator:
-    """Calibrator class.
+    """:class:`BaseCalibrator` offers a framework to compute user-defined
+    nonconformity scores on calibration dataset(s) (:func:`fit`) and to use for
+    constructing and/or calibrating prediction sets (:func:`calibrate`).
 
-    :param callable nonconf_score_func: nonconformity score function
-    :param callable pred_set_func:
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable pred_set_func: prediction set construction function.
     :param callable weight_func: function that takes as argument an array of
-    features X and returns associated "conformality" weights, defaults to None.
+        features X and returns associated "conformality" weights,
+        defaults to None.
 
     :raises NotImplementedError: provided :data:`weight_method` is not suitable.
+
+    .. _example basecalibrator:
+
+    Regression calibrator example:
+    ==============================
+
+    Consider a pretrained model :math:`\hat{f}`, a calibration dataset
+    :math:`(X_{calib}, y_{calib})` and a test dataset :math:`(X_{test}, y_{test})`.
+    The model :math:`\hat{f}` generates predictions on the calibration and test sets:
+
+    .. math::
+        y_{pred, calib}=\hat{f}(X_{calib})
+
+    .. math::
+        y_{pred, test}=\hat{f}(X_{test})
+
+    Two function need to be define before instantiating the
+    :class:`BaseCalibrator`: a nonconformity score function and a definition of
+    the prediction set. In the example below, these are implemented from scratch
+    but a collection of ready-to-use nonconformity scores and prediction sets are
+    provided in the modules :mod:`puncc.api.nonconformity_scores` and :mod:`api.prediction_sets.py`, respectively.
+
+
+    .. code-block:: python
+
+        from deel.puncc.api.calibration import BaseCalibrator
+        import numpy as np
+
+        # First, we define a nonconformity score function that takes as argument
+        # the predicted values y_pred = model(X)
+        def nonconformity_function(y_pred, y_true):
+            return np.abs(y_pred - y_true)
+
+        def prediction_set_function(y_pred, scores_quantile):
+            y_lo = y_pred - scores_quantiles
+            y_hi = y_pred + scores_quantiles
+            return y_lo, y_hi
+
+        calibrator = BaseCalibrator(
+            nonconf_score_func=nonconformity_function,
+            pred_set_func=prediction_set_function
+        )
+
+        calibrator.fit(y_pred=y_pred_calib, y_true=y_true_calib)
+
+        y_pred_low, y_pred_high = calibrator.calibrate(y_pred=y_pred_test, alpha=.1)
+
+
     """
-
-    @staticmethod
-    def barber_weights(*, X, weights_calib):
-        """Compute and normalize inference weights of the nonconformity distribution
-        based on `Barber et al. <https://arxiv.org/abs/2202.13415>`.
-
-        :param ndarray X: features array.
-        :param ndarray weights_calib: weights assigned to the calibration samples.
-
-        :returns: normalized weights.
-        :rtype: ndarray
-        """
-
-        calib_size = len(weights_calib)
-        # Computation of normalized weights
-        sum_w_calib = np.sum(weights_calib)
-        w_norm = np.zeros(calib_size + 1)
-
-        w_norm[:calib_size] = weights_calib / (sum_w_calib + 1)
-        w_norm[calib_size] = 1 / (sum_w_calib + 1)
-
-        return w_norm
 
     def __init__(
         self,
         *,
-        nonconf_score_func,
-        pred_set_func,
-        weight_func=None,
+        nonconf_score_func: Callable,
+        pred_set_func: Callable,
+        weight_func: Callable = None,
     ):
         self.nonconf_score_func = nonconf_score_func
         self.pred_set_func = pred_set_func
@@ -89,9 +119,8 @@ class BaseCalibrator:
     ) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
-        :param ndarray|DataFrame|Tensor y_true: true values.
+        :param ndarray|DataFrame|Tensor y_true: true labels.
         :param ndarray|DataFrame|Tensor y_pred: predicted values.
-        :param Any kwargs: keyword arguments for the nonconformity score function.
 
         """
         # TODO check structure match in supported types
@@ -100,15 +129,15 @@ class BaseCalibrator:
 
     def calibrate(
         self,
-        alpha: float,
+        *alpha: float,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
-    ) -> tuple[Iterable, Optional[Iterable]]:
-        """Compute calibrated prediction sets for new examples.
+    ) -> tuple[Iterable]:
+        """Compute calibrated prediction sets for new examples w.r.t a significance level :math:`\\alpha`.
 
         :param float alpha: significance level (max miscoverage target).
         :param ndarray|DataFrame|Tensor y_pred: predicted values.
-        :param Iterable weights: weights to be associated to the non-conformity
+        :param Iterable weights: weights to be associated to the nonconformity
                                  scores. Defaults to None when all the scores
                                  are equiprobable.
 
@@ -139,28 +168,50 @@ class BaseCalibrator:
 
         return self.pred_set_func(y_pred, scores_quantiles=residuals_Q)
 
-    def set_norm_weights(self, norm_weights):
+    def set_norm_weights(self, norm_weights: np.ndarray) -> None:
         """Setter of normalized weights associated to the nonconformity
         scores on the calibration set.
 
-        :returns: normalized weights array.
-        :rtype: ndarray
+        :param ndarray norm_weights: normalized weights array
+
         """
         self._norm_weights = norm_weights
 
-    def get_norm_weights(self):
+    def get_norm_weights(self) -> np.ndarray:
         """Getter of normalized weights associated to the nonconformity
         scores on the calibration set.
 
-        :param ndarray norm_weights: normalized weights array
+        :returns: normalized weights of nonconformity scores.
+        :rtype: np.ndarray
         """
         return self._norm_weights
 
+    @staticmethod
+    def barber_weights(weights):
+        """Compute and normalize inference weights of the nonconformity distribution
+        based on `Barber et al. <https://arxiv.org/abs/2202.13415>`_.
+
+        :param ndarray weights: weights assigned to the samples.
+
+        :returns: normalized weights.
+        :rtype: ndarray
+        """
+
+        weights_len = len(weights)
+
+        # Computation of normalized weights
+        sum_weights = np.sum(weights)
+        w_norm = np.zeros(weights_len + 1)
+        w_norm[:weights_len] = weights / (sum_weights + 1)
+        w_norm[weights_len] = 1 / (sum_weights + 1)
+
+        return w_norm
+
 
 class CvPlusCalibrator:
-    """Meta calibrator that combines the estimations nonconformity
+    """Meta calibrator that combines the estimations of nonconformity
     scores by each K-Fold calibrator and produces associated prediction
-    intervals based on CV+ method.
+    intervals based on `CV+ <https://arxiv.org/abs/1905.02928>`_.
 
     Attributes:
         kfold_calibrators_dict: dictionary of calibrators for each K-fold
@@ -200,7 +251,7 @@ class CvPlusCalibrator:
         X: Iterable,
         kfold_predictors_dict: dict,
         alpha: float,
-    ) -> tuple[Iterable, Iterable]:
+    ) -> tuple[Iterable]:
         concat_residuals_lo = None
         concat_residuals_hi = None
         """Compute calibrated prediction intervals for new examples X.

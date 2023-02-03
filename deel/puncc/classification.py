@@ -35,13 +35,12 @@ from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.splitting import IdSplitter
 
 
-class RAPS:
+class Raps:
     """Split conformal prediction method.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
-    :param callable weight_func: function that takes as argument an array of
-    features X and returns associated "conformality" weights, defaults to None.
+    :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
 
     """
 

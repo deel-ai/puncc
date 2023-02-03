@@ -1,5 +1,5 @@
-splitting module
-================
+Splitting
+=========
 
 .. automodule:: splitting
    :members:

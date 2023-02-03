@@ -16,13 +16,13 @@ before_script:
   - pip install -e .[dev]
 
 stages:
-  # - test_classification
+  - test_classification
   - test_regression
 
-# test-classification:
-#   stage: test_classification
-#   script:
-#     - pytest tests/test_classification_seed.py
+test-classification:
+  stage: test_classification
+  script:
+    - pytest tests/test_classification_seed.py
 
 test-regression:
   stage: test_regression

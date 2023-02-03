@@ -87,7 +87,8 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha):
     :param float alpha: significance level (max miscoverage target).
 
     .. NOTE::
-        The ACE is the distance between the nominal coverage :math:`1-alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-alpha)`.
+
+        The ACE is the distance between the nominal coverage :math:`1-\\alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-\\alpha)`.
         If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
 
     :returns: the average coverage error (ACE).

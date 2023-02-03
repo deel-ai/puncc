@@ -25,6 +25,8 @@ Modules
     calibration
     splitting
     utils
+    nonconformity_scores
+    prediction_sets
 
 Overview
 ********

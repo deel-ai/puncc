@@ -37,6 +37,8 @@ from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
 from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
+from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
 
@@ -45,20 +47,17 @@ class SplitCP:
     """Split conformal prediction method.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
-    :param callable weight_func: function that takes as argument an array of
-    features X and returns associated "conformality" weights, defaults to None.
+    :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
 
     """
 
-    def __init__(self, predictor, train=True, *, weight_func=None):
+    def __init__(self, predictor, *, weight_func=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.mad,
             pred_set_func=prediction_sets.constant_interval,
             weight_func=weight_func,
         )
-        self.train = train
 
     def fit(
         self,
@@ -76,6 +75,7 @@ class SplitCP:
         :param ndarray|DataFrame|Tensor X_calib: features from the calibration dataset.
         :param ndarray|DataFrame|Tensor y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
+
         """
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
@@ -85,14 +85,14 @@ class SplitCP:
         self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
 
     def predict(self, X_test: Iterable, alpha) -> Tuple[Iterable, Iterable, Iterable]:
-        """Conformal interval predictions (w.r.t target miscoverage alpha)
-        for new samples.
+        """Conformal interval predictions (w.r.t target miscoverage alpha) for new samples.
 
         :param ndarray|DataFrame|Tensor X_test: features of new samples.
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher
         :rtype: Tuple[ndarray|DataFrame|Tensor]
+
         """
 
         if not hasattr(self, "conformal_predictor"):
@@ -110,43 +110,35 @@ class SplitCP:
 class LocallyAdaptiveCP(SplitCP):
     """Locally adaptive conformal prediction method.
 
-    :param BasePredictor predictor: a predictor implementing fit and predict.
-    Must embed two models for point and dispersion estimations respectively.
-    :param bool train: if False, prediction model(s) will not be trained and
-    will be used as is. Defaults to True.
-    :param callable weight_func: function that takes as argument an array of
-    features X and returns associated "conformality" weights, defaults to None.
+    :param MeanVarPredictor predictor: a predictor implementing fit and predict. Must embed two models for point and dispersion estimations respectively.
+    :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
+
     """
 
-    def __init__(self, predictor, train=True, *, weight_func=None):
+    def __init__(self, predictor, *, weight_func=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.scaled_mad,
             pred_set_func=prediction_sets.scaled_interval,
             weight_func=weight_func,
         )
-        self.train = train
 
 
 class CQR(SplitCP):
     """Conformalized quantile regression method.
 
-    :param QuantilePredictor predictor: a predictor implementing fit and predict.
-    Must embed two models for lower and upper quantiles estimations respectively.
-    :param bool train: if False, prediction model(s) will not be trained and
-    will be used as is. Defaults to True.
-    :param callable weight_func: function that takes as argument an array of
-    features X and returns associated "conformality" weights, defaults to None.
+    :param DualPredictor predictor: a predictor implementing fit and predict. Must embed two models for lower and upper quantiles estimations respectively.
+    :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
+
     """
 
-    def __init__(self, predictor, train=True, *, weight_func=None):
+    def __init__(self, predictor, *, weight_func=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
             weight_func=weight_func,
         )
-        self.train = train
 
 
 class CvPlus:
@@ -155,6 +147,7 @@ class CvPlus:
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param int K: number of training/calibration folds.
     :param int random_state: seed to control random folds.
+
     """
 
     def __init__(self, predictor, *, K: int, random_state=None):
@@ -179,6 +172,7 @@ class CvPlus:
         :param ndarray|DataFrame|Tensor X_train: features from the train dataset.
         :param ndarray|DataFrame|Tensor y_train: labels from the train dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
+
         """
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
@@ -197,6 +191,7 @@ class CvPlus:
 
         :returns: y_pred, y_lower, y_higher
         :rtype: Tuple[ndarray|DataFrame|Tensor]
+
         """
 
         if not hasattr(self, "conformal_predictor"):
@@ -265,6 +260,7 @@ class EnbPI:
 
         :returns: prediction intervals.
         :rtype: tuple[ndarray, ndarray]
+
         """
         return prediction_sets.constant_interval(y_pred, w)
 
@@ -276,6 +272,7 @@ class EnbPI:
 
         :returns: residuals.
         :rtype: list[ndarray]
+
         """
         # Approximation of LOO predictions:
         #   For each training sample X_i, the LOO estimate is built from
@@ -293,6 +290,7 @@ class EnbPI:
         :param dict dictargs2: fit arguments for the underlying model
 
         :raises RuntimeError: in case of empty out-of-bag.
+
         """
         self._oob_dict = dict()  # Key: b. Value: out of bag weighted index
         self._boot_predictors = list()  # f^_b for b in [1,B]
@@ -385,6 +383,7 @@ class EnbPI:
 
         :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
         :rtype: tuple[ndarray, ndarray, ndarray]
+
         """
         y_pred_upper_list = list()
         y_pred_lower_list = list()
@@ -472,6 +471,7 @@ class AdaptiveEnbPI(EnbPI):
         *Xu et al.* defined two aggregation functions of leave-one-out estimators:
             * For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_: :code:`lambda x, *args: np.quantile(x, alpha, *args)`
             * For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
+
     """
 
     def _compute_pi(self, y_pred, w):
@@ -482,6 +482,7 @@ class AdaptiveEnbPI(EnbPI):
 
         :returns: prediction intervals.
         :rtype: tuple[ndarray, ndarray]
+
         """
 
         return prediction_sets.scaled_interval(y_pred, w)
@@ -495,6 +496,7 @@ class AdaptiveEnbPI(EnbPI):
 
         :returns: residuals.
         :rtype: ndarray
+
         """
         return nonconformity_scores.scaled_mad(y_pred, y_true)
 

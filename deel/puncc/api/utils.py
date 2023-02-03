@@ -37,6 +37,11 @@ import pandas as pd
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
+def dual_predictor_check(l, name, type):
+    if (not isinstance(l, list)) or len(l) != 2:
+        raise TypeError(f"Argument `{name}` should be a list of two {type}.")
+
+
 def supported_types_check(y_pred, y_true=None):
 
     if y_true is not None and (type(y_pred) != type(y_true)):

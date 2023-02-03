@@ -1,16 +1,18 @@
 .. _regression:
 
 📈 Regression
-=============
+==============
 
 
-Currently implemented conformal prediction methods for regression are listed in this page.
+Currently implemented conformal prediction methods for regression are listed in
+this page.
 
 Each of these wrappers conformalize point-based or interval-based models that
 are passed as argument in the object constructor. Such models **need** to
-implement the :func:`fit` and :func:`predict` methods and operate on numpy arrays. :doc:`Prediction module <prediction>`
-from the :doc:`API <api>` enables to use models even when these requirements are not met (*e.g.*,
-using pytorch or tensorflow on time series).
+implement the :func:`fit` and :func:`predict` methods.
+:doc:`Prediction module <prediction>` from the :doc:`API <api>` ensures the
+compliance of models from various ML/DL libraries (such as Keras, scikit-learn
+and XGBoost) to **puncc**.
 
 .. autoclass:: deel.puncc.regression.SplitCP
 

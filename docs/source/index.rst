@@ -4,7 +4,11 @@
 
    getting_started
    regression
+   classification
    api
+   metrics
+   plotting
+
 
 Welcome to puncc's documentation!
 =================================

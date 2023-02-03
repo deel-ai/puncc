@@ -35,20 +35,19 @@ from deel.puncc.api.utils import supported_types_check
 
 def raps_score(lambd=0, k_reg=1):
     def _RAPS_SCORE(Y_pred, y_true):
-        """APS nonconformity score.
+        """RAPS nonconformity score.
         Given :math:`n` the number of classes,
-            :math:`Y_\text{{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})`
+            :math:`Y_\\text{{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
 
         Refer to https://arxiv.org/abs/2009.14193 for details.
 
-        :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})`
-            where :math:`P_{\text{C}_i}` is logit associated to class i.
+        :param ndarray|DataFrame|Tensor Y_pred:\n :math:`Y_\\text{{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+            where :math:`P_{\\text{C}_i}` is logit associated to class i.
         :param ndarray|DataFrame|Tensor y_true:
 
-        :returns: APS nonconformity scores.
+        :returns: RAPS nonconformity scores.
         :rtype: ndarray|DataFrame|Tensor
         """
-
         supported_types_check(Y_pred, y_true)
 
         if not isinstance(Y_pred, np.ndarray):
@@ -88,7 +87,8 @@ def mad(y_pred, y_true):
     """Mean Absolute Deviation (MAD).
 
     .. math::
-        R = |y_{\text{true}}-y_\text{{pred}}|
+
+        R = |y_{\\text{true}}-y_\\text{{pred}}|
 
     :param ndarray|DataFrame|Tensor y_pred:
     :param ndarray|DataFrame|Tensor y_true:
@@ -112,13 +112,14 @@ def mad(y_pred, y_true):
 
 
 def scaled_mad(Y_pred, y_true):
-    """Scaled Mean Absolute Deviation (MAD).
+    """Scaled Mean Absolute Deviation (MAD).\n Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`
 
     .. math::
-        R = \frac{|Y_{\text{true}}-Y_\text{{pred}}|}{\sigma_\text{{pred}}}
 
-    :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}}=(y_\text{{pred}}, \sigma_\text{{pred}})`
-    :param ndarray|DataFrame|Tensor y_true: point observation.
+        R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_\\text{{pred}}}
+
+    :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_\\text{{pred}})`
+    :param ndarray|DataFrame|Tensor y_true: true label.
 
     :returns: scaled mean absolute deviation.
     :rtype: ndarray|DataFrame|Tensor
@@ -145,14 +146,17 @@ def scaled_mad(Y_pred, y_true):
 
 
 def cqr_score(Y_pred, y_true):
-    """CQR nonconformity score.
-    Considering :math:`Y_\text{{pred}} = (q_{\text{lo}}, q_{\text{hi}})`
-    .. math::
-        R = max\{q_{\text{lo}} - y_{\text{true}}, y_{\text{true}} - q_{\text{hi}}\}
+    """CQR nonconformity score.\n
+    Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`
 
-    :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_\text{{pred}} = (q_{\text{lo}}, q_{\text{hi}})`
-        where :math:`q_{\text{lo}}` (resp. :math:`q_{\text{hi}}` is the lower (resp. higher) quantile prediction.
-    :param ndarray|DataFrame|Tensor y_true:
+    .. math::
+
+        R = max\{q_{\\text{lo}} - y_{\\text{true}}, y_{\\text{true}} - q_{\\text{hi}}\}
+
+    where :math:`q_{\\text{lo}}` (resp. :math:`q_{\\text{hi}}`) is the lower (resp. higher) quantile prediction
+
+    :param ndarray|DataFrame|Tensor Y_pred: predicted quantiles couples.
+    :param ndarray|DataFrame|Tensor y_true: true quantiles couples.
 
     :returns: CQR nonconformity scores.
     :rtype: ndarray|DataFrame|Tensor

@@ -152,9 +152,7 @@ class ConformalPredictor:
             # if a weight function is provided
             if calibrator.weight_func:
                 weights = calibrator.weight_func(X_calib)
-                norm_weights = calibrator.barber_weights(
-                    X=X_calib, weights_calib=weights
-                )
+                norm_weights = calibrator.barber_weights(weights=weights)
                 # Store the mornalized weights
                 calibrator.set_norm_weights(norm_weights)
             # Add predictor and calibrator to the collection that is used later
