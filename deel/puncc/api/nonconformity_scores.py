@@ -118,6 +118,7 @@ def scaled_mad(Y_pred, y_true):
 
         R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_\\text{{pred}}}
 
+
     :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_\\text{{pred}})`
     :param ndarray|DataFrame|Tensor y_true: true label.
 

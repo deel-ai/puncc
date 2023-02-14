@@ -1,3 +1,5 @@
+.. _nonconformity_scores:
+
 Nonconformity scores
 ====================
 

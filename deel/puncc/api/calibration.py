@@ -21,7 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the core calibrator and provides a collection of nonconformity scores and computation approaches of the prediction sets.
+This module implements the core calibrator and provides a collection of
+nonconformity scores and computation approaches of the prediction sets.
 """
 from typing import Callable
 from typing import Iterable
@@ -63,11 +64,12 @@ class BaseCalibrator:
     .. math::
         y_{pred, test}=\hat{f}(X_{test})
 
-    Two function need to be define before instantiating the
+    Two function need to be defined before instantiating the
     :class:`BaseCalibrator`: a nonconformity score function and a definition of
-    the prediction set. In the example below, these are implemented from scratch
-    but a collection of ready-to-use nonconformity scores and prediction sets are
-    provided in the modules :mod:`puncc.api.nonconformity_scores` and :mod:`api.prediction_sets.py`, respectively.
+    how the prediction sets are computed. In the example below, these are
+    implemented from scratch but a collection of ready-to-use nonconformity
+    scores and prediction sets are provided in the modules :ref:`nonconformity_scores <nonconformity_scores>`
+    and :ref:`prediction_sets <prediction_sets>`, respectively.
 
 
     .. code-block:: python
@@ -76,22 +78,33 @@ class BaseCalibrator:
         import numpy as np
 
         # First, we define a nonconformity score function that takes as argument
-        # the predicted values y_pred = model(X)
+        # the predicted values y_pred = model(X) and the true labels y_true. In
+        # this example, we reimplement the mean absolute deviation that is
+        # already defined in `deel.puncc.api.nonconformity_scores.mad`
         def nonconformity_function(y_pred, y_true):
             return np.abs(y_pred - y_true)
 
+        # Prediction sets are computed based on points predictions and
+        # the quantiles of nonconformity scores. The function below returns a
+        # fixed size interval around the point predictions.
         def prediction_set_function(y_pred, scores_quantile):
             y_lo = y_pred - scores_quantiles
             y_hi = y_pred + scores_quantiles
             return y_lo, y_hi
 
+        # The calibrator is instantiated by passing the two functions defined
+        # above to the constructor.
         calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_function,
             pred_set_func=prediction_set_function
         )
 
+        # The nonconformity scores are computed by calling the `fit` method
+        # on the calibration dataset.
         calibrator.fit(y_pred=y_pred_calib, y_true=y_true_calib)
 
+        # The lower and upper bounds of the prediction interval are then returned
+        # by the call to calibrate on the new data w.r.t a risk level of 10%.
         y_pred_low, y_pred_high = calibrator.calibrate(y_pred=y_pred_test, alpha=.1)
 
 
@@ -133,7 +146,8 @@ class BaseCalibrator:
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
     ) -> tuple[Iterable]:
-        """Compute calibrated prediction sets for new examples w.r.t a significance level :math:`\\alpha`.
+        """Compute calibrated prediction sets for new examples w.r.t a
+        significance level :math:`\\alpha`.
 
         :param float alpha: significance level (max miscoverage target).
         :param ndarray|DataFrame|Tensor y_pred: predicted values.
@@ -213,11 +227,9 @@ class CvPlusCalibrator:
     scores by each K-Fold calibrator and produces associated prediction
     intervals based on `CV+ <https://arxiv.org/abs/1905.02928>`_.
 
-    Attributes:
-        kfold_calibrators_dict: dictionary of calibrators for each K-fold
-                                (disjoint calibration subsets). Each calibrator
-                                needs to priorly estimate the nonconformity
-                                scores w.r.t the associated calibration fold.
+    :param dict kfold_calibrators_dict: collection of calibrators for each
+        K-fold (disjoint calibration subsets). Each calibrator needs to priorly
+        estimate the nonconformity scores w.r.t the associated calibration fold.
 
     """
 
@@ -235,7 +247,12 @@ class CvPlusCalibrator:
                 raise RuntimeError(f"Fold {k} calibrator is not defined.")
 
     def fit(self) -> None:
-        """Check if all calibrators have already been fitted."""
+        """Check if all calibrators have already been fitted.
+
+        :raises RuntimeError: one or more of the calibrators did not estimate
+            the nonconformity scores.
+
+        """
 
         for k, calibrator in self.kfold_calibrators_dict.items():
             if calibrator._residuals is None:
@@ -252,16 +269,14 @@ class CvPlusCalibrator:
         kfold_predictors_dict: dict,
         alpha: float,
     ) -> tuple[Iterable]:
-        concat_residuals_lo = None
-        concat_residuals_hi = None
         """Compute calibrated prediction intervals for new examples X.
 
         :param ndarray|DataFrame|Tensor X: test features.
-        :param dict kfold_predictors_dict: dictionnary of predictors trained for each fold on the fit subset.
-        :param float alpha: maximum miscoverage target.
+        :param dict kfold_predictors_dict: dictionnary of predictors trained on each fold.
+        :param float alpha: significance level (maximum miscoverage target).
 
         :returns: y_lower, y_upper.
-        :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
+        :rtype: tuple[ndarray|DataFrame|Tensor]
         """
 
         # Init the collection of upper and lower bounds of the K-fold's PIs
