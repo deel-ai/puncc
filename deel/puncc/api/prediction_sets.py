@@ -117,12 +117,12 @@ def scaled_interval(Y_pred, scores_quantiles):
         )
 
     if isinstance(Y_pred, pd.DataFrame):
-        y_pred, var_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+        y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
     else:
-        y_pred, var_pred = Y_pred[:, 0], Y_pred[:, 1]
+        y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
 
-    y_lo = y_pred - scores_quantiles * var_pred
-    y_hi = y_pred + scores_quantiles * var_pred
+    y_lo = y_pred - scores_quantiles * sigma_pred
+    y_hi = y_pred + scores_quantiles * sigma_pred
     return y_lo, y_hi
 
 

@@ -127,7 +127,7 @@ class KFoldSplitter(BaseSplitter):
         :param ndarray|DataFrame|Tensor y: labels array.
 
         :returns: list of K split folds. Each fold is a tuple (X_fit, y_fit, X_calib, y_calib).
-        :rtype: list[tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]]
+        :rtype: list[tuple[ndarray|DataFrame|Tensor]]
         """
         kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state

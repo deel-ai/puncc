@@ -142,7 +142,8 @@ class BaseCalibrator:
 
     def calibrate(
         self,
-        *alpha: float,
+        *,
+        alpha: float,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
     ) -> tuple[Iterable]:

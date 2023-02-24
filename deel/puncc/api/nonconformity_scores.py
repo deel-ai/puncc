@@ -137,13 +137,15 @@ def scaled_mad(Y_pred, y_true):
         raise RuntimeError(f"Each y_pred must contain a point observation.")
 
     if isinstance(Y_pred, pd.DataFrame):
-        y_pred, var_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+        y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
     else:
-        y_pred, var_pred = Y_pred[:, 0], Y_pred[:, 1]
+        y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
 
     # MAD then Scaled MAD and computed
     mean_absolute_deviation = mad(y_pred, y_true)
-    return mean_absolute_deviation / (var_pred + EPSILON)
+    if np.any(sigma_pred < 0):
+        raise RuntimeError("All MAD predictions should be positive.")
+    return mean_absolute_deviation / (sigma_pred + EPSILON)
 
 
 def cqr_score(Y_pred, y_true):

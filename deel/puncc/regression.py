@@ -44,11 +44,62 @@ from deel.puncc.api.splitting import KFoldSplitter
 
 
 class SplitCP:
-    """Split conformal prediction method.
+    """Split conformal prediction method. For more details, we refer the user to
+    the :ref:`theory overview page <theory splitcp>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
 
+    .. _example splitcp:
+
+    Example::
+
+        from deel.puncc.regression import SplitCP
+        from deel.puncc.api.prediction import BasePredictor
+
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestRegressor
+
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+
+        # Generate a random regression problem
+        X, y = make_regression(n_features=4, n_informative=2,
+                    random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=.2, random_state=0
+        )
+
+        # Create a random forest model and wrap it in a predictor
+        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        rf_predictor = BasePredictor(rf_model, is_trained=False)
+
+        # CP method initialization
+        split_cp = SplitCP(rf_predictor)
+
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the calibration set
+        split_cp.fit(X_fit, y_fit, X_calib, y_calib)
+
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=.2)
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower,
+                                     y_pred_upper=y_pred_upper)
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average width: {np.round(width, 2)}")
     """
 
     def __init__(self, predictor, *, weight_func=None):
@@ -68,13 +119,64 @@ class SplitCP:
         **kwargs: Optional[dict],
     ):
         """This method fits the models to the fit data (X_fit, y_fit)
-        and computes residuals on (X_calib, y_calib).
+        and computes nonconformity scores on (X_calib, y_calib).
 
         :param ndarray|DataFrame|Tensor X_fit: features from the fit dataset.
         :param ndarray|DataFrame|Tensor y_fit: labels from the fit dataset.
         :param ndarray|DataFrame|Tensor X_calib: features from the calibration dataset.
         :param ndarray|DataFrame|Tensor y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
+
+        .. _example lacp:
+
+        Example::
+
+            from deel.puncc.regression import LocallyAdaptiveCP
+            from deel.puncc.api.prediction import MeanVarPredictor
+
+            from sklearn.datasets import make_regression
+            from sklearn.model_selection import train_test_split
+            from sklearn.ensemble import RandomForestRegressor
+
+            from deel.puncc.metrics import regression_mean_coverage
+            from deel.puncc.metrics import regression_sharpness
+
+
+            # Generate a random regression problem
+            X, y = make_regression(n_samples=1000, random_state=0, shuffle=False)
+
+            # Split data into train and test
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=.2, random_state=0
+            )
+
+            # Split train data into fit and calibration
+            X_fit, X_calib, y_fit, y_calib = train_test_split(
+                X_train, y_train, test_size=.2, random_state=0
+            )
+
+            # Create a two models mu (mean) and sigma (dispersion)
+            mu_model = RandomForestRegressor(n_estimators=100, random_state=0)
+            sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
+            # Wrap models in a mean/variance predictor
+            mean_var_predictor = MeanVarPredictor(models=[mu_model, sigma_model])
+
+            # CP method initialization
+            lacp = LocallyAdaptiveCP(mean_var_predictor)
+
+            # The call to `fit` trains the model and computes the nonconformity
+            # scores on the calibration set
+            lacp.fit(X_fit, y_fit, X_calib, y_calib)
+
+            # The predict method infers prediction intervals with respect to
+            # the significance level alpha = 20%
+            y_pred, y_pred_lower, y_pred_upper = lacp.predict(X_test, alpha=.2)
+
+            # Compute marginal coverage and average width of the prediction intervals
+            coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+            width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+            print(f"Marginal coverage: {np.round(coverage, 2)}")
+            print(f"Average width: {np.round(width, 2)}")
 
         """
         self.conformal_predictor = ConformalPredictor(
@@ -106,9 +208,13 @@ class SplitCP:
 
         return y_pred, y_lo, y_hi
 
+    def get_nonconformity_scores(self):
+        return self.conformal_predictor.get_residuals()
+
 
 class LocallyAdaptiveCP(SplitCP):
-    """Locally adaptive conformal prediction method.
+    """Locally adaptive conformal prediction method. For more details, we refer the user to
+    the :ref:`theory overview page <theory lacp>`
 
     :param MeanVarPredictor predictor: a predictor implementing fit and predict. Must embed two models for point and dispersion estimations respectively.
     :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.

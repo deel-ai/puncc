@@ -47,6 +47,65 @@ class ConformalPredictor:
         if a K-Fold-like splitter is provided with the :data:`train` attribute set to True, an exception is raised.
         The models have to be trained during the call :meth:`fit`.
 
+
+    Conformal Regression example:
+    =============================
+
+    Consider a pretrained model :math:`\hat{f}`, a calibration dataset
+    :math:`(X_{calib}, y_{calib})` and a test dataset :math:`(X_{test}, y_{test})`.
+    The model :math:`\hat{f}` generates predictions on the calibration and test sets:
+
+    .. math::
+        y_{pred, calib}=\hat{f}(X_{calib})
+
+    .. math::
+        y_{pred, test}=\hat{f}(X_{test})
+
+    Two function need to be defined before instantiating the
+    :class:`BaseCalibrator`: a nonconformity score function and a definition of
+    how the prediction sets are computed. In the example below, these are
+    implemented from scratch but a collection of ready-to-use nonconformity
+    scores and prediction sets are provided in the modules :ref:`nonconformity_scores <nonconformity_scores>`
+    and :ref:`prediction_sets <prediction_sets>`, respectively.
+
+
+    .. code-block:: python
+
+        from deel.puncc.api.calibration import BaseCalibrator
+        import numpy as np
+
+        # First, we define a nonconformity score function that takes as argument
+        # the predicted values y_pred = model(X) and the true labels y_true. In
+        # this example, we reimplement the mean absolute deviation that is
+        # already defined in `deel.puncc.api.nonconformity_scores.mad`
+        def nonconformity_function(y_pred, y_true):
+            return np.abs(y_pred - y_true)
+
+        # Prediction sets are computed based on points predictions and
+        # the quantiles of nonconformity scores. The function below returns a
+        # fixed size interval around the point predictions.
+        def prediction_set_function(y_pred, scores_quantile):
+            y_lo = y_pred - scores_quantiles
+            y_hi = y_pred + scores_quantiles
+            return y_lo, y_hi
+
+        # The calibrator is instantiated by passing the two functions defined
+        # above to the constructor.
+        calibrator = BaseCalibrator(
+            nonconf_score_func=nonconformity_function,
+            pred_set_func=prediction_set_function
+        )
+
+        # The nonconformity scores are computed by calling the `fit` method
+        # on the calibration dataset.
+        calibrator.fit(y_pred=y_pred_calib, y_true=y_true_calib)
+
+        # The lower and upper bounds of the prediction interval are then returned
+        # by the call to calibrate on the new data w.r.t a risk level of 10%.
+        y_pred_low, y_pred_high = calibrator.calibrate(y_pred=y_pred_test, alpha=.1)
+
+
+
     """
 
     def __init__(

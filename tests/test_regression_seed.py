@@ -29,8 +29,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
 from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.api.prediction import DualPointPredictor
-from deel.puncc.api.prediction import QuantilePredictor
+from deel.puncc.api.prediction import DualPredictor
+from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.metrics import regression_mean_coverage
 from deel.puncc.metrics import regression_sharpness
 from deel.puncc.regression import CQR
@@ -135,11 +135,11 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     )
 
     # Create linear regression object
-    regr_model = linear_model.LinearRegression()
+    mu_model = linear_model.LinearRegression()
     # Create RF regression object
     var_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     # Create predictor
-    predictor = DualPointPredictor(regr_model, var_model)
+    predictor = MeanVarPredictor(models=[mu_model, var_model])
     # CP method initialization
     la_cp = LocallyAdaptiveCP(predictor)
 
@@ -185,7 +185,7 @@ def test_cqr(diabetes_data, alpha, random_state):
         loss="quantile", alpha=1 - alpha / 2, **gbr_params
     )
     # Wrap models in predictor
-    predictor = QuantilePredictor(q_hi_model=regressor_q_hi, q_lo_model=regressor_q_low)
+    predictor = DualPredictor(models=[regressor_q_low, regressor_q_hi])
     # CP method initialization
     crq = CQR(predictor)
 

@@ -400,8 +400,38 @@ class MeanVarPredictor(DualPredictor):
         :param ndarray|DataFrame|Tensor y: train labels.
         :param List[dict[Any]] dictargs: list of fit configurations to be passed to the `fit` method of the underlying models :math:`\hat{\mu}` and :math:`\hat{\sigma}`, respectively.
         """
-        self.mu_model.fit(X, y, **dictargs1)
-        mu_pred = self.mu_model.predict(X)
+        self.models[0].fit(X, y, **dictargs[0])
+        mu_pred = self.models[0].predict(X)
         mads = nonconformity_scores.mad(mu_pred, y)
-        self.var_model.fit(X, mads, **dictargs2)
+        self.models[1].fit(X, mads, **dictargs[1])
         self.is_trained = True
+
+    def copy(self):
+        """Returns a copy of the predictor. The underlying models are either
+        cloned (Keras model) or deepcopied (sklearn and similar models).
+
+        :returns: copy of the predictor.
+        :rtype: MeanVarPredictor
+
+        :raises RuntimeError: copy unsupported for provided models.
+
+        """
+        models_copy = []
+        for model in self.models:
+            try:
+                model_copy = deepcopy(model)
+            except Exception as e:
+
+                try:
+                    import tensorflow as tf
+
+                    model_copy = tf.keras.models.clone_model(model)
+                except Exception as e:
+                    raise RuntimeError(e)
+            models_copy.append(model_copy)
+
+        predictor_copy = MeanVarPredictor(
+            models_copy,
+            compile_args=self.compile_args,
+        )
+        return predictor_copy
