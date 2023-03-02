@@ -66,8 +66,8 @@ class SplitCP:
 
 
         # Generate a random regression problem
-        X, y = make_regression(n_features=4, n_informative=2,
-                    random_state=0, shuffle=False)
+        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                                random_state=0, shuffle=False)
 
         # Split data into train and test
         X_train, X_test, y_train, y_test = train_test_split(
@@ -127,57 +127,6 @@ class SplitCP:
         :param ndarray|DataFrame|Tensor y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
 
-        .. _example lacp:
-
-        Example::
-
-            from deel.puncc.regression import LocallyAdaptiveCP
-            from deel.puncc.api.prediction import MeanVarPredictor
-
-            from sklearn.datasets import make_regression
-            from sklearn.model_selection import train_test_split
-            from sklearn.ensemble import RandomForestRegressor
-
-            from deel.puncc.metrics import regression_mean_coverage
-            from deel.puncc.metrics import regression_sharpness
-
-
-            # Generate a random regression problem
-            X, y = make_regression(n_samples=1000, random_state=0, shuffle=False)
-
-            # Split data into train and test
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=.2, random_state=0
-            )
-
-            # Split train data into fit and calibration
-            X_fit, X_calib, y_fit, y_calib = train_test_split(
-                X_train, y_train, test_size=.2, random_state=0
-            )
-
-            # Create a two models mu (mean) and sigma (dispersion)
-            mu_model = RandomForestRegressor(n_estimators=100, random_state=0)
-            sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
-            # Wrap models in a mean/variance predictor
-            mean_var_predictor = MeanVarPredictor(models=[mu_model, sigma_model])
-
-            # CP method initialization
-            lacp = LocallyAdaptiveCP(mean_var_predictor)
-
-            # The call to `fit` trains the model and computes the nonconformity
-            # scores on the calibration set
-            lacp.fit(X_fit, y_fit, X_calib, y_calib)
-
-            # The predict method infers prediction intervals with respect to
-            # the significance level alpha = 20%
-            y_pred, y_pred_lower, y_pred_upper = lacp.predict(X_test, alpha=.2)
-
-            # Compute marginal coverage and average width of the prediction intervals
-            coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-            width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
-            print(f"Marginal coverage: {np.round(coverage, 2)}")
-            print(f"Average width: {np.round(width, 2)}")
-
         """
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
@@ -193,7 +142,7 @@ class SplitCP:
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray|DataFrame|Tensor]
+        :rtype: Tuple[ndarray]
 
         """
 
@@ -219,6 +168,58 @@ class LocallyAdaptiveCP(SplitCP):
     :param MeanVarPredictor predictor: a predictor implementing fit and predict. Must embed two models for point and dispersion estimations respectively.
     :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
 
+    .. _example lacp:
+
+    Example::
+
+        from deel.puncc.regression import LocallyAdaptiveCP
+        from deel.puncc.api.prediction import MeanVarPredictor
+
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestRegressor
+
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                                random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=.2, random_state=0
+        )
+
+        # Create two models mu (mean) and sigma (dispersion)
+        mu_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        # Wrap models in a mean/variance predictor
+        mean_var_predictor = MeanVarPredictor(models=[mu_model, sigma_model])
+
+        # CP method initialization
+        lacp = LocallyAdaptiveCP(mean_var_predictor)
+
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the calibration set
+        lacp.fit(X_fit, y_fit, X_calib, y_calib)
+
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        y_pred, y_pred_lower, y_pred_upper = lacp.predict(X_test, alpha=.2)
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average width: {np.round(width, 2)}")
+
     """
 
     def __init__(self, predictor, *, weight_func=None):
@@ -231,10 +232,70 @@ class LocallyAdaptiveCP(SplitCP):
 
 
 class CQR(SplitCP):
-    """Conformalized quantile regression method.
+    """Conformalized quantile regression method. For more details, we refer the user to
+    the :ref:`theory overview page <theory cqr>`.
 
     :param DualPredictor predictor: a predictor implementing fit and predict. Must embed two models for lower and upper quantiles estimations respectively.
     :param callable weight_func: function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
+
+
+    .. _example cqr:
+
+    Example::
+
+        from deel.puncc.regression import CQR
+        from deel.puncc.api.prediction import DualPredictor
+
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import GradientBoostingRegressor
+
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                    random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=.2, random_state=0
+        )
+
+        # Lower quantile regressor
+        regressor_q_low = GradientBoostingRegressor(
+            loss="quantile", alpha=.2/2, n_estimators=250
+        )
+        # Upper quantile regressor
+        regressor_q_hi = GradientBoostingRegressor(
+            loss="quantile", alpha=1 - .2/2, n_estimators=250
+        )
+        # Wrap models in predictor
+        predictor = DualPredictor(models=[regressor_q_low, regressor_q_hi])
+
+        # CP method initialization
+        crq = CQR(predictor)
+
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the calibration set
+        crq.fit(X_fit, y_fit, X_calib, y_calib)
+
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        Y_pred, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=.2)
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower,
+                                     y_pred_upper=y_pred_upper)
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average width: {np.round(width, 2)}")
 
     """
 
@@ -247,12 +308,58 @@ class CQR(SplitCP):
         )
 
 
-class CvPlus:
-    """Cross-validation plus method.
+class CVPlus:
+    """Cross-validation plus method. For more details, we refer the user to
+    the :ref:`theory overview page <theory cvplus>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param int K: number of training/calibration folds.
     :param int random_state: seed to control random folds.
+
+
+    Example::
+
+        from deel.puncc.regression import CVPlus
+        from deel.puncc.api.prediction import BasePredictor
+
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestRegressor
+
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                                random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Create a random forest model and wrap it in a predictor
+        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        rf_predictor = BasePredictor(rf_model, is_trained=False)
+
+        # CP method initialization
+        cv_cp = CVPlus(rf_predictor, K=20, random_state=0)
+
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the K-fold calibration sets
+        cv_cp.fit(X_train, y_train)
+
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        y_pred, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=.2)
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower,
+                                        y_pred_upper=y_pred_upper)
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average width: {np.round(width, 2)}")
 
     """
 
@@ -296,7 +403,7 @@ class CvPlus:
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray|DataFrame|Tensor]
+        :rtype: Tuple[ndarray]
 
         """
 
@@ -332,6 +439,58 @@ class EnbPI:
         *Xu et al.* defined two aggregation functions of leave-one-out estimators:
             * For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_: :code:`lambda x, *args: np.quantile(x, alpha, *args)`
             * For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
+
+    Example::
+
+        from deel.puncc.regression import EnbPI
+        from deel.puncc.api.prediction import BasePredictor
+
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestRegressor
+
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                    random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=.2, random_state=0
+        )
+
+        # Create rf regressor
+        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        # Wrap model in a predictor
+        rf_predictor = BasePredictor(rf_model)
+        # CP method initialization
+        enbpi = EnbPI(
+            rf_predictor,
+            B=30,
+            agg_func_loo=np.mean,
+            random_state=0,
+        )
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the oob calibration sets
+        enbpi.fit(X_train, y_train)
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        Y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
+            X_test, alpha=.2, y_true=y_test, s=None
+        )
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+
     """
 
     def __init__(self, predictor, B: int, agg_func_loo=np.mean, random_state=None):
@@ -365,14 +524,14 @@ class EnbPI:
         :param ndarray w: residuals' quantiles.
 
         :returns: prediction intervals.
-        :rtype: tuple[ndarray, ndarray]
+        :rtype: tuple[ndarray]
 
         """
         return prediction_sets.constant_interval(y_pred, w)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
         """Compute residuals w.r.t the boostrap aggregation.
-        Args:
+
         :param ndarray boot_pred: bootstrapped predicted values.
         :param ndarray y_true: true targets.
 
@@ -386,6 +545,17 @@ class EnbPI:
         loo_pred = (self._oob_matrix * boot_pred.T).sum(-1)
         residuals = nonconformity_scores.mad(y_pred=loo_pred, y_true=y_true)
         return list(residuals)
+
+    def _compute_loo_predictions(self, boot_pred):
+        """Compute Leave-One-Out (LOO) predictions from bootstrapped predicitons.
+
+        :param ndarray boot_pred: bootstrapped predicted values.
+
+        :returns: LOO prediction.
+        :rtype: ndarray
+
+        """
+        return np.matmul(self._oob_matrix, boot_pred)
 
     def fit(self, X_train, y_train, **kwargs):
         """Fit B bootstrap models on the bootstrap bags and respectively compute/store residuals on out-of-bag samples.
@@ -488,7 +658,7 @@ class EnbPI:
         :param int s: Number of online samples necessary to update the residuals sequence.
 
         :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
-        :rtype: tuple[ndarray, ndarray, ndarray]
+        :rtype: tuple[ndarray]
 
         """
         y_pred_upper_list = list()
@@ -538,7 +708,7 @@ class EnbPI:
                 [self._boot_predictors[b].predict(X_batch) for b in range(self.B)]
             )
             # Approximation of LOO predictions
-            loo_preds = np.matmul(self._oob_matrix, boot_preds)
+            loo_preds = self._compute_loo_predictions(boot_preds)
             # Ensemble prediction based on the aggregation of LOO estimations
             y_pred_batch = self.agg_func_loo(loo_preds, axis=0)
 
@@ -568,7 +738,7 @@ class EnbPI:
 class AdaptiveEnbPI(EnbPI):
     """Locally adaptive version ensemble batch prediction intervals method.
 
-    :param DualPointPredictor predictor: object implementing '.fit()' and '.predict()' methods
+    :param MeanVarPredictor predictor: object implementing '.fit()' and '.predict()' methods
     :param int B: number of bootstrap models
     :param func agg_func_loo: aggregation function of LOO estimators.
     :param int random_state: determines random generation.
@@ -577,6 +747,58 @@ class AdaptiveEnbPI(EnbPI):
         *Xu et al.* defined two aggregation functions of leave-one-out estimators:
             * For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_: :code:`lambda x, *args: np.quantile(x, alpha, *args)`
             * For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
+
+    Example::
+
+        from deel.puncc.regression import AdaptiveEnbPI
+        from deel.puncc.api.prediction import MeanVarPredictor
+
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestRegressor
+
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                    random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=.2, random_state=0
+        )
+
+        # Create two models mu (mean) and sigma (dispersion)
+        mean_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        # Wrap models in a mean/variance predictor
+        mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
+        # CP method initialization
+        aenbpi = AdaptiveEnbPI(
+            mean_var_predictor,
+            B=30,
+            agg_func_loo=np.mean,
+            random_state=0,
+        )
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the oob calibration sets
+        aenbpi.fit(X_train, y_train)
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        Y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
+            X_test, alpha=.2, y_true=y_test, s=None
+        )
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
 
     """
 
@@ -587,7 +809,7 @@ class AdaptiveEnbPI(EnbPI):
         :param ndarray w: residuals' quantiles.
 
         :returns: prediction intervals.
-        :rtype: tuple[ndarray, ndarray]
+        :rtype: tuple[ndarray]
 
         """
 
@@ -607,8 +829,21 @@ class AdaptiveEnbPI(EnbPI):
         return nonconformity_scores.scaled_mad(y_pred, y_true)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
-        loo_pred = (self._oob_matrix * boot_preds[:, 0].T).sum(-1)
-        loo_sigma = (self._oob_matrix * boot_sigmas[:, 1].T).sum(-1)
+        loo_pred = (self._oob_matrix * boot_pred[:, :, 0].T).sum(-1)
+        loo_sigma = (self._oob_matrix * boot_pred[:, :, 1].T).sum(-1)
         Y_pred = np.stack((loo_pred, loo_sigma), axis=-1)
-        residuals = self._compute_residuals(y_pred=Y_pred, y_true=y_train)
+        residuals = self._compute_residuals(y_pred=Y_pred, y_true=y_true)
         return list(residuals)
+
+    def _compute_loo_predictions(self, boot_pred):
+        """Compute Leave-One-Out (LOO) predictions from bootstrapped predicitons.
+
+        :param ndarray boot_pred: bootstrapped predicted values.
+
+        :returns: LOO prediction.
+        :rtype: ndarray
+
+        """
+        loo_mean = np.matmul(self._oob_matrix, boot_pred[:, :, 0])
+        loo_sigma = np.matmul(self._oob_matrix, boot_pred[:, :, 1])
+        return np.stack((loo_mean, loo_sigma), axis=-1)

@@ -43,10 +43,7 @@ extensions = [
     "sphinx.ext.autodoc",
 ]
 
-autodoc_default_options = {
-    "members": True,
-    "private-members": True,
-}
+autodoc_default_options = {"members": True, "inherited-members": True}
 
 autoclass_content = "both"
 autoapi_root = "../deel"

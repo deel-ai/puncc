@@ -33,8 +33,9 @@ from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.metrics import regression_mean_coverage
 from deel.puncc.metrics import regression_sharpness
+from deel.puncc.regression import AdaptiveEnbPI
 from deel.puncc.regression import CQR
-from deel.puncc.regression import CvPlus
+from deel.puncc.regression import CVPlus
 from deel.puncc.regression import EnbPI
 from deel.puncc.regression import LocallyAdaptiveCP
 from deel.puncc.regression import SplitCP
@@ -213,7 +214,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
     predictor = BasePredictor(rf_model)
     # CP method initialization
-    cv_cp = CvPlus(predictor, K=20, random_state=random_state)
+    cv_cp = CVPlus(predictor, K=20, random_state=random_state)
 
     # Fit and conformalize
     cv_cp.fit(X_train, y_train)
@@ -250,31 +251,32 @@ def test_enbpi(diabetes_data, alpha, random_state):
     assert RESULTS["enbpi"] == res
 
 
-# @pytest.mark.parametrize(
-#     "alpha, random_state",
-#     [(0.1, 42)],
-# )
-# def test_adaptive_enbpi(diabetes_data, alpha, random_state):
-#     # Get data
-#     (X_train, X_test, y_train, y_test) = diabetes_data
-#     # Create RF regression object
-#     rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
-#     var_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
-#     # Fit and conformalize
-#     aenbpi = AdaptiveEnbPI(
-#         rf_model,
-#         var_model,
-#         B=30,
-#         agg_func_loo=np.mean,
-#         random_state=random_state,
-#     )
-#     aenbpi.fit(X_train, y_train)
-#     y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
-#         X_test, alpha=alpha, y_true=y_test, s=None
-#     )
-#     assert y_pred is not None
-#     # Compute marginal coverage
-#     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-#     width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
-#     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-#     assert RESULTS["aenbpi"] == res
+@pytest.mark.parametrize(
+    "alpha, random_state",
+    [(0.1, 42)],
+)
+def test_adaptive_enbpi(diabetes_data, alpha, random_state):
+    # Get data
+    (X_train, X_test, y_train, y_test) = diabetes_data
+    # Create mean and dispersion regressors
+    mean_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    sigma_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    # Wrap models in dualpredictor
+    mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
+    # Fit and conformalize
+    aenbpi = AdaptiveEnbPI(
+        mean_var_predictor,
+        B=30,
+        agg_func_loo=np.mean,
+        random_state=random_state,
+    )
+    aenbpi.fit(X_train, y_train)
+    y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
+        X_test, alpha=alpha, y_true=y_test, s=None
+    )
+    assert y_pred is not None
+    # Compute marginal coverage
+    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
+    assert RESULTS["aenbpi"] == res

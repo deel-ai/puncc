@@ -183,7 +183,7 @@ class BasePredictor:
             except Exception as e:
                 raise RuntimeError(e)
 
-        predictor_copy = BasePredictor(model, **self.compile_kwargs)
+        predictor_copy = self.__class__(model, **self.compile_kwargs)
         return predictor_copy
 
 
@@ -332,7 +332,7 @@ class DualPredictor:
                     raise RuntimeError(e)
             models_copy.append(model_copy)
 
-        predictor_copy = DualPredictor(
+        predictor_copy = self.__class__(
             models_copy,
             compile_args=self.compile_args,
         )
@@ -405,33 +405,3 @@ class MeanVarPredictor(DualPredictor):
         mads = nonconformity_scores.mad(mu_pred, y)
         self.models[1].fit(X, mads, **dictargs[1])
         self.is_trained = True
-
-    def copy(self):
-        """Returns a copy of the predictor. The underlying models are either
-        cloned (Keras model) or deepcopied (sklearn and similar models).
-
-        :returns: copy of the predictor.
-        :rtype: MeanVarPredictor
-
-        :raises RuntimeError: copy unsupported for provided models.
-
-        """
-        models_copy = []
-        for model in self.models:
-            try:
-                model_copy = deepcopy(model)
-            except Exception as e:
-
-                try:
-                    import tensorflow as tf
-
-                    model_copy = tf.keras.models.clone_model(model)
-                except Exception as e:
-                    raise RuntimeError(e)
-            models_copy.append(model_copy)
-
-        predictor_copy = MeanVarPredictor(
-            models_copy,
-            compile_args=self.compile_args,
-        )
-        return predictor_copy

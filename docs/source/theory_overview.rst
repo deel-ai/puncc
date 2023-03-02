@@ -4,7 +4,7 @@
 ===================
 
 
-Conformal regression
+Conformal Regression
 --------------------
 
 Split Conformal Prediction
@@ -14,3 +14,23 @@ Split Conformal Prediction
 Locally Adaptive Conformal Prediction
 *************************************
 .. _theory lacp:
+
+Conformalized Quantile Regression (CQR)
+***************************************
+.. _theory cqr:
+
+Cross-validation + (CV+)
+************************
+.. _theory cvplus:
+
+
+Conformal Classification
+------------------------
+
+Adaptive Prediction Sets (RAPS)
+*******************************************
+.. _theory aps:
+
+Regularized Adaptive Prediction Sets (RAPS)
+*******************************************
+.. _theory raps:

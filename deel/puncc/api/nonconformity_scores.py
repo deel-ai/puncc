@@ -112,14 +112,14 @@ def mad(y_pred, y_true):
 
 
 def scaled_mad(Y_pred, y_true):
-    """Scaled Mean Absolute Deviation (MAD).\n Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`
+    """Scaled Mean Absolute Deviation (MAD).\n
+    Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
     .. math::
 
-        R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_\\text{{pred}}}
+        R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}}
 
-
-    :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_\\text{{pred}})`
+    :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
     :param ndarray|DataFrame|Tensor y_true: true label.
 
     :returns: scaled mean absolute deviation.

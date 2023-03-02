@@ -24,6 +24,7 @@
 This module implements the core calibrator and provides a collection of
 nonconformity scores and computation approaches of the prediction sets.
 """
+import logging
 from typing import Callable
 from typing import Iterable
 from typing import Optional
@@ -34,6 +35,8 @@ from deel.puncc.api import prediction_sets
 from deel.puncc.api.utils import check_alpha_calib
 from deel.puncc.api.utils import EPSILON
 from deel.puncc.api.utils import quantile
+
+logger = logging.getLogger(__name__)
 
 
 class BaseCalibrator:
@@ -137,8 +140,12 @@ class BaseCalibrator:
 
         """
         # TODO check structure match in supported types
+        logger.info(f"Computing nonconformity scores ...")
+        logger.debug(f"Shape of y_pred: {y_pred.shape}")
+        logger.debug(f"Shape of y_true: {y_true.shape}")
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
+        logger.debug(f"Nonconformity scores computed !")
 
     def calibrate(
         self,
@@ -159,7 +166,7 @@ class BaseCalibrator:
         :returns: prediction set.
                   In case of regression, returns (y_lower, y_upper).
                   In case of classification, returns (classes,).
-        :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
+        :rtype: tuple[ndarray]
 
         :raises RuntimeError: :meth:`calibrate` called before :meth:`fit`.
         :raise ValueError: failed check on :data:`alpha` w.r.t size of the calibration set.
@@ -277,7 +284,7 @@ class CvPlusCalibrator:
         :param float alpha: significance level (maximum miscoverage target).
 
         :returns: y_lower, y_upper.
-        :rtype: tuple[ndarray|DataFrame|Tensor]
+        :rtype: tuple[ndarray]
         """
 
         # Init the collection of upper and lower bounds of the K-fold's PIs

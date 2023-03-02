@@ -24,7 +24,14 @@ The next step is spliting the data into three subsets:
 * Test subset :math:`{\cal D_{test}}` on which the prediction intervals are
   estimated.
 
-The following code implements all the aforementioned steps::
+.. warning::
+
+   Rigorously, for the probabilistic guarantee to hold, the calibration subset
+   needs to be sampled for each new example in the test set.
+
+The following code implements all the aforementioned steps:
+
+.. code-block:: python
 
    import numpy as np
    from sklearn import datasets
@@ -47,17 +54,14 @@ The following code implements all the aforementioned steps::
    X_fit, X_calib = X_train[:-100], X_train[-100:]
    y_fit, y_calib = y_train[:-100], y_train[-100:]
 
-.. warning::
-
-   Rigorously, for the probabilistic guarantee to hold, the calibration subset
-   needs to be sampled for each new example in the test set.
-
 Prediction model
 ****************
 
 We consider a simple linear regression model from
 `scikit-learn regression module <https://scikit-learn.org/stable/modules/linear_model.html>`_,
-to be trained later on :math:`{\cal D_{fit}}`::
+to be trained later on :math:`{\cal D_{fit}}`:
+
+.. code-block:: python
 
    from sklearn import linear_model
 
@@ -74,7 +78,9 @@ For more information about model wrappers and supported ML/DL libraries,
 checkout :doc:`here <prediction>`.
 
 For a linear regression from scikit-learn, we use
-:class:`deel.puncc.api.prediction.BasePredictor` as follows::
+:class:`deel.puncc.api.prediction.BasePredictor` as follows:
+
+.. code-block:: python
 
    from deel.puncc.api.prediction import BasePredictor
 
@@ -98,7 +104,7 @@ conformal prediction method provided by the class
    # Coverage target is 1-alpha = 90%
    alpha=.1
 
-   # Instanciate the split cp wrapper on the linear predictor.
+   # Instanciate the split cp wrapper around the linear predictor.
    # The `train` argument is set to True such that the linear model is trained
    # before the calibration. You can initialize it to False if the model is
    # already trained and you want to save time.
@@ -112,7 +118,21 @@ conformal prediction method provided by the class
    # the calibrated interval [`y_pred_lower`, `y_pred_upper`].
    y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 
-Our library also provides plotting tools in :mod:`deel.puncc.plotting`
+Our library provides several metrics in :mod:`deel.puncc.metrics` to evaluate
+the conformalization procedure. Below, we compute the average empirical coverage
+and the average empirical width of the prediction intervals on the test examples:
+
+.. code-block:: python
+
+   from deel.puncc import metrics
+
+   coverage = metrics.regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+   width = metrics.regression_sharpness(y_pred_lower=y_pred_lower,
+                                        y_pred_upper=y_pred_upper)
+   print(f"Marginal coverage: {np.round(coverage, 2)}")
+   print(f"Average width: {np.round(width, 2)}")
+
+In addition, `puncc` provides plotting tools in :mod:`deel.puncc.plotting`
 to visualize the prediction intervals and whether or not the observations
 are covered::
 
@@ -147,14 +167,14 @@ Conformal Classification
 Let's tackle the classic problem of
 `MNIST handwritten digits <https://en.wikipedia.org/wiki/MNIST_database>`_
 classification. The goal is to evaluate through **conformal prediction** the
-uncertainty associated to predictive classifiers.
+uncertainty associated with predictive classifiers.
 
 Data
 ****
 
 MNIST dataset contains a large number of digit images to which are associated digit labels.
 As the data generating process is considered i.i.d (check `this post <https://newsletter.altdeep.ai/p/the-story-of-mnist-and-the-perils>`_),
-conformal prediction is applicable 👏.\n
+conformal prediction is applicable 👏.
 
 We split the data into three subsets:
 
@@ -163,6 +183,11 @@ We split the data into three subsets:
   computed.
 * Test subset :math:`{\cal D_{test}}` on which the prediction intervals are
   estimated.
+
+.. warning::
+
+   Rigorously, for the probabilistic guarantee to hold, the calibration subset
+   needs to be sampled for each new example in the test set.
 
 In addition to data preprocessing, the following code implements the
 aforementioned steps:
@@ -190,32 +215,84 @@ aforementioned steps:
    y_test_cat = to_categorical(y_test)
 
 
-Model
-*****
+Prediction Model
+****************
+
+We consider a convnet instantiated following `this <https://keras.io/examples/vision/mnist_convnet/>`_ keras example:
 
 .. code-block:: python
 
-   # Classification model: MLP composed of two layers
-   nn_model = models.Sequential()
-   nn_model.add(layers.Dense(4, activation='relu', input_shape=(28 * 28,)))
-   nn_model.add(layers.Dense(10, activation='softmax'))
-   # The configuration of the compilation and the fit calls are gathered in two
-   # dictionnaries
-   compile_kwargs = {"optimizer":"rmsprop", "loss":"categorical_crossentropy","metrics":[]}
-   fit_kwargs = {"epochs":5,"batch_size":128, "verbose":1}
+   from tensorflow import keras
+   from tensorflow.keras import layers
+   from tensorflow.keras.utils import to_categorical
 
+   # Classification model: convnet composed of two convolution/pooling layers
+   # and a dense output layer
+   nn_model = keras.Sequential(
+      [
+         keras.Input(shape=input_shape),
+         layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
+         layers.MaxPooling2D(pool_size=(2, 2)),
+         layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+         layers.MaxPooling2D(pool_size=(2, 2)),
+         layers.Flatten(),
+         layers.Dropout(0.5),
+         layers.Dense(num_classes, activation="softmax"),
+      ]
+   )
+
+For the convnet above, we use :class:`deel.puncc.api.prediction.BasePredictor` as wrapper.
+Note that if the model is not already trained (`is_trained = False`), we need to provide the compilation config to the constructor:
+
+.. code-block:: python
+
+   from deel.puncc.api.prediction import BasePredictor
+
+   # The compilation details are gathered in a dictionnary
+   compile_kwargs = {"optimizer":"adam", "loss":"categorical_crossentropy","metrics":["accuracy"]}
+
+   # Create a predictor to wrap the convnet model defined earlier
    class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
 
 Conformal classification
 ************************
 
+The :ref:`RAPS <theory raps>` procedure is chosen to conformalize our convnet classifier.
+Such algorithm has two hyparameters :math:`\lambda` and :math:`k_{reg}` that encourage smaller prediction sets.
+
+To start off gently, we will ignore the regularization term (:math:`\lambda = 0`), which simply turns the procedure into :ref:`APS <theory aps>`:
+
 .. code-block:: python
 
+   from deel.puncc.classification import RAPS
+
+   # Coverage target is 1-alpha = 90%
    alpha = .1
 
-   raps_cp = Raps(class_predictor, k_reg=1, lambd=0)
-   raps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
-   y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
+   # Instanciate the RAPS wrapper around the convnet predictor.
+   # The `train` argument is set to True such that the convnet model is trained
+   # before the calibration. You can initialize it to False if the model is
+   # already trained and you want to save time.
+   aps_cp = RAPS(class_predictor, lambd=0, train=True)
+
+   # The train details of the convnet are gathered in a dictionnary
+   fit_kwargs = {"epochs":15,"batch_size":128, "validation_split": .1, "verbose":1}
+
+   # Train model (argument `train` is True) on the fitting dataset (w.r.t. the fit config)
+   # and compute the residuals on the calibration dataset.
+   aps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
+
+   # The `predict` returns the output of the convnet model `y_pred` and
+   # the calibrated prediction set `set_pred`.
+   y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)
+
+Our library provides several metrics in :mod:`deel.puncc.metrics` to evaluate
+the conformalization procedure. Below, we compute the average empirical coverage
+and the average empirical size of the prediction sets on the test examples:
+
+.. code-block:: python
+
+   from deel.puncc import metrics
 
    mean_coverage = metrics.classification_mean_coverage(y_test, set_pred)
    mean_size = metrics.classification_mean_size(set_pred)

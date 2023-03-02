@@ -23,6 +23,7 @@
 """
 This module provides the canvas for conformal prediction.
 """
+import logging
 from copy import deepcopy
 from typing import Iterable
 
@@ -32,6 +33,8 @@ from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.splitting import BaseSplitter
+
+logger = logging.getLogger(__name__)
 
 
 class ConformalPredictor:
@@ -195,7 +198,9 @@ class ConformalPredictor:
             calibrator = deepcopy(self.calibrator)
 
             if self.train:
+                logger.info(f"Fitting model on fold {i}")
                 predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
+
             # Make sure that predictor is already trained if train arg is False
             elif self.train is False and predictor.is_trained is False:
                 raise RuntimeError(
@@ -203,8 +208,12 @@ class ConformalPredictor:
                 )
 
             # Call predictor to estimate predictions
+            logger.info(f"Model predictions on X_calib fold {i}")
             y_pred = predictor.predict(X_calib)
+            logger.debug(f"Shape of y_pred")
+
             # Fit calibrator
+            logger.info(f"Fitting calibrator on fold {i}")
             calibrator.fit(y_true=y_calib, y_pred=y_pred)
 
             # Compute normalized weights of the nonconformity scores
@@ -214,9 +223,13 @@ class ConformalPredictor:
                 norm_weights = calibrator.barber_weights(weights=weights)
                 # Store the mornalized weights
                 calibrator.set_norm_weights(norm_weights)
+
             # Add predictor and calibrator to the collection that is used later
             # by the predict method
-
+            logger.info(
+                f"Adding {i}-th K-fold predictor and calibrator to the"
+                + "cross-validation aggregator"
+            )
             self._cv_cp_agg.append_predictor(i, predictor)
             self._cv_cp_agg.append_calibrator(i, calibrator)
 

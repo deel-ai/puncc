@@ -33,6 +33,10 @@ from deel.puncc.api.utils import supported_types_check
 
 
 def raps_set(lambd=0, k_reg=1):
+    if lambd < 0:
+        raise ValueError(f"Argument `lambd` has to be positive, provided: {lambd} < 0")
+    if k_reg < 0:
+        raise ValueError(f"Argument `k_reg` has to be positive, provided: {k_reg} < 0")
     # @TODO: type checking and co
     def _RAPS_SET(Y_pred, scores_quantiles):
         pred_len = len(Y_pred)
