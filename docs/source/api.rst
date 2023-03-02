@@ -8,11 +8,11 @@ Let's say we want to fit/calibrate a neural-network interval-estimator with a cr
 or that we want to experiment different user-defined nonconformity scores.
 In such cases and others, the user can fully construct their wrappers using the
 proposed **Predictor-Calibrator-Splitter** paradigm. It boils down to assembling
-into :class:`deel.puncc.conformalization.ConformalPredictor`:
+into :class:`deel.puncc.api.conformalization.ConformalPredictor`:
 
 * Prediction model(s).
 * An estimator of nonconformity scores for construction/calibration of prediction intervals.
-* A strategy of data assignement into fitting and calibration sets.
+* A strategy to assign data into fitting and calibration sets (case of inductive CP).
 
 Modules
 *******
@@ -34,33 +34,54 @@ Overview
 ConformalPredictor
 ------------------
 
-:class:`deel.puncc.conformalization.ConformalPredictor` is the canvas of conformal prediction wrappers.
-An object instance is constructed by, as we will explain later, a predictor, a calibrator and a splitter:
+:class:`deel.puncc.api.conformalization.ConformalPredictor` is the canvas of conformal prediction procedures.
+An object instance is constructed by, as we will explain later, a **predictor**, a **calibrator** and a **splitter**:
 
 .. code-block:: python
 
     # Imports
     from sklearn import linear_model
     from deel.puncc.api.conformalization import ConformalPredictor
-    from deel.puncc.api.predictor import MeanPredictor
-    from deel.puncc.api.calibration import MeanCalibrator
-    from deel.puncc.api.splitter import KFoldSplit
+    from deel.puncc.api.prediction import BasePredictor
+    from deel.puncc.api.calibration import BaseCalibrator
+    from deel.puncc.api.splitting import KFoldSplitter
 
     # Regression linear model
     model = linear_model.LinearRegression()
 
-    # Definition of mean-based predictor, a mean-based calibrator and a K-fold splitter
-    # (This will be explained later)
-    mean_predictor = MeanPredictor(model) # Predictor
-    mean_calibrator = MeanCalibrator() # Calibrator
+    # Definition of a predictor (This will be explained later)
+    my_predictor = BasePredictor(model) # Predictor
+
+    # Definition of a calibrator, built for a given nonconformity scores and a
+    # procedure to build the prediction sets
+
+    ## Definition of a custom nonconformity scores function.
+    ## Alternatively, several ready-to-use nonconf scores are provided in
+    ## the module deel.puncc.nonconformity_scores (more on this later)
+    def my_ncf(y_pred, y_true):
+        return np.abs(y_pred-y_true)
+
+    ## Definition of a custom function to build prediction sets.
+    ## Alternatively, several ready-to-use procedure are provided in
+    ## the module deel.puncc.prediction_sets (more on this later)
+    def my_psf(y_pred, nonconf_scores_quantile):
+        y_lower = y_pred - nonconf_scores_quantile
+        y_upper = y_pred + nonconf_scores_quantile
+        return y_lower, y_upper
+
+    ## Calibrator construction
+    my_calibrator = BaseCalibrator(nonconf_score_func=my_ncf,
+                                   pred_set_func=my_psf) # Calibrator
+
+    # Definition of a K-fold splitter that produces 20 folds of fit/calibration
     kfold_splitter = KFoldSplitter(K=20, random_state=42) # Splitter
 
     # Conformal prediction canvas
-    conformal_predictor = ConformalPredictor(predictor=mean_predictor,
-                                            calibrator=mean_calibrator,
+    conformal_predictor = ConformalPredictor(predictor=my_predictor,
+                                            calibrator=my_calibrator,
                                             splitter=kfold_splitter)
 
-:class:`deel.puncc.conformalization.ConformalPredictor` implements two methods:
+:class:`deel.puncc.api.conformalization.ConformalPredictor` implements two methods:
 
 
 * A :func:`fit` method that fits the predictor model and computes nonconformity scores accodingly to the calibrator and to the data split strategy provided by the splitter
@@ -72,12 +93,92 @@ An object instance is constructed by, as we will explain later, a predictor, a c
     # to the fit and calibration sets based on the provided splitting strategy
     conformal_predictor.fit(X_train, y_train)
 
-* And a :func:`predict` method that estimates for new samples a 90% (1-alpha) coverage prediction interval [y_pred_low, y_pred_high] and point predictions if applicable (e.g., conditional mean)
+* And a :func:`predict` method that estimates for new samples the point predictions and prediction intervals [y_pred_lower, y_pred_upper], w.r.t a chosen error (significance) level :math:`\\alpha`
 
 .. code-block:: python
 
     # Coverage target of 1-alpha = 90%
-    y_pred, y_pred_low, y_pred_high, sigma_pred = conformal_predictor.predict(X_new, alpha=.1)
+    y_pred, y_pred_lower, y_pred_upper = conformal_predictor.predict(X_new, alpha=.1)
+
+The full code snippet of the previous CVplus-like procedure with a randomly generated dataset is provided below:
+
+.. code-block:: python
+
+    # Imports
+    from sklearn.datasets import make_regression
+    from sklearn.model_selection import train_test_split
+    from sklearn import linear_model
+    from deel.puncc.api.conformalization import ConformalPredictor
+    from deel.puncc.api.prediction import BasePredictor
+    from deel.puncc.api.calibration import BaseCalibrator
+    from deel.puncc.api.splitting import KFoldSplitter
+    from deel.puncc.plotting import plot_prediction_intervals
+    from deel.puncc import metrics
+
+    # Data
+    ## Generate a random regression problem
+    X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                            random_state=0, shuffle=False)
+
+    ## Split data into train and test
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=.2, random_state=0
+    )
+
+    # Regression linear model
+    model = linear_model.LinearRegression()
+
+    # Definition of a predictor (This will be explained later)
+    my_predictor = BasePredictor(model) # Predictor
+
+    # Definition of a calibrator, built for a given nonconformity scores and a
+    # procedure to build the prediction sets
+
+    ## Definition of a custom nonconformity scores function.
+    ## Alternatively, several ready-to-use nonconf scores are provided in
+    ## the module deel.puncc.nonconformity_scores (more on this later)
+    def my_ncf(y_pred, y_true):
+        return np.abs(y_pred-y_true)
+
+    ## Definition of a custom function to build prediction sets.
+    ## Alternatively, several ready-to-use procedure are provided in
+    ## the module deel.puncc.prediction_sets (more on this later)
+    def my_psf(y_pred, nonconf_scores_quantile):
+        y_lower = y_pred - nonconf_scores_quantile
+        y_upper = y_pred + nonconf_scores_quantile
+        return y_lower, y_upper
+
+    ## Calibrator construction
+    my_calibrator = BaseCalibrator(nonconf_score_func=my_ncf,
+                                    pred_set_func=my_psf) # Calibrator
+
+    # Definition of a K-fold splitter that produces 20 folds of fit/calibration
+    kfold_splitter = KFoldSplitter(K=20, random_state=42) # Splitter
+
+    # Conformal prediction canvas
+    conformal_predictor = ConformalPredictor(predictor=my_predictor,
+                                            calibrator=my_calibrator,
+                                            splitter=kfold_splitter)
+    conformal_predictor.fit(X_train, y_train)
+    y_pred, y_pred_lower, y_pred_upper = conformal_predictor.predict(X_test, alpha=.1)
+
+    # Compute empirical marginal coverage and average width of the prediction intervals
+    coverage = metrics.regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = metrics.regression_sharpness(y_pred_lower=y_pred_lower,
+                                        y_pred_upper=y_pred_upper)
+    print(f"Marginal coverage: {np.round(coverage, 2)}")
+    print(f"Average width: {np.round(width, 2)}")
+
+    # Figure of the prediction bands
+    plot_prediction_intervals(
+        X = X_test[:,0],
+        y_true=y_test,
+        y_pred=y_pred,
+        y_pred_lower=y_pred_lower,
+        y_pred_upper=y_pred_upper,
+        sort_X=True,
+        size=(10, 6),
+        loc="upper left")
 
 Predictor
 ---------

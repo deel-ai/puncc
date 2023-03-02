@@ -89,7 +89,7 @@ For a linear regression from scikit-learn, we use
 
 
 Conformal prediction
-**************************
+********************
 
 For this example, the prediction intervals are obtained throught the split
 conformal prediction method provided by the class
@@ -134,7 +134,9 @@ and the average empirical width of the prediction intervals on the test examples
 
 In addition, `puncc` provides plotting tools in :mod:`deel.puncc.plotting`
 to visualize the prediction intervals and whether or not the observations
-are covered::
+are covered:
+
+.. code-block::python
 
    from deel.puncc.plotting import plot_prediction_interval
 
