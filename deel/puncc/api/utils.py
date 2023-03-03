@@ -20,18 +20,54 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
-# This module implements utility functions.
-#
+"""
+This module implements utility functions.
+"""
 import sys
+from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
+# import tensorflow as tf
+# import torch
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
+
+
+def dual_predictor_check(l, name, type):
+    if (not isinstance(l, list)) or len(l) != 2:
+        raise TypeError(f"Argument `{name}` should be a list of two {type}.")
+
+
+def supported_types_check(y_pred, y_true=None):
+
+    if y_true is not None and (type(y_pred) != type(y_true)):
+        raise TypeError(
+            f"elements do not have the same type: {type(y_pred)} vs {type(y_true)}."
+        )
+
+    if isinstance(y_pred, np.ndarray):
+        pass
+    else:
+        import pandas as pd
+
+        if isinstance(y_pred, pd.DataFrame):
+            pass
+
+        else:
+            import tensorflow as tf
+            import torch
+
+            if isinstance(y_pred, tf.Tensor) or isinstance(y_pred, torch.Tensor):
+                pass
+
+            else:
+                raise TypeError(
+                    "Unsupported data type. Please provide a numpy ndarray, a dataframe or a tensor (TensorFlow|torch)."
+                )
 
 
 def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
@@ -48,15 +84,18 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
 
     :raises ValueError: if the value of alpha is inconsistent with the size of calibration set.
     """
+
     if alpha < 1 / (n + 1):
         raise ValueError(
             f"Alpha is too small: (alpha={alpha}, n={n}) {alpha} < {1/(n+1)}. "
             + "Increase alpha or the size of the calibration set."
         )
+
     if alpha >= 1:
         raise ValueError(
             f"Alpha={alpha} is too large. Decrease alpha such that alpha < 1."
         )
+
     if complement_check and alpha > n / (n + 1):
         raise ValueError(
             f"Alpha is too large: (alpha={alpha}, n={n}) {alpha} < {n/(n+1)}. "
@@ -100,6 +139,7 @@ def get_min_max_alpha_calib(
 
     :raises ValueError: must have integer n, boolean two_sided_conformalization and n>=1
     """
+
     if isinstance(n, int) and isinstance(two_sided_conformalization, bool) and n >= 1:
         # Special case: Conformal Prediction with jackknife-plus (Barber et al 2019)
         if two_sided_conformalization:
@@ -108,6 +148,7 @@ def get_min_max_alpha_calib(
         else:
             return (1 / (n + 1), 1)
     else:
+
         if not isinstance(n, int):
             raise ValueError(
                 f"Invalid input: need isinstance(n, int)==True but received {type(n)=}"
@@ -120,10 +161,10 @@ def get_min_max_alpha_calib(
             raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
 
 
-def quantile(a: np.ndarray, q: float, w: np.ndarray = None):  # type: ignore
+def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
     """Estimate the q-th empirical weighted quantiles.
 
-    :param ndarray a: vector of n samples
+    :param ndarray|DataFrame|Tensor a: collection of n samples
     :param float q: target quantile order. Must be in the open interval (0, 1).
     :param ndarray w: vector of size n. By default, w is None and equal weights = 1/m are associated.
 
@@ -132,11 +173,34 @@ def quantile(a: np.ndarray, q: float, w: np.ndarray = None):  # type: ignore
 
     :raises NotImplementedError: a must be unidimensional.
     """
+    # type checks:
+    supported_types_check(a)
+
+    if isinstance(a, np.ndarray):
+        pass
+    else:
+        import pandas as pd
+
+        if isinstance(a, pd.DataFrame):
+            a = a.to_numpy()
+        else:
+            import tensorflow as tf
+            import torch
+
+            if isinstance(a, tf.Tensor):
+                a = a.numpy()
+            elif isinstance(a, torch.Tensor):
+                a = a.cpu().detach().numpy()
+            else:
+                raise RuntimeError("Fatal error.")
+
     # Sanity checks
     if q <= 0 or q >= 1:
         raise ValueError("q must be in the open interval (0, 1).")
+
     if a.ndim > 1:
         raise NotImplementedError(f"a dimension {a.ndim} should be 1.")
+
     if w is not None and w.ndim > 1:
         raise NotImplementedError(f"w dimension {w.ndim} should be 1.")
 
@@ -181,295 +245,8 @@ def agg_list(a: np.ndarray):
     :returns: the concatenated array or None
     :rtype: ndarray or None
     """
+
     try:
         return np.concatenate(a, axis=0)
     except ValueError:
         return None
-
-
-#
-# ========================= Visualization =========================
-#
-
-SMALL_SIZE = 8
-MEDIUM_SIZE = 10
-BIGGER_SIZE = 12
-LARGE_SIZE = 15
-HUGE_SIZE = 16
-
-
-custom_rc_params = {
-    "font.family": "Times New Roman",
-    "ytick.labelsize": BIGGER_SIZE,
-    "xtick.labelsize": BIGGER_SIZE,
-    "axes.labelsize": LARGE_SIZE,
-    "legend.fontsize": LARGE_SIZE,
-    "axes.titlesize": HUGE_SIZE,
-    "lines.linewidth": 2,
-}
-
-
-def plot_prediction_interval(
-    y_true: np.ndarray,
-    y_pred_lower: np.ndarray,
-    y_pred_upper: np.ndarray,
-    X: Optional[np.ndarray] = None,
-    y_pred: Optional[np.ndarray] = None,
-    save_path: Optional[str] = None,
-    sort_X: bool = False,
-    **kwargs,
-) -> None:
-    """Plot prediction intervals whose bounds are given by y_pred_lower and y_pred_upper. True values and point estimates are also plotted if given as argument.
-
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param ndarray, optional X: abscisse vector.
-    :param ndarray, optional y_pred: predicted values.
-    :param kwargs: plot configuration parameters.
-    """
-
-    # Figure configuration
-    if "figsize" in kwargs.keys():
-        figsize = kwargs["figsize"]
-    else:
-        figsize = (15, 6)
-    if "loc" not in kwargs.keys():
-        loc = kwargs["loc"]
-    else:
-        loc = "upper left"
-    plt.figure(figsize=figsize)
-
-    # Custom matplotlib style sheet
-    matplotlib.rcParams.update(custom_rc_params)
-
-    if X is None:
-        X = np.arange(len(y_true))
-    elif sort_X:
-        sorted_idx = np.argsort(X)
-        X = X[sorted_idx]
-        y_true = y_true[sorted_idx]
-
-        if y_pred is not None:
-            y_pred = y_pred[sorted_idx]
-
-        y_pred_lower = y_pred_lower[sorted_idx]
-        y_pred_upper = y_pred_upper[sorted_idx]
-
-    if y_pred_upper is None or y_pred_lower is None:
-        miscoverage = np.array([False for _ in range(len(y_true))])
-    else:
-        miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
-
-    if X is not None:
-        label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
-        plt.plot(
-            X[~miscoverage],
-            y_true[~miscoverage],
-            "darkgreen",
-            marker="X",
-            markersize=2,
-            linewidth=0,
-            label=label,
-            zorder=20,
-        )
-
-    if X is not None:
-        label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
-        plt.plot(
-            X[miscoverage],
-            y_true[miscoverage],
-            color="red",
-            marker="o",
-            markersize=2,
-            linewidth=0,
-            label=label,
-            zorder=20,
-        )
-
-    if (y_pred_upper is not None) and (y_pred_lower is not None) and (X is not None):
-        plt.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
-        plt.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
-        plt.fill_between(
-            x=X,
-            y1=y_pred_upper,  # type: ignore
-            y2=y_pred_lower,  # type: ignore
-            alpha=0.2,
-            fc="b",
-            ec="None",
-            label="Prediction Interval",
-        )
-
-    if y_pred is not None:
-        plt.plot(X, y_pred, color="k", label="Prediction")
-
-    plt.xlabel("X")
-    plt.ylabel("Y")
-
-    if "loc" not in kwargs.keys():
-        loc = "upper left"
-    else:
-        loc = kwargs["loc"]
-
-    plt.legend(loc=loc)
-    if save_path:
-        plt.savefig(f"{save_path}", format="pdf")
-    else:
-        plt.show()
-
-
-def plot_sorted_pi(
-    y_true: np.ndarray,
-    y_pred_lower: np.ndarray,
-    y_pred_upper: np.ndarray,
-    X: Optional[np.ndarray] = None,
-    y_pred: Optional[np.ndarray] = None,
-    **kwargs,
-) -> None:
-    """Plot prediction intervals in an ordered fashion (lowest to largest width)
-    showing the upper and lower bounds for each prediction.
-
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param ndarray, optional X: abscisse vector.
-    :param ndarray, optional y_pred: predicted values.
-    :param kwargs: plot configuration parameters.
-    """
-
-    if y_pred is None:
-        y_pred = (y_pred_upper + y_pred_lower) / 2
-
-    width = np.abs(y_pred_upper - y_pred_lower)  # type: ignore
-    sorted_order = np.argsort(width)
-
-    # Figure configuration
-    if "figsize" in kwargs.keys():
-        figsize = kwargs["figsize"]
-    else:
-        figsize = (15, 6)
-    # if "loc" not in kwargs.keys():
-    #     loc = kwargs["loc"]
-    # else:
-    #     loc = "upper left"
-    plt.figure(figsize=figsize)
-
-    if X is None:
-        X = np.arange(len(y_pred_lower))
-
-    # True values
-    plt.plot(
-        X,
-        y_pred[sorted_order] - y_pred[sorted_order],
-        color="black",
-        markersize=2,
-        zorder=20,
-        label="Prediction",
-    )
-
-    miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
-    miscoverage = miscoverage[sorted_order]
-
-    # True values
-    plt.plot(
-        X[~miscoverage],
-        y_true[sorted_order][~miscoverage] - y_pred[sorted_order][~miscoverage],
-        color="darkgreen",
-        marker="o",
-        markersize=2,
-        linewidth=0,
-        zorder=20,
-        label="Observation (inside PI)",
-    )
-
-    plt.plot(
-        X[miscoverage],
-        y_true[sorted_order][miscoverage] - y_pred[sorted_order][miscoverage],
-        color="red",
-        marker="o",
-        markersize=2,
-        linewidth=0,
-        zorder=20,
-        label="Observation (outside PI)",
-    )
-
-    # PI Lower bound
-    plt.plot(
-        X,
-        y_pred_lower[sorted_order] - y_pred[sorted_order],
-        "--",
-        label="Prediction Interval Bounds",
-        color="blue",
-        linewidth=1,
-        alpha=0.7,
-    )
-
-    # PI upper bound
-    plt.plot(
-        X,
-        y_pred_upper[sorted_order] - y_pred[sorted_order],
-        "--",
-        color="blue",
-        linewidth=1,
-        alpha=0.7,
-    )
-
-    plt.legend()
-
-    plt.show()
-
-
-#
-# ========================= Metrics =========================
-#
-
-
-def average_coverage(y_true, y_pred_lower, y_pred_upper):
-    """Compute average coverage on several prediction intervals.
-
-    Given a prediction interval i defined by its lower bound y_pred_lower[i] and upper bound y_pred_upper[i], the i-th coverage is:
-
-        * c[i] = 1 if y_pred_lower[i]  <= y_true[i] <= bound y_pred_upper[i]
-        * c[i] = 0 otherwise
-
-    With N the number of example, the average coverage is :math:`1/N \sum_{i=1}^{N} c(i)`.
-
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-
-    :returns: Average coverage
-    :rtype: float
-    """
-    return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
-
-
-def ace(y_true, y_pred_lower, y_pred_upper, alpha):
-    """Compte the Average Coverage Error (ACE).
-
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param float alpha: significance level (max miscoverage target).
-
-    .. NOTE::
-        The ACE is the distance between the nominal coverage :math:`1-alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-alpha)`.
-        If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
-
-    :returns: the average coverage error (ACE).
-    :rtype: float
-    """
-    cov = average_coverage(y_true, y_pred_lower, y_pred_upper)
-    return cov - (1 - alpha)
-
-
-def sharpness(y_pred_lower, y_pred_upper):
-    """Compute the average absolute width of the prediction intervals.
-
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-
-    :returns: average absolute width of the prediction intervals.
-    :rtype: float
-    """
-    return (np.abs(y_pred_upper - y_pred_lower)).mean()

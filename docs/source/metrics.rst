@@ -1,9 +1,9 @@
-.. _prediction:
+.. _metrics:
 
-Prediction
+📏 Metrics
 ==========
 
-.. automodule:: prediction
+.. automodule:: metrics
    :members:
    :undoc-members:
    :show-inheritance:

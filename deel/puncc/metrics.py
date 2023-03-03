@@ -1,0 +1,110 @@
+# -*- coding: utf-8 -*-
+# Copyright IRT Antoine de Saint Exupéry et Université Paul Sabatier Toulouse III - All
+# rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry,
+# CRIAQ and ANITI - https://www.deel.ai/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module provides conformal prediction metrics.
+"""
+import numpy as np
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def classification_mean_coverage(y_true, set_pred):
+    """Compute empirical coverage of the prediction sets.
+
+    :param np.ndarray y_true: Observed label
+    :param Tuple[np.ndarray] set_pred: label prediction set
+
+    :returns: Average coverage
+    :rtype: float
+    """
+    counter = 0
+    for y, S in zip(y_true, set_pred):
+        if (S != []) and (y in S):
+            counter += 1
+    return counter / len(y_true)
+
+
+def classification_mean_size(set_pred):
+    """Compute average size of prediction sets.
+
+    :param Tuple[np.ndarray] set_pred: label prediction set
+
+    :returns: Average size of the prediction sets
+    :rtype: float
+    """
+    return np.mean([len(s) for s in set_pred])
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper):
+    """Compute average coverage on several prediction intervals.
+
+    Given a prediction interval i defined by its lower bound y_pred_lower[i] and upper bound y_pred_upper[i], the i-th coverage is:
+
+        * c[i] = 1 if y_pred_lower[i]  <= y_true[i] <= bound y_pred_upper[i]
+        * c[i] = 0 otherwise
+
+    With N the number of example, the average coverage is :math:`1/N \sum_{i=1}^{N} c(i)`.
+
+    :param ndarray y_true: label true values.
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+
+    :returns: Average coverage
+    :rtype: float
+    """
+    return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
+
+
+def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha):
+    """Compte the Average Coverage Error (ACE).
+
+    :param ndarray y_true: label true values.
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    :param float alpha: significance level (max miscoverage target).
+
+    .. NOTE::
+
+        The ACE is the distance between the nominal coverage :math:`1-\\alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-\\alpha)`.
+        If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
+
+    :returns: the average coverage error (ACE).
+    :rtype: float
+    """
+    cov = average_coverage(y_true, y_pred_lower, y_pred_upper)
+    return cov - (1 - alpha)
+
+
+def regression_sharpness(y_pred_lower, y_pred_upper):
+    """Compute the average absolute width of the prediction intervals.
+
+    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
+    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+
+    :returns: average absolute width of the prediction intervals.
+    :rtype: float
+    """
+    return (np.abs(y_pred_upper - y_pred_lower)).mean()

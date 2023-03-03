@@ -24,9 +24,13 @@
 This module provides data splitting schemes.
 """
 from abc import ABC
+from typing import Iterable
 
 import numpy as np
+import pandas as pd
 from sklearn import model_selection
+
+from deel.puncc.api.utils import supported_types_check
 
 
 class BaseSplitter(ABC):
@@ -46,21 +50,27 @@ class BaseSplitter(ABC):
 class IdSplitter(BaseSplitter):
     """Identity splitter that wraps an already existing data assignment.
 
-    :param tuple[ndarray, ndarray, ndarray, ndarray] _split: provided split.
+    :param tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor] _split: provided split.
     """
 
-    def __init__(self, X_fit, y_fit, X_calib, y_calib):
+    def __init__(
+        self,
+        X_fit: Iterable,
+        y_fit: Iterable,
+        X_calib: Iterable,
+        y_calib: Iterable,
+    ):
         super().__init__(random_state=None)
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
     def __call__(self, X=None, y=None):
         """Wraps into a splitter the provided fit and calibration subsets.
 
-        :param ndarray X: features array. Not needed here, just a placeholder for interoperability.
-        :param ndarray y: labels array. Not needed here, just a placeholder for interoperability.
+        :param ndarray|DataFrame|Tensor X: features array. Not needed here, just a placeholder for interoperability.
+        :param ndarray|DataFrame|Tensor y: labels array. Not needed here, just a placeholder for interoperability.
 
         :returns: Tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
+        :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
         """
         return self._split
 
@@ -76,14 +86,18 @@ class RandomSplitter(BaseSplitter):
         self.ratio = ratio
         super().__init__(random_state=random_state)
 
-    def __call__(self, X, y):
+    def __call__(
+        self,
+        X: Iterable,
+        y: Iterable,
+    ):
         """Implements a random split strategy.
 
-        :param ndarray X: features array.
-        :param ndarray y: labels array.
+        :param ndarray|DataFrame|Tensor X: features array.
+        :param ndarray|DataFrame|Tensor y: labels array.
 
         :returns: Tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: tuple[ndarray, ndarray, ndarray, ndarray]
+        :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
         """
         rng = np.random.RandomState(seed=self.random_state)
         fit_idxs = rng.rand(len(X)) > self.ratio
@@ -102,19 +116,36 @@ class KFoldSplitter(BaseSplitter):
         self.K = K
         super().__init__(random_state=random_state)
 
-    def __call__(self, X, y):
+    def __call__(
+        self,
+        X: Iterable,
+        y: Iterable,
+    ):
         """Implements a K-fold split strategy.
 
-        :param ndarray X: features array.
-        :param ndarray y: labels array.
+        :param ndarray|DataFrame|Tensor X: features array.
+        :param ndarray|DataFrame|Tensor y: labels array.
 
         :returns: list of K split folds. Each fold is a tuple (X_fit, y_fit, X_calib, y_calib).
-        :rtype: list[tuple[ndarray, ndarray, ndarray, ndarray]]
+        :rtype: list[tuple[ndarray|DataFrame|Tensor]]
         """
         kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state
         )
         folds = list()
+
         for fit, calib in kfold.split(X):
-            folds.append((X[fit], y[fit], X[calib], y[calib]))
+
+            if isinstance(X, pd.DataFrame):
+
+                if isinstance(y, pd.DataFrame):
+                    folds.append(
+                        (X.iloc[fit], y.iloc[fit], X.iloc[calib], y.iloc[calib])
+                    )
+                else:
+                    folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
+
+            else:
+                folds.append((X[fit], y[fit], X[calib], y[calib]))
+
         return folds

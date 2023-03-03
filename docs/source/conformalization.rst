@@ -1,5 +1,5 @@
-conformalization module
-=======================
+Conformalization
+================
 
 .. automodule:: conformalization
    :members:

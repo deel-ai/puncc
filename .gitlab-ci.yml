@@ -16,15 +16,15 @@ before_script:
   - pip install -e .[dev]
 
 stages:
-  # - test_low_api
-  - test_hi_api
+  - test_classification
+  - test_regression
 
-# test-lo:
-#   stage: test_low_api
-#   script:
-#     - pytest tests/test_reg_lo_api.py
-
-test-hi:
-  stage: test_hi_api
+test-classification:
+  stage: test_classification
   script:
-    - pytest tests/test_reg_hi_api_seed.py
+    - pytest tests/test_classification_seed.py
+
+test-regression:
+  stage: test_regression
+  script:
+    - pytest tests/test_regression_seed.py

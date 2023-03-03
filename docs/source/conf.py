@@ -12,6 +12,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../../deel"))
+sys.path.insert(0, os.path.abspath("../../deel/puncc"))
 sys.path.insert(0, os.path.abspath("../../deel/puncc/api"))
 
 # -- Project information -----------------------------------------------------
@@ -42,10 +43,7 @@ extensions = [
     "sphinx.ext.autodoc",
 ]
 
-autodoc_default_options = {
-    "members": True,
-    "private-members": True,
-}
+autodoc_default_options = {"members": True, "inherited-members": True}
 
 autoclass_content = "both"
 autoapi_root = "../deel"

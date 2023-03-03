@@ -59,6 +59,7 @@ dev_requirements = [
     "sphinx>=5.1.1",
     "sphinx-rtd-theme>=1.0.0",
     "sphinx-autodoc-typehints>=1.19.2",
+    "tensorflow",
     "tox>=3.25.1",
 ]
 

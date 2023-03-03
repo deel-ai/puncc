@@ -58,13 +58,33 @@ make prepare-dev
 
 # 🚀 Quickstart
 
-We propose two ways of defining and using conformal prediction wrappers:
-- A fast way based on preconfigured conformal prediction wrappers
-- A flexible way based of full customization of the prediction model, the residual computation and the fit/calibration data split plan
+Let’s consider a simple regression problem on diabetes data provided by Scikit-learn. We want to evaluate the uncertainty associated with the prediction using inductive (or split) conformal prediction.
 
-A comparison of both approaches is provided [here](docs/quickstart.ipynb) for a simple regression problem. A showcase of basic uncertainty quantification features for the first approach is given hereafter.
+### Data
 
-## Data
+By construction, data are indepent and identically distributed (i.i.d) (for
+more information, check the official
+[documentation](https://www4.stat.ncsu.edu/~boos/var.select/diabetes.html).
+Great: we fullfill the exchangeability condition to apply conformal prediction!
+The next step is spliting the data into three subsets:
+
+* Fit subset ${\cal D_{fit}}$ to train the model.
+* Calibration subset ${\cal D_{calib}}$ on which nonconformity scores are
+  computed.
+* Test subset ${\cal D_{test}}$ on which the prediction intervals are
+  estimated.
+
+---
+**NOTE**
+
+   Rigorously, for the probabilistic guarantee to hold, the calibration subset
+   needs to be sampled for each new example in the test set.
+
+---
+
+
+The following code implements all the aforementioned steps:
+
 ```python
 import numpy as np
 from sklearn import datasets
@@ -87,39 +107,90 @@ y_test = diabetes_y[-100:]
 X_fit, X_calib = X_train[:-100], X_train[-100:]
 y_fit, y_calib = y_train[:-100], y_train[-100:]
 ```
-## Linear regression model
+## Prediction Model
+
+We consider a simple linear regression model from
+[scikit-learn regression module](https://scikit-learn.org/stable/modules/linear_model.html),
+to be trained later on ${\cal D_{fit}}$:
 
 ```python
 from sklearn import linear_model
 
 # Create linear regression model
-regr = linear_model.LinearRegression()
+lin_reg_model = linear_model.LinearRegression()
+```
+
+Such model needs to be wrapped in a wrapper provided in the module
+`deel.puncc.api.prediction`.
+The wrapper makes it possible to use various models from different ML/DL
+libraries such as [Scikit-learn](https://scikit-learn.org/),
+[Keras](https://keras.io/) or
+[XGBoost](https://xgboost.readthedocs.io/en/stable/).
+For more information about model wrappers and supported ML/DL libraries,
+we refere the user to the documentation.
+
+For a linear regression from scikit-learn, we use `deel.puncc.api.prediction.BasePredictor` as follows:
+
+```python
+from deel.puncc.api.prediction import BasePredictor
+
+# Create a predictor to wrap the linear regression model defined earlier
+# The argument `is_trained` is set to False such that the linear model needs to be
+# trained before the calibration. You can initialize it to True if the model is
+# already trained and you want to save time.
+lin_reg_predictor =  BasePredictor(lin_reg_model, is_trained=False)
 ```
 
 
-## Split conformal prediction
-``` python
+## Split Conformal Regression
+For this example, the prediction intervals are obtained throught the split
+conformal prediction method provided by the class
+`deel.puncc.regression.SplitCP`. Other methods are presented
+in the documentation.
+
+
+```python
 from deel.puncc.regression import SplitCP
 
 # Coverage target is 1-alpha = 90%
 alpha=.1
-# Instanciate the split cp wrapper on the linear model
-split_cp = SplitCP(regr)
-# Train model on the fitting dataset and compute residuals on the calibration
-# dataset
+
+# Instanciate the split cp wrapper around the linear predictor.
+split_cp = SplitCP(lin_reg_predictor)
+
+# Train model (if argument `is_train` is False) on the fitting dataset and
+# compute the residuals on the calibration dataset.
 split_cp.fit(X_fit, y_fit, X_calib, y_calib)
-# Estimate the prediction interval
+
+# The `predict` returns the output of the linear model `y_pred` and
+# the calibrated interval [`y_pred_lower`, `y_pred_upper`].
 y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 ```
 
-## Results
+The library provides several metrics in `deel.puncc.metrics` to evaluate
+the conformalization procedure. Below, we compute the average empirical coverage
+and the average empirical width of the prediction intervals on the test examples:
 
 ```python
-from deel.puncc.api.utils import plot_prediction_interval
+from deel.puncc import metrics
+
+coverage = metrics.regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+width = metrics.regression_sharpness(y_pred_lower=y_pred_lower,
+                                    y_pred_upper=y_pred_upper)
+print(f"Marginal coverage: {np.round(coverage, 2)}")
+print(f"Average width: {np.round(width, 2)}")
+```
+
+In addition, `puncc` provides plotting tools in `deel.puncc.plotting`
+to visualize the prediction intervals and whether or not the observations
+are covered:
+
+```python
+from deel.puncc.plotting import plot_prediction_intervals
 
 # Figure of the prediction bands
 
-plot_prediction_interval(
+plot_prediction_intervals(
     X = X_test[:,0],
     y_true=y_test,
     y_pred=y_pred,
@@ -132,9 +203,18 @@ plot_prediction_interval(
 
 ![90% Prediction Interval with the Split Conformal Prediction Method](docs/source/results_quickstart_split_cp_pi.png)
 
+In the long run, at least 90% of the examples are included in the prediction interval.
+
+### Further readings: High-level and low-level APIs
+The library `puncc` provides two ways of defining and using conformal prediction wrappers:
+- **High-level API**: a direct approach to run state of the art conformal prediction procedures. This is what we used in the previous conformal regression example.
+- **Low-level API**: a more flexible approach based of full customization of the prediction model, the choice of nonconformity scores and the split between fit and calibration datasets.
+
+A quick comparison of both approaches is provided [here](docs/quickstart.ipynb) for a simple regression problem.
+
 ## 📚 Citation
 
-This library was built to support the work presented in our COPA 2022 paper on conformal prediction for timeseries. If you use our library for your work, please cite our paper:
+This library was initially built to support the work presented in our COPA 2022 paper on conformal prediction for timeseries. If you use our library for your work, please cite our paper:
 
 ```
 @inproceedings{mendil2022robust,

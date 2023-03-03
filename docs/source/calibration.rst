@@ -1,5 +1,5 @@
-calibration module
-==================
+Calibration
+===========
 
 .. automodule:: calibration
    :members:
