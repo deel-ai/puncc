@@ -156,12 +156,9 @@ from deel.puncc.regression import SplitCP
 alpha=.1
 
 # Instanciate the split cp wrapper around the linear predictor.
-# The `train` argument is set to True such that the linear model is trained
-# before the calibration. You can initialize it to False if the model is
-# already trained and you want to save time.
-split_cp = SplitCP(lin_reg_predictor, train=True)
+split_cp = SplitCP(lin_reg_predictor)
 
-# Train model (if argument `train` is True) on the fitting dataset and
+# Train model (if argument `is_train` is False) on the fitting dataset and
 # compute the residuals on the calibration dataset.
 split_cp.fit(X_fit, y_fit, X_calib, y_calib)
 

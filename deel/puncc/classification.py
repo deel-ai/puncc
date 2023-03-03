@@ -87,7 +87,7 @@ class RAPS:
         # Create rf classifier
         rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
 
-        # Create a wrapper of the random forrest model to redefine its predict method
+        # Create a wrapper of the random forest model to redefine its predict method
         # into logits predictions. Make sure to subclass BasePredictor.
         # Note that we needed to build a new wrapper (over BasePredictor) only because
         # the predict(.) method of RandomForestClassifier does not predict logits.

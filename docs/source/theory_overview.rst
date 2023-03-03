@@ -27,7 +27,7 @@ Cross-validation + (CV+)
 Conformal Classification
 ------------------------
 
-Adaptive Prediction Sets (RAPS)
+Adaptive Prediction Sets (APS)
 *******************************************
 .. _theory aps:
 

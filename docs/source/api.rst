@@ -3,7 +3,7 @@
 💻 API
 =======
 
-The **API** offers more flexibility into defining conformal prediction wrappers.
+The **low-level API** offers more flexibility into defining conformal prediction wrappers.
 Let's say we want to fit/calibrate a neural-network interval-estimator with a cross-validation plan;
 or that we want to experiment different user-defined nonconformity scores.
 In such cases and others, the user can fully construct their wrappers using the
@@ -183,99 +183,121 @@ The full code snippet of the previous CVplus-like procedure with a randomly gene
 Predictor
 ---------
 
-The :class:`deel.puncc.api.prediction.BasePredictor` class is a wrapper for prediction models
-that aims to standardize their interface and force compliance with the previously presented requirements:
+The :class:`deel.puncc.api.prediction.BasePredictor` and :class:`deel.puncc.api.prediction.DualPredictor` classes are wrappers of ML/DL models
+that aims to expose a standardized interface and guarantee compliance with the `puncc`'s framework.
+The predictors have to implement:
 
-* The models have to implement the :func:`fit` and :func:`predict` methods.
-* The models have to operate on datasets formated as numpy arrays.
+* a :func:`fit` method used to train the model. It takes as arguments two iterables X, Y (collection of data such as ndarray and tensors) and any additional configuration of the underlying model (e.g., random seed).
+* a :func:`predict` method used to predict targets for a given iterable X. It takes as arguments an iterable X and any additional configuration of the underlying model (e.g., batch size).
+* a :func:`copy` method that returns a copy of the predictor (useful in cross validation for example). It has to deepcopy the underlying model.
 
-Any specific preprocessing should be included in a **subclass** of :class:`deel.puncc.api.prediction.BasePredictor`.
+The constructor of :class:`deel.puncc.api.prediction.BasePredictor` takes in the model to be wrapped, a flag to inform if the model is already trained
+and compilation keyword arguments if the underlying model needs to be compiled (such as in keras).
 
-A special attention is to be directed towards the :func:`predict` method.
+The constructor of :class:`deel.puncc.api.prediction.DualPredictor` is conceptually similar but take as arguments
+a list of two models, a list of two trained flags and a list of two compilation kwargs.
+Such predictor is useful when the calibration relies of several models (such as upper and lower quantiles in CQR).
+Note that the output `y_pred` of the :func:`predict` method are a collection of couples,
+where the first (resp. second) axis is associated to the output of the first (resp. second) model.
+Specifically, :class:`deel.puncc.api.prediction.MeanVarPredictor` is a subclass of :class:`deel.puncc.api.prediction.DualPredictor` that
+trains the first model on the data and the second one to predict the absolute error of the former model.
+
+These three predictor classes cover plenty of use case in conformal prediction.
+But if you have a special need, you can subclass :class:`deel.puncc.api.prediction.BasePredictor` or :class:`deel.puncc.api.prediction.DualPredictor` or
+even create a predictor from scratch.
+
+Here is a example of situation where you need to define your own predictor:
+you have a classification problem and you build a :class:`RandomForestClassifier`
+from sklearn. The procedure :ref:`RAPS <theory raps>` to conformalize the classifier requires
+a :func:`predict` method that outputs the estimated probabily of each class. This is not the case
+as :func:`RandomForestClassifier.predict` returns only the most likely class. In this case,
+we need to create a predictor in which we redefine the :func:`predict` call:
 
 .. code-block:: python
 
-    # Args:
-    #   X: new example features
-    # Returns:
-    #   A tuple composed of (y_pred, y_pred_lower, y_pred_upper, sigma_pred)
-    predict(X: numpy.array) -> (numpy.array, numpy.array, numpy.array, numpy.array)
+        from sklearn.ensemble import RandomForestClassifier
 
-The tuple returned by the method contains four elements:
-*   `y_pred`: point predictions
-*   `y_pred_lower`: lower bound of the prediction intervals
-*   `y_pred_upper`: upper bound of the prediction intervals
-*   `sigma_pred`: variability estimations
+        # Create rf classifier
+        rf_model = (n_estimators=100, random_state=0)
 
-If the model does not estimate some of these values, they are substituted by `None` at the right position.
-For example, a quantile regressor that returns upper and lower interval bounds is wrapped as follows:
+        # Create a wrapper of the random forest model to redefine its predict method
+        # into logits predictions. Make sure to subclass BasePredictor.
+        # Note that we needed to build a new wrapper (over BasePredictor) only because
+        # the predict(.) method of RandomForestClassifier does not predict logits.
+        # Otherwise, it is enough to use BasePredictor (e.g., neural network with softmax).
+        class RFPredictor(BasePredictor):
+            def predict(self, X, **kwargs):
+                return self.model.predict_proba(X, **kwargs)
 
-.. code-block:: python
-
-    class QuantilePredictor(BasePredictor):
-        def __init__(self, q_lo_model, q_hi_model, is_trained=False):
-            """
-            Args:
-                q_lo_model: lower quantile model
-                q_hi_model: upper quantile model
-            """
-            super().__init__(is_trained)
-            self.q_lo_model = q_lo_model
-            self.q_hi_model = q_hi_model
-
-        def fit(self, X, y, **kwargs):
-            """Fit model to the training data.
-            Args:
-                X: train features
-                y: train labels
-            """
-            self.q_lo_model.fit(X, y)
-            self.q_hi_model.fit(X, y)
-            self.is_trained = True
-
-        def predict(self, X, **kwargs):
-            """Compute predictions on new examples.
-            Args:
-                X: new examples' features
-            Returns:
-                y_pred, y_lower, y_upper, sigma_pred
-            """
-            y_pred_lower = self.q_lo_model.predict(X)
-            y_pred_upper = self.q_hi_model.predict(X)
-            return None, y_pred_lower, y_pred_upper, None
-
-To cover a large range of conformal prediction methods, three subclasses of :class:`deel.puncc.api.prediction.BasePredictor` have been implemented:
-
-* :class:`deel.puncc.api.prediction.MeanPredictor`: wrapper of point-based models
-* :class:`deel.puncc.api.prediction.MeanVarPredictor`: wrapper of point-based models that also estimates variability statistics (e.g., standard deviation)
-* :class:`deel.puncc.api.prediction.QuantilePredictor`: wrapper of specific interval-based models that estimate upper and lower quantiles of the data generating distribution
-
-PS: User-defined predictors have to subclass :class:`deel.puncc.api.prediction.BasePredictor` and redefine its methods.
+        # Wrap model in the newly created RFPredictor
+        rf_predictor = RFPredictor(rf_model)
 
 Calibrator
 ----------
 
-The :class:`deel.puncc.api.calibration.Calibrator` is meant to compute **nonconformity scores** (e.g., residuals)
-on the calibration dataset (:func:`deel.puncc.api.calibration.Calibrator.estimate` method)
-and uses them to **construct** and/or **calibrate** prediction intervals (:func:`deel.puncc.api.calibration.Calibrator.calibrate` method).
+The calibrator provides a structure to estimate the nonconformity scores
+on the calibration set and to compute the prediction sets. At the constructor :class:`deel.puncc.api.calibration.BaseCalibrator`,
+one decides which nonconformity score and prediction set functions to use.
+Then, the calibrator instance computes **nonconformity scores** (e.g., mean absolute deviation) by calling
+:func:`deel.puncc.api.calibration.Calibrator.fit` on the calibration dataset. Based on the estimated quantiles of nonconformity scores,
+the method :func:`deel.puncc.api.calibration.BaseCalibrator.calibrate` enables to **construct** and/or **calibrate** prediction sets.
 
-To cover a large range of conformal prediction methods, three subclasses of :class:`deel.puncc.api.calibration.Calibrator` have been implemented:
+For example, the `BaseCalibrator` in the split conformal prediction procedure
+uses the mean absolute deviation as nonconformity score and and prediction set
+are built as constant intervals. These two functions are already provided in
+:func:`deel.puncc.api.nonconformity_scores.mad` and :func:`deel.puncc.api.prediction_sets.constant_interval`, respectively:
 
-* :class:`deel.puncc.api.calibration.MeanCalibrator`: constructs prediction intervals based on point predictions by adding and substracting quantiles of mean absolute deviations
-* :class:`deel.puncc.api.calibration.MeanVarCalibrator`: constructs prediction intervals based on point predictions and dispersion estimations by adding and substracting quantiles of **scaled** mean absolute deviations
-* :class:`deel.puncc.api.calibration.QuantileCalibrator`: calibrates quantile-based prediction intervals by shrinking or dialating them accordingly to the quantiles of nonconformity scores
+.. code-block:: python
 
-PS: User-defined calibrators have to subclass :class:`deel.puncc.api.calibration.Calibrator` and redefine its methods.
+    from deel.puncc.api.calibration import BaseCalibrator
+    from deel.puncc.api import nonconformity_scores
+    from deel.puncc.api import prediction_sets
+
+    ## Calibrator construction
+    my_calibrator = BaseCalibrator(nonconf_score_func=nonconformity_scores.mad,
+                                   pred_set_func=prediction_sets.constant_interval)
+
+Alternatively, one can define custom functions and pass them as arguments to the calibrator:
+
+.. code-block:: python
+
+    from deel.puncc.api.calibration import BaseCalibrator
+
+    ## Definition of a custom nonconformity scores function.
+    ## Alternatively, several ready-to-use nonconf scores are provided in
+    ## the module deel.puncc.nonconformity_scores
+    def my_ncf(y_pred, y_true):
+        return np.abs(y_pred-y_true)
+
+    ## Definition of a custom function to build prediction sets.
+    ## Alternatively, several ready-to-use procedure are provided in
+    ## the module deel.puncc.prediction_sets
+    def my_psf(y_pred, nonconf_scores_quantile):
+        y_lower = y_pred - nonconf_scores_quantile
+        y_upper = y_pred + nonconf_scores_quantile
+        return y_lower, y_upper
+
+    ## Calibrator construction
+    my_calibrator = BaseCalibrator(nonconf_score_func=my_ncf,
+                                   pred_set_func=my_psf)
 
 Splitter
 --------
 
-In conformal prediction, the assignement of data to fitting and calibration sets is motivated by two criteria: data availability and computational resources. If quality data is abundant, we can split the training samples into disjoint subsets $D_{fit}$ and $D_{calib}$. When data is scarce, a cross-validation strategy is preferred but is more ressources consuming as different models are trained and nonconformity scores are computed for different disjoint folds.
+In conformal prediction, the assignement of data into fit and calibration sets is motivated by two criteria:
+data availability and computational resources. If quality data is abundant,
+we can split the training samples into disjoint subsets :math:`D_{fit}` and :math:`D_{calib}`.
+When data is scarce, a cross-validation strategy is preferred but is more
+ressource-consuming as different models are trained and nonconformity scores
+are computed for different disjoint folds.
 
-The two plans are implemented in :mod:`deel.puncc.api.splitting` module.
-* :class:`deel.puncc.api.splitting.RandomSplitter`: assignement of samples in $D_{fit}$ and $D_{calib}$
-* :class:`deel.puncc.api.splitting.KFoldSplitter`: assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy
+The two plans are implemented in :mod:`deel.puncc.api.splitting` module,
+and are agnostic to the data structure (which can be ndarrays, tensors and dataframes):
+
+- :class:`deel.puncc.api.splitting.RandomSplitter`: random assignement of samples in :math:`D_{fit}` and :math:`D_{calib}`
+- :class:`deel.puncc.api.splitting.KFoldSplitter`: random assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy
+
+Additionnaly, if the user already implemted a split plan, the obtained data asignement
+is wrapped in :class:`deel.puncc.api.splitting.IdSplitter` to produce iterables.
 
 These methods produce **iterables** that are used by the :class:`ConformalPredictor` instance.
-
-Additionnaly, if the user already implemted a split plan, the obtained data asignement is wrapped in :class:`deel.puncc.api.splitting.IdSplitter` to produce iterables.
