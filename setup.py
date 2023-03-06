@@ -37,7 +37,7 @@ requirements = [
     "numpy",
     "scikit-learn",
     "scipy",
-    "seaborn",
+    "tensorflow>=2.1.0",
     "tqdm",
 ]
 
@@ -59,7 +59,6 @@ dev_requirements = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-autodoc-typehints",
-    "tensorflow",
     "tox",
 ]
 

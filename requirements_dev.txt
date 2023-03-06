@@ -1,0 +1,10 @@
+flake8
+pylint
+pytest
+pytest-cov
+black
+pre-commit
+sphinx
+sphinx-rtd-theme
+sphinx-autodoc-typehints
+tox
