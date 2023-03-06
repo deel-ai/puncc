@@ -140,25 +140,14 @@ def get_min_max_alpha_calib(
     :raises ValueError: must have integer n, boolean two_sided_conformalization and n>=1
     """
 
-    if isinstance(n, int) and isinstance(two_sided_conformalization, bool) and n >= 1:
-        # Special case: Conformal Prediction with jackknife-plus (Barber et al 2019)
-        if two_sided_conformalization:
-            return (1 / (n + 1), n / (n + 1))
-        # Base case: split conformal prediction (e.g. Lei et al 2019)
-        else:
-            return (1 / (n + 1), 1)
-    else:
+    if n < 1:
+        raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
 
-        if not isinstance(n, int):
-            raise ValueError(
-                f"Invalid input: need isinstance(n, int)==True but received {type(n)=}"
-            )
-        elif not isinstance(two_sided_conformalization, bool):
-            raise ValueError(
-                f"Invalid input: need isinstance(two_sided_conformalization, bool)==True but received {type(two_sided_conformalization)=}"
-            )
-        elif n < 1:
-            raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
+    if two_sided_conformalization is True:
+        return (1 / (n + 1), n / (n + 1))
+    # Base case: split conformal prediction (e.g. Lei et al 2019)
+    else:
+        return (1 / (n + 1), 1)
 
 
 def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
