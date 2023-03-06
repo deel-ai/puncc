@@ -52,37 +52,45 @@ def plot_prediction_intervals(
     y_pred_upper: np.ndarray,
     X: Optional[np.ndarray] = None,
     y_pred: Optional[np.ndarray] = None,
-    save_path: Optional[str] = None,
-    sort_X: bool = False,
-    **kwargs,
-) -> None:
-    """Plot prediction intervals whose bounds are given by y_pred_lower and y_pred_upper. True values and point estimates are also plotted if given as argument.
+    ax: matplotlib.axes.Axes = None,
+    **fig_kw,
+) -> matplotlib.axes.Axes:
+    """Plot prediction intervals whose bounds are given by `y_pred_lower` and `y_pred_upper`. True and predicted (if provided) point values are also displayed.
 
-    :param ndarray y_true: label true values.
+    :param ndarray y_true: true output values.
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.
     :param ndarray y_pred_upper: upper bounds of the prediction intervals.
     :param ndarray, optional X: abscisse vector.
     :param ndarray, optional y_pred: predicted values.
-    :param kwargs: plot configuration parameters.
+    :param matplotlib.axes.Axes, optional ax: plot using the provided axis. Otherwise, a new figure is created and the corresponding axis is returned as output.
+    :param fig_kw: all additional keyword arguments are passed to the pyplot.figure call.
+
+    :returns: updated axis if `ax` provided. Otherwise a new figure is created and the corresponding axis is returned as output
+    :rtype: matplotlib.axes.Axes
+
     """
 
-    # Figure configuration
-    if "figsize" in kwargs.keys():
-        figsize = kwargs["figsize"]
+    # Figure size configuration
+    if "figsize" in fig_kw.keys():
+        figsize = fig_kw["figsize"]
     else:
         figsize = (15, 6)
-    if "loc" not in kwargs.keys():
-        loc = kwargs["loc"]
+
+    # Create new figure and ax if None provided
+    if ax is None:
+        _, ax = plt.subplots(figsize=figsize)
+        # Before changing rcparams, save old config to restablish is later
+        restablish_rcparams = True
+        current_rcparams = dict(matplotlib.rcParams)
+        # Custom matplotlib style sheet
+        matplotlib.rcParams.update(custom_rc_params)
     else:
-        loc = "upper left"
-    plt.figure(figsize=figsize)
+        restablish_rcparams = False
 
-    # Custom matplotlib style sheet
-    matplotlib.rcParams.update(custom_rc_params)
-
+    # X handler
     if X is None:
         X = np.arange(len(y_true))
-    elif sort_X:
+    else:
         sorted_idx = np.argsort(X)
         X = X[sorted_idx]
         y_true = y_true[sorted_idx]
@@ -93,41 +101,43 @@ def plot_prediction_intervals(
         y_pred_lower = y_pred_lower[sorted_idx]
         y_pred_upper = y_pred_upper[sorted_idx]
 
+    # Coverage count
     if y_pred_upper is None or y_pred_lower is None:
         miscoverage = np.array([False for _ in range(len(y_true))])
     else:
         miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
 
-    if X is not None:
-        label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
-        plt.plot(
-            X[~miscoverage],
-            y_true[~miscoverage],
-            "darkgreen",
-            marker="X",
-            markersize=2,
-            linewidth=0,
-            label=label,
-            zorder=20,
-        )
+    # plot observations inside PI
+    label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
+    ax.plot(
+        X[~miscoverage],
+        y_true[~miscoverage],
+        "darkgreen",
+        marker="o",
+        markersize=4,
+        linewidth=0,
+        label=label,
+        zorder=20,
+    )
 
-    if X is not None:
-        label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
-        plt.plot(
-            X[miscoverage],
-            y_true[miscoverage],
-            color="red",
-            marker="o",
-            markersize=2,
-            linewidth=0,
-            label=label,
-            zorder=20,
-        )
+    # Plot observations outside PI
+    label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
+    ax.plot(
+        X[miscoverage],
+        y_true[miscoverage],
+        color="red",
+        marker="o",
+        markersize=4,
+        linewidth=0,
+        label=label,
+        zorder=20,
+    )
 
-    if (y_pred_upper is not None) and (y_pred_lower is not None) and (X is not None):
-        plt.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
-        plt.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
-        plt.fill_between(
+    if (y_pred_upper is not None) and (y_pred_lower is not None):
+
+        ax.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
+        ax.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
+        ax.fill_between(
             x=X,
             y1=y_pred_upper,  # type: ignore
             y2=y_pred_lower,  # type: ignore
@@ -138,18 +148,24 @@ def plot_prediction_intervals(
         )
 
     if y_pred is not None:
-        plt.plot(X, y_pred, color="k", label="Prediction")
+        ax.plot(X, y_pred, color="k", label="Prediction")
 
-    plt.xlabel("X")
-    plt.ylabel("Y")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
 
-    if "loc" not in kwargs.keys():
+    if "loc" not in fig_kw.keys():
         loc = "upper left"
     else:
-        loc = kwargs["loc"]
+        loc = fig_kw["loc"]
 
-    plt.legend(loc=loc)
-    if save_path:
-        plt.savefig(f"{save_path}", format="pdf")
-    else:
-        plt.show()
+    ax.legend(loc=loc)
+
+    # Set x limits
+    int_size = X[-1] - X[0]
+    ax.set_xlim(X[0] - int_size * 0.01, X[-1] + int_size * 0.01)
+
+    # restablish rcparams
+    if restablish_rcparams:
+        matplotlib.rcParams.update(current_rcparams)
+
+    return ax

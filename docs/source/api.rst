@@ -14,8 +14,11 @@ into :class:`deel.puncc.api.conformalization.ConformalPredictor`:
 * An estimator of nonconformity scores for construction/calibration of prediction intervals.
 * A strategy to assign data into fitting and calibration sets (case of inductive CP).
 
-Modules
-*******
+.. contents:: Table of Contents
+    :depth: 3
+
+API's Modules
+*************
 
 .. toctree::
     :maxdepth: 2

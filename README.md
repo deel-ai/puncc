@@ -190,15 +190,13 @@ from deel.puncc.plotting import plot_prediction_intervals
 
 # Figure of the prediction bands
 
-plot_prediction_intervals(
-    X = X_test[:,0],
-    y_true=y_test,
-    y_pred=y_pred,
-    y_pred_lower=y_pred_lower,
-    y_pred_upper=y_pred_upper,
-    sort_X=True,
-    size=(10, 6),
-    loc="upper left")
+ax = plot_prediction_intervals(
+        X = X_test[:,0],
+        y_true=y_test,
+        y_pred=y_pred,
+        y_pred_lower=y_pred_lower,
+        y_pred_upper=y_pred_upper,
+        loc="upper left")
 ```
 
 ![90% Prediction Interval with the Split Conformal Prediction Method](docs/source/results_quickstart_split_cp_pi.png)
