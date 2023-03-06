@@ -32,35 +32,35 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 requirements = [
-    "joblib>=1.1.0",
-    "matplotlib>=3.5.1",
-    "numpy>=1.22.3",
-    "scikit-learn>=1.0.2",
-    "scipy>=1.8.0",
-    "seaborn>=0.11.2",
-    "tqdm>=4.63.0",
+    "joblib",
+    "matplotlib",
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "seaborn",
+    "tqdm",
 ]
 
 interactive_requirements = [
-    "ipykernel>=6.9.1",
-    "ipython>=8.1.1",
-    "jupyter-client>=7.1.2",
-    "jupyter-core>=4.9.2",
-    "jupyterthemes>=0.20.0",
-    "matplotlib-inline>=0.1.3",
+    "ipykernel",
+    "ipython",
+    "jupyter-client",
+    "jupyter-core",
+    "jupyterthemes",
+    "matplotlib-inline",
 ]
 
 dev_requirements = [
-    "flake8>=4.0.1",
-    "pytest>=7.1.2",
-    "pytest-cov>=3.0.0",
-    "black==22.3.0",
-    "pre-commit>=2.20.0",
-    "sphinx>=5.1.1",
-    "sphinx-rtd-theme>=1.0.0",
-    "sphinx-autodoc-typehints>=1.19.2",
+    "flake8",
+    "pytest",
+    "pytest-cov",
+    "black",
+    "pre-commit",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-autodoc-typehints",
     "tensorflow",
-    "tox>=3.25.1",
+    "tox",
 ]
 
 setuptools.setup(
@@ -73,7 +73,7 @@ setuptools.setup(
             "luca.mossina@irt-saintexupery.com",
         ]
     ),
-    description="Predictive Uncertainty Calibration and Conformalization Lib",
+    description="Predictive Uncertainty Calibration and Conformalization Library",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/deel-ai/puncc",
@@ -83,6 +83,11 @@ setuptools.setup(
         "interactive": interactive_requirements,
         "dev": dev_requirements,
     },
-    license="MIT",
-    python_requires=">=3.8",
+    python_requires=">=3.6",
+    classifiers=[
+        "License :: MIT License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Operating System :: Cross-platform",
+    ],
 )
