@@ -31,6 +31,13 @@ import numpy as np
 def classification_mean_coverage(y_true, set_pred):
     """Compute empirical coverage of the prediction sets.
 
+    Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
+
+    * :math:`cov(X_i) = 1` if :math:`y_{true} \in S(X_i)`
+    * :math:`cov(X_i) = 0` otherwise
+
+    With N the number of examples, the average coverage is :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+
     :param np.ndarray y_true: Observed label
     :param Tuple[np.ndarray] set_pred: label prediction set
 
@@ -45,7 +52,7 @@ def classification_mean_coverage(y_true, set_pred):
 
 
 def classification_mean_size(set_pred):
-    """Compute average size of prediction sets.
+    """Compute average size of the prediction sets.
 
     :param Tuple[np.ndarray] set_pred: label prediction set
 
@@ -61,12 +68,12 @@ def classification_mean_size(set_pred):
 def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper):
     """Compute average coverage on several prediction intervals.
 
-    Given a prediction interval i defined by its lower bound y_pred_lower[i] and upper bound y_pred_upper[i], the i-th coverage is:
+    Given the :math:`i`-th prediction interval :math:`C(X_i)`, the coverage is:
 
-        * c[i] = 1 if y_pred_lower[i]  <= y_true[i] <= bound y_pred_upper[i]
-        * c[i] = 0 otherwise
+        * :math:`cov(X_i) = 1` if :math:`y_{true} \in C(X_i)`
+        * :math:`cov(X_i) = 0` otherwise
 
-    With N the number of example, the average coverage is :math:`1/N \sum_{i=1}^{N} c(i)`.
+    With N the number of examples, the average coverage is :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
 
     :param ndarray y_true: label true values.
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.

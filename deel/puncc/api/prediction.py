@@ -132,8 +132,8 @@ class BasePredictor:
     def fit(self, X: Iterable, y: Iterable, **kwargs) -> None:
         """Fit model to the training data.
 
-        :param ndarray|DataFrame|Tensor X: train features.
-        :param ndarray|DataFrame|Tensor y: train labels.
+        :param Iterable X: train features.
+        :param Iterable y: train labels.
         :param kwargs: keyword arguments to be passed to the call :func:`fit` on the underlying model :math:`\hat{f}`.
 
         .. note::
@@ -147,7 +147,7 @@ class BasePredictor:
     def predict(self, X: Iterable, **kwargs) -> Iterable:
         """Compute predictions on new examples.
 
-        :param ndarray|DataFrame|Tensor X: new examples' features.
+        :param Iterable X: new examples' features.
         :param dict kwargs: predict configuration to be passed to the `predict` method of the underlying model :math:`\hat{f}`.
         :returns: predictions :math:`\hat{f}(X)` associated to the new examples X.
         :rtype: ndarray
@@ -263,8 +263,8 @@ class DualPredictor:
 
         """Fit model to the training data.
 
-        :param ndarray|DataFrame|Tensor X: train features.
-        :param ndarray|DataFrame|Tensor y: train labels.
+        :param Iterable X: train features.
+        :param Iterable y: train labels.
         :param List[dict[str]] dictargs: list of fit configurations to be passed to the `fit` method of the underlying models :math:`\hat{f}_1` and :math:`\hat{f}_2`, respectively.
 
         .. note::
@@ -283,7 +283,7 @@ class DualPredictor:
     ) -> Tuple[np.ndarray]:
         """Compute predictions on new examples.
 
-        :param ndarray|DataFrame|Tensor X: new examples' features.
+        :param Iterable X: new examples' features.
         :param dict kwargs: list of predict configurations to be passed to the `predict` method of the underlying models :math:`\hat{f}_1` and :math:`\hat{f}_2`, respectively.
 
         :returns: predictions :math:`\hat{y}=\hat{f}(X)` associated to the new examples X. For an instance :math:`X_i`, the prediction consists of a couple :math:`\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))`.
@@ -396,8 +396,8 @@ class MeanVarPredictor(DualPredictor):
         """Fit models to the training data. The dispersion model :math:`\hat{\sigma}` is trained on the mean absolute deviation of
         :math:`\hat{mu}`'s predictions :math:`\hat{\mu}` from the true labels :math:`y`.
 
-        :param ndarray|DataFrame|Tensor X: train features.
-        :param ndarray|DataFrame|Tensor y: train labels.
+        :param Iterable X: train features.
+        :param Iterable y: train labels.
         :param List[dict[Any]] dictargs: list of fit configurations to be passed to the `fit` method of the underlying models :math:`\hat{\mu}` and :math:`\hat{\sigma}`, respectively.
         """
         self.models[0].fit(X, y, **dictargs[0])

@@ -1,7 +1,6 @@
 Utils
 =====
 
-.. automodule:: utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autofunction:: deel.puncc.api.utils.check_alpha_calib
+
+.. autofunction:: deel.puncc.api.utils.quantile

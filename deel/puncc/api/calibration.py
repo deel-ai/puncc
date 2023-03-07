@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the core calibrator and provides a collection of
-nonconformity scores and computation approaches of the prediction sets.
+This module implements the core calibrator, providing a structure to estimate the nonconformity scores
+on the calibration set and to compute the prediction sets.
 """
 import logging
 from typing import Callable
@@ -91,8 +91,8 @@ class BaseCalibrator:
         # the quantiles of nonconformity scores. The function below returns a
         # fixed size interval around the point predictions.
         def prediction_set_function(y_pred, scores_quantile):
-            y_lo = y_pred - scores_quantiles
-            y_hi = y_pred + scores_quantiles
+            y_lo = y_pred - scores_quantile
+            y_hi = y_pred + scores_quantile
             return y_lo, y_hi
 
         # The calibrator is instantiated by passing the two functions defined
@@ -135,8 +135,8 @@ class BaseCalibrator:
     ) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
-        :param ndarray|DataFrame|Tensor y_true: true labels.
-        :param ndarray|DataFrame|Tensor y_pred: predicted values.
+        :param Iterable y_true: true labels.
+        :param Iterable y_pred: predicted values.
 
         """
         # TODO check structure match in supported types
@@ -158,7 +158,7 @@ class BaseCalibrator:
         significance level :math:`\\alpha`.
 
         :param float alpha: significance level (max miscoverage target).
-        :param ndarray|DataFrame|Tensor y_pred: predicted values.
+        :param Iterable y_pred: predicted values.
         :param Iterable weights: weights to be associated to the nonconformity
                                  scores. Defaults to None when all the scores
                                  are equiprobable.
@@ -188,7 +188,7 @@ class BaseCalibrator:
             w=weights,
         )
 
-        return self.pred_set_func(y_pred, scores_quantiles=residuals_Q)
+        return self.pred_set_func(y_pred, scores_quantile=residuals_Q)
 
     def set_norm_weights(self, norm_weights: np.ndarray) -> None:
         """Setter of normalized weights associated to the nonconformity
@@ -209,7 +209,7 @@ class BaseCalibrator:
         return self._norm_weights
 
     @staticmethod
-    def barber_weights(weights):
+    def barber_weights(weights: np.ndarray):
         """Compute and normalize inference weights of the nonconformity distribution
         based on `Barber et al. <https://arxiv.org/abs/2202.13415>`_.
 
@@ -279,7 +279,7 @@ class CvPlusCalibrator:
     ) -> tuple[Iterable]:
         """Compute calibrated prediction intervals for new examples X.
 
-        :param ndarray|DataFrame|Tensor X: test features.
+        :param Iterable X: test features.
         :param dict kfold_predictors_dict: dictionnary of predictors trained on each fold.
         :param float alpha: significance level (maximum miscoverage target).
 

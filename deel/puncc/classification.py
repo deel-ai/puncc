@@ -122,10 +122,10 @@ class RAPS:
     def __init__(self, predictor, train=True, lambd=0, k_reg=1):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.raps_score(
+            nonconf_score_func=nonconformity_scores.raps_score_builder(
                 lambd=lambd, k_reg=k_reg
             ),
-            pred_set_func=prediction_sets.raps_set(lambd=lambd, k_reg=k_reg),
+            pred_set_func=prediction_sets.raps_set_builder(lambd=lambd, k_reg=k_reg),
             weight_func=None,
         )
         self.train = train
@@ -141,10 +141,10 @@ class RAPS:
         """This method fits the models to the fit data (X_fit, y_fit)
         and computes residuals on (X_calib, y_calib).
 
-        :param ndarray|DataFrame|Tensor X_fit: features from the fit dataset.
-        :param ndarray|DataFrame|Tensor y_fit: labels from the fit dataset.
-        :param ndarray|DataFrame|Tensor X_calib: features from the calibration dataset.
-        :param ndarray|DataFrame|Tensor y_calib: labels from the calibration dataset.
+        :param Iterable X_fit: features from the fit dataset.
+        :param Iterable y_fit: labels from the fit dataset.
+        :param Iterable X_calib: features from the calibration dataset.
+        :param Iterable y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
         """
         self.conformal_predictor = ConformalPredictor(
@@ -164,7 +164,7 @@ class RAPS:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
         for new samples.
 
-        :param ndarray|DataFrame|Tensor X_test: features of new samples.
+        :param Iterable X_test: features of new samples.
         :param float alpha: target maximum miscoverage.
         :param float lambd: positive weight associated to the regularization term. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
         :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.

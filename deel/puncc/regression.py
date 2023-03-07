@@ -121,10 +121,10 @@ class SplitCP:
         """This method fits the models to the fit data (X_fit, y_fit)
         and computes nonconformity scores on (X_calib, y_calib).
 
-        :param ndarray|DataFrame|Tensor X_fit: features from the fit dataset.
-        :param ndarray|DataFrame|Tensor y_fit: labels from the fit dataset.
-        :param ndarray|DataFrame|Tensor X_calib: features from the calibration dataset.
-        :param ndarray|DataFrame|Tensor y_calib: labels from the calibration dataset.
+        :param Iterable X_fit: features from the fit dataset.
+        :param Iterable y_fit: labels from the fit dataset.
+        :param Iterable X_calib: features from the calibration dataset.
+        :param Iterable y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
 
         """
@@ -138,7 +138,7 @@ class SplitCP:
     def predict(self, X_test: Iterable, alpha) -> Tuple[Iterable, Iterable, Iterable]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for new samples.
 
-        :param ndarray|DataFrame|Tensor X_test: features of new samples.
+        :param Iterable X_test: features of new samples.
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher
@@ -382,8 +382,8 @@ class CVPlus:
         """This method fits the ensemble models based on the K-fold scheme.
         The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
 
-        :param ndarray|DataFrame|Tensor X_train: features from the train dataset.
-        :param ndarray|DataFrame|Tensor y_train: labels from the train dataset.
+        :param Iterable X_train: features from the train dataset.
+        :param Iterable y_train: labels from the train dataset.
         :param dict kwargs: predict configuration to be passed to the model's predict method.
 
         """
@@ -399,7 +399,7 @@ class CVPlus:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
         for new samples.
 
-        :param ndarray|DataFrame|Tensor X_test: features of new samples.
+        :param Iterable X_test: features of new samples.
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher

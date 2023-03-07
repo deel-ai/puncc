@@ -68,6 +68,81 @@ def plot_prediction_intervals(
     :returns: updated axis if `ax` provided. Otherwise a new figure is created and the corresponding axis is returned as output
     :rtype: matplotlib.axes.Axes
 
+    Example 1::
+
+        import numpy as np
+        from sklearn.datasets import make_regression
+        from deel.puncc.plotting import plot_prediction_intervals
+
+        np.random.seed(0)
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=100, n_features=100, n_informative=20,
+                        random_state=0, shuffle=False)
+
+        # Generate dummy point predictions
+        y_pred = y + np.random.normal(loc=0.0, scale=100, size=len(y))
+        # Generate dummy interval predictions
+        y_pred_lower = y_pred - 120 - np.random.normal(loc=0.0, scale=20.0, size=len(y))
+        y_pred_upper = y_pred + 120 + np.random.normal(loc=0.0, scale=20.0, size=len(y))
+
+        # Plot the prediction interval. The optional argument "y_pred" is
+        # provided and the prediction is displayed.
+        # Additionnaly, two keyword arguments "figsize" and "loc" are given to
+        # configure the figure.
+        ax = plot_prediction_intervals(
+        y_true=y,
+        y_pred=y_pred,
+        y_pred_lower=y_pred_lower,
+        y_pred_upper=y_pred_upper,
+        figsize=(20,10),
+        loc="best")
+
+    Example 2::
+
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from sklearn.datasets import make_regression
+        from deel.puncc.plotting import plot_prediction_intervals
+
+        np.random.seed(0)
+
+        # Generate a random regression problem
+        X, y = make_regression(n_samples=100, n_features=1, noise=20,
+                        random_state=0, shuffle=False)
+
+        # Generate dummy point predictions
+        y_pred = y + np.random.normal(loc=0.0, scale=10, size=len(y))
+
+        # Generate two dummy interval predictions
+        ## First
+        y_pred_lower1 = y_pred - 15
+        y_pred_upper1 = y_pred + 15
+        # Second
+        y_pred_lower2 = y_pred - 10 - np.random.normal(loc=0.0, scale=2.0, size=len(y))
+        y_pred_upper2 = y_pred + 10 + np.random.normal(loc=0.0, scale=2.0, size=len(y))
+
+        # Create a grid of figures
+        fig, ax = plt.subplots(nrows=2, figsize=(20,10))
+
+        # Plot first figure by providing the axis "ax[0]"
+        plot_prediction_intervals(
+        X = X[:,0],
+        y_true=y,
+        y_pred=y_pred,
+        y_pred_lower=y_pred_lower1,
+        y_pred_upper=y_pred_upper1,
+        ax=ax[0])
+
+        # Plot second figure by providing the axis "ax[1]"
+        plot_prediction_intervals(
+        X = X[:,0],
+        y_true=y,
+        y_pred=y_pred,
+        y_pred_lower=y_pred_lower2,
+        y_pred_upper=y_pred_upper2,
+        ax=ax[1])
+
     """
 
     # Figure size configuration

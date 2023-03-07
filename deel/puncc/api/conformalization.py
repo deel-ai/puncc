@@ -88,8 +88,8 @@ class ConformalPredictor:
         # the quantiles of nonconformity scores. The function below returns a
         # fixed size interval around the point predictions.
         def prediction_set_function(y_pred, scores_quantile):
-            y_lo = y_pred - scores_quantiles
-            y_hi = y_pred + scores_quantiles
+            y_lo = y_pred - scores_quantile
+            y_hi = y_pred + scores_quantile
             return y_lo, y_hi
 
         # The calibrator is instantiated by passing the two functions defined
@@ -164,8 +164,8 @@ class ConformalPredictor:
 
         If the splitter is an instance of :class:`deel.puncc.splitting.KFoldSplitter`, the fit operates on each fold separately. Thereafter, the predictions and nonconformity scores are combined accordingly to an aggregation method (cv+ by default).
 
-        :param ndarray|DataFrame|Tensor X: features.
-        :param ndarray|DataFrame|Tensor y: labels.
+        :param Iterable X: features.
+        :param Iterable y: labels.
         :param dict kwargs: options configuration for the training.
 
         :raises RuntimeError: inconsistencies between the train status of the model(s) and the :data:`train` class attribute.
@@ -236,11 +236,11 @@ class ConformalPredictor:
     def predict(self, X: Iterable, alpha: float) -> Iterable:
         """Predict point, interval and variability estimates for X data.
 
-        :param ndarray|DataFrame|Tensor X: features.
+        :param Iterable X: features.
         :param float alpha: significance level (max miscoverage target).
 
         :returns: y_pred.
-        :rtype: ndarray|DataFrame|Tensor
+        :rtype: Iterable
         """
 
         if self._cv_cp_agg is None:
@@ -303,11 +303,11 @@ class CrossValCpAggregator:
     def predict(self, X: Iterable, alpha: float) -> Iterable:  #  type: ignore
         """Predict point, interval and variability estimates for X data.
 
-        :param ndarray|DataFrame|Tensor X: features.
+        :param Iterable X: features.
         :param float alpha: significance level (max miscoverage target).
 
         :returns: y_pred, y_lower, y_higher.
-        :rtype: Tuple[ndarray|DataFrame|Tensor]
+        :rtype: Tuple[Iterable]
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()

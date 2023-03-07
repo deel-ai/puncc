@@ -1,9 +1,22 @@
 Splitting
 =========
 
-.. automodule:: splitting
+Helpers to define how to assign data into fit and calibration sets.
+
+.. autoclass:: splitting.BaseSplitter
    :members:
-   :undoc-members:
-   :show-inheritance:
-   :special-members:
-   :exclude-members: _abc_impl, __abstractmethods__, __init__, __module__, __dict__, __weakref__
+
+.. autoclass:: splitting.IdSplitter
+   :members:
+
+   .. automethod:: __call__
+
+.. autoclass:: splitting.RandomSplitter
+   :members:
+
+   .. automethod:: __call__
+
+.. autoclass:: splitting..KFoldSplitter
+   :members:
+
+   .. automethod:: __call__

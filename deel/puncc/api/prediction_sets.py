@@ -21,8 +21,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides prediction sets for conformal prediction.
+This module provides prediction sets for conformal prediction. To be used when building a :ref:`calibrator <calibration>`.
 """
+from typing import Iterable
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -32,87 +35,140 @@ from deel.puncc.api.utils import supported_types_check
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def raps_set(lambd=0, k_reg=1):
+def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1):
+    """RAPS prediction set. Refer to https://arxiv.org/abs/2009.14193 for details.
+
+    :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable y_true: true labels.
+    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+
+
+    :returns: RAPS prediction sets.
+    :rtype: Iterable
+
+    """
+    pred_len = len(Y_pred)
+    # Generate u randomly from a uniform distribution
+    u = np.random.uniform(size=pred_len)
+    # 1-alpha th empirical quantile of conformity scores
+    tau = scores_quantile
+    # Rank classes by their probability
+    idx_class_pred_ranking = np.argsort(-Y_pred, axis=1)
+    sorted_proba = -np.sort(-Y_pred, axis=1)
+    sorted_cum_mass = sorted_proba.cumsum(axis=1)
+    # First sorted class for which the cumulative probability mass
+    # exceeds the threshold "tau"
+    penal_proba = [
+        sorted_proba[i]
+        + lambd
+        * np.maximum(
+            np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
+            0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
+        )
+        for i in range(pred_len)
+    ]
+    penal_cum_proba = [
+        sorted_cum_mass[i]
+        + lambd
+        * np.maximum(
+            np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
+            0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
+        )
+        for i in range(pred_len)
+    ]
+    L = [len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1 for i in range(pred_len)]
+    proba_excess = [
+        -sorted_cum_mass[i, L[i] - 1]
+        - lambd * np.maximum(L[i] - k_reg, 0)
+        + sorted_proba[i, L[i] - 1]
+        for i in range(pred_len)
+    ]
+    v = [
+        (tau - proba_excess[i]) / sorted_proba[i, L[i] - 1]
+        if (L[i] - 1) >= 0
+        else np.inf
+        for i in range(pred_len)
+    ]
+
+    # Build prediction set
+    prediction_sets = list()
+
+    for i in range(pred_len):
+
+        if v[i] <= u[i]:
+            cut_i = L[i] - 1
+        else:
+            cut_i = L[i]
+
+        if cut_i < 0:
+            prediction_sets.append([])
+        else:
+            prediction_sets.append(list(idx_class_pred_ranking[i, :cut_i]))
+
+    return (prediction_sets,)
+
+
+def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Iterable:
+    """RAPS prediction set builder. When called, returns a RAPS prediction set function :func:`raps_set` with given initialitation of regularization hyperparameters.
+
+    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+
+    :returns: RAPS prediction set function that takes two parameters: `Y_pred` and `scores_quantile`.
+    :rtype: Callable
+
+    """
     if lambd < 0:
         raise ValueError(f"Argument `lambd` has to be positive, provided: {lambd} < 0")
     if k_reg < 0:
         raise ValueError(f"Argument `k_reg` has to be positive, provided: {k_reg} < 0")
     # @TODO: type checking and co
-    def _RAPS_SET(Y_pred, scores_quantiles):
-        pred_len = len(Y_pred)
-        # Generate u randomly from a uniform distribution
-        u = np.random.uniform(size=pred_len)
-        # 1-alpha th empirical quantile of conformity scores
-        tau = scores_quantiles
-        # Rank classes by their probability
-        idx_class_pred_ranking = np.argsort(-Y_pred, axis=1)
-        sorted_proba = -np.sort(-Y_pred, axis=1)
-        sorted_cum_mass = sorted_proba.cumsum(axis=1)
-        # First sorted class for which the cumulative probability mass
-        # exceeds the threshold "tau"
-        penal_proba = [
-            sorted_proba[i]
-            + lambd
-            * np.maximum(
-                np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
-                0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
-            )
-            for i in range(pred_len)
-        ]
-        penal_cum_proba = [
-            sorted_cum_mass[i]
-            + lambd
-            * np.maximum(
-                np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
-                0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
-            )
-            for i in range(pred_len)
-        ]
-        L = [len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1 for i in range(pred_len)]
-        proba_excess = [
-            -sorted_cum_mass[i, L[i] - 1]
-            - lambd * np.maximum(L[i] - k_reg, 0)
-            + sorted_proba[i, L[i] - 1]
-            for i in range(pred_len)
-        ]
-        v = [
-            (tau - proba_excess[i]) / sorted_proba[i, L[i] - 1]
-            if (L[i] - 1) >= 0
-            else np.inf
-            for i in range(pred_len)
-        ]
 
-        # Build prediction set
-        prediction_sets = list()
+    def _raps_set_function(Y_pred, scores_quantile):
+        return raps_set(Y_pred, scores_quantile, lambd=lambd, k_reg=k_reg)
 
-        for i in range(pred_len):
-
-            if v[i] <= u[i]:
-                cut_i = L[i] - 1
-            else:
-                cut_i = L[i]
-
-            if cut_i < 0:
-                prediction_sets.append([])
-            else:
-                prediction_sets.append(list(idx_class_pred_ranking[i, :cut_i]))
-
-        return (prediction_sets,)
-
-    return _RAPS_SET
+    return _raps_set_function
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def constant_interval(y_pred, scores_quantiles):
+def constant_interval(
+    y_pred: Iterable, scores_quantile: np.ndarray
+) -> Tuple[np.ndarray]:
+    """Constant prediction interval centered on `y_pred`. The size of the margin is `scores_quantile` (noted :math:`q_{\\alpha}`).
+
+    .. math::
+
+        I = [y_{\\text{pred}} - q_{\\alpha}, y_{\\text{pred}} + q_{\\alpha}]
+
+    :param Iterable y_pred: predictions.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed on a calibration set for a given :math:`alpha`.
+
+    :returns: prediction intervals :math:`I`.
+    :rtype: Tuple[ndarray]
+    """
     supported_types_check(y_pred)
-    y_lo = y_pred - scores_quantiles
-    y_hi = y_pred + scores_quantiles
+    y_lo = y_pred - scores_quantile
+    y_hi = y_pred + scores_quantile
     return y_lo, y_hi
 
 
-def scaled_interval(Y_pred, scores_quantiles):
+def scaled_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
+    """Scaled prediction interval centered on `y_pred`. Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
+    the size of the margin is proportional to `scores_quantile` (noted :math:`q_{\\alpha}`).
+
+    .. math::
+
+        I = [\mu_{\\text{pred}} - q_{\\alpha} \cdot \sigma_{\\text{pred}}, y_{\\text{pred}} + q_{\\alpha} \cdot \sigma_{\\text{pred}}]
+
+    :param Iterable y_pred: predictions.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed on a calibration set for a given :math:`alpha`.
+
+    :returns: scaled prediction intervals :math:`I`.
+    :rtype: Tuple[ndarray]
+    """
     supported_types_check(Y_pred)
 
     if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
@@ -125,12 +181,25 @@ def scaled_interval(Y_pred, scores_quantiles):
     else:
         y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
 
-    y_lo = y_pred - scores_quantiles * sigma_pred
-    y_hi = y_pred + scores_quantiles * sigma_pred
+    y_lo = y_pred - scores_quantile * sigma_pred
+    y_hi = y_pred + scores_quantile * sigma_pred
     return y_lo, y_hi
 
 
-def cqr_interval(Y_pred, scores_quantiles):
+def cqr_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
+    """CQR prediction interval. Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction interval is
+    built from the upper and lower quantiles predictions and `scores_quantile` (noted :math:`q_{\\alpha}`)
+
+    .. math::
+
+        I = [q_{\\text{lo}} - q_{\\alpha}, q_{\\text{lo}} + q_{\\alpha}]
+
+    :param Iterable y_pred: predictions.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed on a calibration set for a given :math:`alpha`.
+
+    :returns: scaled prediction intervals :math:`I`.
+    :rtype: Tuple[ndarray]
+    """
     supported_types_check(Y_pred)
 
     if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
@@ -143,6 +212,6 @@ def cqr_interval(Y_pred, scores_quantiles):
     else:
         q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
 
-    y_lo = q_lo - scores_quantiles
-    y_hi = q_hi + scores_quantiles
+    y_lo = q_lo - scores_quantile
+    y_hi = q_hi + scores_quantile
     return y_lo, y_hi

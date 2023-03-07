@@ -21,8 +21,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides nonconformity scores for conformal prediction.
+This module provides nonconformity scores for conformal prediction. To be used when building a :ref:`calibrator <calibration>`.
 """
+from typing import Callable
+from typing import Iterable
+
 import numpy as np
 import pandas as pd
 
@@ -33,68 +36,80 @@ from deel.puncc.api.utils import supported_types_check
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def raps_score(lambd=0, k_reg=1):
-    def _RAPS_SCORE(Y_pred, y_true):
-        """RAPS nonconformity score.
-        Given :math:`n` the number of classes,
-            :math:`Y_\\text{{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+def raps_score(
+    Y_pred: Iterable, y_true: Iterable, lambd: float = 0, k_reg: int = 1
+) -> Iterable:
+    """RAPS nonconformity score. Refer to https://arxiv.org/abs/2009.14193 for details.
 
-        Refer to https://arxiv.org/abs/2009.14193 for details.
+    :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable y_true: true labels.
+    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
 
-        :param ndarray|DataFrame|Tensor Y_pred:\n :math:`Y_\\text{{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
-            where :math:`P_{\\text{C}_i}` is logit associated to class i.
-        :param ndarray|DataFrame|Tensor y_true:
 
-        :returns: RAPS nonconformity scores.
-        :rtype: ndarray|DataFrame|Tensor
-        """
-        supported_types_check(Y_pred, y_true)
+    :returns: RAPS nonconformity scores.
+    :rtype: Iterable
 
-        if not isinstance(Y_pred, np.ndarray):
-            raise NotImplementedError(
-                "RAPS nonconformity scores only implemented for ndarrays"
-            )
-        # Generate rand randomly from a uniform distribution
-        rand = np.random.uniform(size=len(y_true))
-        # Sort classes by descending probability order
-        class_ranking = np.argsort(-Y_pred, axis=1)
-        sorted_proba = -np.sort(-Y_pred, axis=1)
-        # Cumulative probability mass (given the previous class ranking)
-        sorted_cum_mass = sorted_proba.cumsum(axis=1)
-        # Locate position of true label in the classes
-        # sequence ranked by decreasing probability
-        L = [
-            np.where(class_ranking[i] == y_true[i])[0][0]
-            for i in range(y_true.shape[0])
-        ]
-        # Threshold of cumulative probability mass to include the real class
-        E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
-        E = [
-            E[i]
-            + (rand[i] - 1) * sorted_proba[i, L[i]]
-            + lambd * np.maximum((L[i] - k_reg + 1), 0)
-            for i in range(y_true.shape[0])
-        ]
-        return np.array(E)
+    """
+    supported_types_check(Y_pred, y_true)
 
-    return _RAPS_SCORE
+    if not isinstance(Y_pred, np.ndarray):
+        raise NotImplementedError(
+            "RAPS nonconformity scores only implemented for ndarrays"
+        )
+    # Generate rand randomly from a uniform distribution
+    rand = np.random.uniform(size=len(y_true))
+    # Sort classes by descending probability order
+    class_ranking = np.argsort(-Y_pred, axis=1)
+    sorted_proba = -np.sort(-Y_pred, axis=1)
+    # Cumulative probability mass (given the previous class ranking)
+    sorted_cum_mass = sorted_proba.cumsum(axis=1)
+    # Locate position of true label in the classes
+    # sequence ranked by decreasing probability
+    L = [np.where(class_ranking[i] == y_true[i])[0][0] for i in range(y_true.shape[0])]
+    # Threshold of cumulative probability mass to include the real class
+    E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
+    E = [
+        E[i]
+        + (rand[i] - 1) * sorted_proba[i, L[i]]
+        + lambd * np.maximum((L[i] - k_reg + 1), 0)
+        for i in range(y_true.shape[0])
+    ]
+    return np.array(E)
+
+
+def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
+    """RAPS nonconformity score builder. When called, returns a RAPS nonconformity score function :func:`raps_score` with given initialitation of regularization hyperparameters.
+
+    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+
+    :returns: RAPS nonconformity score function that takes two parameters: `Y_pred` and `y_true`.
+    :rtype: Callable
+
+    """
+
+    def _raps_score_function(Y_pred: Iterable, y_true: Iterable):
+        return raps_score(Y_pred, y_true, lambd, k_reg)
+
+    return _raps_score_function
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def mad(y_pred, y_true):
+def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
     """Mean Absolute Deviation (MAD).
 
     .. math::
 
-        R = |y_{\\text{true}}-y_\\text{{pred}}|
+        R = |y_{\\text{true}}-y_{\\text{pred}}|
 
-    :param ndarray|DataFrame|Tensor y_pred:
-    :param ndarray|DataFrame|Tensor y_true:
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
 
     :returns: mean absolute deviation.
-    :rtype: ndarray|DataFrame|Tensor
+    :rtype: Iterable
     """
     supported_types_check(y_pred, y_true)
     diff = y_pred - y_true
@@ -111,19 +126,18 @@ def mad(y_pred, y_true):
         raise RuntimeError("Fatal Error. Type check failed !")
 
 
-def scaled_mad(Y_pred, y_true):
-    """Scaled Mean Absolute Deviation (MAD).\n
-    Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
+def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Scaled Mean Absolute Deviation (MAD). Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
     .. math::
 
         R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}}
 
-    :param ndarray|DataFrame|Tensor Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
-    :param ndarray|DataFrame|Tensor y_true: true label.
+    :param Iterable Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
+    :param Iterable y_true: true labels.
 
     :returns: scaled mean absolute deviation.
-    :rtype: ndarray|DataFrame|Tensor
+    :rtype: Iterable
     """
     supported_types_check(Y_pred, y_true)
 
@@ -148,9 +162,8 @@ def scaled_mad(Y_pred, y_true):
     return mean_absolute_deviation / (sigma_pred + EPSILON)
 
 
-def cqr_score(Y_pred, y_true):
-    """CQR nonconformity score.\n
-    Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`
+def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """CQR nonconformity score. Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`
 
     .. math::
 
@@ -158,11 +171,11 @@ def cqr_score(Y_pred, y_true):
 
     where :math:`q_{\\text{lo}}` (resp. :math:`q_{\\text{hi}}`) is the lower (resp. higher) quantile prediction
 
-    :param ndarray|DataFrame|Tensor Y_pred: predicted quantiles couples.
-    :param ndarray|DataFrame|Tensor y_true: true quantiles couples.
+    :param Iterable Y_pred: predicted quantiles couples.
+    :param Iterable y_true: true quantiles couples.
 
     :returns: CQR nonconformity scores.
-    :rtype: ndarray|DataFrame|Tensor
+    :rtype: Iterable
     """
     supported_types_check(Y_pred, y_true)
 

@@ -50,7 +50,10 @@ class BaseSplitter(ABC):
 class IdSplitter(BaseSplitter):
     """Identity splitter that wraps an already existing data assignment.
 
-    :param tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor] _split: provided split.
+    :param Iterable X_fit: Fit features.
+    :param Iterable y_fit: Fit labels.
+    :param Iterable X_calib: calibration features.
+    :param Iterable y_calib: calibration labels.
     """
 
     def __init__(
@@ -66,11 +69,11 @@ class IdSplitter(BaseSplitter):
     def __call__(self, X=None, y=None):
         """Wraps into a splitter the provided fit and calibration subsets.
 
-        :param ndarray|DataFrame|Tensor X: features array. Not needed here, just a placeholder for interoperability.
-        :param ndarray|DataFrame|Tensor y: labels array. Not needed here, just a placeholder for interoperability.
+        :param Iterable X: features array. Not needed here, just a placeholder for interoperability.
+        :param Iterable y: labels array. Not needed here, just a placeholder for interoperability.
 
         :returns: Tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
+        :rtype: tuple[Iterable]
         """
         return self._split
 
@@ -93,11 +96,11 @@ class RandomSplitter(BaseSplitter):
     ):
         """Implements a random split strategy.
 
-        :param ndarray|DataFrame|Tensor X: features array.
-        :param ndarray|DataFrame|Tensor y: labels array.
+        :param Iterable X: features array.
+        :param Iterable y: labels array.
 
         :returns: Tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: tuple[ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor, ndarray|DataFrame|Tensor]
+        :rtype: tuple[Iterable]
         """
         rng = np.random.RandomState(seed=self.random_state)
         fit_idxs = rng.rand(len(X)) > self.ratio
@@ -123,11 +126,11 @@ class KFoldSplitter(BaseSplitter):
     ):
         """Implements a K-fold split strategy.
 
-        :param ndarray|DataFrame|Tensor X: features array.
-        :param ndarray|DataFrame|Tensor y: labels array.
+        :param Iterabler X: features array.
+        :param Iterable y: labels array.
 
         :returns: list of K split folds. Each fold is a tuple (X_fit, y_fit, X_calib, y_calib).
-        :rtype: list[tuple[ndarray|DataFrame|Tensor]]
+        :rtype: list[tuple[Iterable]]
         """
         kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state

@@ -71,18 +71,25 @@ def supported_types_check(y_pred, y_true=None):
 
 
 def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
-    """Check if the value of alpha is consistent with the size of calibration set.
+    """Check if the value of alpha :math:`\\alpha` is consistent with the size of calibration set :math:`n`.
 
     The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in the interval (0,1). From this, we derive the condition:
-        * :math:`0 < (1-alpha)\cdot(1+1/n) < 1 \implies 1 > alpha > 1/(n+1)`
+
+    .. math::
+
+        0 < (1-\\alpha)\cdot(1+1/n) < 1 \implies 1 > \\alpha > 1/(n+1)
+
     If complement_check is set, we consider an additional condition:
-        - :math:`0 < alpha \cdot (1+1/n) < 1 \implies 0 < alpha < n/(n+1)`
+
+    .. math::
+
+        0 < \\alpha \cdot (1+1/n) < 1 \implies 0 < \\alpha < n/(n+1)
 
     :param float alpha: target quantile order.
     :param int n: size of the calibration dataset.
-    :param bool complement_check: complementary check to compute the :math:`alpha \cdot (1+1/n)`-th quantile, required by some methods such as jk+.
+    :param bool complement_check: complementary check to compute the :math:`\\alpha \cdot (1+1/n)`-th quantile, required by some methods such as jk+.
 
-    :raises ValueError: if the value of alpha is inconsistent with the size of calibration set.
+    :raises ValueError: when :math:`\\alpha` is inconsistent with the size of calibration set.
     """
 
     if alpha < 1 / (n + 1):
@@ -155,12 +162,12 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
 
     :param ndarray|DataFrame|Tensor a: collection of n samples
     :param float q: target quantile order. Must be in the open interval (0, 1).
-    :param ndarray w: vector of size n. By default, w is None and equal weights = 1/m are associated.
+    :param ndarray w: vector of size n. By default, w is None and equal weights (:math:`1/n`) are associated.
 
     :returns: weighted empirical quantiles.
     :rtype: ndarray
 
-    :raises NotImplementedError: a must be unidimensional.
+    :raises NotImplementedError: `a` must be unidimensional.
     """
     # type checks:
     supported_types_check(a)
