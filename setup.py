@@ -37,7 +37,7 @@ requirements = [
     "numpy",
     "scikit-learn",
     "scipy",
-    "tensorflow>=2.1.0",
+    "tensorflow",
     "tqdm",
 ]
 
