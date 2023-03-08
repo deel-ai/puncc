@@ -242,7 +242,7 @@ class DualPredictor:
         self,
         models: List[Any],
         is_trained: List[bool] = [False, False],
-        compile_args: List[dict[Any]] = [dict(), dict()],
+        compile_args: List[dict] = [dict(), dict()],
     ):
         dual_predictor_check(models, "models", "models")
         dual_predictor_check(is_trained, "is_trained", "booleans")
@@ -258,7 +258,7 @@ class DualPredictor:
             self.models[1].compile(**self.compile_args[1])
 
     def fit(
-        self, X: Iterable, y: Iterable, dictargs: List[dict[Any]] = [dict(), dict()]
+        self, X: Iterable, y: Iterable, dictargs: List[dict] = [dict(), dict()]
     ) -> None:
 
         """Fit model to the training data.
@@ -278,9 +278,7 @@ class DualPredictor:
                 self.models[count].fit(X, y, **dictargs[count])
                 # self.is_trained[count] = True
 
-    def predict(
-        self, X, dictargs: List[dict[Any]] = [dict(), dict()]
-    ) -> Tuple[np.ndarray]:
+    def predict(self, X, dictargs: List[dict] = [dict(), dict()]) -> Tuple[np.ndarray]:
         """Compute predictions on new examples.
 
         :param Iterable X: new examples' features.
@@ -391,14 +389,14 @@ class MeanVarPredictor(DualPredictor):
     """
 
     def fit(
-        self, X: Iterable, y: Iterable, dictargs: List[dict[Any]] = [dict(), dict()]
+        self, X: Iterable, y: Iterable, dictargs: List[dict] = [dict(), dict()]
     ) -> None:
         """Fit models to the training data. The dispersion model :math:`\hat{\sigma}` is trained on the mean absolute deviation of
         :math:`\hat{mu}`'s predictions :math:`\hat{\mu}` from the true labels :math:`y`.
 
         :param Iterable X: train features.
         :param Iterable y: train labels.
-        :param List[dict[Any]] dictargs: list of fit configurations to be passed to the `fit` method of the underlying models :math:`\hat{\mu}` and :math:`\hat{\sigma}`, respectively.
+        :param List[dict] dictargs: list of fit configurations to be passed to the `fit` method of the underlying models :math:`\hat{\mu}` and :math:`\hat{\sigma}`, respectively.
         """
         self.models[0].fit(X, y, **dictargs[0])
         mu_pred = self.models[0].predict(X)
