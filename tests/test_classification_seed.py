@@ -75,7 +75,7 @@ def test_aps(mnist_data, alpha, random_state):
     # Predictor wrapper
     class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
 
-    # RAPS
+    # APS
     aps_cp = APS(class_predictor)
     aps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
     y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)

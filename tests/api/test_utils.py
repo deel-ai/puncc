@@ -37,7 +37,7 @@ class DataTypeStructureCheck(unittest.TestCase):
     def setUp(self):
         self.y_pred_np = np.random.random_sample(size=(1000, 5))
         self.y_pred_df = pd.DataFrame(self.y_pred_np)
-        self.y_pred_tensor = tf.convert_to_tensor(self.y_pred_np)
+        self.y_pred_tensor = tf.random.uniform(shape=[100, 5])
 
     def test_ypred_type(self):
         supported_types_check(self.y_pred_np)
@@ -103,20 +103,50 @@ class AlphaCheck(unittest.TestCase):
 class QuantileCheck(unittest.TestCase):
     def test_simple_quantile1d(self):
         self.a_np = np.array([1, 2, 3, 4])
-        self.a_tensor = tf.convert_to_tensor(self.a_np)
+        self.a_tensor = tf.constant([1, 2, 3, 4])
 
         expected_result = 2
 
         self.assertEqual(expected_result, quantile(a=self.a_np, q=0.5))
         self.assertEqual(expected_result, quantile(a=self.a_tensor, q=0.5))
 
+    def test_weight_quantile1d(self):
+        self.a_np = np.array([1, 2, 3, 4])
+        self.a_tensor = tf.constant([1, 2, 3, 4])
+
+        weights = np.array([0.5, 1 / 6, 1 / 6, 1 / 6])
+        expected_result = 1
+
+        print(quantile(a=self.a_np, q=0.5, w=weights))
+
+        self.assertEqual(expected_result, quantile(a=self.a_np, q=0.5, w=weights))
+        self.assertEqual(expected_result, quantile(a=self.a_tensor, q=0.5, w=weights))
+
     def test_simple_quantile2d(self):
         self.a_np = np.array([[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
         self.a_df = pd.DataFrame(self.a_np)
-        self.a_tensor = tf.convert_to_tensor(self.a_np)
+        self.a_tensor = tf.constant([[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
 
         expected_result = np.array([3, 30])
 
         np.testing.assert_array_equal(expected_result, quantile(a=self.a_np, q=0.5))
         np.testing.assert_array_equal(expected_result, quantile(a=self.a_df, q=0.5))
         np.testing.assert_array_equal(expected_result, quantile(a=self.a_tensor, q=0.5))
+
+    def _weight_quantile2d(self):
+        self.a_np = np.array([[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
+        self.a_df = pd.DataFrame(self.a_np)
+        self.a_tensor = tf.constant([[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
+
+        weights = np.array([3 / 20, 3 / 20, 3 / 20, 3 / 20, 2 / 5])
+        expected_result = np.array([4, 40])
+
+        np.testing.assert_array_equal(
+            expected_result, quantile(a=self.a_np, q=0.5, w=weights)
+        )
+        np.testing.assert_array_equal(
+            expected_result, quantile(a=self.a_df, q=0.5, w=weights)
+        )
+        np.testing.assert_array_equal(
+            expected_result, quantile(a=self.a_tensor, q=0.5, w=weights)
+        )
