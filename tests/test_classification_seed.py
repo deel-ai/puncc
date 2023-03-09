@@ -71,7 +71,7 @@ def test_aps(mnist_data, alpha, random_state):
         "loss": "categorical_crossentropy",
         "metrics": [],
     }
-    fit_kwargs = {"epochs": 5, "batch_size": 128, "verbose": 1}
+    fit_kwargs = {"epochs": 5, "batch_size": 16, "verbose": 1}
     # Predictor wrapper
     class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
 
