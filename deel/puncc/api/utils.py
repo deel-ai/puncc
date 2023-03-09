@@ -32,7 +32,6 @@ import numpy as np
 import pandas as pd
 
 # import tensorflow as tf
-# import torch
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
@@ -59,14 +58,13 @@ def supported_types_check(y_pred, y_true=None):
 
         else:
             import tensorflow as tf
-            import torch
 
-            if isinstance(y_pred, tf.Tensor) or isinstance(y_pred, torch.Tensor):
+            if isinstance(y_pred, tf.Tensor):
                 pass
 
             else:
                 raise TypeError(
-                    "Unsupported data type. Please provide a numpy ndarray, a dataframe or a tensor (TensorFlow|torch)."
+                    "Unsupported data type. Please provide a numpy ndarray, a dataframe or a tensor (TensorFlow)."
                 )
 
 
@@ -181,12 +179,11 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
             a = a.to_numpy()
         else:
             import tensorflow as tf
-            import torch
 
             if isinstance(a, tf.Tensor):
                 a = a.numpy()
-            elif isinstance(a, torch.Tensor):
-                a = a.cpu().detach().numpy()
+            # elif isinstance(a, torch.Tensor):
+            #     a = a.cpu().detach().numpy()
             else:
                 raise RuntimeError("Fatal error.")
 
