@@ -52,8 +52,8 @@ class ConformalPredictor:
         The models have to be trained during the call :meth:`fit`.
 
 
-    Conformal Regression example:
-    =============================
+    **Conformal Regression example:**
+
 
     Consider a pretrained model :math:`\hat{f}`, a calibration dataset
     :math:`(X_{calib}, y_{calib})` and a test dataset :math:`(X_{test}, y_{test})`.

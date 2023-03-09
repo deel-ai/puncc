@@ -55,8 +55,8 @@ class BaseCalibrator:
 
     .. _example basecalibrator:
 
-    Regression calibrator example:
-    ==============================
+    **Regression calibrator example:**
+
 
     Consider a pretrained model :math:`\hat{f}`, a calibration dataset
     :math:`(X_{calib}, y_{calib})` and a test dataset :math:`(X_{test}, y_{test})`.

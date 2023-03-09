@@ -5,6 +5,9 @@
     <a href="#">
         <img src="https://img.shields.io/badge/License-MIT-efefef">
     </a>
+    <a href="https://github.com/deel-ai/puncc/actions/workflows/ci.yml">
+        <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/ci.yml/badge.svg">
+    </a>
 </div>
 <br>
 
@@ -212,7 +215,7 @@ A quick comparison of both approaches is provided [here](docs/quickstart.ipynb) 
 
 ## 📚 Citation
 
-This library was initially built to support the work presented in our COPA 2022 paper on conformal prediction for timeseries. If you use our library for your work, please cite our paper:
+This library was initially built to support the work presented in our COPA 2022 paper on conformal prediction for time series. If you use our library for your work, please cite our paper:
 
 ```
 @inproceedings{mendil2022robust,

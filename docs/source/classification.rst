@@ -13,3 +13,5 @@ and :func:`predict` methods.
 compliance of models from various ML/DL libraries (such as Keras and scikit-learn) to **puncc**.
 
 .. autoclass:: deel.puncc.classification.RAPS
+
+.. autoclass:: deel.puncc.classification.APS

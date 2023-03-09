@@ -178,8 +178,8 @@ class RAPS:
 
 
 class APS(RAPS):
-    """Implementation of Adaptive Prediction Sets (RAPS).
-    For more details, we refer the user to the :ref:`theory overview page <theory raps>`.
+    """Implementation of Adaptive Prediction Sets (APS).
+    For more details, we refer the user to the :ref:`theory overview page <theory aps>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
