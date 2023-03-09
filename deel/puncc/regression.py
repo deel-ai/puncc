@@ -135,7 +135,7 @@ class SplitCP:
         )
         self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
 
-    def predict(self, X_test: Iterable, alpha) -> Tuple[Iterable, Iterable, Iterable]:
+    def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for new samples.
 
         :param Iterable X_test: features of new samples.
@@ -395,7 +395,7 @@ class CVPlus:
         )
         self.conformal_predictor.fit(X=X_train, y=y_train, **kwargs)
 
-    def predict(self, X_test: Iterable, alpha) -> Tuple[Iterable, Iterable, Iterable]:
+    def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
         for new samples.
 
@@ -524,7 +524,7 @@ class EnbPI:
         :param ndarray w: residuals' quantiles.
 
         :returns: prediction intervals.
-        :rtype: tuple[ndarray]
+        :rtype: Tuple[ndarray]
 
         """
         return prediction_sets.constant_interval(y_pred, w)
@@ -649,7 +649,7 @@ class EnbPI:
         residuals = self._compute_boot_residuals(boot_preds, y_train)
         self.residuals += residuals
 
-    def predict(self, X_test, alpha=0.1, y_true=None, s=None):
+    def predict(self, X_test, alpha=0.1, y_true=None, s=None) -> Tuple[np.ndarray]:
         """Estimate conditional mean and interval prediction.
 
         :param ndarray X_test: features of new samples.
@@ -658,7 +658,7 @@ class EnbPI:
         :param int s: Number of online samples necessary to update the residuals sequence.
 
         :returns: A tuple composed of y_pred (conditional mean), y_pred_lower (lower PI bound) and y_pred_upper (upper PI bound).
-        :rtype: tuple[ndarray]
+        :rtype: Tuple[ndarray]
 
         """
         y_pred_upper_list = list()
@@ -802,14 +802,14 @@ class AdaptiveEnbPI(EnbPI):
 
     """
 
-    def _compute_pi(self, y_pred, w):
+    def _compute_pi(self, y_pred, w) -> Tuple[np.ndarray]:
         """Compute prediction intervals.
 
         :param ndarray y_pred: predicted values and variabilities.
         :param ndarray w: residuals' quantiles.
 
         :returns: prediction intervals.
-        :rtype: tuple[ndarray]
+        :rtype: Tuple[ndarray]
 
         """
 

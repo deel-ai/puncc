@@ -23,12 +23,16 @@
 """
 This module provides conformal prediction metrics.
 """
+from typing import Tuple
+
 import numpy as np
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def classification_mean_coverage(y_true, set_pred):
+def classification_mean_coverage(
+    y_true: np.ndarray, set_pred: Tuple[np.ndarray]
+) -> float:
     """Compute empirical coverage of the prediction sets.
 
     Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
@@ -51,7 +55,7 @@ def classification_mean_coverage(y_true, set_pred):
     return counter / len(y_true)
 
 
-def classification_mean_size(set_pred):
+def classification_mean_size(set_pred: Tuple[np.ndarray]) -> float:
     """Compute average size of the prediction sets.
 
     :param Tuple[np.ndarray] set_pred: label prediction set
@@ -65,7 +69,7 @@ def classification_mean_size(set_pred):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper):
+def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
     """Compute average coverage on several prediction intervals.
 
     Given the :math:`i`-th prediction interval :math:`C(X_i)`, the coverage is:
@@ -85,7 +89,7 @@ def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper):
     return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
 
 
-def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha):
+def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
     """Compte the Average Coverage Error (ACE).
 
     :param ndarray y_true: label true values.
@@ -105,7 +109,7 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha):
     return cov - (1 - alpha)
 
 
-def regression_sharpness(y_pred_lower, y_pred_upper):
+def regression_sharpness(y_pred_lower, y_pred_upper) -> float:
     """Compute the average absolute width of the prediction intervals.
 
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.

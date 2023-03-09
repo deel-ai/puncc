@@ -28,6 +28,7 @@ import logging
 from typing import Callable
 from typing import Iterable
 from typing import Optional
+from typing import Tuple
 
 import numpy as np
 
@@ -153,7 +154,7 @@ class BaseCalibrator:
         alpha: float,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
-    ) -> tuple[Iterable]:
+    ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction sets for new examples w.r.t a
         significance level :math:`\\alpha`.
 
@@ -166,7 +167,7 @@ class BaseCalibrator:
         :returns: prediction set.
                   In case of regression, returns (y_lower, y_upper).
                   In case of classification, returns (classes,).
-        :rtype: tuple[ndarray]
+        :rtype: Tuple[ndarray]
 
         :raises RuntimeError: :meth:`calibrate` called before :meth:`fit`.
         :raise ValueError: failed check on :data:`alpha` w.r.t size of the calibration set.
@@ -209,7 +210,7 @@ class BaseCalibrator:
         return self._norm_weights
 
     @staticmethod
-    def barber_weights(weights: np.ndarray):
+    def barber_weights(weights: np.ndarray) -> np.ndarray:
         """Compute and normalize inference weights of the nonconformity distribution
         based on `Barber et al. <https://arxiv.org/abs/2202.13415>`_.
 
@@ -276,7 +277,7 @@ class CvPlusCalibrator:
         X: Iterable,
         kfold_predictors_dict: dict,
         alpha: float,
-    ) -> tuple[Iterable]:
+    ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction intervals for new examples X.
 
         :param Iterable X: test features.
@@ -284,7 +285,7 @@ class CvPlusCalibrator:
         :param float alpha: significance level (maximum miscoverage target).
 
         :returns: y_lower, y_upper.
-        :rtype: tuple[ndarray]
+        :rtype: Tuple[ndarray]
         """
 
         # Init the collection of upper and lower bounds of the K-fold's PIs

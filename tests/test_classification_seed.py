@@ -20,6 +20,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Callable
+
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -29,11 +31,13 @@ from tensorflow.keras.utils import to_categorical
 
 from deel.puncc import metrics
 from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
 
 
 RESULTS = {
-    "raps": {"cov": 0.92, "size": 1.86},
+    "aps": {"cov": 0.92, "size": 1.86},
+    "raps": {"cov": 10000, "size": 10000},  # Placeholder
 }
 
 
@@ -41,7 +45,7 @@ RESULTS = {
     "alpha, random_state",
     [(0.1, 42)],
 )
-def test_raps(mnist_data, alpha, random_state):
+def test_aps(mnist_data, alpha, random_state):
 
     tf.keras.utils.set_random_seed(random_state)
 
@@ -72,13 +76,60 @@ def test_raps(mnist_data, alpha, random_state):
     class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
 
     # RAPS
-    raps_cp = RAPS(class_predictor, k_reg=1, lambd=0)
-    raps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
-    y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
+    aps_cp = APS(class_predictor)
+    aps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
+    y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
 
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
     res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["raps"] == res
+    assert RESULTS["aps"] == res
+
+
+# @pytest.mark.parametrize(
+#     "alpha, random_state, lambd, k_reg",
+#     [(0.1, 42, 1, 2)],
+# )
+# def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
+
+#     tf.keras.utils.set_random_seed(random_state)
+
+#     # Get data
+#     (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+
+#     # Split fit and calib datasets
+#     X_fit, X_calib = X_train[:50000], X_train[50000:]
+#     y_fit, y_calib = y_train[:50000], y_train[50000:]
+#     y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+
+#     # One hot encoding of classes
+#     y_fit_cat = to_categorical(y_fit)
+#     y_calib_cat = to_categorical(y_calib)
+#     y_test_cat = to_categorical(y_test)
+
+#     # Classification model
+#     nn_model = models.Sequential()
+#     nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
+#     nn_model.add(layers.Dense(10, activation="softmax"))
+#     compile_kwargs = {
+#         "optimizer": "rmsprop",
+#         "loss": "categorical_crossentropy",
+#         "metrics": [],
+#     }
+#     fit_kwargs = {"epochs": 5, "batch_size": 128, "verbose": 1}
+#     # Predictor wrapper
+#     class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
+
+#     # RAPS
+#     raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd)
+#     raps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
+#     y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
+#     assert y_pred is not None
+
+#     # Compute marginal coverage
+#     coverage = metrics.classification_mean_coverage(y_test, set_pred)
+#     width = metrics.classification_mean_size(set_pred)
+#     res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
+#     assert RESULTS["raps"] == res

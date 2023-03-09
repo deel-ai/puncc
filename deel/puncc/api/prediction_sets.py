@@ -23,7 +23,9 @@
 """
 This module provides prediction sets for conformal prediction. To be used when building a :ref:`calibrator <calibration>`.
 """
+from typing import Callable
 from typing import Iterable
+from typing import List
 from typing import Tuple
 
 import numpy as np
@@ -35,7 +37,7 @@ from deel.puncc.api.utils import supported_types_check
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1):
+def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     """RAPS prediction set. Refer to https://arxiv.org/abs/2009.14193 for details.
 
     :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
@@ -109,7 +111,7 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1):
     return (prediction_sets,)
 
 
-def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Iterable:
+def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
     """RAPS prediction set builder. When called, returns a RAPS prediction set function :func:`raps_set` with given initialitation of regularization hyperparameters.
 
     :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.

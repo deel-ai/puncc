@@ -89,7 +89,7 @@ def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
 
     """
 
-    def _raps_score_function(Y_pred: Iterable, y_true: Iterable):
+    def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> np.ndarray:
         return raps_score(Y_pred, y_true, lambd, k_reg)
 
     return _raps_score_function

@@ -25,6 +25,8 @@ This module provides data splitting schemes.
 """
 from abc import ABC
 from typing import Iterable
+from typing import List
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -43,7 +45,7 @@ class BaseSplitter(ABC):
     def __init__(self, random_state=None) -> None:
         self.random_state = random_state
 
-    def __call__(self, *args, **kwargs) -> tuple[np.ndarray]:
+    def __call__(self, *args, **kwargs) -> Tuple[np.ndarray]:
         raise NotImplementedError("Use a subclass of Splitter.")
 
 
@@ -66,14 +68,14 @@ class IdSplitter(BaseSplitter):
         super().__init__(random_state=None)
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
-    def __call__(self, X=None, y=None):
+    def __call__(self, X=None, y=None) -> Tuple[Iterable]:
         """Wraps into a splitter the provided fit and calibration subsets.
 
         :param Iterable X: features array. Not needed here, just a placeholder for interoperability.
         :param Iterable y: labels array. Not needed here, just a placeholder for interoperability.
 
         :returns: Tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: tuple[Iterable]
+        :rtype: Tuple[Iterable]
         """
         return self._split
 
@@ -93,14 +95,14 @@ class RandomSplitter(BaseSplitter):
         self,
         X: Iterable,
         y: Iterable,
-    ):
+    ) -> Tuple[Iterable]:
         """Implements a random split strategy.
 
         :param Iterable X: features array.
         :param Iterable y: labels array.
 
         :returns: Tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: tuple[Iterable]
+        :rtype: Tuple[Iterable]
         """
         rng = np.random.RandomState(seed=self.random_state)
         fit_idxs = rng.rand(len(X)) > self.ratio
@@ -123,14 +125,14 @@ class KFoldSplitter(BaseSplitter):
         self,
         X: Iterable,
         y: Iterable,
-    ):
+    ) -> List[Tuple[Iterable]]:
         """Implements a K-fold split strategy.
 
         :param Iterabler X: features array.
         :param Iterable y: labels array.
 
         :returns: list of K split folds. Each fold is a tuple (X_fit, y_fit, X_calib, y_calib).
-        :rtype: list[tuple[Iterable]]
+        :rtype: List[Tuple[Iterable]]
         """
         kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state

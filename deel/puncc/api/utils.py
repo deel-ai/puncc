@@ -117,7 +117,7 @@ def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
 
 def get_min_max_alpha_calib(
     n: int, two_sided_conformalization: bool = False
-) -> Optional[Tuple[float, float]]:
+) -> Optional[Tuple[float]]:
     """Get the greatest alpha in (0,1) that is consistent with the size of calibration
     set. Recall that while true Conformal Prediction (CP, Vovk et al 2005) is defined only on (0,1)
     (bounds not included), there maybe cases where we must handle alpha=0 or 1
@@ -142,7 +142,7 @@ def get_min_max_alpha_calib(
     :param bool two_sided_conformalization: alpha threshold for two-sided quantile of jackknife+ (Barber et al 2021).
 
     :returns: lower and upper bounds for alpha (miscoverage probability)
-    :rtype: Tuple[float, float]
+    :rtype: Tuple[float]
 
     :raises ValueError: must have integer n, boolean two_sided_conformalization and n>=1
     """
@@ -157,10 +157,10 @@ def get_min_max_alpha_calib(
         return (1 / (n + 1), 1)
 
 
-def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
+def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type: ignore
     """Estimate the q-th empirical weighted quantiles.
 
-    :param ndarray|DataFrame|Tensor a: collection of n samples
+    :param Iterable a: collection of n samples
     :param float q: target quantile order. Must be in the open interval (0, 1).
     :param ndarray w: vector of size n. By default, w is None and equal weights (:math:`1/n`) are associated.
 
@@ -194,19 +194,21 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
     if q <= 0 or q >= 1:
         raise ValueError("q must be in the open interval (0, 1).")
 
-    if a.ndim > 1:
-        raise NotImplementedError(f"a dimension {a.ndim} should be 1.")
-
     if w is not None and w.ndim > 1:
-        raise NotImplementedError(f"w dimension {w.ndim} should be 1.")
+        raise NotImplementedError(f"w dimension is {w.ndim}; should be 1.")
 
     # Case of None weights
     if w is None:
-        return np.quantile(a, q=q, method="inverted_cdf")
+        return np.quantile(a, q=q, axis=-1, method="inverted_cdf")
         ## An equivalent method would be to assign equal values to w
         ## and carry on with the computations.
         ## np.quantile is however more optimized.
         # w = np.ones_like(a) / len(a)
+
+    if a.ndim > 1:
+        raise NotImplementedError(
+            f"a dimension is {a.ndim}; should be 1 if the weights are provided."
+        )
 
     # Sanity check
     if len(w) != len(a):
@@ -233,7 +235,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None):  # type: ignore
 #
 
 
-def agg_list(a: np.ndarray):
+def agg_list(a: np.ndarray) -> np.array:
     """Ancillary function to aggregate array following the axis 0.
 
     :param ndarray a: array.

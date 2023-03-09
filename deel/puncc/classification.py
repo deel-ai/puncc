@@ -27,6 +27,8 @@ from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
+import numpy as np
+
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
@@ -61,6 +63,8 @@ class RAPS:
 
         from deel.puncc.metrics import classification_mean_coverage
         from deel.puncc.metrics import classification_mean_size
+
+        import numpy as np
 
         from tensorflow.keras.utils import to_categorical
 
@@ -100,7 +104,7 @@ class RAPS:
         rf_predictor = RFPredictor(rf_model)
 
         # CP method initialization
-        raps_cp = RAPS(rf_predictor, k_reg=1, lambd=0)
+        raps_cp = RAPS(rf_predictor, k_reg=2, lambd=1)
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
@@ -112,10 +116,10 @@ class RAPS:
 
         # Compute marginal coverage
         coverage = classification_mean_coverage(y_test, set_pred)
-        width = classification_mean_size(set_pred)
+        size = classification_mean_size(set_pred)
 
         print(f"Marginal coverage: {np.round(coverage, 2)}")
-        print(f"Average width: {np.round(width, 2)}")
+        print(f"Average prediction set size: {np.round(size, 2)}")
 
     """
 
@@ -154,23 +158,15 @@ class RAPS:
         )
         self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
 
-    def predict(
-        self,
-        X_test: Iterable,
-        alpha: float,
-        lambd: float = 0,
-        k_reg: float = 2,
-    ) -> Tuple[Iterable, Iterable, Optional[Iterable]]:
+    def predict(self, X_test: Iterable, alpha: float) -> Tuple:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
         for new samples.
 
         :param Iterable X_test: features of new samples.
         :param float alpha: target maximum miscoverage.
-        :param float lambd: positive weight associated to the regularization term. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
-        :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
 
-        :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray]
+        :returns: Tuple composed of the model estimate y_pred and the prediction set set_pred
+        :rtype: Tuple
         """
 
         if not hasattr(self, "conformal_predictor"):
@@ -179,3 +175,86 @@ class RAPS:
         (y_pred, set_pred) = self.conformal_predictor.predict(X_test, alpha=alpha)
 
         return y_pred, set_pred
+
+
+class APS(RAPS):
+    """Implementation of Adaptive Prediction Sets (RAPS).
+    For more details, we refer the user to the :ref:`theory overview page <theory raps>`.
+
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
+
+    .. _example aps:
+
+    Example::
+
+        from deel.puncc.classification import APS
+        from deel.puncc.api.prediction import BasePredictor
+
+        from sklearn.datasets import make_classification
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestClassifier
+
+        from deel.puncc.metrics import classification_mean_coverage
+        from deel.puncc.metrics import classification_mean_size
+
+        import numpy as np
+
+        from tensorflow.keras.utils import to_categorical
+
+        # Generate a random regression problem
+        X, y = make_classification(n_samples=1000, n_features=4, n_informative=2,
+                    n_classes = 2,random_state=0, shuffle=False)
+
+        # Split data into train and test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=.2, random_state=0
+        )
+
+        # One hot encoding of classes
+        y_fit_cat = to_categorical(y_fit)
+        y_calib_cat = to_categorical(y_calib)
+        y_test_cat = to_categorical(y_test)
+
+        # Create rf classifier
+        rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
+
+        # Create a wrapper of the random forest model to redefine its predict method
+        # into logits predictions. Make sure to subclass BasePredictor.
+        # Note that we needed to build a new wrapper (over BasePredictor) only because
+        # the predict(.) method of RandomForestClassifier does not predict logits.
+        # Otherwise, it is enough to use BasePredictor (e.g., neural network with softmax).
+        class RFPredictor(BasePredictor):
+            def predict(self, X, **kwargs):
+                return self.model.predict_proba(X, **kwargs)
+
+        # Wrap model in the newly created RFPredictor
+        rf_predictor = RFPredictor(rf_model)
+
+        # CP method initialization
+        aps_cp = APS(rf_predictor)
+
+        # The call to `fit` trains the model and computes the nonconformity
+        # scores on the calibration set
+        aps_cp.fit(X_fit, y_fit, X_calib, y_calib)
+
+        # The predict method infers prediction intervals with respect to
+        # the significance level alpha = 20%
+        y_pred, set_pred = aps_cp.predict(X_test, alpha=.2)
+
+        # Compute marginal coverage
+        coverage = classification_mean_coverage(y_test, set_pred)
+        size = classification_mean_size(set_pred)
+
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average prediction set size: {np.round(size, 2)}")
+
+    """
+
+    def __init__(self, predictor, train=True):
+        super().__init__(predictor=predictor, train=train, lambd=0)

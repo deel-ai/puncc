@@ -12,8 +12,8 @@ data, via algorithms. Despite our best efforts, we can encounter some
 underlying uncertainty that could stem from various sources or causes.
 
 Typically, uncertainty in the machine learning process can be categorized into two types:
-    * Aleatoric uncertainty, also known as statistical uncertainty, which is *irreducible* as due to the intrinsic randomness of the phenomenon being modeled
-    * Epistemic uncertainty, also known as systematic uncertainty, which is *reducible* through additional information, e.g. via more data or better models
+    - Aleatoric uncertainty, also known as statistical uncertainty, which is *irreducible* as due to the intrinsic randomness of the phenomenon being modeled
+    - Epistemic uncertainty, also known as systematic uncertainty, which is *reducible* through additional information, e.g. via more data or better models
 
 Depending on the application fields of machine learning models, uncertainty can have major impacts on performance and/or safety.
 
@@ -132,6 +132,10 @@ When data are exchangeable, the correction margin :math:`\delta_{\alpha}` guaran
 Cross-validation + (CV+)
 ************************
 .. _theory cvplus:
+
+Ensemble Batch Prediction Intervals (EnbPI)
+*******************************************
+.. _theory enbpi:
 
 
 Conformal Classification

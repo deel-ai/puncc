@@ -144,11 +144,12 @@ class BasePredictor:
         self.model.fit(X, y, **kwargs)
         # self.is_trained = True
 
-    def predict(self, X: Iterable, **kwargs) -> Iterable:
+    def predict(self, X: Iterable, **kwargs) -> np.ndarray:
         """Compute predictions on new examples.
 
         :param Iterable X: new examples' features.
         :param dict kwargs: predict configuration to be passed to the `predict` method of the underlying model :math:`\hat{f}`.
+
         :returns: predictions :math:`\hat{f}(X)` associated to the new examples X.
         :rtype: ndarray
 

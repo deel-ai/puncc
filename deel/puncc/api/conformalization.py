@@ -26,6 +26,7 @@ This module provides the canvas for conformal prediction.
 import logging
 from copy import deepcopy
 from typing import Iterable
+from typing import Tuple
 
 import numpy as np
 
@@ -126,7 +127,7 @@ class ConformalPredictor:
         self.train = train
         self._cv_cp_agg = None
 
-    def get_residuals(self):
+    def get_residuals(self) -> dict:
         """Getter for computed nonconformity scores on the calibration(s) set(s).
 
         :returns: dictionary of nonconformity scores indexed by the fold index.
@@ -140,7 +141,7 @@ class ConformalPredictor:
 
         return self._cv_cp_agg.get_residuals()
 
-    def get_weights(self):
+    def get_weights(self) -> dict:
         """Getter for weights associated to calibration samples.
 
         :returns: dictionary of weights indexed by the fold index.
@@ -233,14 +234,14 @@ class ConformalPredictor:
             self._cv_cp_agg.append_predictor(i, predictor)
             self._cv_cp_agg.append_calibrator(i, calibrator)
 
-    def predict(self, X: Iterable, alpha: float) -> Iterable:
-        """Predict point, interval and variability estimates for X data.
+    def predict(self, X: Iterable, alpha: float) -> Tuple[np.ndarray]:
+        """Predict point, and interval estimates for X data.
 
         :param Iterable X: features.
         :param float alpha: significance level (max miscoverage target).
 
-        :returns: y_pred.
-        :rtype: Iterable
+        :returns: y_pred, y_lower, y_higher.
+        :rtype: Tuple[ndarray]
         """
 
         if self._cv_cp_agg is None:
@@ -282,7 +283,7 @@ class CrossValCpAggregator:
     def append_calibrator(self, id, calibrator):
         self._calibrators[id] = deepcopy(calibrator)
 
-    def get_residuals(self):
+    def get_residuals(self) -> dict:
         """Get a dictionnary of residuals computed on the K-folds.
 
         :returns: dictionary of residual indexed by the K-fold number.
@@ -290,7 +291,7 @@ class CrossValCpAggregator:
         """
         return {k: calibrator._residuals for k, calibrator in self._calibrators.items()}
 
-    def get_weights(self):
+    def get_weights(self) -> dict:
         """Get a dictionnary of normalized weights computed on the K-folds.
 
         :returns: dictionary of normalized weights indexed by the K-fold number.
@@ -300,7 +301,7 @@ class CrossValCpAggregator:
             k: calibrator.get_weights() for k, calibrator in self._calibrators.items()
         }
 
-    def predict(self, X: Iterable, alpha: float) -> Iterable:  #  type: ignore
+    def predict(self, X: Iterable, alpha: float) -> Tuple[np.ndarray]:  #  type: ignore
         """Predict point, interval and variability estimates for X data.
 
         :param Iterable X: features.
