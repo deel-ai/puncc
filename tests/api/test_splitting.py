@@ -35,12 +35,12 @@ np.random.seed(0)
 
 class SplitterCheck(unittest.TestCase):
     def setUp(self):
-        self.X_np = np.empty([1000, 20])
-        self.y_np = np.empty([1000])
-        self.X_df = np.empty([1000, 20])
-        self.y_df = np.empty([1000])
-        self.X_tf = tf.experimental.numpy.empty([1000, 20])
-        self.y_tf = tf.experimental.numpy.empty([1000, 20])
+        self.X_np = np.empty([100, 20])
+        self.y_np = np.empty([100])
+        self.X_df = np.empty([100, 20])
+        self.y_df = np.empty([100])
+        self.X_tf = tf.experimental.numpy.empty([100, 20])
+        self.y_tf = tf.experimental.numpy.empty([100, 20])
 
     def test_proper_initialization(self):
         id_splitter = IdSplitter(
