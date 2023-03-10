@@ -59,14 +59,18 @@ def raps_score(
         )
     # Generate rand randomly from a uniform distribution
     rand = np.random.uniform(size=len(y_true))
+
     # Sort classes by descending probability order
     class_ranking = np.argsort(-Y_pred, axis=1)
     sorted_proba = -np.sort(-Y_pred, axis=1)
+
     # Cumulative probability mass (given the previous class ranking)
     sorted_cum_mass = sorted_proba.cumsum(axis=1)
+
     # Locate position of true label in the classes
     # sequence ranked by decreasing probability
     L = [np.where(class_ranking[i] == y_true[i])[0][0] for i in range(y_true.shape[0])]
+
     # Threshold of cumulative probability mass to include the real class
     E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
     E = [
@@ -75,6 +79,7 @@ def raps_score(
         + lambd * np.maximum((L[i] - k_reg + 1), 0)
         for i in range(y_true.shape[0])
     ]
+
     return np.array(E)
 
 

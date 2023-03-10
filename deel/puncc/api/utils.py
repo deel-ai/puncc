@@ -23,6 +23,7 @@
 """
 This module implements utility functions.
 """
+import logging
 import sys
 from typing import Iterable
 from typing import Optional
@@ -31,7 +32,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-# import tensorflow as tf
+logger = logging.getLogger(__name__)
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
@@ -69,7 +70,7 @@ def supported_types_check(y_pred, y_true=None):
 
 
 def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
-    """Check if the value of alpha :math:`\\alpha` is consistent with the size of calibration set :math:`n`.
+    r"""Check if the value of alpha :math:`\\alpha` is consistent with the size of calibration set :math:`n`.
 
     The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in the interval (0,1). From this, we derive the condition:
 
@@ -191,9 +192,6 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
     if q <= 0 or q >= 1:
         raise ValueError("q must be in the open interval (0, 1).")
 
-    if w is not None and w.ndim > 1:
-        raise NotImplementedError(f"w dimension is {w.ndim}; should be 1.")
-
     # Case of None weights
     if w is None:
         return np.quantile(a, q=q, axis=-1, method="inverted_cdf")
@@ -202,14 +200,14 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         ## np.quantile is however more optimized.
         # w = np.ones_like(a) / len(a)
 
-    if a.ndim > 1:
-        raise NotImplementedError(
-            f"a dimension is {a.ndim}; should be 1 if the weights are provided."
-        )
+    # Sanity checks
+    if w.ndim > 1:
+        raise NotImplementedError(f"w dimension is {w.ndim}; should be 1.")
 
-    # Sanity check
-    if len(w) != len(a):
-        error = "a and w must have the same shape:" + f"{len(a)} != {len(w)}"
+    if len(w) != a.shape[-1]:
+        error = (
+            "a and w must have the number of features:" + f"{a.shape[-1]} != {len(w)}"
+        )
         raise RuntimeError(error)
 
     # Normalization check
@@ -221,10 +219,44 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         raise RuntimeError(error)
 
     # Empirical Weighted Quantile
-    sorted_idxs = np.argsort(a)  # rows are sorted in ascending order
-    sorted_cumsum_w = np.cumsum(w[sorted_idxs])
-    weighted_quantile_idxs = sorted_idxs[sorted_cumsum_w >= q][0]
-    return a[weighted_quantile_idxs]
+
+    ## Row values are sorted in ascending order
+    sorted_idxs = np.argsort(a, -1)
+    logger.debug(f"Sorted indices: {sorted_idxs}")
+
+    ## Reorder weights (ascending row values of a) and compute cumulative sum
+    sorted_cumsum_w = np.cumsum(w[sorted_idxs], axis=-1)
+    logger.debug(f"Sorted weights cumulative sum: {sorted_cumsum_w}")
+
+    # Compute quantile on one sample (vector)
+    if sorted_cumsum_w.ndim == 1:
+        weighted_quantile_idxs = sorted_idxs[sorted_cumsum_w >= q][0]
+        return a[weighted_quantile_idxs]
+
+    # Compute quantile on several samples (matrix)
+    ## Collect in a list indices for which the cumulative sum of weights on each
+    ## row exceeds q
+    idx_wcumsum_reaching_q = list(
+        map(lambda x, y: y[x], sorted_cumsum_w >= q, sorted_idxs)
+    )
+    logger.debug(f"Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}")
+
+    ## Get the smallest indice per row for which the cumulative sum of weights
+    ## exceeds q
+    min_idx_wcumsum_reaching_q = [[np.sort(e)[0]] for e in idx_wcumsum_reaching_q]
+    logger.debug(
+        f"First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}"
+    )
+
+    ## Collect the quantile for each sample as the first value
+    ## whose probability mass reaches q
+    quantile_list = [a[i][e] for i, e in enumerate(min_idx_wcumsum_reaching_q)]
+
+    ## Convert to array and flatten
+    quantile_array = np.squeeze(np.array(quantile_list))
+    logger.debug(f"Quantiles array: {quantile_array}")
+
+    return quantile_array
 
 
 #

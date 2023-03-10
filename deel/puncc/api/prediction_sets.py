@@ -23,6 +23,7 @@
 """
 This module provides prediction sets for conformal prediction. To be used when building a :ref:`calibrator <calibration>`.
 """
+import logging
 from typing import Callable
 from typing import Iterable
 from typing import List
@@ -33,6 +34,7 @@ import pandas as pd
 
 from deel.puncc.api.utils import supported_types_check
 
+logger = logging.getLogger(__name__)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -51,25 +53,22 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
 
     """
     pred_len = len(Y_pred)
+
+    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+
     # Generate u randomly from a uniform distribution
     u = np.random.uniform(size=pred_len)
+
     # 1-alpha th empirical quantile of conformity scores
     tau = scores_quantile
+
     # Rank classes by their probability
-    idx_class_pred_ranking = np.argsort(-Y_pred, axis=1)
-    sorted_proba = -np.sort(-Y_pred, axis=1)
-    sorted_cum_mass = sorted_proba.cumsum(axis=1)
-    # First sorted class for which the cumulative probability mass
-    # exceeds the threshold "tau"
-    penal_proba = [
-        sorted_proba[i]
-        + lambd
-        * np.maximum(
-            np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
-            0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
-        )
-        for i in range(pred_len)
-    ]
+    idx_class_pred_ranking = np.argsort(-Y_pred, axis=-1)
+    sorted_proba = -np.sort(-Y_pred, axis=-1)
+    sorted_cum_mass = sorted_proba.cumsum(axis=-1)
+
+    # Cumulative probability mass of (sorted by descending probability) classes
+    # penalized by the regularization term
     penal_cum_proba = [
         sorted_cum_mass[i]
         + lambd
@@ -79,11 +78,16 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
         )
         for i in range(pred_len)
     ]
-    L = [len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1 for i in range(pred_len)]
+
+    # L is the number of classes (+1) for which the cumulative probability mass
+    # exceeds the threshold "tau"
+    # L = [len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1 for i in range(pred_len)]
+    L = np.sum(penal_cum_proba <= tau, axis=-1) + 1
+
     proba_excess = [
-        -sorted_cum_mass[i, L[i] - 1]
+        sorted_proba[i, L[i] - 1]
+        - sorted_cum_mass[i, L[i] - 1]
         - lambd * np.maximum(L[i] - k_reg, 0)
-        + sorted_proba[i, L[i] - 1]
         for i in range(pred_len)
     ]
     v = [
