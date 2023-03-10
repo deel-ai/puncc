@@ -34,6 +34,14 @@ np.random.seed(0)
 
 
 class SplitterCheck(unittest.TestCase):
+    def setUp(self):
+        self.X_np = np.empty([1000, 20])
+        self.y_np = np.empty([1000])
+        self.X_df = np.empty([1000, 20])
+        self.y_df = np.empty([1000])
+        self.X_tf = tf.experimental.numpy.empty([1000, 20])
+        self.y_tf = tf.experimental.numpy.empty([1000, 20])
+
     def test_proper_initialization(self):
         id_splitter = IdSplitter(
             X_fit=np.empty([20, 20]),
@@ -42,13 +50,20 @@ class SplitterCheck(unittest.TestCase):
             y_calib=np.empty([10]),
         )
         kfold_splitter = KFoldSplitter(K=10, random_state=0)
-        Random_splitter = RandomSplitter(ratio=0.1, random_state=0)
+        random_splitter = RandomSplitter(ratio=0.1, random_state=0)
 
     def test_bad_initialization(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # incompatible number of samples
             id_splitter = IdSplitter(
                 X_fit=np.empty([20, 20]),
                 y_fit=np.empty([2]),
+                X_calib=np.empty([10, 20]),
+                y_calib=np.empty([10]),
+            )
+        with self.assertRaises(ValueError):  # incompatible number of features
+            id_splitter = IdSplitter(
+                X_fit=np.empty([20, 20]),
+                y_fit=np.empty([20]),
                 X_calib=np.empty([10, 10]),
                 y_calib=np.empty([10]),
             )
@@ -56,4 +71,43 @@ class SplitterCheck(unittest.TestCase):
             kfold_splitter = KFoldSplitter(K=-10, random_state=0)
 
         with self.assertRaises(ValueError):
-            Random_splitter = RandomSplitter(ratio=2, random_state=0)
+            random_splitter = RandomSplitter(ratio=2, random_state=0)
+
+    def test_kfoldsplitter_output_shape(self):
+
+        K = 10
+        kfold_splitter = KFoldSplitter(K=10, random_state=0)
+
+        # ndarrays
+        kfold_splits_np = kfold_splitter(self.X_np, self.y_np)
+        self.assertEqual(len(kfold_splits_np), 10)
+        self.assertEqual(len(kfold_splits_np[2]), 4)
+
+        # Dataframes
+        kfold_splits_df = kfold_splitter(self.X_df, self.y_df)
+        self.assertEqual(len(kfold_splits_df), 10)
+        self.assertEqual(len(kfold_splits_df[2]), 4)
+
+        # Tensors
+        kfold_splits_tf = kfold_splitter(self.X_tf, self.y_tf)
+        self.assertEqual(len(kfold_splits_tf), 10)
+        self.assertEqual(len(kfold_splits_tf[2]), 4)
+
+    def test_randomsplitter_output_shape(self):
+
+        random_splitter = RandomSplitter(ratio=0.1, random_state=0)
+
+        # ndarrays
+        random_splits_np = random_splitter(self.X_np, self.y_np)
+        self.assertEqual(len(random_splits_np), 1)
+        self.assertEqual(len(random_splits_np[0]), 4)
+
+        # Dataframes
+        random_splits_df = random_splitter(self.X_df, self.y_df)
+        self.assertEqual(len(random_splits_df), 1)
+        self.assertEqual(len(random_splits_df[0]), 4)
+
+        # Tensors
+        random_splits_tf = random_splitter(self.X_tf, self.y_tf)
+        self.assertEqual(len(random_splits_tf), 1)
+        self.assertEqual(len(random_splits_tf[0]), 4)

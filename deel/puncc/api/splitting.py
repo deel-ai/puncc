@@ -83,8 +83,8 @@ class IdSplitter(BaseSplitter):
         :param Iterable X: features array. Not needed here, just a placeholder for interoperability.
         :param Iterable y: labels array. Not needed here, just a placeholder for interoperability.
 
-        :returns: Tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: Tuple[Iterable]
+        :returns: List of one tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
+        :rtype: List[Tuple[Iterable]]
         """
         return self._split
 
@@ -112,8 +112,8 @@ class RandomSplitter(BaseSplitter):
         :param Iterable X: features array.
         :param Iterable y: labels array.
 
-        :returns: Tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: Tuple[Iterable]
+        :returns: List of one tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
+        :rtype: List[Tuple[Iterable]]
         """
         rng = np.random.RandomState(seed=self.random_state)
         fit_idxs = rng.rand(len(X)) > self.ratio
@@ -164,6 +164,16 @@ class KFoldSplitter(BaseSplitter):
                     folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
 
             else:
-                folds.append((X[fit], y[fit], X[calib], y[calib]))
+                bool_fit_idx = np.array(
+                    [True if i in fit else False for i in range(len(X))]
+                )
+                folds.append(
+                    (
+                        X[bool_fit_idx],
+                        y[bool_fit_idx],
+                        X[~bool_fit_idx],
+                        y[~bool_fit_idx],
+                    )
+                )
 
         return folds

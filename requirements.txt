@@ -2,7 +2,4 @@ joblib
 matplotlib
 numpy
 scikit-learn
-scipy
-seaborn
-tensorflow
 tqdm

@@ -20,7 +20,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable
 
 import numpy as np
 import pytest
@@ -39,19 +38,6 @@ from deel.puncc.regression import CVPlus
 from deel.puncc.regression import EnbPI
 from deel.puncc.regression import LocallyAdaptiveCP
 from deel.puncc.regression import SplitCP
-
-# from deel.puncc.regression import AdaptiveEnbPI
-
-
-RESULTS = {
-    "scp": {"cov": 0.95, "width": 218.98},
-    "nescp": {"cov": 0.96, "width": 230.1},
-    "lacp": {"cov": 0.96, "width": 347.87},
-    "cqr": {"cov": 0.93, "width": 204.52},
-    "cv+": {"cov": 0.9, "width": 231.04},
-    "enbpi": {"cov": 0.9, "width": 221.5},
-    "aenbpi": {"cov": 0.87, "width": 272.14},
-}
 
 
 @pytest.mark.parametrize(

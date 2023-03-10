@@ -7,5 +7,6 @@ pre-commit
 sphinx
 sphinx-rtd-theme
 sphinx-autodoc-typehints
+tensorflow
 tensorflow-addons
 tox
