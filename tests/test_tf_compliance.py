@@ -68,6 +68,8 @@ def test_split_cp(diabetes_data, alpha, random_state):
         X_train, y_train, random_state=random_state
     )
 
+    tf.random.set_seed(0)
+
     # Create NN predictor
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(1))
@@ -76,14 +78,18 @@ def test_split_cp(diabetes_data, alpha, random_state):
 
     ## Conformal predictor
     split_cp = SplitCP(predictor)
-    kwargs = {"batch_size": 32, "epochs": 10}
+    kwargs = {"batch_size": 64, "epochs": 5}
 
     ## Fitting
     split_cp.fit(X_fit, y_fit, X_calib, y_calib, **kwargs)
 
     ## Predict
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -95,8 +101,10 @@ def test_split_cp(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_ne_split_cp(diabetes_data, alpha, random_state):
+
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -108,6 +116,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 
         return w_estimator
 
+    tf.random.set_seed(0)
     # Create NN predictor
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(1))
@@ -116,14 +125,20 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 
     # CP method initialization
     w_split_cp = SplitCP(predictor, weight_func=w_estimator_gen(0.95))
+
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    kwargs = {"batch_size": 32, "epochs": 10}
+    kwargs = {"batch_size": 64, "epochs": 5}
     w_split_cp.fit(X_fit, y_fit, X_calib, y_calib, **kwargs)  # type: ignore
+
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -144,7 +159,9 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
         X_train, y_train, random_state=random_state
     )
 
-    # Create linear regression object
+    tf.random.set_seed(0)
+
+    # Create NN regression object
     mu_model = tf.keras.Sequential()
     mu_model.add(tf.keras.layers.Dense(1))
     compile_kwargs1 = {"optimizer": "sgd", "loss": "mse"}
@@ -152,8 +169,8 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     # Create NN regression model
     var_model = tf.keras.Sequential()
     var_model.add(tf.keras.layers.Dense(10, activation="relu"))
-    var_model.add(tf.keras.layers.Dense(10, activation="relu"))
     var_model.add(tf.keras.layers.Dense(1, activation="relu"))
+    var_model.add(tf.keras.layers.Lambda(lambda x: tf.abs(x)))
     compile_kwargs2 = {"optimizer": "rmsprop", "loss": "mse"}
 
     # Create predictor
@@ -165,11 +182,15 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     la_cp = LocallyAdaptiveCP(predictor)
 
     # Fit and conformalize
-    kwargs1 = {"batch_size": 32, "epochs": 10}
-    kwargs2 = {"batch_size": 16, "epochs": 20}
+    kwargs1 = {"batch_size": 64, "epochs": 5}
+    kwargs2 = {"batch_size": 64, "epochs": 4}
     la_cp.fit(X_fit, y_fit, X_calib, y_calib, dictargs=[kwargs1, kwargs2])  # type: ignore
     y_pred, y_pred_lower, y_pred_upper = la_cp.predict(X_test, alpha=alpha)
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -181,12 +202,16 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_cqr(diabetes_data, alpha, random_state):
+
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
     )
+
+    tf.random.set_seed(0)
 
     gbr_params = {
         "n_estimators": 250,
@@ -221,10 +246,13 @@ def test_cqr(diabetes_data, alpha, random_state):
     crq = CQR(predictor)
 
     # Fit and conformalize
-    kwargs1 = {"batch_size": 32, "epochs": 10}
-    kwargs2 = {"batch_size": 16, "epochs": 20}
+    kwargs1 = {"batch_size": 64, "epochs": 5}
+    kwargs2 = {"batch_size": 64, "epochs": 4}
     crq.fit(X_fit, y_fit, X_calib, y_calib, dictargs=[kwargs1, kwargs2])  # type: ignore
     _, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
+
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -236,8 +264,11 @@ def test_cqr(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_cv_plus(diabetes_data, alpha, random_state):
+
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
+    tf.random.set_seed(0)
 
     # Create NN model and wrap it by a predictor
     model = tf.keras.Sequential()
@@ -249,7 +280,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     cv_cp = CVPlus(predictor, K=20, random_state=random_state)
 
     # Fit and conformalize
-    kwargs = {"batch_size": 32, "epochs": 10}
+    kwargs = {"batch_size": 64, "epochs": 5}
     cv_cp.fit(X_train, y_train, **kwargs)
     _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
 
@@ -267,6 +298,8 @@ def test_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
+    tf.random.set_seed(0)
+
     # Create NN model and wrap it in a predictor
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(1))
@@ -277,43 +310,71 @@ def test_enbpi(diabetes_data, alpha, random_state):
     enbpi = EnbPI(predictor, B=30, agg_func_loo=np.mean, random_state=random_state)
 
     # Fit and conformalize
-    kwargs = {"batch_size": 32, "epochs": 10}
+    kwargs = {"batch_size": 64, "epochs": 5}
     enbpi.fit(X_train, y_train, **kwargs)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
+
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
 
 
-# @pytest.mark.parametrize(
-#     "alpha, random_state",
-#     [(0.1, 42)],
-# )
-# def test_adaptive_enbpi(diabetes_data, alpha, random_state):
-#     # Get data
-#     (X_train, X_test, y_train, y_test) = diabetes_data
-#     # Create mean and dispersion regressors
-#     mean_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
-#     sigma_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
-#     # Wrap models in dualpredictor
-#     mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
-#     # Fit and conformalize
-#     aenbpi = AdaptiveEnbPI(
-#         mean_var_predictor,
-#         B=30,
-#         agg_func_loo=np.mean,
-#         random_state=random_state,
-#     )
-#     aenbpi.fit(X_train, y_train)
-#     y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
-#         X_test, alpha=alpha, y_true=y_test, s=None
-#     )
-#     assert y_pred is not None
-#     # Compute marginal coverage
-#     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-#     width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
-#     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-#     assert RESULTS["aenbpi"] == res
+@pytest.mark.parametrize(
+    "alpha, random_state",
+    [(0.1, 42)],
+)
+def test_adaptive_enbpi(diabetes_data, alpha, random_state):
+
+    # Get data
+    (X_train, X_test, y_train, y_test) = diabetes_data
+
+    tf.random.set_seed(0)
+
+    # Create NN regression object
+    mu_model = tf.keras.Sequential()
+    mu_model.add(tf.keras.layers.Dense(1))
+    compile_kwargs1 = {"optimizer": "sgd", "loss": "mse"}
+
+    # Create NN regression model
+    var_model = tf.keras.Sequential()
+    var_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    var_model.add(tf.keras.layers.Dense(1, activation="relu"))
+    var_model.add(tf.keras.layers.Lambda(lambda x: tf.abs(x)))
+    compile_kwargs2 = {"optimizer": "rmsprop", "loss": "mse"}
+
+    # Create predictor
+    predictor = MeanVarPredictor(
+        models=[mu_model, var_model], compile_args=[compile_kwargs1, compile_kwargs2]
+    )
+
+    # Build AdaptiveEnbPI object
+    aenbpi = AdaptiveEnbPI(
+        predictor,
+        B=30,
+        agg_func_loo=np.mean,
+        random_state=random_state,
+    )
+
+    # Fit and conformalize
+    kwargs1 = {"batch_size": 64, "epochs": 5}
+    kwargs2 = {"batch_size": 64, "epochs": 4}
+    aenbpi.fit(X_train, y_train, dictargs=[kwargs1, kwargs2])
+    y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
+        X_test, alpha=alpha, y_true=y_test, s=None
+    )
+
+    assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
+
+    # Compute marginal coverage
+    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)

@@ -66,6 +66,15 @@ class IdSplitter(BaseSplitter):
         y_calib: Iterable,
     ):
         super().__init__(random_state=None)
+
+        if (len(X_fit) != len(y_fit)) or (len(X_calib) != len(y_calib)):
+            raise ValueError("X and y must contain the same number of samples.")
+
+        if len(X_fit[-1]) != len(X_calib[-1]):
+            raise ValueError(
+                "X_fit and X_calib must contain the same number of features."
+            )
+
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
     def __call__(self, X=None, y=None) -> Tuple[Iterable]:
@@ -88,6 +97,8 @@ class RandomSplitter(BaseSplitter):
     """
 
     def __init__(self, ratio, random_state=None):
+        if (ratio <= 0) or (ratio >= 1):
+            raise ValueError(f"Ratio must be in (0,1). Provided value: {ratio}")
         self.ratio = ratio
         super().__init__(random_state=random_state)
 
@@ -118,6 +129,8 @@ class KFoldSplitter(BaseSplitter):
     """
 
     def __init__(self, K: int, random_state=None) -> None:
+        if K < 2:
+            raise ValueError(f"K must be >= 2. Provided value: {K}.")
         self.K = K
         super().__init__(random_state=random_state)
 
