@@ -59,6 +59,7 @@ dev_requirements = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-autodoc-typehints",
+    "tensorflow-addons",
     "tox",
 ]
 

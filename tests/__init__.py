@@ -27,6 +27,6 @@ import logging.config
 logging.basicConfig(
     format="%(asctime)s === %(name)s [%(funcName)s()] | %(levelname)s | - %(message)s",
     datefmt="%d-%b-%y %H:%M:%S",
-    level=logging.DEBUG,
+    level=logging.ERROR,
 )
 loggers = logging.getLogger(__name__)
