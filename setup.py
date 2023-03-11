@@ -35,6 +35,7 @@ requirements = [
     "joblib",
     "matplotlib",
     "numpy",
+    "pandas",
     "scikit-learn",
     "tqdm",
 ]
