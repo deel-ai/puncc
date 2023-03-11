@@ -45,7 +45,7 @@ pip install -e .[interactive]
 pip install -e .[dev]
 ```
 
-You can alternatively use the makefile to automatically create a virtual environment 
+You can alternatively use the makefile to automatically create a virtual environment
 `puncc-dev-env` and install the dev requiments:
 
 ```bash

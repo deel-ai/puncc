@@ -42,6 +42,18 @@ def dual_predictor_check(l, name, type):
         raise TypeError(f"Argument `{name}` should be a list of two {type}.")
 
 
+def logit_normalization_check(y):
+    """Check if provided logits sum is close to one.
+
+    :param Iterable y: logits array. Rows correspond to samples and columns to classes.
+
+    :raises ValueError: when logits sum is different than 1 within a tolerance valus of 1e-5.
+    """
+    logits_sum = np.sum(np.array([e for e in y]), -1)
+    if np.any(np.abs(logits_sum - 1) > 1e-5):
+        raise ValueError(f"Logits must some to 1. Provided logit array {logits_sum}")
+
+
 def supported_types_check(y_pred, y_true=None):
 
     if y_true is not None and (type(y_pred) != type(y_true)):
@@ -69,7 +81,7 @@ def supported_types_check(y_pred, y_true=None):
                 )
 
 
-def check_alpha_calib(alpha: float, n: int, complement_check: bool = False):
+def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
     r"""Check if the value of alpha :math:`\\alpha` is consistent with the size of calibration set :math:`n`.
 
     The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in the interval (0,1). From this, we derive the condition:

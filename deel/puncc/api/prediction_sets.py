@@ -40,7 +40,11 @@ logger = logging.getLogger(__name__)
 
 
 def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
-    """RAPS prediction set. Refer to https://arxiv.org/abs/2009.14193 for details.
+    """RAPS prediction set.
+
+    .. warning::
+
+        **Use** :func:`raps_set_builder` **to initialize** :class:`deel.puncc.api.calibration.BaseCalibrator`.
 
     :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
     :param Iterable y_true: true labels.

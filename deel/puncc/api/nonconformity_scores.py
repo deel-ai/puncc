@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 
 from deel.puncc.api.utils import EPSILON
+from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
 
 
@@ -39,7 +40,11 @@ from deel.puncc.api.utils import supported_types_check
 def raps_score(
     Y_pred: Iterable, y_true: Iterable, lambd: float = 0, k_reg: int = 1
 ) -> Iterable:
-    """RAPS nonconformity score. Refer to https://arxiv.org/abs/2009.14193 for details.
+    """RAPS nonconformity score.
+
+    .. warning::
+
+        **Use** :func:`raps_score_builder` **to initialize** :class:`deel.puncc.api.calibration.BaseCalibrator`.
 
     :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
     :param Iterable y_true: true labels.
@@ -52,6 +57,9 @@ def raps_score(
 
     """
     supported_types_check(Y_pred, y_true)
+
+    # Check if logits sum is close to one
+    logit_normalization_check(Y_pred)
 
     if not isinstance(Y_pred, np.ndarray):
         raise NotImplementedError(
@@ -168,7 +176,7 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """CQR nonconformity score. Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`
+    """CQR nonconformity score. Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`:
 
     .. math::
 

@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from deel.puncc.api.utils import check_alpha_calib
+from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
 from deel.puncc.api.utils import supported_types_check
 
@@ -85,19 +85,19 @@ class AlphaCheck(unittest.TestCase):
                 size=(100)
             ) + lower_bound
             for alpha in alpha_vals:
-                check_alpha_calib(alpha=alpha, n=n)
+                alpha_calib_check(alpha=alpha, n=n)
 
     def test_out_lowerbound_alpha(self):
         with self.assertRaises(ValueError):
-            check_alpha_calib(alpha=0, n=100000)
+            alpha_calib_check(alpha=0, n=100000)
 
     def test_out_upperbound_alpha(self):
         with self.assertRaises(ValueError):
-            check_alpha_calib(alpha=1, n=100000)
+            alpha_calib_check(alpha=1, n=100000)
 
     def test_too_low_alpha(self):
         with self.assertRaises(ValueError):
-            check_alpha_calib(alpha=0.01, n=10)
+            alpha_calib_check(alpha=0.01, n=10)
 
 
 class QuantileCheck(unittest.TestCase):
