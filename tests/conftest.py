@@ -65,3 +65,35 @@ def mnist_data():
     y_test_cat = to_categorical(y_test)
 
     return X_train, X_test, y_train, y_test, y_train_cat, y_test_cat
+
+
+@pytest.fixture
+def rand_reg_data():
+
+    X_pred_calib = 10 * np.random.randn(100, 4)
+    X_pred_test = 10 * np.random.randn(100, 4)
+    X_test = 10 * np.random.randn(100, 4)
+    y_pred_calib = 4 * np.random.randn(100) + 1
+    y_calib = 2 * np.random.randn(100) + 1
+    y_pred_test = 4 * np.random.randn(100) + 2
+    y_test = 2 * np.random.randn(100) + 1
+
+    return y_pred_calib, y_calib, y_pred_test, y_test
+
+
+@pytest.fixture
+def rand_class_data():
+
+    X_pred_calib = 10 * np.random.randn(100, 4)
+    X_pred_test = 10 * np.random.randn(100, 4)
+    X_test = 10 * np.random.randn(100, 4)
+    y_pred_calib = np.random.random_sample(size=(100, 5))
+    # Normalized logits
+    y_pred_calib /= np.sum(y_pred_calib, axis=-1)[:, np.newaxis]
+    y_calib = np.random.randint(4, size=100)
+    y_pred_test = np.random.random_sample(size=(100, 5))
+    # Normalized logits
+    y_pred_test /= np.sum(y_pred_test, axis=-1)[:, np.newaxis]
+    y_test = np.random.randint(4, size=100)
+
+    return y_pred_calib, y_calib, y_pred_test, y_test

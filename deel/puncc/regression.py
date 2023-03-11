@@ -562,10 +562,9 @@ class EnbPI:
 
         :param ndarray X_train: training feature set
         :param ndarray y_train: training label set
-        :param dict dictargs1: fit arguments for the underlying model
-        :param dict dictargs2: fit arguments for the underlying model
+        :param dict kwargs: fit arguments for the underlying model
 
-        :raises RuntimeError: in case of empty out-of-bag.
+        :raises RuntimeError: empty out-of-bag.
 
         """
         self._oob_dict = dict()  # Key: b. Value: out of bag weighted index

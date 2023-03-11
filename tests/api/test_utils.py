@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from deel.puncc.api.utils import check_alpha_calib
+from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
 from deel.puncc.api.utils import supported_types_check
 
@@ -85,19 +85,19 @@ class AlphaCheck(unittest.TestCase):
                 size=(100)
             ) + lower_bound
             for alpha in alpha_vals:
-                check_alpha_calib(alpha=alpha, n=n)
+                alpha_calib_check(alpha=alpha, n=n)
 
     def test_out_lowerbound_alpha(self):
         with self.assertRaises(ValueError):
-            check_alpha_calib(alpha=0, n=100000)
+            alpha_calib_check(alpha=0, n=100000)
 
     def test_out_upperbound_alpha(self):
         with self.assertRaises(ValueError):
-            check_alpha_calib(alpha=1, n=100000)
+            alpha_calib_check(alpha=1, n=100000)
 
     def test_too_low_alpha(self):
         with self.assertRaises(ValueError):
-            check_alpha_calib(alpha=0.01, n=10)
+            alpha_calib_check(alpha=0.01, n=10)
 
 
 class QuantileCheck(unittest.TestCase):
@@ -117,7 +117,7 @@ class QuantileCheck(unittest.TestCase):
         weights = np.array([0.5, 1 / 6, 1 / 6, 1 / 6])
         expected_result = 1
 
-        print(quantile(a=self.a_np, q=0.5, w=weights))
+        print(quantile(a=self.a_np, q=0.6, w=weights))
 
         self.assertEqual(expected_result, quantile(a=self.a_np, q=0.5, w=weights))
         self.assertEqual(expected_result, quantile(a=self.a_tensor, q=0.5, w=weights))
@@ -133,13 +133,13 @@ class QuantileCheck(unittest.TestCase):
         np.testing.assert_array_equal(expected_result, quantile(a=self.a_df, q=0.5))
         np.testing.assert_array_equal(expected_result, quantile(a=self.a_tensor, q=0.5))
 
-    def _weight_quantile2d(self):
-        self.a_np = np.array([[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
+    def test_weight_quantile2d(self):
+        self.a_np = np.array([[1, 2, 3, 4, 5], [20, 10, 50, 40, 100]])
         self.a_df = pd.DataFrame(self.a_np)
-        self.a_tensor = tf.constant([[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
+        self.a_tensor = tf.constant([[1, 2, 3, 4, 5], [20, 10, 50, 40, 100]])
 
-        weights = np.array([3 / 20, 3 / 20, 3 / 20, 3 / 20, 2 / 5])
-        expected_result = np.array([4, 40])
+        weights = np.array([3 / 20, 3 / 20, 3 / 20, 2 / 5, 3 / 20])
+        expected_result = np.array([4, 50])
 
         np.testing.assert_array_equal(
             expected_result, quantile(a=self.a_np, q=0.5, w=weights)

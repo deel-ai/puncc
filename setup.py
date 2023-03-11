@@ -35,9 +35,8 @@ requirements = [
     "joblib",
     "matplotlib",
     "numpy",
+    "pandas",
     "scikit-learn",
-    "scipy",
-    "tensorflow",
     "tqdm",
 ]
 
@@ -59,6 +58,8 @@ dev_requirements = [
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-autodoc-typehints",
+    "tensorflow",
+    "tensorflow-addons",
     "tox",
 ]
 

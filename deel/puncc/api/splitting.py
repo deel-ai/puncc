@@ -66,6 +66,15 @@ class IdSplitter(BaseSplitter):
         y_calib: Iterable,
     ):
         super().__init__(random_state=None)
+
+        if (len(X_fit) != len(y_fit)) or (len(X_calib) != len(y_calib)):
+            raise ValueError("X and y must contain the same number of samples.")
+
+        if len(X_fit[-1]) != len(X_calib[-1]):
+            raise ValueError(
+                "X_fit and X_calib must contain the same number of features."
+            )
+
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
     def __call__(self, X=None, y=None) -> Tuple[Iterable]:
@@ -74,8 +83,8 @@ class IdSplitter(BaseSplitter):
         :param Iterable X: features array. Not needed here, just a placeholder for interoperability.
         :param Iterable y: labels array. Not needed here, just a placeholder for interoperability.
 
-        :returns: Tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: Tuple[Iterable]
+        :returns: List of one tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
+        :rtype: List[Tuple[Iterable]]
         """
         return self._split
 
@@ -88,6 +97,8 @@ class RandomSplitter(BaseSplitter):
     """
 
     def __init__(self, ratio, random_state=None):
+        if (ratio <= 0) or (ratio >= 1):
+            raise ValueError(f"Ratio must be in (0,1). Provided value: {ratio}")
         self.ratio = ratio
         super().__init__(random_state=random_state)
 
@@ -101,8 +112,8 @@ class RandomSplitter(BaseSplitter):
         :param Iterable X: features array.
         :param Iterable y: labels array.
 
-        :returns: Tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
-        :rtype: Tuple[Iterable]
+        :returns: List of one tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
+        :rtype: List[Tuple[Iterable]]
         """
         rng = np.random.RandomState(seed=self.random_state)
         fit_idxs = rng.rand(len(X)) > self.ratio
@@ -118,6 +129,8 @@ class KFoldSplitter(BaseSplitter):
     """
 
     def __init__(self, K: int, random_state=None) -> None:
+        if K < 2:
+            raise ValueError(f"K must be >= 2. Provided value: {K}.")
         self.K = K
         super().__init__(random_state=random_state)
 
@@ -151,6 +164,16 @@ class KFoldSplitter(BaseSplitter):
                     folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
 
             else:
-                folds.append((X[fit], y[fit], X[calib], y[calib]))
+                bool_fit_idx = np.array(
+                    [True if i in fit else False for i in range(len(X))]
+                )
+                folds.append(
+                    (
+                        X[bool_fit_idx],
+                        y[bool_fit_idx],
+                        X[~bool_fit_idx],
+                        y[~bool_fit_idx],
+                    )
+                )
 
         return folds

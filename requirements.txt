@@ -1,8 +1,6 @@
 joblib
 matplotlib
 numpy
+pandas
 scikit-learn
-scipy
-seaborn
-tensorflow
 tqdm

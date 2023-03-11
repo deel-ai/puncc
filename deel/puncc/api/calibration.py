@@ -33,7 +33,7 @@ from typing import Tuple
 import numpy as np
 
 from deel.puncc.api import prediction_sets
-from deel.puncc.api.utils import check_alpha_calib
+from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import EPSILON
 from deel.puncc.api.utils import quantile
 
@@ -178,7 +178,7 @@ class BaseCalibrator:
             raise RuntimeError("Run `fit` method before calling `calibrate`.")
 
         # Check consistency of alpha w.r.t the size of calibration data
-        check_alpha_calib(alpha=alpha, n=self._len_calib)
+        alpha_calib_check(alpha=alpha, n=self._len_calib)
 
         # Compute weighted quantiles
         infty_array = np.array([np.inf])
