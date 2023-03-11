@@ -16,7 +16,7 @@ help:
 prepare-dev:
 	python3 -m venv puncc-dev-env
 	. puncc-dev-env/bin/activate && pip install --upgrade pip
-	. puncc-dev-env/bin/activate && pip install -e .[dev,interactive]
+	. puncc-dev-env/bin/activate && pip install -e .[dev]
 	. puncc-dev-env/bin/activate && pre-commit install
 	. puncc-dev-env/bin/activate && pre-commit install-hooks
 	python3 -m ipykernel install --user --name=puncc-dev-env

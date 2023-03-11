@@ -34,7 +34,10 @@ git clone ssh://git@forge.deel.ai:22012/statistic-guarantees/puncc.git
 
 It is recommended to install puncc in a virtual environment to not mess with your system's dependencies.
 
-### Using pip
+#### For users
+```bash
+pip install -e .[interactive]
+```
 
 #### For developpers
 
@@ -42,22 +45,13 @@ It is recommended to install puncc in a virtual environment to not mess with you
 pip install -e .[dev]
 ```
 
-#### For users
-```bash
-pip install -e .[interactive]
-```
-
-### Using makefile
+You can alternatively use the makefile to automatically create a virtual environment 
+`puncc-dev-env` and install the dev requiments:
 
 ```bash
 make prepare-dev
 ```
 
-### From Makefile
-
-```bash
-make prepare-dev
-```
 
 # 🚀 Quickstart
 
