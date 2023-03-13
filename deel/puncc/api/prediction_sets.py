@@ -38,7 +38,6 @@ from deel.puncc.api.utils import supported_types_check
 if pkgutil.find_loader("pandas") is not None:
     import pandas as pd
 
-
 logger = logging.getLogger(__name__)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

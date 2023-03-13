@@ -76,6 +76,18 @@ def logit_normalization_check(y):
         )
 
 
+def logit_normalization_check(y):
+    """Check if provided logits sum is close to one.
+
+    :param Iterable y: logits array. Rows correspond to samples and columns to classes.
+
+    :raises ValueError: when logits sum is different than 1 within a tolerance valus of 1e-5.
+    """
+    logits_sum = np.sum(np.array([e for e in y]), -1)
+    if np.any(np.abs(logits_sum - 1) > 1e-5):
+        raise ValueError(f"Logits must some to 1. Provided logit array {logits_sum}")
+
+
 def supported_types_check(y_pred, y_true=None):
     """Check if the types of input elements are consistent and supported by
     the library.
