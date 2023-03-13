@@ -22,6 +22,7 @@
 # SOFTWARE.
 import numpy as np
 import pytest
+import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from sklearn.model_selection import train_test_split
@@ -37,6 +38,9 @@ from deel.puncc.regression import CVPlus
 from deel.puncc.regression import EnbPI
 from deel.puncc.regression import LocallyAdaptiveCP
 from deel.puncc.regression import SplitCP
+
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 @pytest.mark.parametrize(

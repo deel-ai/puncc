@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from typing import Callable
-
+import os
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -34,6 +34,7 @@ from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
     "aps": {"cov": 0.92, "size": 2.24},
