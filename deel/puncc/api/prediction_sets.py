@@ -21,18 +21,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides prediction sets for conformal prediction. To be used when building a :ref:`calibrator <calibration>`.
+This module provides prediction sets for conformal prediction. To be used when
+building a :ref:`calibrator <calibration>`.
 """
 import logging
+import pkgutil
 from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Tuple
 
 import numpy as np
-import pandas as pd
 
 from deel.puncc.api.utils import supported_types_check
+
+if pkgutil.find_loader("pandas") is not None:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +48,21 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
 
     .. warning::
 
-        **Use** :func:`raps_set_builder` **to initialize** :class:`deel.puncc.api.calibration.BaseCalibrator`.
+        This signature is incompatible with the interface of calibrators.
+        **Use** :func:`raps_set_builder` **to properly initialize**
+        :class:`deel.puncc.api.calibration.BaseCalibrator`.
 
-    :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
     :param Iterable y_true: true labels.
-    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
-    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
+        regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting
+        from which the regularization is applied. For example, if
+        :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
+        extra penalty of size :math:`\\lambda`.
 
 
     :returns: RAPS prediction sets.
@@ -58,7 +71,7 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     """
     pred_len = len(Y_pred)
 
-    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+    logger.debug("Shape of Y_pred: {shape}", shape=Y_pred.shape)
 
     # Generate u randomly from a uniform distribution
     u = np.random.uniform(size=pred_len)
@@ -102,7 +115,7 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     ]
 
     # Build prediction set
-    prediction_sets = list()
+    prediction_sets = []
 
     for i in range(pred_len):
 
@@ -120,19 +133,31 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
 
 
 def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
-    """RAPS prediction set builder. When called, returns a RAPS prediction set function :func:`raps_set` with given initialitation of regularization hyperparameters.
+    """RAPS prediction set builder. When called, returns a RAPS prediction set
+    function :func:`raps_set` with given initialitation of regularization
+    hyperparameters.
 
-    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
-    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
+        regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting
+        from which the regularization is applied. For example, if
+        :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
+        extra penalty of size :math:`\\lambda`.
 
-    :returns: RAPS prediction set function that takes two parameters: `Y_pred` and `scores_quantile`.
+    :returns: RAPS prediction set function that takes two parameters:
+        `Y_pred` and `scores_quantile`.
     :rtype: Callable
 
     """
     if lambd < 0:
-        raise ValueError(f"Argument `lambd` has to be positive, provided: {lambd} < 0")
+        raise ValueError(
+            f"Argument `lambd` has to be positive, provided: {lambd} < 0"
+        )
     if k_reg < 0:
-        raise ValueError(f"Argument `k_reg` has to be positive, provided: {k_reg} < 0")
+        raise ValueError(
+            f"Argument `k_reg` has to be positive, provided: {k_reg} < 0"
+        )
     # @TODO: type checking and co
 
     def _raps_set_function(Y_pred, scores_quantile):
@@ -147,14 +172,17 @@ def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
 def constant_interval(
     y_pred: Iterable, scores_quantile: np.ndarray
 ) -> Tuple[np.ndarray]:
-    """Constant prediction interval centered on `y_pred`. The size of the margin is `scores_quantile` (noted :math:`q_{\\alpha}`).
+    """Constant prediction interval centered on `y_pred`. The size of the
+    margin is `scores_quantile` (noted :math:`\gamma_{\\alpha}`).
 
     .. math::
 
-        I = [y_{\\text{pred}} - q_{\\alpha}, y_{\\text{pred}} + q_{\\alpha}]
+        I = [y_{\\text{pred}} - \gamma_{\\alpha}, y_{\\text{pred}} +
+        \gamma_{\\alpha}]
 
     :param Iterable y_pred: predictions.
-    :param ndarray scores_quantile: quantile of nonconformity scores computed on a calibration set for a given :math:`alpha`.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
 
     :returns: prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
@@ -165,16 +193,22 @@ def constant_interval(
     return y_lo, y_hi
 
 
-def scaled_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
-    """Scaled prediction interval centered on `y_pred`. Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
-    the size of the margin is proportional to `scores_quantile` (noted :math:`q_{\\alpha}`).
+def scaled_interval(
+    Y_pred: Iterable, scores_quantile: np.ndarray
+) -> Tuple[np.ndarray]:
+    """Scaled prediction interval centered on `y_pred`. Considering
+    :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
+    the size of the margin is proportional to `scores_quantile`
+    :math:`\gamma_{\\alpha}`.
 
     .. math::
 
-        I = [\mu_{\\text{pred}} - q_{\\alpha} \cdot \sigma_{\\text{pred}}, y_{\\text{pred}} + q_{\\alpha} \cdot \sigma_{\\text{pred}}]
+        I = [\mu_{\\text{pred}} - \gamma_{\\alpha} \cdot \sigma_{\\text{pred}},
+        y_{\\text{pred}} + \gamma_{\\alpha} \cdot \sigma_{\\text{pred}}]
 
     :param Iterable y_pred: predictions.
-    :param ndarray scores_quantile: quantile of nonconformity scores computed on a calibration set for a given :math:`alpha`.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
 
     :returns: scaled prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
@@ -183,10 +217,12 @@ def scaled_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.n
 
     if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
         raise RuntimeError(
-            f"Each Y_pred must contain a point prediction and a dispersion estimation."
+            "Each Y_pred must contain a point prediction and a dispersion estimation."
         )
 
-    if isinstance(Y_pred, pd.DataFrame):
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        Y_pred, pd.DataFrame
+    ):
         y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
     else:
         y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
@@ -196,16 +232,22 @@ def scaled_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.n
     return y_lo, y_hi
 
 
-def cqr_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
-    """CQR prediction interval. Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction interval is
-    built from the upper and lower quantiles predictions and `scores_quantile` (noted :math:`q_{\\alpha}`)
+def cqr_interval(
+    Y_pred: Iterable, scores_quantile: np.ndarray
+) -> Tuple[np.ndarray]:
+    """CQR prediction interval. Considering
+    :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction
+    interval is built from the upper and lower quantiles predictions and
+    `scores_quantile` :math:`\gamma_{\\alpha}`.
 
     .. math::
 
-        I = [q_{\\text{lo}} - q_{\\alpha}, q_{\\text{lo}} + q_{\\alpha}]
+        I = [q_{\\text{lo}} - \gamma_{\\alpha}, q_{\\text{lo}} +
+        \gamma_{\\alpha}]
 
     :param Iterable y_pred: predictions.
-    :param ndarray scores_quantile: quantile of nonconformity scores computed on a calibration set for a given :math:`alpha`.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
 
     :returns: scaled prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
@@ -214,10 +256,12 @@ def cqr_interval(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndar
 
     if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
         raise RuntimeError(
-            f"Each Y_pred must contain lower and higher quantiles predictions, respectively."
+            "Each Y_pred must contain lower and higher quantiles predictions, respectively."
         )
 
-    if isinstance(Y_pred, pd.DataFrame):
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        Y_pred, pd.DataFrame
+    ):
         q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
     else:
         q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]

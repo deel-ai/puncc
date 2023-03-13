@@ -26,7 +26,7 @@ copyright = (
 author = "Mouhcine Mendil, Luca Mossina"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+release = "0.9"
 
 
 # -- General configuration ---------------------------------------------------
@@ -71,7 +71,12 @@ html_theme_options = {
 }
 
 html_sidebars = {
-    "**": ["globaltoc.html", "relations.html", "sourcelink.html", "searchbox.html"]
+    "**": [
+        "globaltoc.html",
+        "relations.html",
+        "sourcelink.html",
+        "searchbox.html",
+    ]
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

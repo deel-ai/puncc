@@ -83,7 +83,9 @@ def test_split_cp(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["scp"] == res
 
@@ -120,7 +122,9 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["nescp"] == res
 
@@ -140,7 +144,9 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     # Create linear regression object
     mu_model = linear_model.LinearRegression()
     # Create RF regression object
-    var_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    var_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
     # Create predictor
     predictor = MeanVarPredictor(models=[mu_model, var_model])
     # CP method initialization
@@ -153,7 +159,9 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["lacp"] == res
 
@@ -198,7 +206,9 @@ def test_cqr(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
 
     assert RESULTS["cqr"] == res
@@ -213,7 +223,9 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     (X_train, X_test, y_train, y_test) = diabetes_data
 
     # Create RF regression object and wrap it by a predictor
-    rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    rf_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
     predictor = BasePredictor(rf_model)
     # CP method initialization
     cv_cp = CVPlus(predictor, K=20, random_state=random_state)
@@ -224,7 +236,9 @@ def test_cv_plus(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["cv+"] == res
 
@@ -237,10 +251,14 @@ def test_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
     # Create RF regression object and wrap it by a predictor
-    rf_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    rf_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
     predictor = BasePredictor(rf_model)
     # Fit and conformalize
-    enbpi = EnbPI(predictor, B=30, agg_func_loo=np.mean, random_state=random_state)
+    enbpi = EnbPI(
+        predictor, B=30, agg_func_loo=np.mean, random_state=random_state
+    )
     enbpi.fit(X_train, y_train)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
@@ -248,7 +266,9 @@ def test_enbpi(diabetes_data, alpha, random_state):
     assert y_pred is not None
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["enbpi"] == res
 
@@ -261,8 +281,12 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
     # Create mean and dispersion regressors
-    mean_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
-    sigma_model = RandomForestRegressor(n_estimators=100, random_state=random_state)
+    mean_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
+    sigma_model = RandomForestRegressor(
+        n_estimators=100, random_state=random_state
+    )
     # Wrap models in dualpredictor
     mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
     # Fit and conformalize
@@ -279,6 +303,8 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     assert y_pred is not None
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
     assert RESULTS["aenbpi"] == res

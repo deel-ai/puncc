@@ -24,22 +24,56 @@
 This module implements utility functions.
 """
 import logging
+import pkgutil
 import sys
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
 import numpy as np
-import pandas as pd
+
+if pkgutil.find_loader("pandas") is not None:
+    import pandas as pd
+
+if pkgutil.find_loader("tensorflow") is not None:
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
-def dual_predictor_check(l, name, type):
+def dual_predictor_check(l, name, ltype):
+    """Check if properties of `DualPredictor` come in
+    couples.
+
+    :param Any l: property of `DualPredictor`.
+    :param str name: name of the property.
+    :param str ltype: type of property.
+
+    :raises TypeError: when the properties count is not two.
+
+    """
     if (not isinstance(l, list)) or len(l) != 2:
-        raise TypeError(f"Argument `{name}` should be a list of two {type}.")
+        raise TypeError(
+            f"Argument `{name}` should be a list of two {ltype}. Provided {l}."
+        )
+
+
+def logit_normalization_check(y):
+    """Check if provided logits sum is close to one.
+
+    :param Iterable y: logits array. Rows correspond to samples and columns to
+        classes.
+
+    :raises ValueError: when logits sum is different than one within a tolerance
+        value of 1e-5.
+    """
+    logits_sum = np.sum(np.array(list(y)), -1)
+    if np.any(np.abs(logits_sum - 1) > 1e-5):
+        raise ValueError(
+            f"Logits must some to 1. Provided logit array {logits_sum}"
+        )
 
 
 def logit_normalization_check(y):
@@ -55,36 +89,43 @@ def logit_normalization_check(y):
 
 
 def supported_types_check(y_pred, y_true=None):
+    """Check if the types of input elements are consistent and supported by
+    the library.
 
+    :param Iterable y_pred: first element. For example label predictions.
+    :param Iterable y_true: second element. For example true labels.
+
+    :raises TypeError: unsupported data types or elements have inconsistent types.
+    """
     if y_true is not None and (type(y_pred) != type(y_true)):
         raise TypeError(
             f"elements do not have the same type: {type(y_pred)} vs {type(y_true)}."
         )
 
     if isinstance(y_pred, np.ndarray):
-        pass
-    else:
-        import pandas as pd
+        return
 
-        if isinstance(y_pred, pd.DataFrame):
-            pass
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        y_pred, pd.DataFrame
+    ):
+        return
+    if pkgutil.find_loader("tensorflow") is not None and isinstance(
+        y_pred, tf.Tensor
+    ):
+        return
 
-        else:
-            import tensorflow as tf
-
-            if isinstance(y_pred, tf.Tensor):
-                pass
-
-            else:
-                raise TypeError(
-                    "Unsupported data type. Please provide a numpy ndarray, a dataframe or a tensor (TensorFlow)."
-                )
+    raise TypeError(
+        "Unsupported data type. Please provide a numpy ndarray, "
+        "a dataframe or a tensor (TensorFlow)."
+    )
 
 
 def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
-    r"""Check if the value of alpha :math:`\\alpha` is consistent with the size of calibration set :math:`n`.
+    """Check if the value of alpha :math:`\\alpha` is consistent with the size
+    of calibration set :math:`n`.
 
-    The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in the interval (0,1). From this, we derive the condition:
+    The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in
+    the interval (0,1). From this, we derive the condition:
 
     .. math::
 
@@ -98,9 +139,12 @@ def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
 
     :param float alpha: target quantile order.
     :param int n: size of the calibration dataset.
-    :param bool complement_check: complementary check to compute the :math:`\\alpha \cdot (1+1/n)`-th quantile, required by some methods such as jk+.
+    :param bool complement_check: complementary check to compute the
+        :math:`\\alpha \cdot (1+1/n)`-th quantile, required by some methods
+        such as jk+.
 
-    :raises ValueError: when :math:`\\alpha` is inconsistent with the size of calibration set.
+    :raises ValueError: when :math:`\\alpha` is inconsistent with the size of
+        calibration set.
     """
 
     if alpha < 1 / (n + 1):
@@ -129,18 +173,22 @@ def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
 def get_min_max_alpha_calib(
     n: int, two_sided_conformalization: bool = False
 ) -> Optional[Tuple[float]]:
-    """Get the greatest alpha in (0,1) that is consistent with the size of calibration
-    set. Recall that while true Conformal Prediction (CP, Vovk et al 2005) is defined only on (0,1)
-    (bounds not included), there maybe cases where we must handle alpha=0 or 1
-    (e.g. Adaptive Conformal Inference, Gibbs & Candès 2021).
+    """Get the greatest alpha in (0,1) that is consistent with the size of
+    calibration set. Recall that while true Conformal Prediction
+    (CP, Vovk et al 2005) is defined only on (0,1) (bounds not included), there
+    maybe cases where we must handle alpha=0 or 1 (e.g. Adaptive Conformal
+    Inference, Gibbs & Candès 2021).
 
-    This function computes the admissible range of alpha for split CP (Papadopoulos et al 2002,
-    Lei et al 2018) and the Jackknife-plus (Barber et al 2019).
-    For more CP method, see the literature and update this function.
+    This function computes the admissible range of alpha for split CP
+    (Papadopoulos et al 2002, Lei et al 2018) and the Jackknife-plus
+    (Barber et al 2019). For more CP method, see the literature and update this
+    function.
 
-    In Split Conformal prediction we take the index := ceiling( (1-alpha)(n+1) )-th element
-    from the __sorted__ nonconformity scores as the margin of error.
-    We must have 1 <= index <= n ( = len(calibration_set)) which boils down to: 1/(n+1) <= alpha < 1.
+    In Split Conformal prediction we take the index
+    := ceiling( (1-alpha)(n+1) )-th element from the __sorted__ nonconformity
+    scores as the margin of error. We must have
+    1 <= index <= n ( = len(calibration_set)) which boils down to:
+    1/(n+1) <= alpha < 1.
 
     In the case of cv-plus and jackknife-plus (Barber et al 2019), we need:
         1. ceiling( (1-alpha)(n+1) )-th element of scores
@@ -150,12 +198,14 @@ def get_min_max_alpha_calib(
     range for this special case: 1/(n+1) <= alpha <= n/(n+1)
 
     :param int n: size of the calibration dataset.
-    :param bool two_sided_conformalization: alpha threshold for two-sided quantile of jackknife+ (Barber et al 2021).
+    :param bool two_sided_conformalization: alpha threshold for two-sided
+        quantile of jackknife+ (Barber et al 2021).
 
     :returns: lower and upper bounds for alpha (miscoverage probability)
     :rtype: Tuple[float]
 
-    :raises ValueError: must have integer n, boolean two_sided_conformalization and n>=1
+    :raises ValueError: must have integer n, boolean two_sided_conformalization
+        and n>=1
     """
 
     if n < 1:
@@ -163,9 +213,9 @@ def get_min_max_alpha_calib(
 
     if two_sided_conformalization is True:
         return (1 / (n + 1), n / (n + 1))
+
     # Base case: split conformal prediction (e.g. Lei et al 2019)
-    else:
-        return (1 / (n + 1), 1)
+    return (1 / (n + 1), 1)
 
 
 def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type: ignore
@@ -173,7 +223,8 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     :param Iterable a: collection of n samples
     :param float q: target quantile order. Must be in the open interval (0, 1).
-    :param ndarray w: vector of size n. By default, w is None and equal weights (:math:`1/n`) are associated.
+    :param ndarray w: vector of size n. By default, w is None and equal weights
+        (:math:`1/n`) are associated.
 
     :returns: weighted empirical quantiles.
     :rtype: ndarray
@@ -185,20 +236,19 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     if isinstance(a, np.ndarray):
         pass
+    elif pkgutil.find_loader("pandas") is not None and isinstance(
+        a, pd.DataFrame
+    ):
+        a = a.to_numpy()
+    elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+        a, tf.Tensor
+    ):
+        a = a.numpy()
+    # elif pkgutil.find_loader("torch") is not None:
+    #     if isinstance(a, torch.Tensor):
+    #         a = a.cpu().detach().numpy()
     else:
-        import pandas as pd
-
-        if isinstance(a, pd.DataFrame):
-            a = a.to_numpy()
-        else:
-            import tensorflow as tf
-
-            if isinstance(a, tf.Tensor):
-                a = a.numpy()
-            # elif isinstance(a, torch.Tensor):
-            #     a = a.cpu().detach().numpy()
-            else:
-                raise RuntimeError("Fatal error.")
+        raise RuntimeError("Fatal error.")
 
     # Sanity checks
     if q <= 0 or q >= 1:
@@ -218,7 +268,8 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     if len(w) != a.shape[-1]:
         error = (
-            "a and w must have the number of features:" + f"{a.shape[-1]} != {len(w)}"
+            "a and w must have the number of features:"
+            + f"{a.shape[-1]} != {len(w)}"
         )
         raise RuntimeError(error)
 
@@ -226,7 +277,8 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
     norm_condition = np.isclose(np.sum(w, axis=-1), 1, atol=1e-6)
     if ~np.all(norm_condition):
         error = (
-            f"W is not normalized. Sum of weights on" + f"rows is {np.sum(w, axis=-1)}"
+            "W is not normalized. Sum of weights on"
+            + f"rows is {np.sum(w, axis=-1)}"
         )
         raise RuntimeError(error)
 
@@ -234,11 +286,14 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     ## Row values are sorted in ascending order
     sorted_idxs = np.argsort(a, -1)
-    logger.debug(f"Sorted indices: {sorted_idxs}")
+    logger.debug("Sorted indices: {sorted_idxs}", sorted_idxs=sorted_idxs)
 
     ## Reorder weights (ascending row values of a) and compute cumulative sum
     sorted_cumsum_w = np.cumsum(w[sorted_idxs], axis=-1)
-    logger.debug(f"Sorted weights cumulative sum: {sorted_cumsum_w}")
+    logger.debug(
+        "Sorted weights cumulative sum: {sorted_cumsum_w}",
+        sorted_cumsum_w=sorted_cumsum_w,
+    )
 
     # Compute quantile on one sample (vector)
     if sorted_cumsum_w.ndim == 1:
@@ -251,13 +306,19 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
     idx_wcumsum_reaching_q = list(
         map(lambda x, y: y[x], sorted_cumsum_w >= q, sorted_idxs)
     )
-    logger.debug(f"Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}")
+    logger.debug(
+        "Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}",
+        idx_wcumsum_reaching_q=idx_wcumsum_reaching_q,
+    )
 
     ## Get the smallest indice per row for which the cumulative sum of weights
     ## exceeds q
-    min_idx_wcumsum_reaching_q = [[np.sort(e)[0]] for e in idx_wcumsum_reaching_q]
+    min_idx_wcumsum_reaching_q = [
+        [np.sort(e)[0]] for e in idx_wcumsum_reaching_q
+    ]
     logger.debug(
-        f"First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}"
+        "First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}",
+        min_idx_wcumsum_reaching_q=min_idx_wcumsum_reaching_q,
     )
 
     ## Collect the quantile for each sample as the first value
@@ -266,26 +327,8 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     ## Convert to array and flatten
     quantile_array = np.squeeze(np.array(quantile_list))
-    logger.debug(f"Quantiles array: {quantile_array}")
+    logger.debug(
+        "Quantiles array: {quantile_array}", quantile_array=quantile_array
+    )
 
     return quantile_array
-
-
-#
-# ========================= Aggregation functions =========================
-#
-
-
-def agg_list(a: np.ndarray) -> np.array:
-    """Ancillary function to aggregate array following the axis 0.
-
-    :param ndarray a: array.
-
-    :returns: the concatenated array or None
-    :rtype: ndarray or None
-    """
-
-    try:
-        return np.concatenate(a, axis=0)
-    except ValueError:
-        return None

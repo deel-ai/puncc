@@ -55,17 +55,23 @@ def plot_prediction_intervals(
     ax: matplotlib.axes.Axes = None,
     **fig_kw,
 ) -> matplotlib.axes.Axes:
-    """Plot prediction intervals whose bounds are given by `y_pred_lower` and `y_pred_upper`. True and predicted (if provided) point values are also displayed.
+    """Plot prediction intervals whose bounds are given by `y_pred_lower` and
+    `y_pred_upper`. True and predicted (if provided) point values are also
+    displayed.
 
     :param ndarray y_true: true output values.
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.
     :param ndarray y_pred_upper: upper bounds of the prediction intervals.
     :param ndarray, optional X: abscisse vector.
     :param ndarray, optional y_pred: predicted values.
-    :param matplotlib.axes.Axes, optional ax: plot using the provided axis. Otherwise, a new figure is created and the corresponding axis is returned as output.
-    :param fig_kw: all additional keyword arguments are passed to the pyplot.figure call.
+    :param matplotlib.axes.Axes, optional ax: plot using the provided axis.
+        Otherwise, a new figure is created and the corresponding axis is
+        returned as output.
+    :param fig_kw: all additional keyword arguments are passed to the
+        pyplot.figure call.
 
-    :returns: updated axis if `ax` provided. Otherwise a new figure is created and the corresponding axis is returned as output
+    :returns: updated axis if `ax` provided. Otherwise a new figure is created
+        and the corresponding axis is returned as output
     :rtype: matplotlib.axes.Axes
 
     Example 1::
@@ -196,7 +202,9 @@ def plot_prediction_intervals(
     )
 
     # Plot observations outside PI
-    label = "Observation" if y_pred_upper is None else "Observation (outside PI)"
+    label = (
+        "Observation" if y_pred_upper is None else "Observation (outside PI)"
+    )
     ax.plot(
         X[miscoverage],
         y_true[miscoverage],

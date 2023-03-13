@@ -74,10 +74,10 @@ An object instance is constructed by, as we will explain later, a **predictor**,
 
     ## Calibrator construction
     my_calibrator = BaseCalibrator(nonconf_score_func=my_ncf,
-                                   pred_set_func=my_psf) # Calibrator
+                                   pred_set_func=my_psf)
 
     # Definition of a K-fold splitter that produces 20 folds of fit/calibration
-    kfold_splitter = KFoldSplitter(K=20, random_state=42) # Splitter
+    kfold_splitter = KFoldSplitter(K=20, random_state=42)
 
     # Conformal prediction canvas
     conformal_predictor = ConformalPredictor(predictor=my_predictor,

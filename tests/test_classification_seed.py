@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from typing import Callable
-
+import os
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -34,6 +34,7 @@ from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
     "aps": {"cov": 0.92, "size": 2.24},
@@ -73,7 +74,9 @@ def test_aps(mnist_data, alpha, random_state):
     }
     fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
     # Predictor wrapper
-    class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
 
     # APS
     aps_cp = APS(class_predictor)
@@ -120,7 +123,9 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
     }
     fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
     # Predictor wrapper
-    class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
 
     # RAPS
     raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd)

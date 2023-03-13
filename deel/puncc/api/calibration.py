@@ -21,8 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the core calibrator, providing a structure to estimate the nonconformity scores
-on the calibration set and to compute the prediction sets.
+This module implements the core calibrator, providing a structure to estimate
+ the nonconformity scores on the calibration set and to compute the prediction
+ sets.
 """
 import logging
 from typing import Callable
@@ -34,7 +35,6 @@ import numpy as np
 
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.utils import alpha_calib_check
-from deel.puncc.api.utils import EPSILON
 from deel.puncc.api.utils import quantile
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,8 @@ class BaseCalibrator:
 
     Consider a pretrained model :math:`\hat{f}`, a calibration dataset
     :math:`(X_{calib}, y_{calib})` and a test dataset :math:`(X_{test}, y_{test})`.
-    The model :math:`\hat{f}` generates predictions on the calibration and test sets:
+    The model :math:`\hat{f}` generates predictions on the calibration and
+    test sets:
 
     .. math::
         y_{pred, calib}=\hat{f}(X_{calib})
@@ -72,8 +73,9 @@ class BaseCalibrator:
     :class:`BaseCalibrator`: a nonconformity score function and a definition of
     how the prediction sets are computed. In the example below, these are
     implemented from scratch but a collection of ready-to-use nonconformity
-    scores and prediction sets are provided in the modules :ref:`nonconformity_scores <nonconformity_scores>`
-    and :ref:`prediction_sets <prediction_sets>`, respectively.
+    scores and prediction sets are provided in the modules
+    :ref:`nonconformity_scores <nonconformity_scores>` and
+    :ref:`prediction_sets <prediction_sets>`, respectively.
 
 
     .. code-block:: python
@@ -141,12 +143,12 @@ class BaseCalibrator:
 
         """
         # TODO check structure match in supported types
-        logger.info(f"Computing nonconformity scores ...")
-        logger.debug(f"Shape of y_pred: {y_pred.shape}")
-        logger.debug(f"Shape of y_true: {y_true.shape}")
+        logger.info("Computing nonconformity scores ...")
+        logger.debug("Shape of y_pred: {shape}", shape=y_pred.shape)
+        logger.debug("Shape of y_true: {shape}", shape=y_true.shape)
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
-        logger.debug(f"Nonconformity scores computed !")
+        logger.debug("Nonconformity scores computed !")
 
     def calibrate(
         self,
@@ -170,7 +172,8 @@ class BaseCalibrator:
         :rtype: Tuple[ndarray]
 
         :raises RuntimeError: :meth:`calibrate` called before :meth:`fit`.
-        :raise ValueError: failed check on :data:`alpha` w.r.t size of the calibration set.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set.
 
         """
 
@@ -208,6 +211,14 @@ class BaseCalibrator:
         :rtype: np.ndarray
         """
         return self._norm_weights
+
+    def get_residuals(self) -> np.ndarray:
+        """Getter of computed nonconformity scores on the calibration set.
+
+        :returns: nonconformity scores.
+        :rtype: np.ndarray
+        """
+        return self._residuals
 
     @staticmethod
     def barber_weights(weights: np.ndarray) -> np.ndarray:
@@ -264,7 +275,7 @@ class CvPlusCalibrator:
         """
 
         for k, calibrator in self.kfold_calibrators_dict.items():
-            if calibrator._residuals is None:
+            if calibrator.get_residuals() is None:
                 error_msg = (
                     f"Fold {k} calibrator should have priorly "
                     + "estimated its residuals."
@@ -281,7 +292,8 @@ class CvPlusCalibrator:
         """Compute calibrated prediction intervals for new examples X.
 
         :param Iterable X: test features.
-        :param dict kfold_predictors_dict: dictionnary of predictors trained on each fold.
+        :param dict kfold_predictors_dict: dictionnary of predictors trained
+            on each fold.
         :param float alpha: significance level (maximum miscoverage target).
 
         :returns: y_lower, y_upper.
@@ -302,13 +314,17 @@ class CvPlusCalibrator:
             y_pred = np.reshape(y_pred, (len(y_pred), 1))
 
             # Residuals
-            residuals = self.kfold_calibrators_dict[k]._residuals
+            residuals = self.kfold_calibrators_dict[k].get_residuals()
             residuals = np.reshape(residuals, (1, len(residuals)))
 
             if concat_y_lo is None or concat_y_hi is None:
-                concat_y_lo, concat_y_hi = prediction_sets.constant_interval(y_pred, residuals)  # type: ignore
+                (concat_y_lo, concat_y_hi) = prediction_sets.constant_interval(
+                    y_pred, residuals
+                )
             else:
-                y_lo, y_hi = prediction_sets.constant_interval(y_pred, residuals)
+                y_lo, y_hi = prediction_sets.constant_interval(
+                    y_pred, residuals
+                )
                 concat_y_lo = np.concatenate(
                     [concat_y_lo, y_lo], axis=1  # type: ignore
                 )
@@ -317,9 +333,11 @@ class CvPlusCalibrator:
         # sanity check
         if concat_y_lo is None or concat_y_hi is None:
             raise RuntimeError("This should never happen.")
-        else:
-            y_lo = (-1) * np.quantile(
-                (-1) * concat_y_lo, 1 - alpha, axis=1, method="inverted_cdf"
-            )
-            y_hi = np.quantile(concat_y_hi, 1 - alpha, axis=1, method="inverted_cdf")
-            return y_lo, y_hi
+
+        y_lo = (-1) * np.quantile(
+            (-1) * concat_y_lo, 1 - alpha, axis=1, method="inverted_cdf"
+        )
+        y_hi = np.quantile(
+            concat_y_hi, 1 - alpha, axis=1, method="inverted_cdf"
+        )
+        return y_lo, y_hi
