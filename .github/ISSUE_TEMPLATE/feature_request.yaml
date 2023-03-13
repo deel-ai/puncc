@@ -1,0 +1,74 @@
+name: Feature Request
+description: Create a report to help us improve
+title: "[Feature Request]: - Your request"
+labels: ["feature", "enhancement"]
+
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to fill out this feature request!
+- type: dropdown
+  id: module
+  attributes:
+    label: Module
+    description: Select the modules to which the feature request refers.
+    options:
+      - Calibration (API)
+      - Classification
+      - Conformalization (API)
+      - Metrics
+      - Nonconformity scores (API)
+      - Plotting
+      - Prediction sets (API)
+      - Prediction (API)
+      - Regression
+      - Splitting (API)
+      - Other
+  validations:
+    required: true
+- type: input
+  id: contact
+  attributes:
+    label: Contact Details
+    description: How can we get in touch with you if we need more info?
+    placeholder: ex. email@example.com
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Feature Request
+    description: A clear and concise description of your need.
+    placeholder: Tell us what you want!
+    value: "I want it all and I want it now."
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: A minimal example
+    description: A minimal example. This will be automatically formatted into code, so no need for backticks.
+    render: shell
+- type: dropdown
+  id: version
+  attributes:
+    label: Version
+    description: What version of puncc are you running?
+    options:
+       - v0.9
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Environment
+    description: |
+      examples:
+        - **OS**: linux
+        - **Python version**: 3.8
+        - **Packages used version**: Numpy, scikit-learn, etc..
+    value: |
+        - OS:
+        - Python version:
+        - Packages used version:
+    render: markdown
+  validations:
+    required: false
