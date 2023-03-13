@@ -13,14 +13,14 @@ implement the :func:`fit` and :func:`predict` methods.
 :doc:`Prediction module <prediction>` from the :doc:`API <api>` ensures the
 compliance of models from various ML/DL libraries (such as Keras and scikit-learn) to **puncc**.
 
-.. autoclass:: deel.puncc.Regression.SplitCP
+.. autoclass:: deel.puncc.regression.SplitCP
 
-.. autoclass:: deel.puncc.Regression.LocallyAdaptiveCP
+.. autoclass:: deel.puncc.regression.LocallyAdaptiveCP
 
-.. autoclass:: deel.puncc.Regression.CQR
+.. autoclass:: deel.puncc.regression.CQR
 
-.. autoclass:: deel.puncc.Regression.CVPlus
+.. autoclass:: deel.puncc.regression.CVPlus
 
-.. autoclass:: deel.puncc.Regression.EnbPI
+.. autoclass:: deel.puncc.regression.EnbPI
 
-.. autoclass:: deel.puncc.Regression.AdaptiveEnbPI
+.. autoclass:: deel.puncc.regression.AdaptiveEnbPI
