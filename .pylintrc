@@ -1,0 +1,7 @@
+[MESSAGES CONTROL]
+
+disable=W1401, C0103
+
+[TYPECHECK]
+
+generated-members=numpy.*, torch.*

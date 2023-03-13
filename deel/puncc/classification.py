@@ -27,28 +27,34 @@ from typing import Iterable
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
-from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.splitting import IdSplitter
 
 
 class RAPS:
-    """Implementation of Regularized Adaptive Prediction Sets (RAPS). The hyperparameters :math:`\\lambda` and :math:`k_{reg}` are used to encourage small prediction sets.
-    For more details, we refer the user to the :ref:`theory overview page <theory raps>`.
+    """Implementation of Regularized Adaptive Prediction Sets (RAPS).
+    The hyperparameters :math:`\\lambda` and :math:`k_{reg}` are used to
+    encourage small prediction sets. For more details, we refer the user to the
+    :ref:`theory overview page <theory raps>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
-    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
-    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+    :param bool train: if False, prediction model(s) will not be trained and
+        will be used as is. Defaults to True.
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
+        regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting
+        from which the regularization is applied. For example,
+        if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
+        an extra penalty of size :math:`\\lambda`.
 
     .. note::
 
-        If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
+        If :math:`\\lambda = 0`, there is no regularization and the
+        implementation identifies with **APS**.
 
     .. _example raps:
 
@@ -129,10 +135,13 @@ class RAPS:
             nonconf_score_func=nonconformity_scores.raps_score_builder(
                 lambd=lambd, k_reg=k_reg
             ),
-            pred_set_func=prediction_sets.raps_set_builder(lambd=lambd, k_reg=k_reg),
+            pred_set_func=prediction_sets.raps_set_builder(
+                lambd=lambd, k_reg=k_reg
+            ),
             weight_func=None,
         )
         self.train = train
+        self.conformal_predictor = None
 
     def fit(
         self,
@@ -143,13 +152,14 @@ class RAPS:
         **kwargs: Optional[dict],
     ):
         """This method fits the models to the fit data (X_fit, y_fit)
-        and computes residuals on (X_calib, y_calib).
+        and computes nonconformity scores on (X_calib, y_calib).
 
         :param Iterable X_fit: features from the fit dataset.
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
         :param Iterable y_calib: labels from the calibration dataset.
-        :param dict kwargs: predict configuration to be passed to the model's predict method.
+        :param dict kwargs: predict configuration to be passed to the model's
+            predict method.
         """
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
@@ -165,24 +175,29 @@ class RAPS:
         :param Iterable X_test: features of new samples.
         :param float alpha: target maximum miscoverage.
 
-        :returns: Tuple composed of the model estimate y_pred and the prediction set set_pred
+        :returns: Tuple composed of the model estimate y_pred and the
+            prediction set set_pred
         :rtype: Tuple
         """
 
-        if not hasattr(self, "conformal_predictor"):
+        if self.conformal_predictor is None:
             raise RuntimeError("Fit method should be called before predict.")
 
-        (y_pred, set_pred) = self.conformal_predictor.predict(X_test, alpha=alpha)
+        (y_pred, set_pred) = self.conformal_predictor.predict(
+            X_test, alpha=alpha
+        )
 
         return y_pred, set_pred
 
 
 class APS(RAPS):
     """Implementation of Adaptive Prediction Sets (APS).
-    For more details, we refer the user to the :ref:`theory overview page <theory aps>`.
+    For more details, we refer the user to the
+    :ref:`theory overview page <theory aps>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param bool train: if False, prediction model(s) will not be trained and will be used as is. Defaults to True.
+    :param bool train: if False, prediction model(s) will not be trained and
+        will be used as is. Defaults to True.
 
     .. _example aps:
 

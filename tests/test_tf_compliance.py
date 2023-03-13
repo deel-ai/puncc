@@ -53,7 +53,7 @@ def test_split_cp(diabetes_data, alpha, random_state):
         X_train, y_train, random_state=random_state
     )
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
 
     # Create NN predictor
     model = tf.keras.Sequential()
@@ -78,7 +78,9 @@ def test_split_cp(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
 
 
 @pytest.mark.parametrize(
@@ -101,7 +103,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 
         return w_estimator
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
     # Create NN predictor
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(1))
@@ -127,7 +129,9 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
 
 
 @pytest.mark.parametrize(
@@ -144,7 +148,7 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
         X_train, y_train, random_state=random_state
     )
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
 
     # Create NN regression object
     mu_model = tf.keras.Sequential()
@@ -160,7 +164,8 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
 
     # Create predictor
     predictor = MeanVarPredictor(
-        models=[mu_model, var_model], compile_args=[compile_kwargs1, compile_kwargs2]
+        models=[mu_model, var_model],
+        compile_args=[compile_kwargs1, compile_kwargs2],
     )
 
     # CP method initialization
@@ -179,7 +184,9 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
 
 
 @pytest.mark.parametrize(
@@ -196,7 +203,7 @@ def test_cqr(diabetes_data, alpha, random_state):
         X_train, y_train, random_state=random_state
     )
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
 
     gbr_params = {
         "n_estimators": 250,
@@ -225,7 +232,8 @@ def test_cqr(diabetes_data, alpha, random_state):
 
     # Wrap models in predictor
     predictor = DualPredictor(
-        models=[q_lo_model, q_hi_model], compile_args=[compile_kwargs1, compile_kwargs2]
+        models=[q_lo_model, q_hi_model],
+        compile_args=[compile_kwargs1, compile_kwargs2],
     )
     # CP method initialization
     crq = CQR(predictor)
@@ -241,7 +249,9 @@ def test_cqr(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
 
 
 @pytest.mark.parametrize(
@@ -253,7 +263,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
 
     # Create NN model and wrap it by a predictor
     model = tf.keras.Sequential()
@@ -271,7 +281,9 @@ def test_cv_plus(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
 
 
 @pytest.mark.parametrize(
@@ -283,7 +295,7 @@ def test_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
 
     # Create NN model and wrap it in a predictor
     model = tf.keras.Sequential()
@@ -292,7 +304,9 @@ def test_enbpi(diabetes_data, alpha, random_state):
     predictor = BasePredictor(model, **compile_kwargs)
 
     # Create EnbPI object
-    enbpi = EnbPI(predictor, B=30, agg_func_loo=np.mean, random_state=random_state)
+    enbpi = EnbPI(
+        predictor, B=30, agg_func_loo=np.mean, random_state=random_state
+    )
 
     # Fit and conformalize
     kwargs = {"batch_size": 64, "epochs": 5}
@@ -308,7 +322,9 @@ def test_enbpi(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
 
 
 @pytest.mark.parametrize(
@@ -320,7 +336,7 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
-    tf.random.set_seed(0)
+    tf.keras.utils.set_random_seed(0)
 
     # Create NN regression object
     mu_model = tf.keras.Sequential()
@@ -336,7 +352,8 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
 
     # Create predictor
     predictor = MeanVarPredictor(
-        models=[mu_model, var_model], compile_args=[compile_kwargs1, compile_kwargs2]
+        models=[mu_model, var_model],
+        compile_args=[compile_kwargs1, compile_kwargs2],
     )
 
     # Build AdaptiveEnbPI object
@@ -362,4 +379,6 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )

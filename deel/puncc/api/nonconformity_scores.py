@@ -21,17 +21,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides nonconformity scores for conformal prediction. To be used when building a :ref:`calibrator <calibration>`.
+This module provides nonconformity scores for conformal prediction. To be used
+when building a :ref:`calibrator <calibration>`.
 """
+import pkgutil
 from typing import Callable
 from typing import Iterable
 
 import numpy as np
-import pandas as pd
 
 from deel.puncc.api.utils import EPSILON
 from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
+
+if pkgutil.find_loader("pandas") is not None:
+    import pandas as pd
+
+if pkgutil.find_loader("tensorflow") is not None:
+    import tensorflow as tf
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,12 +51,21 @@ def raps_score(
 
     .. warning::
 
-        **Use** :func:`raps_score_builder` **to initialize** :class:`deel.puncc.api.calibration.BaseCalibrator`.
+        This signature is incompatible with the interface of calibrators.
+        **Use** :func:`raps_score_builder` **to properly initialize**
+        :class:`deel.puncc.api.calibration.BaseCalibrator`.
 
-    :param Iterable Y_pred: :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})` where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
     :param Iterable y_true: true labels.
-    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
-    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
+        regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting
+        from which the regularization is applied. For example,
+        if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
+        an extra penalty of size :math:`\\lambda`.
 
 
     :returns: RAPS nonconformity scores.
@@ -77,7 +93,10 @@ def raps_score(
 
     # Locate position of true label in the classes
     # sequence ranked by decreasing probability
-    L = [np.where(class_ranking[i] == y_true[i])[0][0] for i in range(y_true.shape[0])]
+    L = [
+        np.where(class_ranking[i] == y_true[i])[0][0]
+        for i in range(y_true.shape[0])
+    ]
 
     # Threshold of cumulative probability mass to include the real class
     E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
@@ -92,12 +111,20 @@ def raps_score(
 
 
 def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
-    """RAPS nonconformity score builder. When called, returns a RAPS nonconformity score function :func:`raps_score` with given initialitation of regularization hyperparameters.
+    """RAPS nonconformity score builder. When called, returns a RAPS
+    nonconformity score function :func:`raps_score` with given initialitation
+    of regularization hyperparameters.
 
-    :param float lambd: positive weight associated to the regularization term that encourages small set sizes. If :math:`\\lambda = 0`, there is no regularization and the implementation identifies with **APS**.
-    :param float k_reg: class rank (ordered by descending probability) starting from which the regularization is applied. For example, if :math:`k_{reg} = 3`, then the fourth most likely estimated class has an extra penalty of size :math:`\\lambda`.
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
+        regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting
+        from which the regularization is applied. For example, if
+        :math:`k_{reg} = 3`, then the fourth most likely estimated class has
+        an extra penalty of size :math:`\\lambda`.
 
-    :returns: RAPS nonconformity score function that takes two parameters: `Y_pred` and `y_true`.
+    :returns: RAPS nonconformity score function that takes two parameters:
+        `Y_pred` and `y_true`.
     :rtype: Callable
 
     """
@@ -129,24 +156,30 @@ def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     if isinstance(y_pred, np.ndarray):
         return np.absolute(diff)
-    elif isinstance(y_pred, pd.DataFrame):
+
+    if pkgutil.find_loader("pandas") and isinstance(y_pred, pd.DataFrame):
         return diff.abs()
-    elif isinstance(y_pred, tf.Tensor):
+
+    if pkgutil.find_loader("tensorflow") and isinstance(y_pred, tf.Tensor):
         return tf.math.abs(diff)
-    elif isinstance(y_pred, torch.Tensor):
-        return torch.abs(diff)
-    else:  # Sanity check, this should never happen.
-        raise RuntimeError("Fatal Error. Type check failed !")
+
+    # if pkgutil.find_loader("torch"):
+    #     if isinstance(y_pred, torch.Tensor):
+    #         return torch.abs(diff)
+
+    raise RuntimeError("Type check failed")
 
 
 def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """Scaled Mean Absolute Deviation (MAD). Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
+    """Scaled Mean Absolute Deviation (MAD). Considering
+    :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
     .. math::
 
         R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}}
 
-    :param Iterable Y_pred: :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
     :param Iterable y_true: true labels.
 
     :returns: scaled mean absolute deviation.
@@ -156,14 +189,16 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
         raise RuntimeError(
-            f"Each Y_pred must contain a point prediction and a dispersion estimation."
+            "Each Y_pred must contain a point prediction and a dispersion estimation."
         )
 
     # check y_true is a collection of point observations
     if len(y_true.shape) != 1:
-        raise RuntimeError(f"Each y_pred must contain a point observation.")
+        raise RuntimeError("Each y_pred must contain a point observation.")
 
-    if isinstance(Y_pred, pd.DataFrame):
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        Y_pred, pd.DataFrame
+    ):
         y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
     else:
         y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
@@ -176,13 +211,15 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """CQR nonconformity score. Considering :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`:
+    """CQR nonconformity score. Considering
+    :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`:
 
     .. math::
 
         R = max\{q_{\\text{lo}} - y_{\\text{true}}, y_{\\text{true}} - q_{\\text{hi}}\}
 
-    where :math:`q_{\\text{lo}}` (resp. :math:`q_{\\text{hi}}`) is the lower (resp. higher) quantile prediction
+    where :math:`q_{\\text{lo}}` (resp. :math:`q_{\\text{hi}}`) is the lower
+    (resp. higher) quantile prediction
 
     :param Iterable Y_pred: predicted quantiles couples.
     :param Iterable y_true: true quantiles couples.
@@ -194,14 +231,16 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
         raise RuntimeError(
-            f"Each Y_pred must contain lower and higher quantiles estimations."
+            "Each Y_pred must contain lower and higher quantiles estimations."
         )
 
     # check y_true is a collection of point observations
     if len(y_true.shape) != 1:
-        raise RuntimeError(f"Each y_pred must contain a point observation.")
+        raise RuntimeError("Each y_pred must contain a point observation.")
 
-    if isinstance(Y_pred, pd.DataFrame):
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        Y_pred, pd.DataFrame
+    ):
         q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
     else:
         q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
@@ -211,13 +250,22 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     if isinstance(diff_lo, np.ndarray):
         return np.maximum(diff_lo, diff_hi)
-    elif isinstance(diff_lo, pd.DataFrame):
+
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        diff_lo, pd.DataFrame
+    ):
         raise NotImplementedError(
             "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
         )
-    elif isinstance(diff_lo, tf.Tensor):
+
+    if pkgutil.find_loader("tensorflow") is not None and isinstance(
+        diff_lo, tf.Tensor
+    ):
         return tf.math.maximum(diff_lo, diff_hi)
-    elif isinstance(diff_lo, torch.Tensor):
-        return torch.maximum(diff_lo, diff_hi)
-    else:  # Sanity check, this should never happen.
-        raise RuntimeError("Fatal Error. Type check failed !")
+
+    # if pkgutil.find_loader("torch") is not None and isinstance(
+    #     diff_lo, torch.Tensor
+    # ):
+    #     return torch.maximum(diff_lo, diff_hi)
+
+    raise RuntimeError("Fatal Error. Type check failed !")

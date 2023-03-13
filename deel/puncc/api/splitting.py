@@ -23,16 +23,17 @@
 """
 This module provides data splitting schemes.
 """
+import pkgutil
 from abc import ABC
 from typing import Iterable
 from typing import List
 from typing import Tuple
 
 import numpy as np
-import pandas as pd
 from sklearn import model_selection
 
-from deel.puncc.api.utils import supported_types_check
+if pkgutil.find_loader("pandas") is not None:
+    import pandas as pd
 
 
 class BaseSplitter(ABC):
@@ -80,10 +81,13 @@ class IdSplitter(BaseSplitter):
     def __call__(self, X=None, y=None) -> Tuple[Iterable]:
         """Wraps into a splitter the provided fit and calibration subsets.
 
-        :param Iterable X: features array. Not needed here, just a placeholder for interoperability.
-        :param Iterable y: labels array. Not needed here, just a placeholder for interoperability.
+        :param Iterable X: features array. Not needed here, just a placeholder
+            for interoperability.
+        :param Iterable y: labels array. Not needed here, just a placeholder
+            for interoperability.
 
-        :returns: List of one tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
+        :returns: List of one tuple of deterministic subsets
+            (X_fit, y_fit, X_calib, y_calib).
         :rtype: List[Tuple[Iterable]]
         """
         return self._split
@@ -92,7 +96,8 @@ class IdSplitter(BaseSplitter):
 class RandomSplitter(BaseSplitter):
     """Random splitter that assign samples given a ratio.
 
-    :param float ratio: ratio of data assigned to the training (1-ratio to calibration).
+    :param float ratio: ratio of data assigned to the training
+        (1-ratio to calibration).
     :param int random_state: seed to control random generation.
     """
 
@@ -112,7 +117,8 @@ class RandomSplitter(BaseSplitter):
         :param Iterable X: features array.
         :param Iterable y: labels array.
 
-        :returns: List of one tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
+        :returns: List of one tuple of random subsets
+            (X_fit, y_fit, X_calib, y_calib).
         :rtype: List[Tuple[Iterable]]
         """
         rng = np.random.RandomState(seed=self.random_state)
@@ -144,18 +150,20 @@ class KFoldSplitter(BaseSplitter):
         :param Iterabler X: features array.
         :param Iterable y: labels array.
 
-        :returns: list of K split folds. Each fold is a tuple (X_fit, y_fit, X_calib, y_calib).
+        :returns: list of K split folds. Each fold is a tuple
+            (X_fit, y_fit, X_calib, y_calib).
         :rtype: List[Tuple[Iterable]]
         """
         kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state
         )
-        folds = list()
+        folds = []
 
         for fit, calib in kfold.split(X):
 
-            if isinstance(X, pd.DataFrame):
-
+            if pkgutil.find_loader("pandas") is not None and isinstance(
+                X, pd.DataFrame
+            ):
                 if isinstance(y, pd.DataFrame):
                     folds.append(
                         (X.iloc[fit], y.iloc[fit], X.iloc[calib], y.iloc[calib])

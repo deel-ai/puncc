@@ -73,7 +73,9 @@ def test_aps(mnist_data, alpha, random_state):
     }
     fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
     # Predictor wrapper
-    class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
 
     # APS
     aps_cp = APS(class_predictor)
@@ -120,7 +122,9 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
     }
     fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
     # Predictor wrapper
-    class_predictor = BasePredictor(nn_model, is_trained=False, **compile_kwargs)
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
 
     # RAPS
     raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd)

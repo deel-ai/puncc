@@ -25,10 +25,9 @@ from typing import Callable
 import numpy as np
 import pytest
 
-
-from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
+from deel.puncc.api.calibration import BaseCalibrator
 
 
 @pytest.mark.parametrize(
@@ -58,7 +57,8 @@ def test_regression_calibrator(rand_reg_data, alpha, random_state):
     # The calibrator is instantiated by passing the two functions defined
     # above to the constructor.
     calibrator = BaseCalibrator(
-        nonconf_score_func=nonconformity_function, pred_set_func=prediction_set_function
+        nonconf_score_func=nonconformity_function,
+        pred_set_func=prediction_set_function,
     )
 
     # The nonconformity scores are computed by calling the `fit` method
@@ -67,7 +67,9 @@ def test_regression_calibrator(rand_reg_data, alpha, random_state):
 
     # The lower and upper bounds of the prediction interval are then returned
     # by the call to calibrate on the new data w.r.t a risk level alpha.
-    y_pred_lower, y_pred_upper = calibrator.calibrate(y_pred=y_pred_test, alpha=alpha)
+    y_pred_lower, y_pred_upper = calibrator.calibrate(
+        y_pred=y_pred_test, alpha=alpha
+    )
 
     assert y_pred_lower is not None
     assert y_pred_upper is not None
@@ -86,7 +88,9 @@ def test_classification_calibrator(rand_class_data, alpha, random_state):
 
     # The calibrator is instantiated
     calibrator = BaseCalibrator(
-        nonconf_score_func=nonconformity_scores.raps_score_builder(lambd=0.1, k_reg=2),
+        nonconf_score_func=nonconformity_scores.raps_score_builder(
+            lambd=0.1, k_reg=2
+        ),
         pred_set_func=prediction_sets.raps_set_builder(lambd=0.1, k_reg=2),
     )
 

@@ -40,7 +40,8 @@ def classification_mean_coverage(
     * :math:`cov(X_i) = 1` if :math:`y_{true} \in S(X_i)`
     * :math:`cov(X_i) = 0` otherwise
 
-    With N the number of examples, the average coverage is :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+    With N the number of examples, the average coverage is
+    :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
 
     :param np.ndarray y_true: Observed label
     :param Tuple[np.ndarray] set_pred: label prediction set
@@ -77,7 +78,8 @@ def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
         * :math:`cov(X_i) = 1` if :math:`y_{true} \in C(X_i)`
         * :math:`cov(X_i) = 0` otherwise
 
-    With N the number of examples, the average coverage is :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+    With N the number of examples, the average coverage is
+    :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
 
     :param ndarray y_true: label true values.
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.
@@ -99,13 +101,18 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
 
     .. NOTE::
 
-        The ACE is the distance between the nominal coverage :math:`1-\\alpha` and the empirical average coverage :math:`AC` such that :math:`ACE = AC - (1-\\alpha)`.
-        If the ACE is strictly negative, the prediction intervals are marginally undercovering. If the ACE is strictly positive, the prediction intervals are maginally conservative.
+        The ACE is the distance between the nominal coverage :math:`1-\\alpha`
+        and the empirical average coverage :math:`AC` such that
+        :math:`ACE = AC - (1-\\alpha)`.
+
+        If the ACE is strictly negative, the prediction intervals are
+        marginally undercovering. If the ACE is strictly positive, the
+        prediction intervals are maginally conservative.
 
     :returns: the average coverage error (ACE).
     :rtype: float
     """
-    cov = average_coverage(y_true, y_pred_lower, y_pred_upper)
+    cov = regression_mean_coverage(y_true, y_pred_lower, y_pred_upper)
     return cov - (1 - alpha)
 
 
