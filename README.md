@@ -40,7 +40,7 @@ pip install -e .[interactive]
 ```
 
 You can alternatively use the makefile to automatically create a virtual environment
-`puncc-user-env` and install all requiments:
+`puncc-user-env` and install all requirments:
 
 ```bash
 make install-user
@@ -53,7 +53,7 @@ pip install -e .[dev]
 ```
 
 You can alternatively use the makefile to automatically create a virtual environment
-`puncc-dev-env` and install the dev requiments:
+`puncc-dev-env` and install the dev requirments:
 
 ```bash
 make prepare-dev
