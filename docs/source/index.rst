@@ -2,8 +2,8 @@
    :maxdepth: 2
    :caption: Contents
 
-   theory_overview
    getting_started
+   theory_overview
    regression
    classification
    api
