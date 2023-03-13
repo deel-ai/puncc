@@ -39,6 +39,13 @@ It is recommended to install puncc in a virtual environment to not mess with you
 pip install -e .[interactive]
 ```
 
+You can alternatively use the makefile to automatically create a virtual environment
+`puncc-user-env` and install all requiments:
+
+```bash
+make install-user
+```
+
 #### For developpers
 
 ```bash
