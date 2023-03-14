@@ -1,13 +1,24 @@
+<!-- Banner section -->
 <div align="center">
-    <a href="#">
-        <img src="https://img.shields.io/badge/Python-3.8 +-efefef">
-    </a>
-    <a href="#">
-        <img src="https://img.shields.io/badge/License-MIT-efefef">
-    </a>
-    <a href="https://github.com/deel-ai/puncc/actions/workflows/ci.yml">
-        <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/ci.yml/badge.svg">
-    </a>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner_light.png">
+    <img src="docs/assets/banner_light.png" alt="Library Banner">
+  </picture>
+</div>
+<br>
+
+<!-- Badge section -->
+<div align="center">
+  <a href="#">
+    <img src="https://img.shields.io/badge/Python-3.8 +-efefef">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/License-MIT-efefef">
+  </a>
+  <a href="https://github.com/deel-ai/puncc/actions/workflows/ci.yml">
+    <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/ci.yml/badge.svg">
+  </a>
 </div>
 <br>
 
