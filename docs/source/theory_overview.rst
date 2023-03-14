@@ -106,18 +106,22 @@ Conformalized Quantile Regression (CQR)
 .. _theory cqr:
 
 Split conformal prediction can be extended to `quantile predictors <https://en.wikipedia.org/wiki/Quantile_regression>`_  :math:`q(\cdot)`
-by using the nonconformity score
-:math:`R_i^{} = \text{max}\{ \widehat{q}_{\alpha_{lo}}(X_i) - Y_i, Y_i - \widehat{q}_{1 - \alpha_{hi}}(X_i)\}`,
-for :math:`i=1,\dots,|D_{calibration}|`. :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{\alpha_{hi}}` are
+by using the nonconformity score:
+
+.. math::
+
+    R_i^{} = \text{max}\{ \widehat{q}_{\alpha_{lo}}(X_i) - Y_i, Y_i - \widehat{q}_{1 - \alpha_{hi}}(X_i)\},
+
+for :math:`i=1,\dots,|D_{calibration}|`. :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{1-\alpha_{hi}}` are
 the predictors of the :math:`\alpha_{lo}` *-th* and :math:`(1-\alpha_{hi})` *-th* quantiles of :math:`Y | X`, respectively.
+For example, if we set :math:`\alpha = 0.1`, we would fit two predictors :math:`\widehat{q}_{0.05}(\cdot)` and :math:`\widehat{q}_{0.95}(\cdot)` on training data :math:`D_{train}` and compute the scores on :math:`D_{calibration}`.
+
 
 .. note::
 
-    It is common to split evenly :math:`\alpha` as: :math:`\alpha_{lo} = \frac{\alpha}{2}` and :math:`\alpha_{hi}=1-\frac{\alpha}{2}`, but the users are free to do otherwise.
+    It is common to split evenly :math:`\alpha` as: :math:`\alpha_{lo} = \alpha_{hi}= \frac{\alpha}{2}`, but users are free to do otherwise.
 
-The procedure,
-named *Conformalized Quantile Regression* [Romano2019]_, yields the
-following prediction interval:
+The procedure, named *Conformalized Quantile Regression* [Romano2019]_, yields the following prediction interval:
 
 .. math::
 
@@ -125,8 +129,9 @@ following prediction interval:
 
 When data are exchangeable, the correction margin :math:`\delta_{\alpha}` guarantees finite-sample marginal coverage for the quantile predictions, and this holds also for misspecified (i.e. "bad") predictors.
 
-If the fitted :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{1-\alpha_{hi}}` approximate well (empirically), the conditional distribution :math:`Y | X` of the data, we will get a small margin :math:`\delta_{\alpha}`: this means that on average, the prediction errors on the :math:`D_{calibration}` were small.
-Also, if the base predictors have strong theoretical properties, our CP procedure  we inherit the theoretical properties of :math:`\widehat{q}_{}(\cdot)`.
+If the fitted :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{1-\alpha_{hi}}` approximate (empirically) well  the conditional distribution :math:`Y | X` of the data, we will get a small margin :math:`\delta_{\alpha}`: this means that on average, the prediction errors on the :math:`D_{calibration}` were small.
+
+Also, if the base predictors have strong theoretical properties, our CP procedure inherits these properties of :math:`\widehat{q}_{}(\cdot)`.
 We could have an asymptotically, conditionally accurate predictor and also have a theoretically valid, distribution-free guarantee on the marginal coverage!
 
 
@@ -135,13 +140,64 @@ We could have an asymptotically, conditionally accurate predictor and also have 
     ########################
     .. _theory weightedcp:
 
-Cross-validation + (CV+)
-************************
+
+Cross-validation+ (CV+), Jackknife+
+************************************
 .. _theory cvplus:
+
+The `leave-one-out (LOO) and the k-fold cross-validation <https://en.wikipedia.org/wiki/Cross-validation_(statistics)>`_ are well known schemes used to estimate regression residuals on out-of-sample data.
+As shown below, one first splits the data into K partitions and then *holds out* a partition at a time to compute errors (nonconformity scores, in our case).
+
+.. image:: img/k-fold-scheme.png
+   :width: 600
+
+Following this principle, [Barber2021]_ introduced the LOO *jackknife+* (JP) and the k-fold *Cross-validation+* (CV+).
+With these methods, one does *not need* a dedicated calibration set.
+
+The CV+ algorithm goes as follows.
+Let :math:`n = |D_{train}|`, and let :math:`D_{train}` be partitioned disjointly into the sets :math:`S_1, S_2, \dots, S_K`.
+Each training point :math:`(X_i,Y_i) \in D_{train}` belongs to one partition, noted as :math:`S_{K(i)}`.
+
+At training, we fit and store in memory :math:`K` models, referred to as :math:`\widehat{f}_{-S_{K}}` to indicate that it was fitted using all data points *except* those in partition :math:`S_{K}`.
+Then, the conformalization step boils down to computing, for each :math:`(X_i,Y_i) \in D_{train}`, the score:
+
+.. math::
+    R_i^{CV} = | Y_i - \widehat{f}_{-S_{K(i)}}(X_i)|, i=1, \dots, n
+
+If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the algorithm.
+
+**Inference**
+
+Let :math:`(X_{new}, Y_{new})` be a test point, where :math:`Y_{new}` is not observable at inference time.
+
+For the **lower** bound of the interval:
+    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{K(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
+    2. compute the quantile [...]
+
+For the **upper** bound of the interval:
+    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{K(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
+    2. Compute the quantile [...]
+
+
+
+.. math::
+
+    \widehat{C}_{\alpha}(X_{new}) = \Big[ [...],  [...] \Big].
+
 
 Ensemble Batch Prediction Intervals (EnbPI)
 *******************************************
 .. _theory enbpi:
+
+
+Summary: guarantees
+*******************************************
+.. _theory guarantees:
+
+* split
+* JP
+
+
 
 
 Conformal Classification
@@ -159,8 +215,9 @@ Regularized Adaptive Prediction Sets (RAPS)
 References
 ----------
 
-.. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., 2021. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511.
-.. [Romano2019] Romano, Y., Patterson, E. and Candes, E., 2019. Conformalized quantile regression. Advances in neural information processing systems, 32.
+.. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., 2021. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
+.. [Barber2021] Barber, R. F., Candes, E. J., Ramdas, A., & Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. https://arxiv.org/abs/1905.02928
+.. [Lei2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., 2018. Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
+.. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., 2002. Inductive confidence machines for regression. In Machine Learning: ECML 2002: 13th European Conference on Machine Learning Helsinki, Finland, August 19-23, 2002 Proceedings 13 (pp. 345-356). Springer Berlin Heidelberg.
 .. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., 2008, February. Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
-.. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., 2002. Inductive confidence machines for regression. In Machine Learning: ECML 2002: 13th European Conference on Machine Learning Helsinki, Finland, August 19–23, 2002 Proceedings 13 (pp. 345-356). Springer Berlin Heidelberg.
-.. [Lei2018] Lei, J., G’Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., 2018. Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111.
+.. [Romano2019] Romano, Y., Patterson, E. and Candes, E., 2019. Conformalized quantile regression. Advances in neural information processing systems, 32. https://arxiv.org/abs/1905.03222
