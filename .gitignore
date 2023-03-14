@@ -12,6 +12,7 @@
 
 # Virtual environment
 puncc-dev-env/
+puncc-user-env/
 
 # Local demo files
 **demo/

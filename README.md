@@ -1,13 +1,22 @@
+<!-- Banner section -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner_light.png">
+  <img src="docs/assets/banner_light.png" alt="Library Banner" style="display: block; margin-left: auto; width: 90%;">
+</picture>
+
+
+<!-- Badge section -->
 <div align="center">
-    <a href="#">
-        <img src="https://img.shields.io/badge/Python-3.8 +-efefef">
-    </a>
-    <a href="#">
-        <img src="https://img.shields.io/badge/License-MIT-efefef">
-    </a>
-    <a href="https://github.com/deel-ai/puncc/actions/workflows/ci.yml">
-        <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/ci.yml/badge.svg">
-    </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/Python-3.8 +-efefef">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/License-MIT-efefef">
+  </a>
+  <a href="https://github.com/deel-ai/puncc/actions/workflows/ci.yml">
+    <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/ci.yml/badge.svg">
+  </a>
 </div>
 <br>
 
@@ -39,6 +48,13 @@ It is recommended to install puncc in a virtual environment to not mess with you
 pip install -e .[interactive]
 ```
 
+You can alternatively use the makefile to automatically create a virtual environment
+`puncc-user-env` and install all requirements:
+
+```bash
+make install-user
+```
+
 #### For developpers
 
 ```bash
@@ -46,7 +62,7 @@ pip install -e .[dev]
 ```
 
 You can alternatively use the makefile to automatically create a virtual environment
-`puncc-dev-env` and install the dev requiments:
+`puncc-dev-env` and install the dev requirements:
 
 ```bash
 make prepare-dev
