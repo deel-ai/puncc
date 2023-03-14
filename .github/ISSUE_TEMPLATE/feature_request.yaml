@@ -1,7 +1,7 @@
 name: Feature Request
 description: Create a report to help us improve
 title: "[Feature Request]: - Your request"
-labels: ["feature", "enhancement"]
+labels: ["enhancement"]
 
 body:
 - type: markdown
