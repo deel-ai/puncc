@@ -1,10 +1,11 @@
 <!-- Banner section -->
+<div align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner_light.png">
-  <img src="docs/assets/banner_light.png" alt="Library Banner" style="display: block; margin-left: auto; width: 90%;">
+  <img src="docs/assets/banner_light.png" alt="PUNCC" width="70%" align="center" style="margin: 0px 0px 0px 10%;">
 </picture>
-
+</div>
 
 <!-- Badge section -->
 <div align="center">
@@ -20,7 +21,9 @@
 </div>
 <br>
 
-Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source library that enables ad-hoc integration of AI models into a theoretically sound uncertainty estimation framework based on conformal prediction. Prediction sets are constructed with guaranteed coverage probability according to a nominal level of error $\alpha$.
+Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source Python library that integrates a collection of state-of-the-art Conformal Prediction algorithms and related techniques for regression and classification problems. PUNCC can be used with any predictive model to provide rigorous uncertainty estimations. Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
+
+<br>
 
 ## 📚 Table of contents
 
@@ -70,7 +73,11 @@ make prepare-dev
 
 
 # 🚀 Quickstart
+<div align="center">
 
+<font size=3>📙 You can find the implementation  below and more in the [**Quickstart Notebook**](docs/quickstart.ipynb)</font>.
+
+</div>
 Let’s consider a simple regression problem on diabetes data provided by Scikit-learn. We want to evaluate the uncertainty associated with the prediction using inductive (or split) conformal prediction.
 
 ### Data
@@ -214,14 +221,12 @@ ax = plot_prediction_intervals(
 
 ![90% Prediction Interval with the Split Conformal Prediction Method](docs/source/results_quickstart_split_cp_pi.png)
 
-In the long run, at least 90% of the examples are included in the prediction interval.
-
-### Further readings: High-level and low-level APIs
-The library `puncc` provides two ways of defining and using conformal prediction wrappers:
-- **High-level API**: a direct approach to run state of the art conformal prediction procedures. This is what we used in the previous conformal regression example.
+### Further readings: more flexibility with the API
+The library PUNCC provides two ways of defining and using conformal prediction wrappers:
+- A direct approach to run state-of-the-art conformal prediction procedures. This is what we used in the previous conformal regression example.
 - **Low-level API**: a more flexible approach based of full customization of the prediction model, the choice of nonconformity scores and the split between fit and calibration datasets.
 
-A quick comparison of both approaches is provided [here](docs/quickstart.ipynb) for a simple regression problem.
+A quick comparison of both approaches is provided in the [Quickstart Notebook](docs/quickstart.ipynb) for a simple regression problem.
 
 ## 📚 Citation
 
