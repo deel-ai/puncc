@@ -156,13 +156,13 @@ With these methods, one does *not need* a dedicated calibration set.
 
 The CV+ algorithm goes as follows.
 Let :math:`n = |D_{train}|`, and let :math:`D_{train}` be partitioned disjointly into the sets :math:`S_1, S_2, \dots, S_K`.
-Each training point :math:`(X_i,Y_i) \in D_{train}` belongs to one partition, noted as :math:`S_{K(i)}`.
+Each training point :math:`(X_i,Y_i) \in D_{train}` belongs to one partition, noted as :math:`S_{k(i)}`.
 
 At training, we fit and store in memory :math:`K` models, referred to as :math:`\widehat{f}_{-S_{K}}` to indicate that it was fitted using all data points *except* those in partition :math:`S_{K}`.
 Then, the conformalization step boils down to computing, for each :math:`(X_i,Y_i) \in D_{train}`, the score:
 
 .. math::
-    R_i^{CV} = | Y_i - \widehat{f}_{-S_{K(i)}}(X_i)|, i=1, \dots, n
+    R_i^{CV} = | Y_i - \widehat{f}_{-S_{k(i)}}(X_i)|, i=1, \dots, n
 
 If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the algorithm.
 
@@ -171,11 +171,11 @@ If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the a
 Let :math:`(X_{new}, Y_{new})` be a test point, where :math:`Y_{new}` is not observable at inference time.
 
 For the **lower** bound of the interval:
-    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{K(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
+    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
     2. compute the quantile [...]
 
 For the **upper** bound of the interval:
-    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{K(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
+    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{k(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
     2. Compute the quantile [...]
 
 
