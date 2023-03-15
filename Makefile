@@ -20,7 +20,7 @@ prepare-dev:
 	. puncc-dev-env/bin/activate && pre-commit install
 	. puncc-dev-env/bin/activate && pre-commit install-hooks
 
-install-user
+install-user:
 	python -m venv puncc-user-env
 	. puncc-user-env/bin/activate && pip install --upgrade pip
 	. puncc-user-env/bin/activate && pip install -e .[interactive]
