@@ -29,6 +29,7 @@ from typing import Iterable
 from typing import Tuple
 
 import numpy as np
+import pickle
 
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
@@ -260,6 +261,30 @@ class ConformalPredictor:
 
         return self._cv_cp_agg.predict(X, alpha)
 
+    def save(self, path):
+        """Serialize current conformal predictor and write it into file.
+
+        :param str path: file path.
+        """
+        with open(path, "wb") as output_file:
+            pickle.dump(self.__dict__, output_file)
+
+    @staticmethod
+    def load(path):
+        """Load conformal predictor from a file.
+
+        :param str path: file path.
+
+        :returns: loaded conformal predictor instance.
+        :rtype: ConformalPredictor
+        """
+        with open(path, "rb") as input_file:
+            saved_dict = pickle.load(input_file)
+
+        loaded_cp = ConformalPredictor(None, None, None)
+        loaded_cp.__dict__.update(saved_dict)
+        return loaded_cp
+
 
 class CrossValCpAggregator:
     """This class enables to aggregate predictions and calibrations
@@ -348,7 +373,6 @@ class CrossValCpAggregator:
 
         # No cross-val strategy if K = 1
         if K == 1:
-
             for k in self._predictors.keys():
                 predictor = self._predictors[k]
                 calibrator = self._calibrators[k]
