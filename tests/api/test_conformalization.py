@@ -23,6 +23,7 @@
 import unittest
 
 import numpy as np
+import os
 from sklearn import linear_model
 from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
@@ -40,7 +41,6 @@ np.random.seed(0)
 
 class ConformalPredictorCheck(unittest.TestCase):
     def setUp(self):
-
         # Generate a random regression problem
         X, y = make_regression(
             n_samples=1000,
@@ -74,7 +74,6 @@ class ConformalPredictorCheck(unittest.TestCase):
         self.kfold_splitter = KFoldSplitter(K=20, random_state=42)
 
     def test_proper_fit_predict(self):
-
         # Conformal predictor
         conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
@@ -91,7 +90,6 @@ class ConformalPredictorCheck(unittest.TestCase):
         )
 
     def test_bad_fit_predict(self):
-
         # Conformal predictor
         conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
@@ -106,7 +104,6 @@ class ConformalPredictorCheck(unittest.TestCase):
             )
 
     def test_pretrained_predictor(self):
-
         # Predictor initialized with trained model
         model = linear_model.LinearRegression()
         model.fit(self.X_train, self.y_train)
@@ -167,3 +164,34 @@ class ConformalPredictorCheck(unittest.TestCase):
 
         self.assertIs(type(nconf_scores), dict)
         self.assertEqual(len(nconf_scores), 20)
+
+    def test_save_load(self):
+        # Conformal predictor
+        conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=self.kfold_splitter,
+        )
+
+        # Fit model and compute nonconformity scores
+        conformal_predictor.fit(self.X_train, self.y_train)
+
+        # Save copy of the conformal predictor
+        conformal_predictor.save("my_cp.pkl")
+
+        # load conformal predictor from file
+        loaded_conformal_predictor = ConformalPredictor.load("my_cp.pkl")
+
+        # Predict on X_test
+        y_pred, y_pred_lo, y_pred_hi = conformal_predictor.predict(
+            self.X_test, alpha=0.9
+        )
+        l_y_pred, l_y_pred_lo, l_y_pred_hi = loaded_conformal_predictor.predict(
+            self.X_test, alpha=0.9
+        )
+
+        np.testing.assert_array_equal(y_pred, l_y_pred)
+        np.testing.assert_array_equal(y_pred_lo, l_y_pred_lo)
+        np.testing.assert_array_equal(y_pred_hi, l_y_pred_hi)
+
+        os.remove("my_cp.pkl")
