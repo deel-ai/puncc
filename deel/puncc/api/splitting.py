@@ -160,7 +160,6 @@ class KFoldSplitter(BaseSplitter):
         folds = []
 
         for fit, calib in kfold.split(X):
-
             if pkgutil.find_loader("pandas") is not None and isinstance(
                 X, pd.DataFrame
             ):
@@ -172,9 +171,7 @@ class KFoldSplitter(BaseSplitter):
                     folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
 
             else:
-                bool_fit_idx = np.array(
-                    [True if i in fit else False for i in range(len(X))]
-                )
+                bool_fit_idx = np.array([i in fit for i in range(len(X))])
                 folds.append(
                     (
                         X[bool_fit_idx],
