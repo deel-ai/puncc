@@ -51,6 +51,7 @@ interactive_requirements = [
 
 dev_requirements = [
     "flake8",
+    "pylint",
     "pytest",
     "pytest-cov",
     "black",
@@ -83,7 +84,7 @@ setuptools.setup(
         "interactive": interactive_requirements,
         "dev": dev_requirements,
     },
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     classifiers=[
         "License :: MIT License",
         "Programming Language :: Python",
