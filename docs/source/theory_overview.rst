@@ -147,12 +147,11 @@ Cross-validation+ (CV+), Jackknife+
 
 The `leave-one-out (LOO) and the k-fold cross-validation <https://en.wikipedia.org/wiki/Cross-validation_(statistics)>`_ are well known schemes used to estimate regression residuals on out-of-sample data.
 As shown below, one first splits the data into K partitions and then *holds out* a partition at a time to compute errors (nonconformity scores, in our case).
+Following this principle, [Barber2021]_ introduced the LOO *jackknife+* (JP) and the k-fold *Cross-validation+* (CV+).
+With these methods, one does *not need* a dedicated calibration set.
 
 .. image:: img/k-fold-scheme.png
    :width: 600
-
-Following this principle, [Barber2021]_ introduced the LOO *jackknife+* (JP) and the k-fold *Cross-validation+* (CV+).
-With these methods, one does *not need* a dedicated calibration set.
 
 The CV+ algorithm goes as follows.
 Let :math:`n = |D_{train}|`, and let :math:`D_{train}` be partitioned disjointly into the sets :math:`S_1, S_2, \dots, S_K`.
@@ -166,50 +165,52 @@ Then, the conformalization step boils down to computing, for each :math:`(X_i,Y_
 
 If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the algorithm.
 
+
 **Inference**
 
 Let :math:`(X_{new}, Y_{new})` be a test point, where :math:`Y_{new}` is not observable at inference time.
-
-For the **lower** bound of the interval:
-    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
-    2. compute the quantile [...]
-
-For the **upper** bound of the interval:
-    1. Compute the :math:`n` candidates as :math:`\{ \widehat{f}_{-S_{k(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
-    2. Compute the quantile [...]
-
+The lower and upper bounds of the prediction interval are given by:
+    1. Compute :math:`\bar{R}_{L} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
+    2. :math:`\widehat{L}_{\alpha}(X_{new}) = \lfloor \alpha (n+1) \rfloor`-th smallest value in :math:`\bar{R}_{L}` (lower bound)
+    3. Compute :math:`\bar{R}_{U} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
+    4. :math:`\widehat{U}_{\alpha}(X_{new}) = \lceil (1-\alpha) (n+1) \rceil`-th smallest value in :math:`\bar{R}_{U}` (upper bound)
 
 
 .. math::
 
-    \widehat{C}_{\alpha}(X_{new}) = \Big[ [...],  [...] \Big].
+    \widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{L}_{\alpha}(X_{new}), \widehat{U}_{\alpha}(X_{new}) \Big].
 
 
 Ensemble Batch Prediction Intervals (EnbPI)
 *******************************************
 .. _theory enbpi:
 
-
-Summary: guarantees
-*******************************************
-.. _theory guarantees:
-
-* split
-* JP
+Introduced in [Barber2021]_, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
+Unlike the proper conformal algorithms seen above, EnbPI requires some additional hypothesis to attain the coverage guarantee.
 
 
 
 
-Conformal Classification
-------------------------
+.. Summary: guarantees
+.. *******************************************
+.. .. _theory guarantees:
 
-Adaptive Prediction Sets (APS)
-*******************************************
-.. _theory aps:
+.. * split
+.. * JP
 
-Regularized Adaptive Prediction Sets (RAPS)
-*******************************************
-.. _theory raps:
+
+
+
+.. Conformal Classification
+.. ------------------------
+
+.. Adaptive Prediction Sets (APS)
+.. *******************************************
+.. .. _theory aps:
+
+.. Regularized Adaptive Prediction Sets (RAPS)
+.. *******************************************
+.. .. _theory raps:
 
 
 References
@@ -221,3 +222,4 @@ References
 .. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., 2002. Inductive confidence machines for regression. In Machine Learning: ECML 2002: 13th European Conference on Machine Learning Helsinki, Finland, August 19-23, 2002 Proceedings 13 (pp. 345-356). Springer Berlin Heidelberg.
 .. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., 2008, February. Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
 .. [Romano2019] Romano, Y., Patterson, E. and Candes, E., 2019. Conformalized quantile regression. Advances in neural information processing systems, 32. https://arxiv.org/abs/1905.03222
+.. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of the 38th International Conference on Machine Learning. https://proceedings.mlr.press/v139/xu21h.html.
