@@ -15,9 +15,9 @@
   <a href="#">
     <img src="https://img.shields.io/badge/License-MIT-efefef">
   </a>
-  <!--<a href="https://github.com/deel-ai/puncc/actions/workflows/linter.yml">
+  <a href="https://github.com/deel-ai/puncc/actions/workflows/linter.yml">
     <img alt="PyLint" src="https://github.com/deel-ai/puncc/actions/workflows/linter.yml/badge.svg">
-  </a>-->
+  </a>
   <a href="https://github.com/deel-ai/puncc/actions/workflows/tests.yml">
     <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/tests.yml/badge.svg">
   </a>
