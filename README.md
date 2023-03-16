@@ -3,7 +3,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner_light2.png">
-  <img src="docs/assets/banner_light.png" alt="PUNCC" width="80%" align="center" style="margin: 0px 0px 0px 10%;">
+  <img src="docs/assets/banner_light.png" alt="PUNCC" width="90%" align="right" style="margin: 0px 0px 0px 10%;">
 </picture>
 </div>
 
@@ -24,7 +24,8 @@
 </div>
 <br>
 
-Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source Python library that integrates a collection of state-of-the-art Conformal Prediction algorithms and related techniques for regression and classification problems. PUNCC can be used with any predictive model to provide rigorous uncertainty estimations. Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
+Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source Python library that integrates a collection of state-of-the-art Conformal Prediction algorithms and related techniques for regression and classification problems. PUNCC can be used with any predictive model to provide rigorous uncertainty estimations. 
+Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
 
 ## 📚 Table of contents
 
@@ -32,34 +33,26 @@ Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-sourc
 - [🚀 Quick Start](#-quickstart)
 - [📚 Citation](#-citation)
 - [💻 Contributing](#-contributing)
-- [📝 License](#-license)
 - [🙏 Acknowledgments](#-acknowledgments)
+- [📝 License](#-license)
 
-# 🐾 Installation
-
-## Clone the repo
-
-```bash
-git clone ssh://git@forge.deel.ai:22012/statistic-guarantees/puncc.git
-```
-
-## Installation
+## 🐾 Installation
 
 It is recommended to install puncc in a virtual environment to not mess with your system's dependencies.
 
-#### For users
+### For users
 ```bash
 pip install -e .[interactive]
 ```
 
 You can alternatively use the makefile to automatically create a virtual environment
-`puncc-user-env` and install all requirements:
+`puncc-user-env` and install user requirements:
 
 ```bash
 make install-user
 ```
 
-#### For developpers
+### For developpers
 
 ```bash
 pip install -e .[dev]
@@ -73,7 +66,7 @@ make prepare-dev
 ```
 
 
-# 🚀 Quickstart
+## 🚀 Quickstart
 <div align="center">
 
 <font size=3>📙 You can find the detailed implementation of the example below in the [**Quickstart Notebook**](docs/quickstart.ipynb)</font>.
@@ -81,7 +74,7 @@ make prepare-dev
 </div>
 Let’s consider a simple regression problem on diabetes data provided by Scikit-learn. We want to evaluate the uncertainty associated with the prediction using inductive (or split) conformal prediction.
 
-## Split Conformal Prediction
+### Split Conformal Prediction
 
 For this example, the prediction intervals are obtained throught the split
 conformal prediction method provided by the class
@@ -118,7 +111,8 @@ The library provides several metrics (`deel.puncc.metrics`) and plotting capabil
 
 ![90% Prediction Interval with the Split Conformal Prediction Method](docs/source/results_quickstart_split_cp_pi.png)
 
-### Further readings: more flexibility with the API
+### More flexibility with the API
+
 The library PUNCC provides two ways of defining and using conformal prediction wrappers:
 - A direct approach to run state-of-the-art conformal prediction procedures. This is what we used in the previous conformal regression example.
 - **Low-level API**: a more flexible approach based of full customization of the prediction model, the choice of nonconformity scores and the split between fit and calibration datasets.
