@@ -3,7 +3,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner_light2.png">
-  <img src="docs/assets/banner_light.png" alt="PUNCC" width="70%" align="center" style="margin: 0px 0px 0px 10%;">
+  <img src="docs/assets/banner_light.png" alt="PUNCC" width="80%" align="center" style="margin: 0px 0px 0px 10%;">
 </picture>
 </div>
 
