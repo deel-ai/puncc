@@ -145,15 +145,11 @@ This library was initially built to support the work presented in our COPA 2022 
 Contributions are welcome! Feel free to report an issue or open a pull
 request. Take a look at our guidelines [here](CONTRIBUTING.md).
 
-## 🔑 License
-
-The package is released under [MIT](LICENSES/headers/MIT-Clause.txt) license.
-
-Copyright IRT Antoine de Saint Exupéry et Université Paul Sabatier Toulouse III - All
-rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry, CRIAQ
-and ANITI - https://www.deel.ai/
-
 ## 🙏 Acknowledgments
 
 <img align="right" src="https://www.deel.ai/wp-content/uploads/2021/05/logo-DEEL.png" width="25%">
 This project received funding from the French ”Investing for the Future – PIA3” program within the Artificial and Natural Intelligence Toulouse Institute (ANITI). The authors gratefully acknowledge the support of the <a href="https://www.deel.ai/"> DEEL </a> project.
+
+## 🔑 License
+
+The package is released under [MIT](LICENSES/headers/MIT-Clause.txt) license.
