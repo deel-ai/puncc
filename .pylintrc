@@ -1,7 +1,37 @@
-[MESSAGES CONTROL]
+[MASTER]
+disable=
+    R0903, # allows to expose only one public method
+    R0914, # allow multiples local variables
 
-disable=W1401, C0103
+    C0103, # allow variable name such as `x` and `y`
+    C0123, # allow use of type()
+    C0201, # allow iterating the dictionary by calling .keys()
+    C0206, # allow iterating without .items()
+    C0411, # allow custom import order
+
+    R0801, # allow similar lines in 2 files
+
+    W0105, # allow no effect string statement
+    W0102, # allow dangerous default value []
+    W0511, # allow todos
+    W0221, # allow arguments override
+    W0707, #
+    W0718, # allow catching too general exception Exception
+    W0719, # allow catching too general exception Exception
+    W1203, # allow using f-strings as logging message
+    W1401, # alow anomalous backslash in string
+
+[FORMAT]
+max-line-length=120
+max-args=10
+max-attributes=12
+max-branches=15
+
+[SIMILARITIES]
+min-similarity-lines=6
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=no
 
 [TYPECHECK]
-
-generated-members=numpy.*, torch.*
+ignored-modules = numpy

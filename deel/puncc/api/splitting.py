@@ -32,6 +32,10 @@ from typing import Tuple
 import numpy as np
 from sklearn import model_selection
 
+from deel.puncc.api.utils import features_len_check
+from deel.puncc.api.utils import sample_len_check
+from deel.puncc.api.utils import supported_types_check
+
 if pkgutil.find_loader("pandas") is not None:
     import pandas as pd
 
@@ -68,13 +72,12 @@ class IdSplitter(BaseSplitter):
     ):
         super().__init__(random_state=None)
 
-        if (len(X_fit) != len(y_fit)) or (len(X_calib) != len(y_calib)):
-            raise ValueError("X and y must contain the same number of samples.")
-
-        if len(X_fit[-1]) != len(X_calib[-1]):
-            raise ValueError(
-                "X_fit and X_calib must contain the same number of features."
-            )
+        # Checks
+        supported_types_check(X_fit, y_fit)
+        supported_types_check(X_calib, y_calib)
+        sample_len_check(X_fit, y_fit)
+        sample_len_check(X_calib, y_calib)
+        features_len_check(X_fit, X_calib)
 
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
@@ -121,6 +124,10 @@ class RandomSplitter(BaseSplitter):
             (X_fit, y_fit, X_calib, y_calib).
         :rtype: List[Tuple[Iterable]]
         """
+        # Checks
+        supported_types_check(X, y)
+        sample_len_check(X, y)
+
         rng = np.random.RandomState(seed=self.random_state)
         fit_idxs = rng.rand(len(X)) > self.ratio
         cal_idxs = np.invert(fit_idxs)
@@ -154,13 +161,16 @@ class KFoldSplitter(BaseSplitter):
             (X_fit, y_fit, X_calib, y_calib).
         :rtype: List[Tuple[Iterable]]
         """
+        # Checks
+        supported_types_check(X, y)
+        sample_len_check(X, y)
+
         kfold = model_selection.KFold(
             self.K, shuffle=True, random_state=self.random_state
         )
         folds = []
 
         for fit, calib in kfold.split(X):
-
             if pkgutil.find_loader("pandas") is not None and isinstance(
                 X, pd.DataFrame
             ):
@@ -172,9 +182,7 @@ class KFoldSplitter(BaseSplitter):
                     folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
 
             else:
-                bool_fit_idx = np.array(
-                    [True if i in fit else False for i in range(len(X))]
-                )
+                bool_fit_idx = np.array([i in fit for i in range(len(X))])
                 folds.append(
                     (
                         X[bool_fit_idx],

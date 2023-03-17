@@ -42,15 +42,11 @@ requirements = [
 
 interactive_requirements = [
     "ipykernel",
-    "ipython",
-    "jupyter-client",
-    "jupyter-core",
-    "jupyterthemes",
-    "matplotlib-inline",
 ]
 
 dev_requirements = [
     "flake8",
+    "pylint",
     "pytest",
     "pytest-cov",
     "black",
@@ -65,7 +61,7 @@ dev_requirements = [
 
 setuptools.setup(
     name="puncc",
-    version="0.9",
+    version="0.1",
     author=", ".join(["Mouhcine Mendil", "Luca Mossina"]),
     author_email=", ".join(
         [

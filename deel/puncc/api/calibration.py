@@ -144,8 +144,8 @@ class BaseCalibrator:
         """
         # TODO check structure match in supported types
         logger.info("Computing nonconformity scores ...")
-        logger.debug("Shape of y_pred: {shape}", shape=y_pred.shape)
-        logger.debug("Shape of y_true: {shape}", shape=y_true.shape)
+        logger.debug(f"Shape of y_pred: {y_pred.shape}")
+        logger.debug(f"Shape of y_true: {y_true.shape}")
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
         logger.debug("Nonconformity scores computed !")
@@ -184,6 +184,10 @@ class BaseCalibrator:
         alpha_calib_check(alpha=alpha, n=self._len_calib)
 
         # Compute weighted quantiles
+        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
+        ## The coverage guarantee holds with 1) the inflated
+        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
+        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
         infty_array = np.array([np.inf])
         lemma_residuals = np.concatenate((self._residuals, infty_array))
         residuals_Q = quantile(
@@ -212,7 +216,7 @@ class BaseCalibrator:
         """
         return self._norm_weights
 
-    def get_residuals(self) -> np.ndarray:
+    def get_nonconformity_scores(self) -> np.ndarray:
         """Getter of computed nonconformity scores on the calibration set.
 
         :returns: nonconformity scores.
@@ -255,6 +259,7 @@ class CvPlusCalibrator:
 
     def __init__(self, kfold_calibrators: dict):
         self.kfold_calibrators_dict = kfold_calibrators
+        self._len_calib = None
 
         # Sanity checks:
         #   - The collection of calibrators is not None
@@ -273,14 +278,17 @@ class CvPlusCalibrator:
             the nonconformity scores.
 
         """
-
+        len_calib = 0
         for k, calibrator in self.kfold_calibrators_dict.items():
-            if calibrator.get_residuals() is None:
+            kth_nconf_scores = calibrator.get_nonconformity_scores()
+            if kth_nconf_scores is None:
                 error_msg = (
                     f"Fold {k} calibrator should have priorly "
                     + "estimated its residuals."
                 )
                 raise RuntimeError(error_msg)
+            len_calib += len(kth_nconf_scores)
+        self._len_calib = len_calib
 
     def calibrate(
         self,
@@ -300,6 +308,12 @@ class CvPlusCalibrator:
         :rtype: Tuple[ndarray]
         """
 
+        # Check if all calibrators have already been fitted
+        self.fit()
+
+        # Check consistency of alpha w.r.t the size of calibration data
+        alpha_calib_check(alpha=alpha, n=self._len_calib)
+
         # Init the collection of upper and lower bounds of the K-fold's PIs
         concat_y_lo = None
         concat_y_hi = None
@@ -313,17 +327,18 @@ class CvPlusCalibrator:
 
             y_pred = np.reshape(y_pred, (len(y_pred), 1))
 
-            # Residuals
-            residuals = self.kfold_calibrators_dict[k].get_residuals()
-            residuals = np.reshape(residuals, (1, len(residuals)))
+            # nonconformity scores
+            kth_calibrator = self.kfold_calibrators_dict[k]
+            nconf_scores = kth_calibrator.get_nonconformity_scores()
+            nconf_scores = np.reshape(nconf_scores, (1, len(nconf_scores)))
 
             if concat_y_lo is None or concat_y_hi is None:
                 (concat_y_lo, concat_y_hi) = prediction_sets.constant_interval(
-                    y_pred, residuals
+                    y_pred, nconf_scores
                 )
             else:
                 y_lo, y_hi = prediction_sets.constant_interval(
-                    y_pred, residuals
+                    y_pred, nconf_scores
                 )
                 concat_y_lo = np.concatenate(
                     [concat_y_lo, y_lo], axis=1  # type: ignore
@@ -334,10 +349,9 @@ class CvPlusCalibrator:
         if concat_y_lo is None or concat_y_hi is None:
             raise RuntimeError("This should never happen.")
 
-        y_lo = (-1) * np.quantile(
-            (-1) * concat_y_lo, 1 - alpha, axis=1, method="inverted_cdf"
+        y_lo = -1 * quantile(
+            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib)
         )
-        y_hi = np.quantile(
-            concat_y_hi, 1 - alpha, axis=1, method="inverted_cdf"
-        )
+        y_hi = quantile(concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib))
+
         return y_lo, y_hi

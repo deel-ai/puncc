@@ -21,12 +21,12 @@ project = "PUNCC"
 copyright = (
     "2022, IRT Antoine de Saint Exupéry"
     " - All rights reserved. DEEL is a research program operated by IVADO, "
-    "IRT Saint Exupéry, CRIAQ and ANITI."
+    "IRT Saint Exupéry, CRIAQ and ANITI"
 )
 author = "Mouhcine Mendil, Luca Mossina"
 
 # The full version, including alpha/beta/rc tags
-release = "0.9"
+release = "0.1"
 
 
 # -- General configuration ---------------------------------------------------
