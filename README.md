@@ -24,7 +24,7 @@
 </div>
 <br>
 
-Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source Python library that integrates a collection of state-of-the-art Conformal Prediction algorithms and related techniques for regression and classification problems. PUNCC can be used with any predictive model to provide rigorous uncertainty estimations. 
+Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source Python library that integrates a collection of state-of-the-art Conformal Prediction algorithms and related techniques for regression and classification problems. PUNCC can be used with any predictive model to provide rigorous uncertainty estimations.
 Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
 
 ## 📚 Table of contents
@@ -87,7 +87,7 @@ from deel.puncc.api.prediction import BasePredictor
 # Load fiting (X_fit, y_fit) and calibration (X_calib, y_calib) data
 # ...
 
-# Use your favorite regression linear model 
+# Use your favorite regression linear model
 # linear_model = ...
 
 
@@ -110,7 +110,7 @@ y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is $95$% (see [Quickstart Notebook](docs/quickstart.ipynb)):
 
 <div style="text-align:center">
-<img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method"/> 
+<img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method"/>
 <figcaption>90% Prediction Interval with Split Conformal Prediction.</figcaption>
 </div>
 <br>
