@@ -185,32 +185,32 @@ Ensemble Batch Prediction Intervals (EnbPI)
 *******************************************
 .. _theory enbpi:
 
-Introduced in [Barber2021]_, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
-Unlike the proper conformal algorithms seen above, EnbPI requires some additional hypothesis to attain the coverage guarantee.
+.. Introduced in [Barber2021]_, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
+.. Unlike the proper conformal algorithms seen above, EnbPI requires some additional hypothesis to attain the coverage guarantee.
 
 
 
 
-.. Summary: guarantees
-.. *******************************************
-.. .. _theory guarantees:
+Summary: guarantees
+*******************************************
+.. _theory guarantees:
 
-.. * split
-.. * JP
-
-
+* split
+* JP
 
 
-.. Conformal Classification
-.. ------------------------
 
-.. Adaptive Prediction Sets (APS)
-.. *******************************************
-.. .. _theory aps:
 
-.. Regularized Adaptive Prediction Sets (RAPS)
-.. *******************************************
-.. .. _theory raps:
+Conformal Classification
+------------------------
+
+Adaptive Prediction Sets (APS)
+*******************************************
+.. _theory aps:
+
+Regularized Adaptive Prediction Sets (RAPS)
+*******************************************
+.. _theory raps:
 
 
 References
