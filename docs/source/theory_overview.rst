@@ -152,6 +152,9 @@ With these methods, one does *not need* a dedicated calibration set.
 
 .. image:: img/k-fold-scheme.png
    :width: 600
+   :align: center
+
+|
 
 The CV+ algorithm goes as follows.
 Let :math:`n = |D_{train}|`, and let :math:`D_{train}` be partitioned disjointly into the sets :math:`S_1, S_2, \dots, S_K`.
@@ -186,21 +189,18 @@ Ensemble Batch Prediction Intervals (EnbPI)
 *******************************************
 .. _theory enbpi:
 
+**TBC**
+
 .. Introduced in [Barber2021]_, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
 .. Unlike the proper conformal algorithms seen above, EnbPI requires some additional hypothesis to attain the coverage guarantee.
 
+..
+    Summary: guarantees
+    *******************
+    .. _theory guarantees:
 
-
-
-Summary: guarantees
-*******************************************
-.. _theory guarantees:
-
-* split
-* JP
-
-
-
+    * split
+    * JP
 
 Conformal Classification
 ------------------------
@@ -209,10 +209,13 @@ Adaptive Prediction Sets (APS)
 *******************************************
 .. _theory aps:
 
+**TBC**
+
 Regularized Adaptive Prediction Sets (RAPS)
 *******************************************
 .. _theory raps:
 
+**TBC**
 
 References
 ----------
@@ -223,4 +226,5 @@ References
 .. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., 2002. Inductive confidence machines for regression. In Machine Learning: ECML 2002: 13th European Conference on Machine Learning Helsinki, Finland, August 19-23, 2002 Proceedings 13 (pp. 345-356). Springer Berlin Heidelberg.
 .. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., 2008, February. Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
 .. [Romano2019] Romano, Y., Patterson, E. and Candes, E., 2019. Conformalized quantile regression. Advances in neural information processing systems, 32. https://arxiv.org/abs/1905.03222
-.. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of the 38th International Conference on Machine Learning. https://proceedings.mlr.press/v139/xu21h.html.
+..
+    .. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of the 38th International Conference on Machine Learning. https://proceedings.mlr.press/v139/xu21h.html.
