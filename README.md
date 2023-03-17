@@ -3,7 +3,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner_dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner_light2.png">
-  <img src="docs/assets/banner_light.png" alt="PUNCC" width="90%" align="right" style="margin: 0px 0px 0px 10%;">
+  <img src="docs/assets/banner_light.png" alt="Puncc" width="90%" align="right" style="margin: 0px 0px 0px 10%;">
 </picture>
 </div>
 
@@ -24,7 +24,7 @@
 </div>
 <br>
 
-Predictive UNcertainty Calibration and Conformalization (PUNCC) is an open-source Python library that integrates a collection of state-of-the-art Conformal Prediction algorithms and related techniques for regression and classification problems. PUNCC can be used with any predictive model to provide rigorous uncertainty estimations. 
+***Puncc*** (**P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library that integrates a collection of state-of-the-art conformal Prediction algorithms and related techniques for regression and classification problems. It can be used with any predictive model to provide rigorous uncertainty estimations. 
 Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
 
 ## 📚 Table of contents
@@ -38,7 +38,7 @@ Under data exchangeability (or *i.i.d*), the generated prediction sets are guara
 
 ## 🐾 Installation
 
-It is recommended to install puncc in a virtual environment to not mess with your system's dependencies.
+It is recommended to install *puncc* in a virtual environment to not mess with your system's dependencies.
 
 ### For users
 ```bash
@@ -84,26 +84,28 @@ conformal prediction method provided by the class
 from sklearn import linear_model
 from deel.puncc.api.prediction import BasePredictor
 
-# Load fiting (X_fit, y_fit) and calibration (X_calib, y_calib) data
+# Load fitting (X_fit, y_fit) and calibration (X_calib, y_calib) data
 # ...
 
-# Use your favorite regression linear model 
+# Instanciate a linear regression model 
 # linear_model = ...
 
 
-# Create a predictor to wrap the linear regression model defined earlier
-# The argument `is_trained` is set to False to tell that the the linear model needs to be trained before the calibration.
+# Create a predictor to wrap the linear regression model defined earlier.
+# This enables interoperability with different ML libraries.
+# The argument `is_trained` is set to False to tell that the the linear model
+# needs to be trained before the calibration.
 lin_reg_predictor =  BasePredictor(linear_model, is_trained=False)
 
 # Instanciate the split cp wrapper around the linear predictor.
 split_cp = SplitCP(lin_reg_predictor)
 
-# Train model (`is_trained` is False) on the fitting dataset and
+# Train model (as is_trained` is False) on the fitting dataset and
 # compute the residuals on the calibration dataset.
 split_cp.fit(X_fit, y_fit, X_calib, y_calib)
 
-# The `predict` returns the output of the linear model `y_pred` and
-# the calibrated interval [`y_pred_lower`, `y_pred_upper`].
+# The predict returns the output of the linear model y_pred and
+# the calibrated interval [y_pred_lower, y_pred_upper].
 y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 ```
 
@@ -117,7 +119,7 @@ The library provides several metrics (`deel.puncc.metrics`) and plotting capabil
 
 ### More flexibility with the API
 
-The library PUNCC provides two ways of defining and using conformal prediction wrappers:
+*Puncc* provides two ways of defining and using conformal prediction wrappers:
 - A direct approach to run state-of-the-art conformal prediction procedures. This is what we used in the previous conformal regression example.
 - **Low-level API**: a more flexible approach based of full customization of the prediction model, the choice of nonconformity scores and the split between fit and calibration datasets.
 
