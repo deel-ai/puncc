@@ -27,7 +27,9 @@ import pandas as pd
 import tensorflow as tf
 
 from deel.puncc.api.utils import alpha_calib_check
+from deel.puncc.api.utils import features_len_check
 from deel.puncc.api.utils import quantile
+from deel.puncc.api.utils import sample_len_check
 from deel.puncc.api.utils import supported_types_check
 
 np.random.seed(0)
@@ -35,7 +37,7 @@ np.random.seed(0)
 
 class DataTypeStructureCheck(unittest.TestCase):
     def setUp(self):
-        self.y_pred_np = np.random.random_sample(size=(1000, 5))
+        self.y_pred_np = np.random.random_sample(size=(100, 5))
         self.y_pred_df = pd.DataFrame(self.y_pred_np)
         self.y_pred_tensor = tf.random.uniform(shape=[100, 5])
 
@@ -49,7 +51,6 @@ class DataTypeStructureCheck(unittest.TestCase):
             supported_types_check((1, 2, 3))
 
     def test_type_consistency(self):
-
         supported_types_check(self.y_pred_np, self.y_pred_np)
         supported_types_check(self.y_pred_df, self.y_pred_df)
         supported_types_check(self.y_pred_tensor, self.y_pred_tensor)
@@ -60,6 +61,38 @@ class DataTypeStructureCheck(unittest.TestCase):
             supported_types_check(self.y_pred_tensor, self.y_pred_np)
         with self.assertRaises(TypeError):
             supported_types_check(self.y_pred_df, self.y_pred_tensor)
+
+    def test_sample_len_check(self):
+        dummy_array = np.random.random_sample(size=(100, 2))
+        sample_len_check(self.y_pred_np, dummy_array)
+        sample_len_check(self.y_pred_df, pd.DataFrame(dummy_array))
+        sample_len_check(self.y_pred_tensor, tf.random.uniform(shape=[100, 3]))
+
+        dummy_bad_array = np.random.random_sample(size=(20, 5))
+        with self.assertRaises(ValueError):
+            sample_len_check(self.y_pred_np, dummy_bad_array)
+        with self.assertRaises(ValueError):
+            sample_len_check(self.y_pred_df, pd.DataFrame(dummy_bad_array))
+        with self.assertRaises(ValueError):
+            sample_len_check(
+                self.y_pred_tensor, tf.random.uniform(shape=[30, 3])
+            )
+
+    def test_features_len_check(self):
+        dummy_array = np.random.random_sample(size=(20, 5))
+        features_len_check(self.y_pred_np, dummy_array)
+        features_len_check(self.y_pred_df, pd.DataFrame(dummy_array))
+        features_len_check(self.y_pred_tensor, tf.random.uniform(shape=[3, 5]))
+
+        dummy_bad_array = np.random.random_sample(size=(100, 2))
+        with self.assertRaises(ValueError):
+            features_len_check(self.y_pred_np, dummy_bad_array)
+        with self.assertRaises(ValueError):
+            features_len_check(self.y_pred_df, pd.DataFrame(dummy_bad_array))
+        with self.assertRaises(ValueError):
+            features_len_check(
+                self.y_pred_tensor, tf.random.uniform(shape=[100, 3])
+            )
 
 
 class AlphaCheck(unittest.TestCase):

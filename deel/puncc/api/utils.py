@@ -26,6 +26,7 @@ This module implements utility functions.
 import logging
 import pkgutil
 import sys
+from typing import Any
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
-def dual_predictor_check(l, name, ltype):
+def dual_predictor_check(l: Any, name: str, ltype: str):
     """Check if properties of `DualPredictor` come in
     couples.
 
@@ -60,7 +61,7 @@ def dual_predictor_check(l, name, ltype):
         )
 
 
-def logit_normalization_check(y):
+def logit_normalization_check(y: Iterable):
     """Check if provided logits sum is close to one.
 
     :param Iterable y: logits array. Rows correspond to samples and columns to
@@ -76,29 +77,63 @@ def logit_normalization_check(y):
         )
 
 
-def supported_types_check(y_pred, y_true=None):
-    """Check if the types of input elements are consistent and supported by
-    the library.
+def sample_len_check(a: Iterable, b: Iterable):
+    """Check if arguments type have the same length.
 
-    :param Iterable y_pred: first element. For example label predictions.
-    :param Iterable y_true: second element. For example true labels.
+    :param Iterable a: iterable whose type is supported.
+    :param Iterable b: iterable whose type is supported.
 
     :raises TypeError: unsupported data types or elements have inconsistent types.
+    :raises ValueError: arguments contain different number of samples.
     """
-    if y_true is not None and (type(y_pred) != type(y_true)):
-        raise TypeError(
-            f"elements do not have the same type: {type(y_pred)} vs {type(y_true)}."
+    supported_types_check(a, b)
+    if a.shape[0] != b.shape[0]:
+        raise ValueError("Iterables must contain the same number of samples.")
+
+
+def features_len_check(a: Iterable, b: Iterable):
+    """Check if arguments have the same number of features,
+    that is their last axes have the same length.
+
+    :param Iterable a: iterable whose type is supported.
+    :param Iterable b: iterable whose type is supported.
+
+    :raises TypeError: unsupported data types or elements have inconsistent types.
+    :raises ValueError: arguments have different number of features
+    """
+
+    supported_types_check(a, b)
+
+    if a.shape[-1] != b.shape[-1]:
+        raise ValueError(
+            "X_fit and X_calib must contain the same number of features."
         )
 
-    if isinstance(y_pred, np.ndarray):
+
+def supported_types_check(a: Iterable, b: Iterable = None):
+    """Check if arguments' types is supported. If second argument is provided,
+    check if arguments' types are consistent.
+
+    :param Iterable a: any iterable to be checked.
+    :param Iterable b: if provided, check if it has the same type as
+        first argument.
+
+    :raises TypeError: unsupported data types or arguments have inconsistent types.
+    """
+    if b is not None and (type(a) != type(b)):
+        raise TypeError(
+            f"elements do not have the same type: {type(a)} vs {type(b)}."
+        )
+
+    if isinstance(a, np.ndarray):
         return
 
     if pkgutil.find_loader("pandas") is not None and isinstance(
-        y_pred, pd.DataFrame
+        a, pd.DataFrame
     ):
         return
     if pkgutil.find_loader("tensorflow") is not None and isinstance(
-        y_pred, tf.Tensor
+        a, tf.Tensor
     ):
         return
 
