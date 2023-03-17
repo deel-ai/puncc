@@ -274,14 +274,11 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     ## Row values are sorted in ascending order
     sorted_idxs = np.argsort(a, -1)
-    logger.debug("Sorted indices: {sorted_idxs}", sorted_idxs=sorted_idxs)
+    logger.debug(f"Sorted indices: {sorted_idxs}")
 
     ## Reorder weights (ascending row values of a) and compute cumulative sum
     sorted_cumsum_w = np.cumsum(w[sorted_idxs], axis=-1)
-    logger.debug(
-        "Sorted weights cumulative sum: {sorted_cumsum_w}",
-        sorted_cumsum_w=sorted_cumsum_w,
-    )
+    logger.debug(f"Sorted weights cumulative sum: {sorted_cumsum_w}")
 
     # Compute quantile on one sample (vector)
     if sorted_cumsum_w.ndim == 1:
@@ -295,8 +292,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         map(lambda x, y: y[x], sorted_cumsum_w >= q, sorted_idxs)
     )
     logger.debug(
-        "Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}",
-        idx_wcumsum_reaching_q=idx_wcumsum_reaching_q,
+        f"Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}"
     )
 
     ## Get the smallest indice per row for which the cumulative sum of weights
@@ -305,8 +301,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         [np.sort(e)[0]] for e in idx_wcumsum_reaching_q
     ]
     logger.debug(
-        "First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}",
-        min_idx_wcumsum_reaching_q=min_idx_wcumsum_reaching_q,
+        f"First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}"
     )
 
     ## Collect the quantile for each sample as the first value
@@ -315,8 +310,6 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     ## Convert to array and flatten
     quantile_array = np.squeeze(np.array(quantile_list))
-    logger.debug(
-        "Quantiles array: {quantile_array}", quantile_array=quantile_array
-    )
+    logger.debug(f"Quantiles array: {quantile_array}")
 
     return quantile_array

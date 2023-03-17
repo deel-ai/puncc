@@ -11,13 +11,14 @@ disable=
 
     R0801, # allow similar lines in 2 files
 
-    W0105, # allow no effect string statement 
+    W0105, # allow no effect string statement
     W0102, # allow dangerous default value []
     W0511, # allow todos
     W0221, # allow arguments override
-    W0707, # 
-    W0718, # allow catching too general exception Exception 
-    W0719, # allow catching too general exception Exception 
+    W0707, #
+    W0718, # allow catching too general exception Exception
+    W0719, # allow catching too general exception Exception
+    W1203, # allow using f-strings as logging message
     W1401, # alow anomalous backslash in string
 
 [FORMAT]

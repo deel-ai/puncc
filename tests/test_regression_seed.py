@@ -50,7 +50,7 @@ RESULTS = {
     "nescp": {"cov": 0.96, "width": 230.1},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.93, "width": 204.52},
-    "cv+": {"cov": 0.9, "width": 231.04},
+    "cv+": {"cov": 0.9, "width": 232.55},
     "enbpi": {"cov": 0.9, "width": 221.5},
     "aenbpi": {"cov": 0.87, "width": 272.14},
 }
