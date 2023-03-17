@@ -24,13 +24,13 @@
 </div>
 <br>
 
-***Puncc*** (**P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library that integrates a collection of state-of-the-art conformal Prediction algorithms and related techniques for regression and classification problems. It can be used with any predictive model to provide rigorous uncertainty estimations. 
+***Puncc*** (**P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library that integrates a collection of state-of-the-art conformal prediction algorithms and related techniques for regression and classification problems. It can be used with any predictive model to provide rigorous uncertainty estimations. 
 Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
 
 ## 📚 Table of contents
 
-- [🐾 Instalation](#-installation)
-- [🚀 Quick Start](#-quickstart)
+- [🐾 Installation](#-installation)
+- [🚀 QuickStart](#-quickstart)
 - [📚 Citation](#-citation)
 - [💻 Contributing](#-contributing)
 - [🙏 Acknowledgments](#-acknowledgments)
