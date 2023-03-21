@@ -23,7 +23,7 @@ Conformal Prediction
 Conformal Prediction (CP) is a set of *distribution-free*, *model-agnostic* and
 *non-asymptotic* methods to estimate uncertainty by constructing **valid** *prediction sets*, i.e. with guaranteed probability of marginal coverage.
 
-Given a error rate (or significance level) :math:`\alpha \in (0,1)`, set by the user, a set of exchangeable (or more simply i.i.d.)
+Given an error rate (or significance level) :math:`\alpha \in (0,1)`, set by the user, a set of exchangeable (or more simply i.i.d.)
 train data :math:`\{ (X_i, Y_i) \}_{i=1}^{n}` and test point
 :math:`(X_{new}, Y_{new})` generated for a joint distribution :math:`\mathbb{P}_{XY}`,
 a conformal prediction procedure builds prediction sets :math:`{C}_{\alpha}(\cdot)` so that:
@@ -89,7 +89,7 @@ The locally adaptive conformal regression [Papadopoulos2008]_ relies on scaled n
 where :math:`\widehat{\sigma}(X_i)` is a measure of dispersion of the nonconformity scores at :math:`X_i`.
 Usually, :math:`\widehat{\sigma}` is trained to estimate the absolute prediction
 error :math:`|\widehat{f}(X)-Y|` given :math:`X=x`. The prediction interval is again
-centered on :math:`\widehat{f}(X_{new})` but the margins are scaled w.r.t to the estimated local variability at :math:`Y | X = X_{new}`:
+centered on :math:`\widehat{f}(X_{new})` but the margins are scaled w.r.t the estimated local variability at :math:`Y | X = X_{new}`:
 
 .. math::
 

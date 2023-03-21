@@ -22,8 +22,8 @@
 # SOFTWARE.
 """
 This module implements the core calibrator, providing a structure to estimate
- the nonconformity scores on the calibration set and to compute the prediction
- sets.
+the nonconformity scores on the calibration set and to compute the prediction
+sets.
 """
 import logging
 from typing import Callable

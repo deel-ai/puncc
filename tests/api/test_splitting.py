@@ -40,8 +40,8 @@ class SplitterCheck(unittest.TestCase):
     def setUp(self):
         self.X_np = np.empty([100, 20])
         self.y_np = np.empty([100])
-        self.X_df = np.empty([100, 20])
-        self.y_df = np.empty([100])
+        self.X_df = pd.DataFrame(self.X_np)
+        self.y_df = pd.DataFrame(self.y_np)
         self.X_tf = tf.experimental.numpy.empty([100, 20])
         self.y_tf = tf.experimental.numpy.empty([100, 20])
 
@@ -77,7 +77,6 @@ class SplitterCheck(unittest.TestCase):
             random_splitter = RandomSplitter(ratio=2, random_state=0)
 
     def test_kfoldsplitter_output_shape(self):
-
         K = 10
         kfold_splitter = KFoldSplitter(K=10, random_state=0)
 
@@ -97,7 +96,6 @@ class SplitterCheck(unittest.TestCase):
         self.assertEqual(len(kfold_splits_tf[2]), 4)
 
     def test_randomsplitter_output_shape(self):
-
         random_splitter = RandomSplitter(ratio=0.1, random_state=0)
 
         # ndarrays
