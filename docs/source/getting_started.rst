@@ -76,9 +76,11 @@ Such model needs to be wrapped in a wrapper provided in the module
 The wrapper makes it possible to use various models from different ML/DL
 libraries such as `Scikit-learn <https://scikit-learn.org/>`__,
 `Keras <https://keras.io/>`_ or
-`XGBoost <https://xgboost.readthedocs.io/en/stable/>`_.
+`XGBoost <https://xgboost.readthedocs.io/en/stable/>`_. **An example of**
+:ref:`conformal classification <classification example>` **with keras models
+is provided later in this page**.
 For more information about model wrappers and supported ML/DL libraries,
-checkout :doc:`here <prediction>`.
+checkout :doc:`the documentation <prediction>`.
 
 For a linear regression from scikit-learn, we use
 :class:`deel.puncc.api.prediction.BasePredictor` as follows:
@@ -156,7 +158,7 @@ are covered:
       loc="upper left")
 
 
-.. figure:: results_quickstart_split_cp_pi.png
+.. figure:: ../assets/results_quickstart_split_cp_pi.png
    :width: 600px
    :align: center
    :height: 300px
@@ -261,6 +263,8 @@ Note that if the model is not already trained (`is_trained = False`), we need to
 
 Conformal classification
 ************************
+
+.. _classification example:
 
 The :ref:`RAPS <theory raps>` procedure is chosen to conformalize our convnet classifier.
 Such algorithm has two hyparameters :math:`\lambda` and :math:`k_{reg}` that encourage smaller prediction sets.

@@ -26,6 +26,7 @@ This module implements utility functions.
 import logging
 import pkgutil
 import sys
+from typing import Any
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 EPSILON = sys.float_info.min  # small value to avoid underflow
 
 
-def dual_predictor_check(l, name, ltype):
+def dual_predictor_check(l: Any, name: str, ltype: str):
     """Check if properties of `DualPredictor` come in
     couples.
 
@@ -60,7 +61,7 @@ def dual_predictor_check(l, name, ltype):
         )
 
 
-def logit_normalization_check(y):
+def logit_normalization_check(y: Iterable):
     """Check if provided logits sum is close to one.
 
     :param Iterable y: logits array. Rows correspond to samples and columns to
@@ -76,48 +77,64 @@ def logit_normalization_check(y):
         )
 
 
-def logit_normalization_check(y):
-    """Check if provided logits sum is close to one.
+def sample_len_check(a: Iterable, b: Iterable):
+    """Check if arguments type have the same length.
 
-    :param Iterable y: logits array. Rows correspond to samples and columns to classes.
-
-    :raises ValueError: when logits sum is different than 1 within a tolerance valus of 1e-5.
-    """
-    logits_sum = np.sum(np.array([e for e in y]), -1)
-    if np.any(np.abs(logits_sum - 1) > 1e-5):
-        raise ValueError(f"Logits must some to 1. Provided logit array {logits_sum}")
-
-
-def supported_types_check(y_pred, y_true=None):
-    """Check if the types of input elements are consistent and supported by
-    the library.
-
-    :param Iterable y_pred: first element. For example label predictions.
-    :param Iterable y_true: second element. For example true labels.
+    :param Iterable a: iterable whose type is supported.
+    :param Iterable b: iterable whose type is supported.
 
     :raises TypeError: unsupported data types or elements have inconsistent types.
+    :raises ValueError: arguments contain different number of samples.
     """
-    if y_true is not None and (type(y_pred) != type(y_true)):
-        raise TypeError(
-            f"elements do not have the same type: {type(y_pred)} vs {type(y_true)}."
+    supported_types_check(a, b)
+    if a.shape[0] != b.shape[0]:
+        raise ValueError("Iterables must contain the same number of samples.")
+
+
+def features_len_check(a: Iterable, b: Iterable):
+    """Check if arguments have the same number of features,
+    that is their last axes have the same length.
+
+    :param Iterable a: iterable whose type is supported.
+    :param Iterable b: iterable whose type is supported.
+
+    :raises TypeError: unsupported data types or elements have inconsistent types.
+    :raises ValueError: arguments have different number of features
+    """
+
+    supported_types_check(a, b)
+
+    if a.shape[-1] != b.shape[-1]:
+        raise ValueError(
+            "X_fit and X_calib must contain the same number of features."
         )
 
-    if isinstance(y_pred, np.ndarray):
-        return
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
-        y_pred, pd.DataFrame
-    ):
-        return
-    if pkgutil.find_loader("tensorflow") is not None and isinstance(
-        y_pred, tf.Tensor
-    ):
-        return
+def supported_types_check(*data: Iterable):
+    """Check if arguments' types are supported.
 
-    raise TypeError(
-        "Unsupported data type. Please provide a numpy ndarray, "
-        "a dataframe or a tensor (TensorFlow)."
-    )
+    :param Iterable data: iterable(s) to be checked.
+
+    :raises TypeError: unsupported data types.
+    """
+
+    for a in data:
+        if isinstance(a, np.ndarray):
+            pass
+
+        elif pkgutil.find_loader("pandas") is not None and isinstance(
+            a, (pd.DataFrame, pd.Series)
+        ):
+            pass
+        elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+            a, tf.Tensor
+        ):
+            pass
+        else:
+            raise TypeError(
+                f"Unsupported data type {type(a)}. Please provide a numpy ndarray, "
+                "a dataframe or a tensor (TensorFlow)."
+            )
 
 
 def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
@@ -286,14 +303,11 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     ## Row values are sorted in ascending order
     sorted_idxs = np.argsort(a, -1)
-    logger.debug("Sorted indices: {sorted_idxs}", sorted_idxs=sorted_idxs)
+    logger.debug(f"Sorted indices: {sorted_idxs}")
 
     ## Reorder weights (ascending row values of a) and compute cumulative sum
     sorted_cumsum_w = np.cumsum(w[sorted_idxs], axis=-1)
-    logger.debug(
-        "Sorted weights cumulative sum: {sorted_cumsum_w}",
-        sorted_cumsum_w=sorted_cumsum_w,
-    )
+    logger.debug(f"Sorted weights cumulative sum: {sorted_cumsum_w}")
 
     # Compute quantile on one sample (vector)
     if sorted_cumsum_w.ndim == 1:
@@ -307,8 +321,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         map(lambda x, y: y[x], sorted_cumsum_w >= q, sorted_idxs)
     )
     logger.debug(
-        "Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}",
-        idx_wcumsum_reaching_q=idx_wcumsum_reaching_q,
+        f"Indices per row where cumsum exceeds q: {idx_wcumsum_reaching_q}"
     )
 
     ## Get the smallest indice per row for which the cumulative sum of weights
@@ -317,8 +330,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         [np.sort(e)[0]] for e in idx_wcumsum_reaching_q
     ]
     logger.debug(
-        "First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}",
-        min_idx_wcumsum_reaching_q=min_idx_wcumsum_reaching_q,
+        f"First index per row where cumsum exceeds q: {min_idx_wcumsum_reaching_q}"
     )
 
     ## Collect the quantile for each sample as the first value
@@ -327,8 +339,6 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
 
     ## Convert to array and flatten
     quantile_array = np.squeeze(np.array(quantile_list))
-    logger.debug(
-        "Quantiles array: {quantile_array}", quantile_array=quantile_array
-    )
+    logger.debug(f"Quantiles array: {quantile_array}")
 
     return quantile_array

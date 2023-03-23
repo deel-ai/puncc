@@ -288,7 +288,6 @@ class DualPredictor:
     def fit(
         self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]
     ) -> None:
-
         """Fit model to the training data.
 
         :param Iterable X: train features.
@@ -304,9 +303,9 @@ class DualPredictor:
 
         """
         dual_predictor_check(dictargs, "dictargs", "dictionnaries")
-        for count in range(len(self.models)):
+        for count, model in enumerate(self.models):
             if not self.is_trained[count]:
-                self.models[count].fit(X, y, **dictargs[count])
+                model.fit(X, y, **dictargs[count])
 
     def predict(self, X, dictargs: List[dict] = [{}, {}]) -> Tuple[np.ndarray]:
         """Compute predictions on new examples.

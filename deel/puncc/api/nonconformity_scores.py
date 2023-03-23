@@ -150,24 +150,11 @@ def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :returns: mean absolute deviation.
     :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred, y_true)
-    diff = y_pred - y_true
-
-    if isinstance(y_pred, np.ndarray):
-        return np.absolute(diff)
-
-    if pkgutil.find_loader("pandas") and isinstance(y_pred, pd.DataFrame):
-        return diff.abs()
-
-    if pkgutil.find_loader("tensorflow") and isinstance(y_pred, tf.Tensor):
-        return tf.math.abs(diff)
-
-    # if pkgutil.find_loader("torch"):
-    #     if isinstance(y_pred, torch.Tensor):
-    #         return torch.abs(diff)
-
-    raise RuntimeError("Type check failed")
+    return abs(y_pred - y_true)
 
 
 def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
@@ -184,6 +171,8 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :returns: scaled mean absolute deviation.
     :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 

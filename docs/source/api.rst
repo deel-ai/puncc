@@ -87,7 +87,7 @@ An object instance is constructed by, as we will explain later, a **predictor**,
 :class:`deel.puncc.api.conformalization.ConformalPredictor` implements two methods:
 
 
-* A :func:`fit` method that fits the predictor model and computes nonconformity scores accodingly to the calibrator and to the data split strategy provided by the splitter
+* A :func:`fit` method that fits the predictor model and computes nonconformity scores accordingly to the calibrator and to the data split strategy provided by the splitter
 
 .. code-block:: python
 
@@ -96,7 +96,7 @@ An object instance is constructed by, as we will explain later, a **predictor**,
     # to the fit and calibration sets based on the provided splitting strategy
     conformal_predictor.fit(X_train, y_train)
 
-* And a :func:`predict` method that estimates for new samples the point predictions and prediction intervals [y_pred_lower, y_pred_upper], w.r.t a chosen error (significance) level :math:`\\alpha`
+* And a :func:`predict` method that estimates for new samples the point predictions and prediction intervals [y_pred_lower, y_pred_upper], w.r.t a chosen error (significance) level :math:`\alpha`
 
 .. code-block:: python
 
@@ -209,10 +209,10 @@ These three predictor classes cover plenty of use case in conformal prediction.
 But if you have a special need, you can subclass :class:`deel.puncc.api.prediction.BasePredictor` or :class:`deel.puncc.api.prediction.DualPredictor` or
 even create a predictor from scratch.
 
-Here is a example of situation where you need to define your own predictor:
+Here is an   example of situation where you need to define your own predictor:
 you have a classification problem and you build a :class:`RandomForestClassifier`
 from sklearn. The procedure :ref:`RAPS <theory raps>` to conformalize the classifier requires
-a :func:`predict` method that outputs the estimated probabily of each class. This is not the case
+a :func:`predict` method that outputs the estimated probability of each class. This is not the case
 as :func:`RandomForestClassifier.predict` returns only the most likely class. In this case,
 we need to create a predictor in which we redefine the :func:`predict` call:
 
@@ -246,7 +246,7 @@ Then, the calibrator instance computes **nonconformity scores** (e.g., mean abso
 the method :func:`deel.puncc.api.calibration.BaseCalibrator.calibrate` enables to **construct** and/or **calibrate** prediction sets.
 
 For example, the `BaseCalibrator` in the split conformal prediction procedure
-uses the mean absolute deviation as nonconformity score and and prediction set
+uses the mean absolute deviation as nonconformity score and prediction sets
 are built as constant intervals. These two functions are already provided in
 :func:`deel.puncc.api.nonconformity_scores.mad` and :func:`deel.puncc.api.prediction_sets.constant_interval`, respectively:
 
@@ -287,20 +287,20 @@ Alternatively, one can define custom functions and pass them as arguments to the
 Splitter
 --------
 
-In conformal prediction, the assignement of data into fit and calibration sets is motivated by two criteria:
+In conformal prediction, the assignment of data into fit and calibration sets is motivated by two criteria:
 data availability and computational resources. If quality data is abundant,
 we can split the training samples into disjoint subsets :math:`D_{fit}` and :math:`D_{calib}`.
 When data is scarce, a cross-validation strategy is preferred but is more
-ressource-consuming as different models are trained and nonconformity scores
+resource-consuming as different models are trained and nonconformity scores
 are computed for different disjoint folds.
 
 The two plans are implemented in :mod:`deel.puncc.api.splitting` module,
 and are agnostic to the data structure (which can be ndarrays, tensors and dataframes):
 
-- :class:`deel.puncc.api.splitting.RandomSplitter`: random assignement of samples in :math:`D_{fit}` and :math:`D_{calib}`
-- :class:`deel.puncc.api.splitting.KFoldSplitter`: random assignement of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy
+- :class:`deel.puncc.api.splitting.RandomSplitter`: random assignment of samples in :math:`D_{fit}` and :math:`D_{calib}`
+- :class:`deel.puncc.api.splitting.KFoldSplitter`: random assignment of samples into K disjoint folds. Note that if K equals the size of training set, the split is identified with the leave-one-out strategy
 
-Additionnaly, if the user already implemted a split plan, the obtained data asignement
+Additionnaly, if the user already implemented a split plan, the obtained data asignement
 is wrapped in :class:`deel.puncc.api.splitting.IdSplitter` to produce iterables.
 
 These methods produce **iterables** that are used by the :class:`ConformalPredictor` instance.

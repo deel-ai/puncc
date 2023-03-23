@@ -71,7 +71,7 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     """
     pred_len = len(Y_pred)
 
-    logger.debug("Shape of Y_pred: {shape}", shape=Y_pred.shape)
+    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
 
     # Generate u randomly from a uniform distribution
     u = np.random.uniform(size=pred_len)
@@ -118,7 +118,6 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     prediction_sets = []
 
     for i in range(pred_len):
-
         if v[i] <= u[i]:
             cut_i = L[i] - 1
         else:
