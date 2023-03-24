@@ -38,6 +38,7 @@ from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
+from deel.puncc.api.splitting import RandomSplitter
 
 
 class SplitCP:
@@ -45,6 +46,8 @@ class SplitCP:
     the :ref:`theory overview page <theory splitcp>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param float random_state: random seed used when the user does not
+        provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
@@ -101,7 +104,9 @@ class SplitCP:
         print(f"Average width: {np.round(width, 2)}")
     """
 
-    def __init__(self, predictor, *, weight_func=None):
+    def __init__(
+        self, predictor, *, random_state: float = None, weight_func=None
+    ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.mad,
@@ -109,18 +114,38 @@ class SplitCP:
             weight_func=weight_func,
         )
         self.conformal_predictor = None
+        self.random_state = random_state
 
     def fit(
         self,
-        X_fit: Iterable,
-        y_fit: Iterable,
-        X_calib: Iterable,
-        y_calib: Iterable,
+        *,
+        X_train: Optional[Iterable] = None,
+        y_train: Optional[Iterable] = None,
+        fit_ratio: float = 0.8,
+        X_fit: Optional[Iterable] = None,
+        y_fit: Optional[Iterable] = None,
+        X_calib: Optional[Iterable] = None,
+        y_calib: Optional[Iterable] = None,
         **kwargs: Optional[dict],
     ):
-        """This method fits the models to the fit data (X_fit, y_fit)
-        and computes nonconformity scores on (X_calib, y_calib).
+        """This method fits the models on the fit data
+        and computes nonconformity scores on calibration data.
+        If (X_train, y_train) are provided, randomly split data into
+        fit and calib subsets w.r.t to the fit_ratio.
+        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
+        the conformalization is performed on the given user defined
+        fit and calibration sets.
 
+        .. NOTE::
+
+            If X_train and y_train are provided, `fit` ignores
+            any user-defined fit/calib split.
+
+
+        :param Iterable X_train: features from the training dataset.
+        :param Iterable y_train: labels from the training dataset.
+        :param float fit_ratio: the proportion of samples assigned to the
+            fit subset.
         :param Iterable X_fit: features from the fit dataset.
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
@@ -128,13 +153,32 @@ class SplitCP:
         :param dict kwargs: predict configuration to be passed to the model's
             predict method.
 
+        :raises RuntimeError: no dataset provided.
+
         """
+
+        if X_train is not None and y_train is not None:
+            splitter = RandomSplitter(
+                ratio=fit_ratio, random_state=self.random_state
+            )
+
+        elif (
+            X_fit is not None
+            and y_fit is not None
+            and X_calib is not None
+            and y_calib is not None
+        ):
+            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
+
+        else:
+            raise RuntimeError("No dataset provided.")
+
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
-            splitter=IdSplitter(X_fit, y_fit, X_calib, y_calib),
+            splitter=splitter,
         )
-        self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
+        self.conformal_predictor.fit(X=X_train, y=y_train, **kwargs)
 
     def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
@@ -386,7 +430,6 @@ class CVPlus:
     """
 
     def __init__(self, predictor, *, K: int, random_state=None):
-
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.mad,
@@ -751,7 +794,6 @@ class EnbPI:
 
         # Inference is performed by batch
         for i in np.arange(n_batches):
-
             if i == n_batches - 1:
                 X_batch = X_test[i * s :]
                 y_true_batch = y_true[i * s :] if y_true is not None else None

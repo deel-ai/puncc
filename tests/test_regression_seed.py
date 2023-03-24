@@ -75,7 +75,7 @@ def test_split_cp(diabetes_data, alpha, random_state):
 
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    split_cp.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
+    split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
@@ -114,7 +114,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     w_split_cp = SplitCP(predictor, weight_func=w_estimator_gen(0.95))
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    w_split_cp.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
+    w_split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
@@ -153,7 +153,7 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     la_cp = LocallyAdaptiveCP(predictor)
 
     # Fit and conformalize
-    la_cp.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
+    la_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
     y_pred, y_pred_lower, y_pred_upper = la_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
 
@@ -201,7 +201,7 @@ def test_cqr(diabetes_data, alpha, random_state):
     crq = CQR(predictor)
 
     # Fit and conformalize
-    crq.fit(X_fit, y_fit, X_calib, y_calib)  # type: ignore
+    crq.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
     _, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
 
     # Compute marginal coverage
@@ -231,7 +231,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     cv_cp = CVPlus(predictor, K=20, random_state=random_state)
 
     # Fit and conformalize
-    cv_cp.fit(X_train, y_train)
+    cv_cp.fit(X_train=X_train, y_train=y_train)
     _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
 
     # Compute marginal coverage
@@ -259,7 +259,7 @@ def test_enbpi(diabetes_data, alpha, random_state):
     enbpi = EnbPI(
         predictor, B=30, agg_func_loo=np.mean, random_state=random_state
     )
-    enbpi.fit(X_train, y_train)
+    enbpi.fit(X_train=X_train, y_train=y_train)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )

@@ -330,7 +330,6 @@ class CvPlusCalibrator:
             # nonconformity scores
             kth_calibrator = self.kfold_calibrators_dict[k]
             nconf_scores = kth_calibrator.get_nonconformity_scores()
-            nconf_scores = np.reshape(nconf_scores, (1, len(nconf_scores)))
 
             if concat_y_lo is None or concat_y_hi is None:
                 (concat_y_lo, concat_y_hi) = prediction_sets.constant_interval(
