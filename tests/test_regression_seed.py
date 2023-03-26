@@ -231,7 +231,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     cv_cp = CVPlus(predictor, K=20, random_state=random_state)
 
     # Fit and conformalize
-    cv_cp.fit(X_train=X_train, y_train=y_train)
+    cv_cp.fit(X=X_train, y=y_train)
     _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
 
     # Compute marginal coverage
@@ -259,7 +259,7 @@ def test_enbpi(diabetes_data, alpha, random_state):
     enbpi = EnbPI(
         predictor, B=30, agg_func_loo=np.mean, random_state=random_state
     )
-    enbpi.fit(X_train=X_train, y_train=y_train)
+    enbpi.fit(X=X_train, y=y_train)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )

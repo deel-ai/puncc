@@ -241,11 +241,12 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         return np.maximum(diff_lo, diff_hi)
 
     if pkgutil.find_loader("pandas") is not None and isinstance(
-        diff_lo, pd.DataFrame
+        diff_lo, (pd.DataFrame, pd.Series)
     ):
-        raise NotImplementedError(
-            "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
-        )
+        return (pd.concat([diff_lo, diff_hi]).groupby(level=0)).max()
+        # raise NotImplementedError(
+        #     "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
+        # )
 
     if pkgutil.find_loader("tensorflow") is not None and isinstance(
         diff_lo, tf.Tensor

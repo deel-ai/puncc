@@ -284,7 +284,7 @@ class CvPlusCalibrator:
             if kth_nconf_scores is None:
                 error_msg = (
                     f"Fold {k} calibrator should have priorly "
-                    + "estimated its residuals."
+                    + "been estimated its nonconformity scores."
                 )
                 raise RuntimeError(error_msg)
             len_calib += len(kth_nconf_scores)
@@ -323,22 +323,31 @@ class CvPlusCalibrator:
             y_pred = predictor.predict(X)
 
             if y_pred is None:
-                raise RuntimeError("No point predictor provided with cv+.")
-
-            y_pred = np.reshape(y_pred, (len(y_pred), 1))
+                raise RuntimeError("No prediction obtained with cv+.")
 
             # nonconformity scores
             kth_calibrator = self.kfold_calibrators_dict[k]
             nconf_scores = kth_calibrator.get_nonconformity_scores()
 
+            # Reshaping nonconformity scores to broadcast them
+            # on y_pred samples when computing the prediction sets
+            # Source: R. Barber Section 3 https://arxiv.org/pdf/1905.02928.pdf
+            y_pred = y_pred[..., np.newaxis]
+            try:
+                nconf_scores = np.array(nconf_scores)
+                nconf_scores = nconf_scores[np.newaxis, ...]
+            except Exception:
+                # @TODO extend the scope beyond castable to ndarrays
+                raise RuntimeError(
+                    "Cannot cast nonconformity scores to numpy array."
+                )
+
             if concat_y_lo is None or concat_y_hi is None:
-                (concat_y_lo, concat_y_hi) = prediction_sets.constant_interval(
+                (concat_y_lo, concat_y_hi) = kth_calibrator.pred_set_func(
                     y_pred, nconf_scores
                 )
             else:
-                y_lo, y_hi = prediction_sets.constant_interval(
-                    y_pred, nconf_scores
-                )
+                y_lo, y_hi = kth_calibrator.pred_set_func(y_pred, nconf_scores)
                 concat_y_lo = np.concatenate(
                     [concat_y_lo, y_lo], axis=1  # type: ignore
                 )
