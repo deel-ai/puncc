@@ -33,7 +33,6 @@ from typing import Tuple
 
 import numpy as np
 
-from deel.puncc.api import prediction_sets
 from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
 

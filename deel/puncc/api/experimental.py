@@ -21,39 +21,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides experimental features. Use cautiously. 
+This module provides experimental features. Use cautiously.
 """
+import pkgutil
 
 if pkgutil.find_loader("torch") is not None:
     import torch
 
-if pkgutil.find_loader("torch") is not None and isinstance(
-    y_pred, torch.Tensor
-):
+if pkgutil.find_loader("torch"):
 
     class TorchPredictor:
-    """Wrapper of a torch prediction model :math:`\hat{f}`. Enables to
-    standardize the interface of torch predictors and to expose generic :func:`fit`,
-    :func:`predict` and :func:`copy` methods.
+        """Wrapper of a torch prediction model :math:`\hat{f}`. Enables to
+        standardize the interface of torch predictors and to expose generic :func:`fit`,
+        :func:`predict` and :func:`copy` methods.
 
-    :param Any model: torch prediction model :math:`\hat{f}`
-    :param bool is_trained: boolean flag that informs if the model is
-        pre-trained. If True, the call to :func:`fit` will be skipped
-    :param torch.optim.Optimizer optimizer: torch optimizer. 
-        Defaults to `torch.optim.Adam`.
-    :param torch.nn.modules.loss criterion: criterion that measures the distance 
-        between predictions and outputs. Default to  `torch.nn.MSELoss`.
-    :param compile_kwargs: keyword arguments to be used if needed during the
-        call :func:`model.compile` on the underlying model
+        :param Any model: torch prediction model :math:`\hat{f}`
+        :param bool is_trained: boolean flag that informs if the model is
+            pre-trained. If True, the call to :func:`fit` will be skipped
+        :param torch.optim.Optimizer optimizer: torch optimizer.
+            Defaults to `torch.optim.Adam`.
+        :param torch.nn.modules.loss criterion: criterion that measures the distance
+            between predictions and outputs. Default to  `torch.nn.MSELoss`.
+        :param compile_kwargs: keyword arguments to be used if needed during the
+            call :func:`model.compile` on the underlying model
 
-    .. note::
+        .. note::
 
-        The `model` constructor has to take as argument both 
-        `input_feat`:int and `output_feat`:int, corresponding to the number 
-        of features (or channels) for each input and output, respectively.
+            The `model` constructor has to take as argument both
+            `input_feat`:int and `output_feat`:int, corresponding to the number
+            of features (or channels) for each input and output, respectively.
 
-    """
-    
+        """
+
         def __init__(
             self,
             model,
@@ -82,16 +81,16 @@ if pkgutil.find_loader("torch") is not None and isinstance(
                 epochs = 1
 
             optimizer = self.optimizer(
-                self.model.parameters(), **compile_kwargs
+                self.model.parameters(), **self.compile_kwargs
             )
-            for epoch in range(epochs):
+            for _ in range(epochs):
                 y_pred = self.model(X)
                 loss = self.criterion(y_pred, y)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-        def predict(self, X, **kwargs):
+        def predict(self, X):
             """Compute predictions on new examples.
 
             :param torch.Tensor X: new examples' features.
@@ -116,8 +115,9 @@ if pkgutil.find_loader("torch") is not None and isinstance(
             output_feat = (
                 (self.model.state_dict()).popitem(last=True)[1].shape[-1]
             )
-            model = type(self.model)(input_shape=input_feat, 
-                                     output_shape=output_feat)
+            model = type(self.model)(
+                input_feat=input_feat, output_feat=output_feat
+            )
             model.load_state_dict(self.model.state_dict())
             predictor_copy = TorchPredictor(
                 model=model,
