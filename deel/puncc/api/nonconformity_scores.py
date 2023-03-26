@@ -40,6 +40,9 @@ if pkgutil.find_loader("pandas") is not None:
 if pkgutil.find_loader("tensorflow") is not None:
     import tensorflow as tf
 
+if pkgutil.find_loader("torch") is not None:
+    import torch
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -154,6 +157,14 @@ def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
     :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred, y_true)
+
+    if pkgutil.find_loader("torch") is not None and isinstance(
+        y_pred, torch.Tensor
+    ):
+        y_pred = y_pred.cpu().detach().numpy()
+        y_true = y_true.cpu().detach().numpy()
+        return abs(np.squeeze(y_pred) - np.squeeze(y_true))
+
     return abs(y_pred - y_true)
 
 

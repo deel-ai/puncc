@@ -39,6 +39,9 @@ if pkgutil.find_loader("pandas") is not None:
 if pkgutil.find_loader("tensorflow") is not None:
     import tensorflow as tf
 
+if pkgutil.find_loader("torch") is not None:
+    import torch
+
 logger = logging.getLogger(__name__)
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
@@ -128,6 +131,10 @@ def supported_types_check(*data: Iterable):
             pass
         elif pkgutil.find_loader("tensorflow") is not None and isinstance(
             a, tf.Tensor
+        ):
+            pass
+        elif pkgutil.find_loader("torch") is not None and isinstance(
+            a, torch.Tensor
         ):
             pass
         else:
