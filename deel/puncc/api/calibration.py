@@ -332,14 +332,15 @@ class CvPlusCalibrator:
             # on y_pred samples when computing the prediction sets
             # Source: R. Barber Section 3 https://arxiv.org/pdf/1905.02928.pdf
             y_pred = y_pred[..., np.newaxis]
-            try:
-                nconf_scores = np.array(nconf_scores)
-                nconf_scores = nconf_scores[np.newaxis, ...]
-            except Exception:
-                # @TODO extend the scope beyond castable to ndarrays
-                raise RuntimeError(
-                    "Cannot cast nonconformity scores to numpy array."
-                )
+            if len(nconf_scores.shape) != 2:
+                try:
+                    nconf_scores = np.array(nconf_scores)
+                    nconf_scores = nconf_scores[np.newaxis, ...]
+                except Exception:
+                    # @TODO extend the scope beyond castable to ndarrays
+                    raise RuntimeError(
+                        "Cannot cast nonconformity scores to numpy array."
+                    )
 
             if concat_y_lo is None or concat_y_hi is None:
                 (concat_y_lo, concat_y_hi) = kth_calibrator.pred_set_func(

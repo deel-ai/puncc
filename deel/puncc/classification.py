@@ -149,6 +149,7 @@ class RAPS:
         y_fit: Iterable,
         X_calib: Iterable,
         y_calib: Iterable,
+        use_cached: bool = False,
         **kwargs: Optional[dict],
     ):
         """This method fits the models to the fit data (X_fit, y_fit)
@@ -158,6 +159,10 @@ class RAPS:
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
         :param Iterable y_calib: labels from the calibration dataset.
+        :param bool use_cached: if set, enables to add the previously computed
+            nonconformity scores (if any) to the pool estimated in the current
+            call to :classmethod:`fit`. The aggregation follows the CV+
+            procedure.
         :param dict kwargs: predict configuration to be passed to the model's
             predict method.
         """
@@ -165,8 +170,9 @@ class RAPS:
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=IdSplitter(X_fit, y_fit, X_calib, y_calib),
+            train=self.train,
         )
-        self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
+        self.conformal_predictor.fit(X=None, y=None, use_cached=use_cached, **kwargs)  # type: ignore
 
     def predict(self, X_test: Iterable, alpha: float) -> Tuple:
         """Conformal interval predictions (w.r.t target miscoverage alpha)

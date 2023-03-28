@@ -46,6 +46,8 @@ class SplitCP:
     the :ref:`theory overview page <theory splitcp>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
     :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
@@ -105,7 +107,12 @@ class SplitCP:
     """
 
     def __init__(
-        self, predictor, *, random_state: float = None, weight_func=None
+        self,
+        predictor,
+        *,
+        train=True,
+        random_state: float = None,
+        weight_func=None,
     ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
@@ -113,8 +120,17 @@ class SplitCP:
             pred_set_func=prediction_sets.constant_interval,
             weight_func=weight_func,
         )
-        self.conformal_predictor = None
+
+        self.train = train
+
         self.random_state = random_state
+
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=train,
+        )
 
     def fit(
         self,
@@ -126,6 +142,7 @@ class SplitCP:
         y_fit: Optional[Iterable] = None,
         X_calib: Optional[Iterable] = None,
         y_calib: Optional[Iterable] = None,
+        use_cached: bool = False,
         **kwargs: Optional[dict],
     ):
         """This method fits the models on the fit data
@@ -150,8 +167,12 @@ class SplitCP:
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
         :param Iterable y_calib: labels from the calibration dataset.
+        :param bool use_cached: if set, enables to add the previously computed
+            nonconformity scores (if any) to the pool estimated in the current
+            call to :classmethod:`fit`. The aggregation follows the CV+
+            procedure.
         :param dict kwargs: predict configuration to be passed to the model's
-            predict method.
+            fit method.
 
         :raises RuntimeError: no dataset provided.
 
@@ -170,15 +191,24 @@ class SplitCP:
         ):
             splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
 
+        elif (
+            self.predictor.is_trained
+            and X_fit is None
+            and y_fit is None
+            and X_calib is not None
+            and y_calib is not None
+        ):
+            splitter = IdSplitter(
+                np.empty(len(y_calib)), np.empty(len(y_calib)), X_calib, y_calib
+            )
+
         else:
             raise RuntimeError("No dataset provided.")
 
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=splitter,
-        )
-        self.conformal_predictor.fit(X=X, y=y, **kwargs)
+        # Update splitter
+        self.conformal_predictor.splitter = splitter
+
+        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
 
     def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
@@ -214,10 +244,12 @@ class SplitCP:
         # Get all nconf scores on the fitting kfolds
         kfold_nconf_scores = self.conformal_predictor.get_nonconformity_scores()
 
-        # With split CP, the nconf scores dict has only one element
-        nconf_scores = list(kfold_nconf_scores.values())[0]
+        # With split CP, the nconf scores dict has only one element if no
+        # cache was used.
+        if len(kfold_nconf_scores) == 1:
+            return list(kfold_nconf_scores.values())[0]
 
-        return nconf_scores
+        return kfold_nconf_scores
 
 
 class LocallyAdaptiveCP(SplitCP):
@@ -226,6 +258,8 @@ class LocallyAdaptiveCP(SplitCP):
 
     :param MeanVarPredictor predictor: a predictor implementing fit and predict.
         Must embed two models for point and dispersion estimations respectively.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
     :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
@@ -286,14 +320,25 @@ class LocallyAdaptiveCP(SplitCP):
 
     """
 
-    def __init__(self, predictor, *, random_state=None, weight_func=None):
+    def __init__(
+        self, predictor, *, train=True, random_state=None, weight_func=None
+    ):
         super().__init__(
-            predictor, random_state=random_state, weight_func=weight_func
+            predictor,
+            train=train,
+            random_state=random_state,
+            weight_func=weight_func,
         )
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.scaled_mad,
             pred_set_func=prediction_sets.scaled_interval,
             weight_func=weight_func,
+        )
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=train,
         )
 
 
@@ -304,6 +349,8 @@ class CQR(SplitCP):
     :param DualPredictor predictor: a predictor implementing fit and predict.
         Must embed two models for lower and upper quantiles estimations
         respectively.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
@@ -369,12 +416,18 @@ class CQR(SplitCP):
 
     """
 
-    def __init__(self, predictor, *, weight_func=None):
-        super().__init__(predictor, weight_func=weight_func)
+    def __init__(self, predictor, *, train=True, weight_func=None):
+        super().__init__(predictor, train=train, weight_func=weight_func)
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
             weight_func=weight_func,
+        )
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=train,
         )
 
 
@@ -441,12 +494,19 @@ class CVPlus:
             weight_func=None,
         )
         self.splitter = KFoldSplitter(K=K, random_state=random_state)
-        self.conformal_predictor = None
+
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=self.splitter,
+            method="cv+",
+        )
 
     def fit(
         self,
         X: Iterable,
         y: Iterable,
+        use_cached: bool = False,
         **kwargs: Optional[dict],
     ):
         """This method fits the ensemble models based on the K-fold scheme.
@@ -454,17 +514,15 @@ class CVPlus:
 
         :param Iterable X: features from the train dataset.
         :param Iterable y: labels from the train dataset.
+        :param bool use_cached: if set, enables to add the previously computed
+            nonconformity scores (if any) to the pool estimated in the current
+            call to :classmethod:`fit`. The aggregation follows the CV+
+            procedure.
         :param dict kwargs: predict configuration to be passed to the model's
             predict method.
 
         """
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=self.splitter,
-            method="cv+",
-        )
-        self.conformal_predictor.fit(X=X, y=y, **kwargs)
+        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
 
     def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha)

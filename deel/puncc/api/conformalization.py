@@ -164,6 +164,7 @@ class ConformalPredictor:
         self,
         X: Iterable,
         y: Iterable,
+        use_cached: bool = False,
         **kwargs,
     ) -> None:
         """Fit the model(s) and estimate the nonconformity scores.
@@ -175,6 +176,10 @@ class ConformalPredictor:
 
         :param Iterable X: features.
         :param Iterable y: labels.
+        :param bool use_cached: if set, enables to add the previously computed
+            nonconformity scores (if any) to the pool estimated in the current
+            call to :classmethod:`fit`. The aggregation follows the CV+
+            procedure.
         :param dict kwargs: options configuration for the training.
 
         :raises RuntimeError: inconsistencies between the train status of the
@@ -186,9 +191,14 @@ class ConformalPredictor:
 
         # The Cross validation aggregator will aggregate the predictors and
         # calibrators fitted on each of the K splits.
-        self._cv_cp_agg = CrossValCpAggregator(
-            K=len(splits), method=self.method
-        )
+        if self._cv_cp_agg is None or use_cached is False:
+            cached_len = 0
+            self._cv_cp_agg = CrossValCpAggregator(
+                K=len(splits), method=self.method
+            )
+        else:
+            cached_len = self._cv_cp_agg.K
+            self._cv_cp_agg.K = cached_len + len(splits)
 
         # In case of multiple split folds, the predictor require training.
         # Having 'self.train' set to False is therefore an inconsistency
@@ -211,7 +221,7 @@ class ConformalPredictor:
             calibrator = deepcopy(self.calibrator)
 
             if self.train:
-                logger.info(f"Fitting model on fold {i}")
+                logger.info(f"Fitting model on fold {i+cached_len}")
                 predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
 
             # Make sure that predictor is already trained if train arg is False
@@ -220,13 +230,16 @@ class ConformalPredictor:
                     "'train' argument is set to 'False' but model is not pre-trained"
                 )
 
+            else:  # Skipping training
+                logger.info("Skipping training.")
+
             # Call predictor to estimate predictions
-            logger.info(f"Model predictions on X_calib fold {i}")
+            logger.info(f"Model predictions on X_calib fold {i+cached_len}")
             y_pred = predictor.predict(X_calib)
             logger.debug("Shape of y_pred")
 
             # Fit calibrator
-            logger.info(f"Fitting calibrator on fold {i}")
+            logger.info(f"Fitting calibrator on fold {i+cached_len}")
             calibrator.fit(y_true=y_calib, y_pred=y_pred)
 
             # Compute normalized weights of the nonconformity scores
@@ -239,8 +252,8 @@ class ConformalPredictor:
 
             # Add predictor and calibrator to the collection that is used later
             # by the predict method
-            self._cv_cp_agg.append_predictor(i, predictor)
-            self._cv_cp_agg.append_calibrator(i, calibrator)
+            self._cv_cp_agg.append_predictor(i + cached_len, predictor)
+            self._cv_cp_agg.append_calibrator(i + cached_len, calibrator)
 
     def predict(self, X: Iterable, alpha: float) -> Tuple[np.ndarray]:
         """Predict point, and interval estimates for X data.

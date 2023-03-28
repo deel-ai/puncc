@@ -140,7 +140,7 @@ def supported_types_check(*data: Iterable):
         else:
             raise TypeError(
                 f"Unsupported data type {type(a)}. Please provide a numpy ndarray, "
-                "a dataframe or a tensor (TensorFlow)."
+                "a dataframe or a tensor."
             )
 
 
