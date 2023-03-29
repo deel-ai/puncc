@@ -38,8 +38,8 @@ from deel.puncc.classification import RAPS
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
-    "aps": {"cov": 0.92, "size": 2.24},
-    "raps": {"cov": 0.92, "size": 2.23},
+    "aps": {"cov": 0.89, "size": 1.92},
+    "raps": {"cov": 0.89, "size": 1.9},
 }
 
 

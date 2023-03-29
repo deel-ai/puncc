@@ -33,6 +33,7 @@ from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
 from deel.puncc.api.splitting import IdSplitter
+from deel.puncc.api.splitting import RandomSplitter
 
 
 class RAPS:
@@ -44,6 +45,8 @@ class RAPS:
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
+    :param float random_state: random seed used when the user does not
+        provide a custom fit/calibration split in `fit` method.
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
@@ -130,7 +133,14 @@ class RAPS:
 
     """
 
-    def __init__(self, predictor, train=True, lambd=0, k_reg=1):
+    def __init__(
+        self,
+        predictor,
+        train=True,
+        random_state: float = None,
+        lambd=0,
+        k_reg=1,
+    ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.raps_score_builder(
@@ -141,7 +151,11 @@ class RAPS:
             ),
             weight_func=None,
         )
+
         self.train = train
+
+        self.random_state = random_state
+
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
@@ -186,7 +200,7 @@ class RAPS:
         :param Iterable y_calib: labels from the calibration dataset.
         :param bool use_cached: if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
-            call to :classmethod:`fit`.
+            call to `fit`.
         :param dict kwargs: predict configuration to be passed to the model's
             fit method.
 

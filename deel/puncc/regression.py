@@ -169,7 +169,7 @@ class SplitCP:
         :param Iterable y_calib: labels from the calibration dataset.
         :param bool use_cached: if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
-            call to :classmethod:`fit`. The aggregation follows the CV+
+            call to `fit`. The aggregation follows the CV+
             procedure.
         :param dict kwargs: predict configuration to be passed to the model's
             fit method.
@@ -516,7 +516,7 @@ class CVPlus:
         :param Iterable y: labels from the train dataset.
         :param bool use_cached: if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
-            call to :classmethod:`fit`. The aggregation follows the CV+
+            call to `fit`. The aggregation follows the CV+
             procedure.
         :param dict kwargs: predict configuration to be passed to the model's
             predict method.

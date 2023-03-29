@@ -178,7 +178,7 @@ class ConformalPredictor:
         :param Iterable y: labels.
         :param bool use_cached: if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
-            call to :classmethod:`fit`. The aggregation follows the CV+
+            call to `fit`. The aggregation follows the CV+
             procedure.
         :param dict kwargs: options configuration for the training.
 

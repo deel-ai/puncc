@@ -298,7 +298,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         raise RuntimeError(error)
 
     # Normalization check
-    norm_condition = np.isclose(np.sum(w, axis=-1), 1, atol=1e-6)
+    norm_condition = np.isclose(np.sum(w, axis=-1) - 1, 0, atol=1e-14)
     if ~np.all(norm_condition):
         error = (
             "W is not normalized. Sum of weights on"

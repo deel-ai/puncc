@@ -98,9 +98,12 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     ]
 
     # L is the number of classes (+1) for which the cumulative probability mass
-    # exceeds the threshold "tau"
-    # L = [len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1 for i in range(pred_len)]
-    L = np.sum(penal_cum_proba < tau, axis=-1) + 1
+    # is below the threshold "tau"
+    # The minimum is used in case the Y_pred logits are not well normalized
+    L = np.minimum(
+        np.sum(penal_cum_proba < tau, axis=-1) + 1,
+        pred_len,
+    )
 
     # For indexing, use L-1 to denote the L-th element
     # Residual of cumulative probability mass (regularized) and tau
