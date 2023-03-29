@@ -134,7 +134,7 @@ class BasePredictor:
         self.compile_kwargs = compile_kwargs
 
         if self.compile_kwargs:
-            self.model.compile(**self.compile_kwargs)
+            _ = self.model.compile(**self.compile_kwargs)
 
     def fit(self, X: Iterable, y: Iterable, **kwargs) -> None:
         """Fit model to the training data.
@@ -280,10 +280,10 @@ class DualPredictor:
         self.compile_args = compile_args
 
         if len(self.compile_args[0].keys()) != 0 and is_trained[0] is False:
-            self.models[0].compile(**self.compile_args[0])
+            _ = self.models[0].compile(**self.compile_args[0])
 
         if len(self.compile_args[1].keys()) != 0 and is_trained[1] is False:
-            self.models[1].compile(**self.compile_args[1])
+            _ = self.models[1].compile(**self.compile_args[1])
 
     def fit(
         self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]

@@ -55,7 +55,8 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     :param Iterable Y_pred:
         :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
         where :math:`P_{\\text{C}_i}` is logit associated to class i.
-    :param Iterable y_true: true labels.
+    :param ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
@@ -99,34 +100,38 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     # L is the number of classes (+1) for which the cumulative probability mass
     # exceeds the threshold "tau"
     # L = [len(np.where(penal_cum_proba[i] <= tau)[-1]) + 1 for i in range(pred_len)]
-    L = np.sum(penal_cum_proba <= tau, axis=-1) + 1
+    L = np.sum(penal_cum_proba < tau, axis=-1) + 1
 
+    # For indexing, use L-1 to denote the L-th element
+    # Residual of cumulative probability mass (regularized) and tau
     proba_excess = [
-        sorted_proba[i, L[i] - 1]
-        - sorted_cum_mass[i, L[i] - 1]
-        - lambd * np.maximum(L[i] - k_reg, 0)
+        (
+            sorted_cum_mass[i, L[i] - 1]
+            + lambd * np.maximum(L[i] - k_reg, 0)
+            - tau
+        )
         for i in range(pred_len)
     ]
+
+    # Indicator when regularization rank is exceeded
+    indic_L_greater_kreg = [1 if L[i] > k_reg else 0 for i in range(pred_len)]
+
+    # Normalized probability mass excess
     v = [
-        (tau - proba_excess[i]) / sorted_proba[i, L[i] - 1]
-        if (L[i] - 1) >= 0
-        else np.inf
+        proba_excess[i]
+        / (sorted_proba[i, L[i] - 1] + lambd * indic_L_greater_kreg[i])
         for i in range(pred_len)
     ]
+
+    # Least likely class in the prediction set is removed
+    # with a probability of norm_proba_excess
+    indic_excess_proba = [1 if u[i] <= v[i] else 0 for i in range(pred_len)]
+    L = L - indic_excess_proba
 
     # Build prediction set
-    prediction_sets = []
-
-    for i in range(pred_len):
-        if v[i] <= u[i]:
-            cut_i = L[i] - 1
-        else:
-            cut_i = L[i]
-
-        if cut_i < 0:
-            prediction_sets.append([])
-        else:
-            prediction_sets.append(list(idx_class_pred_ranking[i, :cut_i]))
+    prediction_sets = [
+        list(idx_class_pred_ranking[i, : L[i]]) for i in range(pred_len)
+    ]
 
     return (prediction_sets,)
 

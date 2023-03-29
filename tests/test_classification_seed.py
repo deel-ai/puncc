@@ -48,7 +48,6 @@ RESULTS = {
     [(0.1, 42)],
 )
 def test_aps(mnist_data, alpha, random_state):
-
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
@@ -81,7 +80,13 @@ def test_aps(mnist_data, alpha, random_state):
 
     # APS
     aps_cp = APS(class_predictor)
-    aps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
+    aps_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit_cat,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        **fit_kwargs
+    )
     y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
 
@@ -97,7 +102,6 @@ def test_aps(mnist_data, alpha, random_state):
     [(0.1, 42, 0.01, 1)],
 )
 def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
-
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
@@ -130,7 +134,13 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
 
     # RAPS
     raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd)
-    raps_cp.fit(X_fit, y_fit_cat, X_calib, y_calib, **fit_kwargs)
+    raps_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit_cat,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        **fit_kwargs
+    )
     y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
     assert y_pred is not None
 

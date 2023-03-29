@@ -84,8 +84,8 @@ def raps_score(
         raise NotImplementedError(
             "RAPS nonconformity scores only implemented for ndarrays"
         )
-    # Generate rand randomly from a uniform distribution
-    rand = np.random.uniform(size=len(y_true))
+    # Generate u randomly from a uniform distribution
+    u = np.random.uniform(size=len(y_true))
 
     # Sort classes by descending probability order
     class_ranking = np.argsort(-Y_pred, axis=1)
@@ -103,10 +103,11 @@ def raps_score(
 
     # Threshold of cumulative probability mass to include the real class
     E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
+
     E = [
         E[i]
-        + (rand[i] - 1) * sorted_proba[i, L[i]]
-        + lambd * np.maximum((L[i] - k_reg + 1), 0)
+        + lambd * np.maximum((L[i] + 1 - k_reg), 0)
+        - u[i] * sorted_proba[i, L[i]]
         for i in range(y_true.shape[0])
     ]
 

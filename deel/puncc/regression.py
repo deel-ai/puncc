@@ -199,7 +199,7 @@ class SplitCP:
             and y_calib is not None
         ):
             splitter = IdSplitter(
-                np.empty(len(y_calib)), np.empty(len(y_calib)), X_calib, y_calib
+                np.empty_like(X_calib), np.empty_like(y_calib), X_calib, y_calib
             )
 
         else:
