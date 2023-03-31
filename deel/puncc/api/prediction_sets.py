@@ -33,6 +33,7 @@ from typing import Tuple
 
 import numpy as np
 
+from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
 
 if pkgutil.find_loader("pandas") is not None:
@@ -70,6 +71,9 @@ def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
     :rtype: Iterable
 
     """
+    # Check if logits sum is close to one
+    logit_normalization_check(Y_pred)
+
     pred_len = len(Y_pred)
 
     logger.debug(f"Shape of Y_pred: {Y_pred.shape}")

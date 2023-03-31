@@ -82,7 +82,7 @@ def raps_score(
 
     if not isinstance(Y_pred, np.ndarray):
         raise NotImplementedError(
-            "RAPS nonconformity scores only implemented for ndarrays"
+            "RAPS/APS nonconformity scores only implemented for ndarrays"
         )
     # Generate u randomly from a uniform distribution
     u = np.random.uniform(size=len(y_true))

@@ -185,20 +185,20 @@ class BasePredictor:
 
         """
 
-        try:
+        model_type_str = str(type(self.model))
+
+        if (
+            "tensorflow" in model_type_str
+            or "keras" in model_type_str
+            and pkgutil.find_loader("tensorflow") is not None
+        ):
+            model = tf.keras.models.clone_model(self.model)
+            try:
+                model.set_weights(self.model.get_weights())
+            except Exception:
+                pass
+        else:
             model = deepcopy(self.model)
-        except Exception as e_outer:
-            if pkgutil.find_loader("tensorflow") is not None:
-                try:
-                    model = tf.keras.models.clone_model(self.model)
-                except Exception as e_inner:
-                    msg = (
-                        f"Cannot copy models. Many possible reasons:\n"
-                        f" 1- {e_inner} \n 2- {e_outer}"
-                    )
-                    raise RuntimeError(msg)
-            else:
-                raise Exception(e_outer)
 
         predictor_copy = self.__class__(
             model=model, is_trained=self.is_trained, **self.compile_kwargs

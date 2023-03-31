@@ -173,7 +173,6 @@ class RAPS:
         y_fit: Optional[Iterable] = None,
         X_calib: Optional[Iterable] = None,
         y_calib: Optional[Iterable] = None,
-        use_cached: bool = False,
         **kwargs: Optional[dict],
     ):
         """This method fits the models on the fit data
@@ -198,9 +197,6 @@ class RAPS:
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
         :param Iterable y_calib: labels from the calibration dataset.
-        :param bool use_cached: if set, enables to add the previously computed
-            nonconformity scores (if any) to the pool estimated in the current
-            call to `fit`.
         :param dict kwargs: predict configuration to be passed to the model's
             fit method.
 

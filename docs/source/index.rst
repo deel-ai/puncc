@@ -60,10 +60,10 @@ You can alternatively use the makefile to automatically create a virtual environ
    :maxdepth: 1
    :caption: Contents
 
-   theory_overview
    getting_started
    regression
    classification
    api
    metrics
    plotting
+   theory_overview
