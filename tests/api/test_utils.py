@@ -52,15 +52,16 @@ class DataTypeStructureCheck(unittest.TestCase):
 
     def test_type_consistency(self):
         supported_types_check(self.y_pred_np, self.y_pred_np)
-        supported_types_check(self.y_pred_df, self.y_pred_df)
+        supported_types_check(
+            self.y_pred_df, self.y_pred_df, self.y_pred_df.iloc[:, 1]
+        )
         supported_types_check(self.y_pred_tensor, self.y_pred_tensor)
 
         with self.assertRaises(TypeError):
-            supported_types_check(self.y_pred_np, self.y_pred_df)
+            supported_types_check([1, 2, 3])
+
         with self.assertRaises(TypeError):
-            supported_types_check(self.y_pred_tensor, self.y_pred_np)
-        with self.assertRaises(TypeError):
-            supported_types_check(self.y_pred_df, self.y_pred_tensor)
+            supported_types_check(self.y_pred_np, [1, 2, 3])
 
     def test_sample_len_check(self):
         dummy_array = np.random.random_sample(size=(100, 2))

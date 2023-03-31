@@ -76,7 +76,7 @@ Such model needs to be wrapped in a wrapper provided in the module
 The wrapper makes it possible to use various models from different ML/DL
 libraries such as `Scikit-learn <https://scikit-learn.org/>`__,
 `Keras <https://keras.io/>`_ or
-`XGBoost <https://xgboost.readthedocs.io/en/stable/>`_. **An example of** 
+`XGBoost <https://xgboost.readthedocs.io/en/stable/>`_. **An example of**
 :ref:`conformal classification <classification example>` **with keras models
 is provided later in this page**.
 For more information about model wrappers and supported ML/DL libraries,

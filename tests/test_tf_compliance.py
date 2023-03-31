@@ -49,7 +49,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     [(0.1, 42)],
 )
 def test_split_cp(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
@@ -71,7 +70,9 @@ def test_split_cp(diabetes_data, alpha, random_state):
     kwargs = {"batch_size": 64, "epochs": 5}
 
     ## Fitting
-    split_cp.fit(X_fit, y_fit, X_calib, y_calib, **kwargs)
+    split_cp.fit(
+        X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib, **kwargs
+    )
 
     ## Predict
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
@@ -93,7 +94,6 @@ def test_split_cp(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_ne_split_cp(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
@@ -121,7 +121,9 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     # The fit method trains the model and computes the residuals on the
     # calibration set
     kwargs = {"batch_size": 64, "epochs": 5}
-    w_split_cp.fit(X_fit, y_fit, X_calib, y_calib, **kwargs)  # type: ignore
+    w_split_cp.fit(
+        X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib, **kwargs
+    )
 
     # The predict method infers prediction intervals with respect to
     # the risk alpha
@@ -144,7 +146,6 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
@@ -175,11 +176,16 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
 
     # CP method initialization
     la_cp = LocallyAdaptiveCP(predictor)
-
     # Fit and conformalize
     kwargs1 = {"batch_size": 64, "epochs": 5}
     kwargs2 = {"batch_size": 64, "epochs": 4}
-    la_cp.fit(X_fit, y_fit, X_calib, y_calib, dictargs=[kwargs1, kwargs2])  # type: ignore
+    la_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        dictargs=[kwargs1, kwargs2],
+    )
     y_pred, y_pred_lower, y_pred_upper = la_cp.predict(X_test, alpha=alpha)
 
     assert y_pred is not None
@@ -199,7 +205,6 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_cqr(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
@@ -246,7 +251,13 @@ def test_cqr(diabetes_data, alpha, random_state):
     # Fit and conformalize
     kwargs1 = {"batch_size": 64, "epochs": 5}
     kwargs2 = {"batch_size": 64, "epochs": 4}
-    crq.fit(X_fit, y_fit, X_calib, y_calib, dictargs=[kwargs1, kwargs2])  # type: ignore
+    crq.fit(
+        X_fit=X_fit,
+        y_fit=y_fit,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        dictargs=[kwargs1, kwargs2],
+    )
     _, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
 
     assert not (True in np.isnan(y_pred_lower))
@@ -264,7 +275,6 @@ def test_cqr(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_cv_plus(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
@@ -296,7 +306,6 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_enbpi(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
@@ -337,7 +346,6 @@ def test_enbpi(diabetes_data, alpha, random_state):
     [(0.1, 42)],
 )
 def test_adaptive_enbpi(diabetes_data, alpha, random_state):
-
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 

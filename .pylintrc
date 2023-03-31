@@ -7,6 +7,7 @@ disable=
     C0123, # allow use of type()
     C0201, # allow iterating the dictionary by calling .keys()
     C0206, # allow iterating without .items()
+    C0302, # allow too many lines in module 
     C0411, # allow custom import order
 
     R0801, # allow similar lines in 2 files

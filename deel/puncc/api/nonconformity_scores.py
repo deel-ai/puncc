@@ -40,6 +40,9 @@ if pkgutil.find_loader("pandas") is not None:
 if pkgutil.find_loader("tensorflow") is not None:
     import tensorflow as tf
 
+if pkgutil.find_loader("torch") is not None:
+    import torch
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,10 +82,10 @@ def raps_score(
 
     if not isinstance(Y_pred, np.ndarray):
         raise NotImplementedError(
-            "RAPS nonconformity scores only implemented for ndarrays"
+            "RAPS/APS nonconformity scores only implemented for ndarrays"
         )
-    # Generate rand randomly from a uniform distribution
-    rand = np.random.uniform(size=len(y_true))
+    # Generate u randomly from a uniform distribution
+    u = np.random.uniform(size=len(y_true))
 
     # Sort classes by descending probability order
     class_ranking = np.argsort(-Y_pred, axis=1)
@@ -100,10 +103,11 @@ def raps_score(
 
     # Threshold of cumulative probability mass to include the real class
     E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
+
     E = [
         E[i]
-        + (rand[i] - 1) * sorted_proba[i, L[i]]
-        + lambd * np.maximum((L[i] - k_reg + 1), 0)
+        + lambd * np.maximum((L[i] + 1 - k_reg), 0)
+        - u[i] * sorted_proba[i, L[i]]
         for i in range(y_true.shape[0])
     ]
 
@@ -150,24 +154,19 @@ def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :returns: mean absolute deviation.
     :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred, y_true)
-    diff = y_pred - y_true
 
-    if isinstance(y_pred, np.ndarray):
-        return np.absolute(diff)
+    if pkgutil.find_loader("torch") is not None and isinstance(
+        y_pred, torch.Tensor
+    ):
+        y_pred = y_pred.cpu().detach().numpy()
+        y_true = y_true.cpu().detach().numpy()
+        return abs(np.squeeze(y_pred) - np.squeeze(y_true))
 
-    if pkgutil.find_loader("pandas") and isinstance(y_pred, pd.DataFrame):
-        return diff.abs()
-
-    if pkgutil.find_loader("tensorflow") and isinstance(y_pred, tf.Tensor):
-        return tf.math.abs(diff)
-
-    # if pkgutil.find_loader("torch"):
-    #     if isinstance(y_pred, torch.Tensor):
-    #         return torch.abs(diff)
-
-    raise RuntimeError("Type check failed")
+    return abs(y_pred - y_true)
 
 
 def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
@@ -184,6 +183,8 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :returns: scaled mean absolute deviation.
     :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 
@@ -252,11 +253,12 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         return np.maximum(diff_lo, diff_hi)
 
     if pkgutil.find_loader("pandas") is not None and isinstance(
-        diff_lo, pd.DataFrame
+        diff_lo, (pd.DataFrame, pd.Series)
     ):
-        raise NotImplementedError(
-            "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
-        )
+        return (pd.concat([diff_lo, diff_hi]).groupby(level=0)).max()
+        # raise NotImplementedError(
+        #     "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
+        # )
 
     if pkgutil.find_loader("tensorflow") is not None and isinstance(
         diff_lo, tf.Tensor

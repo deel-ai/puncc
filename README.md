@@ -25,7 +25,7 @@
 </div>
 <br>
 
-***Puncc*** (**P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library that integrates a collection of state-of-the-art conformal prediction algorithms and related techniques for regression and classification problems. It can be used with any predictive model to provide rigorous uncertainty estimations. 
+***Puncc*** (**P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library that integrates a collection of state-of-the-art conformal prediction algorithms and related techniques for regression and classification problems. It can be used with any predictive model to provide rigorous uncertainty estimations.
 Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
 
 Documentation is available [**online**](https://deel-ai.github.io/puncc/index.html).
@@ -87,10 +87,10 @@ conformal prediction method provided by the class
 from sklearn import linear_model
 from deel.puncc.api.prediction import BasePredictor
 
-# Load fitting (X_fit, y_fit) and calibration (X_calib, y_calib) data
+# Load training data and test data
 # ...
 
-# Instanciate a linear regression model 
+# Instanciate a linear regression model
 # linear_model = ...
 
 
@@ -103,9 +103,11 @@ lin_reg_predictor =  BasePredictor(linear_model, is_trained=False)
 # Instanciate the split cp wrapper around the linear predictor.
 split_cp = SplitCP(lin_reg_predictor)
 
-# Train model (as is_trained` is False) on the fitting dataset and
-# compute the residuals on the calibration dataset.
-split_cp.fit(X_fit, y_fit, X_calib, y_calib)
+# Fit model (as is_trained` is False) on the fit dataset and
+# compute the residuals on the calibration dataset. 
+# The fit (resp. calibration) subset is randomly sampled from the training 
+# data and constitutes 80% (resp. 20%) of it (fit_ratio = 80%).
+split_cp.fit(X_train, y_train, fit_ratio=.8)
 
 # The predict returns the output of the linear model y_pred and
 # the calibrated interval [y_pred_lower, y_pred_upper].
@@ -115,7 +117,7 @@ y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is $95$% (see [Quickstart Notebook](docs/quickstart.ipynb)):
 
 <figure style="text-align:center">
-<img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method"/> 
+<img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method"/>
 <div align=center>90% Prediction Interval with Split Conformal Prediction.</div>
 </figure>
 <br>

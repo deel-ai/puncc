@@ -182,14 +182,19 @@ def plot_prediction_intervals(
         y_pred_lower = y_pred_lower[sorted_idx]
         y_pred_upper = y_pred_upper[sorted_idx]
 
+    # Checks if user is plotting an interval
+    plot_interval = False
+    if (y_pred_upper is not None) and (y_pred_lower is not None):
+        plot_interval = True
+
     # Coverage count
-    if y_pred_upper is None or y_pred_lower is None:
-        miscoverage = np.array([False for _ in range(len(y_true))])
-    else:
+    if plot_interval:
         miscoverage = (y_true > y_pred_upper) | (y_true < y_pred_lower)
+    else:  # No interval given, so no miscoverage
+        miscoverage = np.array([False for _ in range(len(y_true))])
 
     # plot observations inside PI
-    label = "Observation" if y_pred_upper is None else "Observation (inside PI)"
+    label = "Observation (inside PI)" if plot_interval else "Observation"
     ax.plot(
         X[~miscoverage],
         y_true[~miscoverage],
@@ -201,23 +206,22 @@ def plot_prediction_intervals(
         zorder=20,
     )
 
-    # Plot observations outside PI
-    label = (
-        "Observation" if y_pred_upper is None else "Observation (outside PI)"
-    )
-    ax.plot(
-        X[miscoverage],
-        y_true[miscoverage],
-        color="red",
-        marker="o",
-        markersize=4,
-        linewidth=0,
-        label=label,
-        zorder=20,
-    )
+    if plot_interval:
+        # Plot observations outside PI
+        label = "Observation (outside PI)"
 
-    if (y_pred_upper is not None) and (y_pred_lower is not None):
+        ax.plot(
+            X[miscoverage],
+            y_true[miscoverage],
+            color="red",
+            marker="o",
+            markersize=4,
+            linewidth=0,
+            label=label,
+            zorder=20,
+        )
 
+        # plot interval
         ax.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
         ax.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
         ax.fill_between(

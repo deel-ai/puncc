@@ -39,6 +39,9 @@ if pkgutil.find_loader("pandas") is not None:
 if pkgutil.find_loader("tensorflow") is not None:
     import tensorflow as tf
 
+if pkgutil.find_loader("torch") is not None:
+    import torch
+
 logger = logging.getLogger(__name__)
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
@@ -110,37 +113,35 @@ def features_len_check(a: Iterable, b: Iterable):
         )
 
 
-def supported_types_check(a: Iterable, b: Iterable = None):
-    """Check if arguments' types is supported. If second argument is provided,
-    check if arguments' types are consistent.
+def supported_types_check(*data: Iterable):
+    """Check if arguments' types are supported.
 
-    :param Iterable a: any iterable to be checked.
-    :param Iterable b: if provided, check if it has the same type as
-        first argument.
+    :param Iterable data: iterable(s) to be checked.
 
-    :raises TypeError: unsupported data types or arguments have inconsistent types.
+    :raises TypeError: unsupported data types.
     """
-    if b is not None and (type(a) != type(b)):
-        raise TypeError(
-            f"elements do not have the same type: {type(a)} vs {type(b)}."
-        )
 
-    if isinstance(a, np.ndarray):
-        return
+    for a in data:
+        if isinstance(a, np.ndarray):
+            pass
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
-        a, pd.DataFrame
-    ):
-        return
-    if pkgutil.find_loader("tensorflow") is not None and isinstance(
-        a, tf.Tensor
-    ):
-        return
-
-    raise TypeError(
-        "Unsupported data type. Please provide a numpy ndarray, "
-        "a dataframe or a tensor (TensorFlow)."
-    )
+        elif pkgutil.find_loader("pandas") is not None and isinstance(
+            a, (pd.DataFrame, pd.Series)
+        ):
+            pass
+        elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+            a, tf.Tensor
+        ):
+            pass
+        elif pkgutil.find_loader("torch") is not None and isinstance(
+            a, torch.Tensor
+        ):
+            pass
+        else:
+            raise TypeError(
+                f"Unsupported data type {type(a)}. Please provide a numpy ndarray, "
+                "a dataframe or a tensor."
+            )
 
 
 def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
@@ -297,7 +298,7 @@ def quantile(a: Iterable, q: float, w: np.ndarray = None) -> np.ndarray:  # type
         raise RuntimeError(error)
 
     # Normalization check
-    norm_condition = np.isclose(np.sum(w, axis=-1), 1, atol=1e-6)
+    norm_condition = np.isclose(np.sum(w, axis=-1) - 1, 0, atol=1e-14)
     if ~np.all(norm_condition):
         error = (
             "W is not normalized. Sum of weights on"

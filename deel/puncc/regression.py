@@ -38,6 +38,7 @@ from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
+from deel.puncc.api.splitting import RandomSplitter
 
 
 class SplitCP:
@@ -45,6 +46,10 @@ class SplitCP:
     the :ref:`theory overview page <theory splitcp>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
+    :param float random_state: random seed used when the user does not
+        provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
@@ -69,13 +74,13 @@ class SplitCP:
                                 random_state=0, shuffle=False)
 
         # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
+        X, X_test, y, y_test = train_test_split(
             X, y, test_size=.2, random_state=0
         )
 
         # Split train data into fit and calibration
         X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X_train, y_train, test_size=.2, random_state=0
+            X, y, test_size=.2, random_state=0
         )
 
         # Create a random forest model and wrap it in a predictor
@@ -101,40 +106,109 @@ class SplitCP:
         print(f"Average width: {np.round(width, 2)}")
     """
 
-    def __init__(self, predictor, *, weight_func=None):
+    def __init__(
+        self,
+        predictor,
+        *,
+        train=True,
+        random_state: float = None,
+        weight_func=None,
+    ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.mad,
             pred_set_func=prediction_sets.constant_interval,
             weight_func=weight_func,
         )
-        self.conformal_predictor = None
+
+        self.train = train
+
+        self.random_state = random_state
+
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=train,
+        )
 
     def fit(
         self,
-        X_fit: Iterable,
-        y_fit: Iterable,
-        X_calib: Iterable,
-        y_calib: Iterable,
+        *,
+        X: Optional[Iterable] = None,
+        y: Optional[Iterable] = None,
+        fit_ratio: float = 0.8,
+        X_fit: Optional[Iterable] = None,
+        y_fit: Optional[Iterable] = None,
+        X_calib: Optional[Iterable] = None,
+        y_calib: Optional[Iterable] = None,
+        use_cached: bool = False,
         **kwargs: Optional[dict],
     ):
-        """This method fits the models to the fit data (X_fit, y_fit)
-        and computes nonconformity scores on (X_calib, y_calib).
+        """This method fits the models on the fit data
+        and computes nonconformity scores on calibration data.
+        If (X, y) are provided, randomly split data into
+        fit and calib subsets w.r.t to the fit_ratio.
+        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
+        the conformalization is performed on the given user defined
+        fit and calibration sets.
 
+        .. NOTE::
+
+            If X and y are provided, `fit` ignores
+            any user-defined fit/calib split.
+
+
+        :param Iterable X: features from the training dataset.
+        :param Iterable y: labels from the training dataset.
+        :param float fit_ratio: the proportion of samples assigned to the
+            fit subset.
         :param Iterable X_fit: features from the fit dataset.
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
         :param Iterable y_calib: labels from the calibration dataset.
+        :param bool use_cached: if set, enables to add the previously computed
+            nonconformity scores (if any) to the pool estimated in the current
+            call to `fit`. The aggregation follows the CV+
+            procedure.
         :param dict kwargs: predict configuration to be passed to the model's
-            predict method.
+            fit method.
+
+        :raises RuntimeError: no dataset provided.
 
         """
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=IdSplitter(X_fit, y_fit, X_calib, y_calib),
-        )
-        self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
+
+        if X is not None and y is not None:
+            splitter = RandomSplitter(
+                ratio=fit_ratio, random_state=self.random_state
+            )
+
+        elif (
+            X_fit is not None
+            and y_fit is not None
+            and X_calib is not None
+            and y_calib is not None
+        ):
+            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
+
+        elif (
+            self.predictor.is_trained
+            and X_fit is None
+            and y_fit is None
+            and X_calib is not None
+            and y_calib is not None
+        ):
+            splitter = IdSplitter(
+                np.empty_like(X_calib), np.empty_like(y_calib), X_calib, y_calib
+            )
+
+        else:
+            raise RuntimeError("No dataset provided.")
+
+        # Update splitter
+        self.conformal_predictor.splitter = splitter
+
+        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
 
     def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
@@ -170,10 +244,12 @@ class SplitCP:
         # Get all nconf scores on the fitting kfolds
         kfold_nconf_scores = self.conformal_predictor.get_nonconformity_scores()
 
-        # With split CP, the nconf scores dict has only one element
-        nconf_scores = list(kfold_nconf_scores.values())[0]
+        # With split CP, the nconf scores dict has only one element if no
+        # cache was used.
+        if len(kfold_nconf_scores) == 1:
+            return list(kfold_nconf_scores.values())[0]
 
-        return nconf_scores
+        return kfold_nconf_scores
 
 
 class LocallyAdaptiveCP(SplitCP):
@@ -182,6 +258,10 @@ class LocallyAdaptiveCP(SplitCP):
 
     :param MeanVarPredictor predictor: a predictor implementing fit and predict.
         Must embed two models for point and dispersion estimations respectively.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
+    :param float random_state: random seed used when the user does not
+        provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
@@ -206,13 +286,13 @@ class LocallyAdaptiveCP(SplitCP):
                                 random_state=0, shuffle=False)
 
         # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
+        X, X_test, y, y_test = train_test_split(
             X, y, test_size=.2, random_state=0
         )
 
         # Split train data into fit and calibration
         X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X_train, y_train, test_size=.2, random_state=0
+            X, y, test_size=.2, random_state=0
         )
 
         # Create two models mu (mean) and sigma (dispersion)
@@ -240,12 +320,25 @@ class LocallyAdaptiveCP(SplitCP):
 
     """
 
-    def __init__(self, predictor, *, weight_func=None):
-        super().__init__(predictor, weight_func=weight_func)
+    def __init__(
+        self, predictor, *, train=True, random_state=None, weight_func=None
+    ):
+        super().__init__(
+            predictor,
+            train=train,
+            random_state=random_state,
+            weight_func=weight_func,
+        )
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.scaled_mad,
             pred_set_func=prediction_sets.scaled_interval,
             weight_func=weight_func,
+        )
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=train,
         )
 
 
@@ -256,6 +349,8 @@ class CQR(SplitCP):
     :param DualPredictor predictor: a predictor implementing fit and predict.
         Must embed two models for lower and upper quantiles estimations
         respectively.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
@@ -281,13 +376,13 @@ class CQR(SplitCP):
                     random_state=0, shuffle=False)
 
         # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
+        X, X_test, y, y_test = train_test_split(
             X, y, test_size=.2, random_state=0
         )
 
         # Split train data into fit and calibration
         X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X_train, y_train, test_size=.2, random_state=0
+            X, y, test_size=.2, random_state=0
         )
 
         # Lower quantile regressor
@@ -321,12 +416,18 @@ class CQR(SplitCP):
 
     """
 
-    def __init__(self, predictor, *, weight_func=None):
-        super().__init__(predictor, weight_func=weight_func)
+    def __init__(self, predictor, *, train=True, weight_func=None):
+        super().__init__(predictor, train=train, weight_func=weight_func)
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
             weight_func=weight_func,
+        )
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=train,
         )
 
 
@@ -357,7 +458,7 @@ class CVPlus:
                                 random_state=0, shuffle=False)
 
         # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
+        X, X_test, y, y_test = train_test_split(
             X, y, test_size=.2, random_state=0
         )
 
@@ -370,7 +471,7 @@ class CVPlus:
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the K-fold calibration sets
-        cv_cp.fit(X_train, y_train)
+        cv_cp.fit(X, y)
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
@@ -386,7 +487,6 @@ class CVPlus:
     """
 
     def __init__(self, predictor, *, K: int, random_state=None):
-
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.mad,
@@ -394,30 +494,35 @@ class CVPlus:
             weight_func=None,
         )
         self.splitter = KFoldSplitter(K=K, random_state=random_state)
-        self.conformal_predictor = None
 
-    def fit(
-        self,
-        X_train: Iterable,
-        y_train: Iterable,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the ensemble models based on the K-fold scheme.
-        The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
-
-        :param Iterable X_train: features from the train dataset.
-        :param Iterable y_train: labels from the train dataset.
-        :param dict kwargs: predict configuration to be passed to the model's
-            predict method.
-
-        """
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=self.splitter,
             method="cv+",
         )
-        self.conformal_predictor.fit(X=X_train, y=y_train, **kwargs)
+
+    def fit(
+        self,
+        X: Iterable,
+        y: Iterable,
+        use_cached: bool = False,
+        **kwargs: Optional[dict],
+    ):
+        """This method fits the ensemble models based on the K-fold scheme.
+        The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
+
+        :param Iterable X: features from the train dataset.
+        :param Iterable y: labels from the train dataset.
+        :param bool use_cached: if set, enables to add the previously computed
+            nonconformity scores (if any) to the pool estimated in the current
+            call to `fit`. The aggregation follows the CV+
+            procedure.
+        :param dict kwargs: predict configuration to be passed to the model's
+            predict method.
+
+        """
+        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
 
     def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
@@ -499,13 +604,13 @@ class EnbPI:
                     random_state=0, shuffle=False)
 
         # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
+        X, X_test, y, y_test = train_test_split(
             X, y, test_size=.2, random_state=0
         )
 
         # Split train data into fit and calibration
         X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X_train, y_train, test_size=.2, random_state=0
+            X, y, test_size=.2, random_state=0
         )
 
         # Create rf regressor
@@ -521,7 +626,7 @@ class EnbPI:
         )
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the oob calibration sets
-        enbpi.fit(X_train, y_train)
+        enbpi.fit(X, y)
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
         Y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
@@ -605,12 +710,12 @@ class EnbPI:
         """
         return np.matmul(self._oob_matrix, boot_pred)
 
-    def fit(self, X_train, y_train, **kwargs):
+    def fit(self, X, y, **kwargs):
         """Fit B bootstrap models on the bootstrap bags and respectively
         compute/store residuals on out-of-bag samples.
 
-        :param ndarray X_train: training feature set
-        :param ndarray y_train: training label set
+        :param ndarray X: training feature set
+        :param ndarray y: training label set
         :param dict kwargs: fit arguments for the underlying model
 
         :raises RuntimeError: empty out-of-bag.
@@ -618,7 +723,7 @@ class EnbPI:
         """
         self._oob_dict = {}  # Key: b. Value: out of bag weighted index
         self._boot_predictors = []  # f^_b for b in [1,B]
-        T = len(X_train)  # Number of samples to be considered during training
+        T = len(X)  # Number of samples to be considered during training
         horizon_indices = np.arange(T)
 
         # === (1) === Do bootstrap sampling, reference OOB samples===
@@ -686,19 +791,17 @@ class EnbPI:
             # Retrieve list of indexes of previously bootstrapped sample
             boot = self._boot_dict[b]
             boot_predictor = self.predictor.copy()  # Instantiate model
-            boot_predictor.fit(
-                X_train[boot], y_train[boot], **kwargs
-            )  # fit predictor
+            boot_predictor.fit(X[boot], y[boot], **kwargs)  # fit predictor
             self._boot_predictors.append(boot_predictor)  # Store fitted model
 
         # === (3) === Residuals computation
         print(" === step 2/2: computing nonconformity scores ...")
-        # Predictions on X_train by each bootstrap estimator
+        # Predictions on X by each bootstrap estimator
         boot_preds = [
-            self._boot_predictors[b].predict(X_train) for b in range(self.B)
+            self._boot_predictors[b].predict(X) for b in range(self.B)
         ]
         boot_preds = np.array(boot_preds)
-        residuals = self._compute_boot_residuals(boot_preds, y_train)
+        residuals = self._compute_boot_residuals(boot_preds, y)
         self.residuals += residuals
 
     def predict(
@@ -751,7 +854,6 @@ class EnbPI:
 
         # Inference is performed by batch
         for i in np.arange(n_batches):
-
             if i == n_batches - 1:
                 X_batch = X_test[i * s :]
                 y_true_batch = y_true[i * s :] if y_true is not None else None
@@ -830,13 +932,13 @@ class AdaptiveEnbPI(EnbPI):
                     random_state=0, shuffle=False)
 
         # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
+        X, X_test, y, y_test = train_test_split(
             X, y, test_size=.2, random_state=0
         )
 
         # Split train data into fit and calibration
         X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X_train, y_train, test_size=.2, random_state=0
+            X, y, test_size=.2, random_state=0
         )
 
         # Create two models mu (mean) and sigma (dispersion)
@@ -853,7 +955,7 @@ class AdaptiveEnbPI(EnbPI):
         )
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the oob calibration sets
-        aenbpi.fit(X_train, y_train)
+        aenbpi.fit(X, y)
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
         Y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(

@@ -23,6 +23,7 @@
 """
 This module implements usual conformal classification wrappers.
 """
+import numpy as np
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
@@ -32,6 +33,7 @@ from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
 from deel.puncc.api.splitting import IdSplitter
+from deel.puncc.api.splitting import RandomSplitter
 
 
 class RAPS:
@@ -43,6 +45,8 @@ class RAPS:
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
+    :param float random_state: random seed used when the user does not
+        provide a custom fit/calibration split in `fit` method.
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
@@ -129,7 +133,14 @@ class RAPS:
 
     """
 
-    def __init__(self, predictor, train=True, lambd=0, k_reg=1):
+    def __init__(
+        self,
+        predictor,
+        train=True,
+        random_state: float = None,
+        lambd=0,
+        k_reg=1,
+    ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.raps_score_builder(
@@ -140,33 +151,89 @@ class RAPS:
             ),
             weight_func=None,
         )
+
         self.train = train
-        self.conformal_predictor = None
+
+        self.random_state = random_state
+
+        self.conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=self.train,
+        )
 
     def fit(
         self,
-        X_fit: Iterable,
-        y_fit: Iterable,
-        X_calib: Iterable,
-        y_calib: Iterable,
+        *,
+        X: Optional[Iterable] = None,
+        y: Optional[Iterable] = None,
+        fit_ratio: float = 0.8,
+        X_fit: Optional[Iterable] = None,
+        y_fit: Optional[Iterable] = None,
+        X_calib: Optional[Iterable] = None,
+        y_calib: Optional[Iterable] = None,
         **kwargs: Optional[dict],
     ):
-        """This method fits the models to the fit data (X_fit, y_fit)
-        and computes nonconformity scores on (X_calib, y_calib).
+        """This method fits the models on the fit data
+        and computes nonconformity scores on calibration data.
+        If (X, y) are provided, randomly split data into
+        fit and calib subsets w.r.t to the fit_ratio.
+        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
+        the conformalization is performed on the given user defined
+        fit and calibration sets.
 
+        .. NOTE::
+
+            If X and y are provided, `fit` ignores
+            any user-defined fit/calib split.
+
+
+        :param Iterable X: features from the training dataset.
+        :param Iterable y: labels from the training dataset.
+        :param float fit_ratio: the proportion of samples assigned to the
+            fit subset.
         :param Iterable X_fit: features from the fit dataset.
         :param Iterable y_fit: labels from the fit dataset.
         :param Iterable X_calib: features from the calibration dataset.
         :param Iterable y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's
-            predict method.
+            fit method.
+
+        :raises RuntimeError: no dataset provided.
+
         """
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=IdSplitter(X_fit, y_fit, X_calib, y_calib),
-        )
-        self.conformal_predictor.fit(X=None, y=None, **kwargs)  # type: ignore
+        if X is not None and y is not None:
+            splitter = RandomSplitter(
+                ratio=fit_ratio, random_state=self.random_state
+            )
+
+        elif (
+            X_fit is not None
+            and y_fit is not None
+            and X_calib is not None
+            and y_calib is not None
+        ):
+            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
+
+        elif (
+            self.predictor.is_trained
+            and X_fit is None
+            and y_fit is None
+            and X_calib is not None
+            and y_calib is not None
+        ):
+            splitter = IdSplitter(
+                np.empty_like(X_calib), np.empty_like(y_calib), X_calib, y_calib
+            )
+
+        else:
+            raise RuntimeError("No dataset provided.")
+
+        # Update splitter
+        self.conformal_predictor.splitter = splitter
+
+        self.conformal_predictor.fit(X=X, y=y, **kwargs)
 
     def predict(self, X_test: Iterable, alpha: float) -> Tuple:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
