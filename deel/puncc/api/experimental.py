@@ -28,8 +28,6 @@ import pkgutil
 if pkgutil.find_loader("torch") is not None:
     import torch
 
-if pkgutil.find_loader("torch"):
-
     class TorchPredictor:
         """Wrapper of a torch prediction model :math:`\hat{f}`. Enables to
         standardize the interface of torch predictors and to expose generic :func:`fit`,
