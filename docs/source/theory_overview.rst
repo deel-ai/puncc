@@ -171,7 +171,7 @@ If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the a
 
 **Inference**
 
-Let :math:`(X_{new}, Y_{new})` be a test point, where :math:`Y_{new}` is not observable at inference time.
+.. Let :math:`(X_{new}, Y_{new})` be a test point, where :math:`Y_{new}` is not observable at inference time.
 The lower and upper bounds of the prediction interval are given by:
 
     1. Compute :math:`\bar{R}_{L} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
@@ -211,20 +211,28 @@ Adaptive Prediction Sets (APS)
 
 **TBC**
 
+[Romano2020]_
+
+
 Regularized Adaptive Prediction Sets (RAPS)
 *******************************************
 .. _theory raps:
 
 **TBC**
 
+[Angelopoulos2021]_
+
+
 References
 ----------
 
-.. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., 2021. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
+.. [Angelopoulos2021] Angelopoulos, A. N., Bates, S., Jordan, M., & Malik, J (2020). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. https://openreview.net/forum?id=eNdiU_DbM9
+.. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
 .. [Barber2021] Barber, R. F., Candes, E. J., Ramdas, A., & Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. https://arxiv.org/abs/1905.02928
-.. [Lei2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., 2018. Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
-.. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., 2002. Inductive confidence machines for regression. In Machine Learning: ECML 2002: 13th European Conference on Machine Learning Helsinki, Finland, August 19-23, 2002 Proceedings 13 (pp. 345-356). Springer Berlin Heidelberg.
-.. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., 2008, February. Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
-.. [Romano2019] Romano, Y., Patterson, E. and Candes, E., 2019. Conformalized quantile regression. Advances in neural information processing systems, 32. https://arxiv.org/abs/1905.03222
+.. [Lei2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
+.. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. https://link.springer.com/chapter/10.1007/3-540-36755-1_29
+.. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., (2008), February. Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
+.. [Romano2019] Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. Advances in neural information processing systems, 32. https://arxiv.org/abs/1905.03222
+.. [Romano2020] Romano, Y., Sesia, M., & Candes, E. (2020). Classification with valid and adaptive coverage. Advances in Neural Information Processing Systems, 33, 3581-3591. https://arxiv.org/abs/2006.02544
 ..
     .. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of the 38th International Conference on Machine Learning. https://proceedings.mlr.press/v139/xu21h.html.
