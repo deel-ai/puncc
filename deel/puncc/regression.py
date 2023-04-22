@@ -30,7 +30,6 @@ from typing import Tuple
 
 import numpy as np
 from sklearn.utils import resample
-from tqdm import tqdm
 
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
@@ -680,6 +679,7 @@ class EnbPI:
         :rtype: Tuple[ndarray]
 
         """
+
         return prediction_sets.constant_interval(y_pred, w)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
@@ -764,7 +764,7 @@ class EnbPI:
         # and 0 otherwise.
         self._oob_matrix = np.zeros((T, self.B))
 
-        for i in tqdm(range(T)):
+        for i in range(T):
             oobs_for_i_th_unit = [
                 1 if i in self._oob_dict[b] else 0 for b in range(self.B)
             ]
@@ -785,9 +785,9 @@ class EnbPI:
         ).transpose()
 
         # === (2) === Fit predictors on bootstrapped samples
-        print(" === step 1/2: fitting bootstrap estimators ...")
+        # print(" === step 1/2: fitting bootstrap estimators ...")
 
-        for b in tqdm(range(self.B)):
+        for b in range(self.B):
             # Retrieve list of indexes of previously bootstrapped sample
             boot = self._boot_dict[b]
             boot_predictor = self.predictor.copy()  # Instantiate model
@@ -795,7 +795,7 @@ class EnbPI:
             self._boot_predictors.append(boot_predictor)  # Store fitted model
 
         # === (3) === Residuals computation
-        print(" === step 2/2: computing nonconformity scores ...")
+        # print(" === step 2/2: computing nonconformity scores ...")
         # Predictions on X by each bootstrap estimator
         boot_preds = [
             self._boot_predictors[b].predict(X) for b in range(self.B)
@@ -873,11 +873,11 @@ class EnbPI:
             loo_preds = self._compute_loo_predictions(boot_preds)
             # Ensemble prediction based on the aggregation of LOO estimations
             y_pred_batch = self.agg_func_loo(loo_preds, axis=0)
-
+            if y_pred_batch.shape == ():  # Case predicting a single outcome
+                y_pred_batch = y_pred_batch[np.newaxis, ...]
             y_pred_batch_lower, y_pred_batch_upper = self._compute_pi(
                 y_pred_batch, res_quantile
             )
-
             # Update prediction / PI lists for the current batch
             y_pred_upper_list += list(y_pred_batch_upper)
             y_pred_lower_list += list(y_pred_batch_lower)
