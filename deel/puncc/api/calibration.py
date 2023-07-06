@@ -104,6 +104,11 @@ class BaseCalibrator:
             pred_set_func=prediction_set_function
         )
 
+        # Generate dummy data and predictions
+        y_pred_calib = np.random.rand(1000)
+        y_true_calib = np.random.rand(1000)
+        y_pred_test = np.random.rand(1000)
+
         # The nonconformity scores are computed by calling the `fit` method
         # on the calibration dataset.
         calibrator.fit(y_pred=y_pred_calib, y_true=y_true_calib)

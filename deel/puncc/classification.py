@@ -118,7 +118,8 @@ class RAPS:
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        raps_cp.fit(X_fit, y_fit, X_calib, y_calib)
+        raps_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
@@ -323,7 +324,7 @@ class APS(RAPS):
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        aps_cp.fit(X_fit, y_fit, X_calib, y_calib)
+        aps_cp.(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
