@@ -20,19 +20,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from deel.puncc.classification import APS, RAPS
-from deel.puncc.api.prediction import BasePredictor
-
+import numpy as np
 from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
 
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.classification import APS
+from deel.puncc.classification import RAPS
 from deel.puncc.metrics import classification_mean_coverage
 from deel.puncc.metrics import classification_mean_size
-
-import numpy as np
-
-from tensorflow.keras.utils import to_categorical
 
 
 def test_raps():

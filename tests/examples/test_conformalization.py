@@ -20,19 +20,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import numpy as np
-
 from sklearn import linear_model
 from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 
-from deel.puncc.api.conformalization import ConformalPredictor
-from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.api.calibration import BaseCalibrator
-from deel.puncc.api.splitting import KFoldSplitter
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
+from deel.puncc.api.calibration import BaseCalibrator
+from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.splitting import KFoldSplitter
 
 
 def test_conformalpredictor():

@@ -104,8 +104,8 @@ lin_reg_predictor =  BasePredictor(linear_model, is_trained=False)
 split_cp = SplitCP(lin_reg_predictor)
 
 # Fit model (as is_trained` is False) on the fit dataset and
-# compute the residuals on the calibration dataset. 
-# The fit (resp. calibration) subset is randomly sampled from the training 
+# compute the residuals on the calibration dataset.
+# The fit (resp. calibration) subset is randomly sampled from the training
 # data and constitutes 80% (resp. 20%) of it (fit_ratio = 80%).
 split_cp.fit(X_train, y_train, fit_ratio=.8)
 

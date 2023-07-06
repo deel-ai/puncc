@@ -23,10 +23,11 @@
 """
 This module implements usual conformal classification wrappers.
 """
-import numpy as np
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
+
+import numpy as np
 
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets

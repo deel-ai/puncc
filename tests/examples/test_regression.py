@@ -20,31 +20,23 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import numpy as np
-
-from deel.puncc.regression import (
-    SplitCP,
-    LocallyAdaptiveCP,
-    CQR,
-    CVPlus,
-    EnbPI,
-    AdaptiveEnbPI,
-)
-
-from deel.puncc.api.prediction import (
-    BasePredictor,
-    MeanVarPredictor,
-    DualPredictor,
-)
-
 from sklearn.datasets import make_regression
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
+from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.metrics import regression_mean_coverage
 from deel.puncc.metrics import regression_sharpness
+from deel.puncc.regression import AdaptiveEnbPI
+from deel.puncc.regression import CQR
+from deel.puncc.regression import CVPlus
+from deel.puncc.regression import EnbPI
+from deel.puncc.regression import LocallyAdaptiveCP
+from deel.puncc.regression import SplitCP
 
 
 def test_splitcp():
