@@ -8,7 +8,7 @@ pre-commit
 sphinx
 sphinx-rtd-theme
 sphinx-autodoc-typehints
-tensorflow==2.11.0
+tensorflow == 2.11.0
 tensorflow-addons
 torch
 tox
