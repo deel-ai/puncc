@@ -9,53 +9,6 @@ It can be used with any predictive model to provide rigorous uncertainty estimat
 Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the
 true outputs within a user-defined error :math:`\alpha`.
 
-Installation
-============
-
-* First, clone the repo:
-
-.. code-block:: bash
-
-   git clone https://github.com/deel-ai/puncc.git
-
-
-For users
----------
-
-.. code-block:: bash
-
-   pip install -e .[interactive]
-
-
-You can alternatively use the makefile to automatically create a virtual environment
-`puncc-user-env` and install user requirements:
-
-.. code-block:: bash
-
-   make install-user
-
-
-Finally, to use the current virtual environment in a jupyter notebook,
-make sure to add it:
-
-.. code-block:: bash
-
-   python -m ipykernel install --user --name=puncc-user-env
-
-For developpers
----------------
-
-.. code-block:: bash
-
-   pip install -e .[dev]
-
-You can alternatively use the makefile to automatically create a virtual environment
-`puncc-dev-env` and install the dev requirements:
-
-.. code-block:: bash
-
-   make prepare-dev
-
 .. toctree::
    :maxdepth: 1
    :caption: Contents
