@@ -1,5 +1,5 @@
 name: deploy-doc
-on: [pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 permissions:
     contents: write
 jobs:
@@ -15,11 +15,6 @@ jobs:
         run: |
           cd docs 
           make html 
-          cd build/html
-          mv _images images
-          mv _sources sources
-          mv _static static
-          cd ../..
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
