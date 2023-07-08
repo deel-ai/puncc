@@ -1,6 +1,6 @@
 # Architecture Overview
 
-The **high-level API** enables a turnkey solution and a fully customized approach to conformal prediction. It is as simple as calling the conformal prediction procedures in `deel.puncc.regression` or `deel.puncc.classification`.
+*Puncc* enables a turnkey solution and a fully customized approach to conformal prediction. It is as simple as calling the conformal prediction procedures in `deel.puncc.regression` or `deel.puncc.classification`.
 
 The currently implemented conformal regression procedures are the following:
 * `deel.puncc.regression.SplitCP`: Split Conformal Prediction
@@ -11,14 +11,19 @@ The currently implemented conformal regression procedures are the following:
 * `deel.puncc.regression.aEnbPI`: locally adaptive Ensemble Batch Prediction Intervals method
 
 The currently implemented conformal classification procedures are the following:
+* `deel.puncc.classification.APS`: Adaptive Prediction Sets. 
 * `deel.puncc.classification.RAPS`: Regularized Adaptive Prediction Sets. APS is a special case where regularization term is nulled ($\lambda = 0$).
 
 Each of these procedures conformalize point-based or interval-based models that are wrapped in a predictor and passed as argument to the constructor. Wrapping the models in a predictor (`deel.puncc.api.prediction`) enables to work with several ML/DL libraries and data structures.
 
-The **low-level API** offers more flexibility into defining conformal prediction procedures. Let's say we want to fit/calibrate a neural-network interval-estimator with a cross-validation plan; or that we want to experiment different user-defined nonconformity scores. In such cases and others, the user can fully construct their approaches using the proposed **Predictor-Calibrator-Splitter** paradigm. It boils down to assembling into `puncc.api.conformalization.ConformalPredictor`:
+The **API** offers more flexibility into defining conformal prediction procedures. Let's say we want to fit/calibrate a neural-network interval-estimator with a cross-validation plan; or that we want to experiment different user-defined nonconformity scores. In such cases and others, the user can fully construct their approaches using the proposed **Predictor-Calibrator-Splitter** paradigm. It boils down to assembling into `puncc.api.conformalization.ConformalPredictor`:
 1) a predictor
-2) An calibrator defining a nonconformity score and how to construct/calibrate the prediction sets
+2) A calibrator defining a nonconformity score and a procedure to construct/calibrate the prediction sets
 3) A splitter defining the strategy of data assignement into fitting and calibration sets
+
+<figure style="text-align:center">
+    <img src="../../../docs/assets/puncc_architecture.png"/>
+</figure>
 
 ## ConformalPredictor
 
@@ -179,7 +184,7 @@ The predictors have to implement:
 * a `copy` method that returns a copy of the predictor (useful in cross validation for example). It has to deepcopy the underlying model.
 
 The constructor of `deel.puncc.api.prediction.BasePredictor` takes in the model to be wrapped, a flag to inform if the model is already trained
-and compilation keyword arguments if the underlying model needs to be compiled (such as in keras).
+and compilation keyword arguments if the underlying model needs to be compiled (such as in TensorFlow or PyTorch).
 
 The constructor of `deel.puncc.api.prediction.DualPredictor` is conceptually similar but take as arguments a list of two models, a list of two trained flags and a list of two compilation kwargs.
 Such predictor is useful when the calibration relies of several models (such as upper and lower quantiles in CQR).
@@ -200,9 +205,10 @@ we need to create a predictor in which we redefine the `predict` call:
 
 ```python
 from sklearn.ensemble import RandomForestClassifier
+from deel.puncc.api.prediction import BasePredictor
 
 # Create rf classifier
-rf_model = (n_estimators=100, random_state=0)
+rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
 
 # Create a wrapper of the random forest model to redefine its predict method
 # into logits predictions. Make sure to subclass BasePredictor.
@@ -261,8 +267,7 @@ def my_psf(y_pred, nonconf_scores_quantile):
     return y_lower, y_upper
 
 ## Calibrator construction
-my_calibrator = BaseCalibrator(nonconf_score_func=my_ncf,
-                                pred_set_func=my_psf)
+my_calibrator = BaseCalibrator(nonconf_score_func=my_ncf, pred_set_func=my_psf)
 ```
 
 ## Splitter

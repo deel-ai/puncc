@@ -73,6 +73,10 @@ We highly recommand following the introduction tutorials to get familiar with th
 
 * [**API tutorial**](docs/api_intro.ipynb) <sub> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1d06qQweM1X1eSrCnixA_MLEZil1vXewj) </sub>
 
+You can also familiarize yourself with the architecture of *puncc* to build more efficiently your own conformal prediction methods:
+
+* [**Architecture overview**](docs/puncc_architecture.ipynb)
+
 ## 🚀 Quickstart
 
 Conformal prediction enables to transform point predictions into interval predictions with high probability of coverage. The figure below shows the result of applying the split conformal algorithm on a linear regressor.
