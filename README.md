@@ -33,6 +33,7 @@ Documentation is available [**online**](https://deel-ai.github.io/puncc/index.ht
 ## 📚 Table of contents
 
 - [🐾 Installation](#-installation)
+- [👨‍🎓 Tutorials](#-tutorials)
 - [🚀 QuickStart](#-quickstart)
 - [📚 Citation](#-citation)
 - [💻 Contributing](#-contributing)
@@ -41,47 +42,50 @@ Documentation is available [**online**](https://deel-ai.github.io/puncc/index.ht
 
 ## 🐾 Installation
 
-It is recommended to install *puncc* in a virtual environment to not mess with your system's dependencies.
+*puncc* requires a version of python higher than 3.8 and several libraries including Scikit-learn and Numpy. It is recommended to install *puncc* in a virtual environment to not mess with your system's dependencies.
 
-### For users
+You can directly install the library using pip:
+
 ```bash
-pip install -e .[interactive]
+pip install git+https://github.com/deel-ai/puncc
 ```
 
-You can alternatively use the makefile to automatically create a virtual environment
-`puncc-user-env` and install user requirements:
+You can alternatively clone the repo and use the makefile to automatically create a virtual environment
+and install the requirements:
+
+* For users: 
 
 ```bash
 make install-user
 ```
 
-### For developpers
-
-```bash
-pip install -e .[dev]
-```
-
-You can alternatively use the makefile to automatically create a virtual environment
-`puncc-dev-env` and install the dev requirements:
+* For developpers:
 
 ```bash
 make prepare-dev
 ```
 
+## 👨‍🎓 Tutorials
+
+We highly recommand following the introduction tutorials to get familiar with the library and its API:
+
+* [**Introduction tutorial**](docs/puncc_intro.ipynb)</font> <sub> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1TC_BM7JaEYtBIq6yuYB5U4cJjeg71Tch) </sub>
+
+* [**API tutorial**](docs/api_intro.ipynb) <sub> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1d06qQweM1X1eSrCnixA_MLEZil1vXewj) </sub>
+
+You can also familiarize yourself with the architecture of *puncc* to build more efficiently your own conformal prediction methods:
+
+* [**Architecture overview**](docs/puncc_architecture.ipynb)
 
 ## 🚀 Quickstart
-<div align="center">
 
-<font size=3>📙 You can find the detailed implementation of the example below in the [**Quickstart Notebook**](docs/quickstart.ipynb)</font>.
+Conformal prediction enables to transform point predictions into interval predictions with high probability of coverage. The figure below shows the result of applying the split conformal algorithm on a linear regressor.
 
-</div>
-Let’s consider a simple regression problem on diabetes data provided by Scikit-learn. We want to evaluate the uncertainty associated with the prediction using inductive (or split) conformal prediction.
+<figure style="text-align:center">
+<img src="docs/assets/cp_process.png"/>
+</figure>
 
-### Split Conformal Prediction
-
-For this example, the prediction intervals are obtained throught the split
-conformal prediction method provided by the class
-`deel.puncc.regression.SplitCP`, applied on a linear model.
+Many conformal prediction algorithms can easily be applied using *puncc*.  The code snippet below shows the example of split conformal prediction wrapping a linear model,  done in few lines of code:
 
 ```python
 from sklearn import linear_model
@@ -104,8 +108,8 @@ lin_reg_predictor =  BasePredictor(linear_model, is_trained=False)
 split_cp = SplitCP(lin_reg_predictor)
 
 # Fit model (as is_trained` is False) on the fit dataset and
-# compute the residuals on the calibration dataset. 
-# The fit (resp. calibration) subset is randomly sampled from the training 
+# compute the residuals on the calibration dataset.
+# The fit (resp. calibration) subset is randomly sampled from the training
 # data and constitutes 80% (resp. 20%) of it (fit_ratio = 80%).
 split_cp.fit(X_train, y_train, fit_ratio=.8)
 
@@ -114,7 +118,7 @@ split_cp.fit(X_train, y_train, fit_ratio=.8)
 y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
 ```
 
-The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is $95$% (see [Quickstart Notebook](docs/quickstart.ipynb)):
+The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is higher than $90$% (see [Introduction tutorial](docs/puncc_intro.ipynb)):
 
 <figure style="text-align:center">
 <img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method"/>
@@ -128,7 +132,7 @@ The library provides several metrics (`deel.puncc.metrics`) and plotting capabil
 - A direct approach to run state-of-the-art conformal prediction procedures. This is what we used in the previous conformal regression example.
 - **Low-level API**: a more flexible approach based of full customization of the prediction model, the choice of nonconformity scores and the split between fit and calibration datasets.
 
-A quick comparison of both approaches is provided in the [Quickstart Notebook](docs/quickstart.ipynb) for a simple regression problem.
+A quick comparison of both approaches is provided in the [API tutorial](docs/api_intro.ipynb) for a regression problem.
 
 ## 📚 Citation
 

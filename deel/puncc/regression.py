@@ -91,7 +91,7 @@ class SplitCP:
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        split_cp.fit(X_fit, y_fit, X_calib, y_calib)
+        split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
@@ -305,7 +305,7 @@ class LocallyAdaptiveCP(SplitCP):
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        lacp.fit(X_fit, y_fit, X_calib, y_calib)
+        lacp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
@@ -400,11 +400,11 @@ class CQR(SplitCP):
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        crq.fit(X_fit, y_fit, X_calib, y_calib)
+        crq.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
-        Y_pred, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=.2)
+        y_pred, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=.2)
 
         # Compute marginal coverage and average width of the prediction intervals
         coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
@@ -587,6 +587,8 @@ class EnbPI:
 
     Example::
 
+        import numpy as np
+
         from deel.puncc.regression import EnbPI
         from deel.puncc.api.prediction import BasePredictor
 
@@ -607,11 +609,6 @@ class EnbPI:
             X, y, test_size=.2, random_state=0
         )
 
-        # Split train data into fit and calibration
-        X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
         # Create rf regressor
         rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
         # Wrap model in a predictor
@@ -623,12 +620,14 @@ class EnbPI:
             agg_func_loo=np.mean,
             random_state=0,
         )
+
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the oob calibration sets
         enbpi.fit(X, y)
+
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
-        Y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
+        y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
             X_test, alpha=.2, y_true=y_test, s=None
         )
 
@@ -936,16 +935,13 @@ class AdaptiveEnbPI(EnbPI):
             X, y, test_size=.2, random_state=0
         )
 
-        # Split train data into fit and calibration
-        X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
         # Create two models mu (mean) and sigma (dispersion)
         mean_model = RandomForestRegressor(n_estimators=100, random_state=0)
         sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
+
         # Wrap models in a mean/variance predictor
         mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
+
         # CP method initialization
         aenbpi = AdaptiveEnbPI(
             mean_var_predictor,
@@ -953,12 +949,14 @@ class AdaptiveEnbPI(EnbPI):
             agg_func_loo=np.mean,
             random_state=0,
         )
+
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the oob calibration sets
         aenbpi.fit(X, y)
+
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
-        Y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
+        y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
             X_test, alpha=.2, y_true=y_test, s=None
         )
 
@@ -997,8 +995,8 @@ class AdaptiveEnbPI(EnbPI):
     def _compute_boot_residuals(self, boot_pred, y_true):
         loo_pred = (self._oob_matrix * boot_pred[:, :, 0].T).sum(-1)
         loo_sigma = (self._oob_matrix * boot_pred[:, :, 1].T).sum(-1)
-        Y_pred = np.stack((loo_pred, loo_sigma), axis=-1)
-        residuals = self._compute_residuals(y_pred=Y_pred, y_true=y_true)
+        y_pred = np.stack((loo_pred, loo_sigma), axis=-1)
+        residuals = self._compute_residuals(y_pred=y_pred, y_true=y_true)
         return list(residuals)
 
     def _compute_loo_predictions(self, boot_pred):

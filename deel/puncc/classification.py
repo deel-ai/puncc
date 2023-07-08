@@ -23,10 +23,11 @@
 """
 This module implements usual conformal classification wrappers.
 """
-import numpy as np
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
+
+import numpy as np
 
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
@@ -118,7 +119,8 @@ class RAPS:
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        raps_cp.fit(X_fit, y_fit, X_calib, y_calib)
+        raps_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
@@ -323,7 +325,7 @@ class APS(RAPS):
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        aps_cp.fit(X_fit, y_fit, X_calib, y_calib)
+        aps_cp.(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
         # The predict method infers prediction intervals with respect to
         # the significance level alpha = 20%
