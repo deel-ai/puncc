@@ -1,48 +1,94 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Prediction &mdash; PUNCC 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/js/theme.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Calibration" href="calibration.html" />
     <link rel="prev" title="Conformalization" href="conformalization.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
 
           
+            <a href="index.html" class="icon icon-home"> PUNCC
           
-          <a href="index.html" class="icon icon-home">
-            PUNCC
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">🚀 Quickstart</a><ul>
@@ -60,17 +106,102 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a></li>
-<li class="toctree-l1"><a class="reference internal" href="classification.html">📊 Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP"><code class="docutils literal notranslate"><span class="pre">SplitCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP.fit"><code class="docutils literal notranslate"><span class="pre">SplitCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">SplitCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP.predict"><code class="docutils literal notranslate"><span class="pre">SplitCP.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.fit"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.predict"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR"><code class="docutils literal notranslate"><span class="pre">CQR</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR.fit"><code class="docutils literal notranslate"><span class="pre">CQR.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">CQR.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR.predict"><code class="docutils literal notranslate"><span class="pre">CQR.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus"><code class="docutils literal notranslate"><span class="pre">CVPlus</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus.fit"><code class="docutils literal notranslate"><span class="pre">CVPlus.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">CVPlus.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus.predict"><code class="docutils literal notranslate"><span class="pre">CVPlus.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.EnbPI"><code class="docutils literal notranslate"><span class="pre">EnbPI</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.EnbPI.fit"><code class="docutils literal notranslate"><span class="pre">EnbPI.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.EnbPI.predict"><code class="docutils literal notranslate"><span class="pre">EnbPI.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.AdaptiveEnbPI"><code class="docutils literal notranslate"><span class="pre">AdaptiveEnbPI</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.AdaptiveEnbPI.fit"><code class="docutils literal notranslate"><span class="pre">AdaptiveEnbPI.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.AdaptiveEnbPI.predict"><code class="docutils literal notranslate"><span class="pre">AdaptiveEnbPI.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="classification.html">📊 Classification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.APS"><code class="docutils literal notranslate"><span class="pre">APS</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.fit"><code class="docutils literal notranslate"><span class="pre">APS.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.predict"><code class="docutils literal notranslate"><span class="pre">APS.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">💻 API</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Prediction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a></li>
-<li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a></li>
-<li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Prediction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prediction.BasePredictor"><code class="docutils literal notranslate"><span class="pre">BasePredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#prediction.DualPredictor"><code class="docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.BaseSplitter"><code class="docutils literal notranslate"><span class="pre">BaseSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.IdSplitter"><code class="docutils literal notranslate"><span class="pre">IdSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.RandomSplitter"><code class="docutils literal notranslate"><span class="pre">RandomSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.KFoldSplitter"><code class="docutils literal notranslate"><span class="pre">KFoldSplitter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.mad"><code class="docutils literal notranslate"><span class="pre">mad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score"><code class="docutils literal notranslate"><span class="pre">raps_score()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_mad"><code class="docutils literal notranslate"><span class="pre">scaled_mad()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#overview">Overview</a><ul>
@@ -82,8 +213,18 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">🖼️ Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_ace"><code class="docutils literal notranslate"><span class="pre">regression_ace()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_mean_coverage"><code class="docutils literal notranslate"><span class="pre">regression_mean_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_sharpness"><code class="docutils literal notranslate"><span class="pre">regression_sharpness()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">🖼️ Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#plotting.plot_prediction_intervals"><code class="docutils literal notranslate"><span class="pre">plot_prediction_intervals()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="theory_overview.html">📈 Theory overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#uncertainty-quantification">Uncertainty Quantification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-prediction">Conformal Prediction</a></li>
@@ -107,64 +248,559 @@
 </li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">PUNCC</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="api.html">💻 API</a></li>
-      <li class="breadcrumb-item active">Prediction</li>
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="api.html">💻 API</a> &raquo;</li>
+        
+      <li>Prediction</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
             <a href="_sources/prediction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <section id="prediction">
-<span id="id1"></span><h1>Prediction<a class="headerlink" href="#prediction" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>Prediction<a class="headerlink" href="#prediction" title="Permalink to this heading">¶</a></h1>
+<span class="target" id="module-prediction"></span><p>This module provides standard wrappings for ML models.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="prediction.BasePredictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">BasePredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">compile_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper of a point prediction model <span class="math notranslate nohighlight">\(\hat{f}\)</span>. Enables to
+standardize the interface of predictors and to expose generic <a class="reference internal" href="#prediction.BasePredictor.fit" title="prediction.BasePredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>,
+<a class="reference internal" href="#prediction.BasePredictor.predict" title="prediction.BasePredictor.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> and <a class="reference internal" href="#prediction.BasePredictor.copy" title="prediction.BasePredictor.copy"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy()</span></code></a> methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Any</em>) – prediction model <span class="math notranslate nohighlight">\(\hat{f}\)</span></p></li>
+<li><p><strong>is_trained</strong> (<em>bool</em>) – boolean flag that informs if the model is
+pre-trained. If True, the call to <a class="reference internal" href="#prediction.BasePredictor.fit" title="prediction.BasePredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> will be skipped</p></li>
+<li><p><strong>compile_kwargs</strong> – keyword arguments to be used if needed during the
+call <code class="xref py py-func docutils literal notranslate"><span class="pre">model.compile()</span></code> on the underlying model</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently supported ML libraries are <strong>scikit-learn</strong>-like and <strong>Keras</strong>.</p>
+</div>
+<p id="example-basepredictor">Sklearn regression examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">BasePredictor</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># Generate data</span>
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">X_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">y_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="c1"># Instantiate two random forest models composed of 100 trees.</span>
+<span class="n">rf_model1</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">rf_model2</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1"># Consider that `rf_model2` is previously trained</span>
+<span class="n">rf_model2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+<span class="c1"># We will instantiate two wrappers:</span>
+<span class="c1"># - `predictor1` will wrap `rf_model1`.</span>
+<span class="c1"># - `predictor2` will wrap `rf_model2`. Also, we don&#39;t want to retrain our model,</span>
+<span class="c1">#   so we will specify it to the constructor by setting the argument</span>
+<span class="c1">#   `is_trained` to True. If `fit` is called, it will be skipped.</span>
+<span class="c1"># The argument `is_trained` defaults to False.</span>
+<span class="n">predictor1</span> <span class="o">=</span> <span class="n">BasePredictor</span><span class="p">(</span><span class="n">rf_model1</span><span class="p">,</span> <span class="n">is_trained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">predictor2</span> <span class="o">=</span> <span class="n">BasePredictor</span><span class="p">(</span><span class="n">rf_model2</span><span class="p">,</span> <span class="n">is_trained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Fit `predictor2` to the training data.</span>
+<span class="c1"># No need to call fit on `predictor2`. But if you do, it will be skipped.</span>
+<span class="n">predictor1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span><span class="n">y_train</span><span class="p">)</span>
+
+<span class="c1"># Predict on X_new</span>
+<span class="n">y_pred1</span> <span class="o">=</span> <span class="n">predictor1</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_new</span><span class="p">)</span>
+<span class="n">y_pred2</span> <span class="o">=</span> <span class="n">predictor2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_new</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Keras classification example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">BasePredictor</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># Generate data</span>
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">X_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">y_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span> <span class="k">if</span> <span class="n">x</span><span class="o">&gt;</span><span class="mi">5</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">X_train</span><span class="p">])</span>
+<span class="n">y_train</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">to_categorical</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+
+<span class="c1"># Instantiate a classifier as sequential model and add two dense layers</span>
+<span class="n">cl_model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+<span class="n">cl_model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;relu&quot;</span><span class="p">))</span>
+<span class="n">cl_model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;softmax&quot;</span><span class="p">))</span>
+
+<span class="c1"># The compile options need be passed to the constructor `BasePredictor`.</span>
+<span class="c1"># The wrapper will call compile(**compile_kwargs) on an internal copy of the model.</span>
+<span class="c1"># Our model is a classifier, we use categorical crossentropy as loss function.</span>
+<span class="n">compile_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;optimizer&quot;</span><span class="p">:</span><span class="s2">&quot;rmsprop&quot;</span><span class="p">,</span> <span class="s2">&quot;loss&quot;</span><span class="p">:</span><span class="s2">&quot;categorical_crossentropy&quot;</span><span class="p">}</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">BasePredictor</span><span class="p">(</span><span class="n">cl_model</span><span class="p">,</span> <span class="n">is_trained</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">compile_kwargs</span><span class="p">)</span>
+
+<span class="c1"># The fit method is provided with a given training dataset (X,y) and</span>
+<span class="c1"># with the train configuration of the underlying model. In the example below,</span>
+<span class="c1"># we train the model over 5 epochs on batches containing 128 examples.</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s2">&quot;epochs&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;batch_size&quot;</span><span class="p">:</span><span class="mi">128</span><span class="p">})</span>
+
+<span class="c1"># The `BasePredictor.predict` method enables to pass keyword arguments</span>
+<span class="c1"># to the `predict`call of the underlying model (e.g., verbose).</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_new</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s2">&quot;verbose&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.BasePredictor.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the predictor. The underlying model is either
+cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>copy of the predictor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#prediction.BasePredictor" title="prediction.BasePredictor">BasePredictor</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – copy unsupported for provided models.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.BasePredictor.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit model to the training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – train features.</p></li>
+<li><p><strong>y</strong> (<em>Iterable</em>) – train labels.</p></li>
+<li><p><strong>kwargs</strong> – keyword arguments to be passed to the call <a class="reference internal" href="#prediction.BasePredictor.fit" title="prediction.BasePredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>
+on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</span>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details, check this <a class="reference internal" href="#example-basepredictor"><span class="std std-ref">code snippets</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.BasePredictor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute predictions on new examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – new examples’ features.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – predict configuration to be passed to the <cite>predict</cite>
+method of the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</span>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>predictions <span class="math notranslate nohighlight">\(\hat{f}(X)\)</span> associated to the new
+examples X.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details, check this <a class="reference internal" href="#example-basepredictor"><span class="std std-ref">code snippets</span></a>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="prediction.DualPredictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">DualPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[False,</span> <span class="pre">False]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper of <strong>two</strong> joint point prediction models
+<span class="math notranslate nohighlight">\((\hat{f_1},\hat{f_2})\)</span>.
+The prediction <span class="math notranslate nohighlight">\(\hat{y}\)</span> of a <a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">DualPredictor</span></code></a> is a tuple
+<span class="math notranslate nohighlight">\(\hat{y}=(\hat{y}_1,\hat{y}_2)\)</span>, where <span class="math notranslate nohighlight">\(\hat{y}_1\)</span>
+(resp. <span class="math notranslate nohighlight">\(\hat{y}_2\)</span>) is the prediction of <span class="math notranslate nohighlight">\(\hat{f}_1\)</span>
+(resp. <span class="math notranslate nohighlight">\(\hat{f}_2\)</span>).</p>
+<p>Enables to standardize the interface of predictors and to expose generic
+<a class="reference internal" href="#prediction.DualPredictor.fit" title="prediction.DualPredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>, <a class="reference internal" href="#prediction.DualPredictor.predict" title="prediction.DualPredictor.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> and <a class="reference internal" href="#prediction.DualPredictor.copy" title="prediction.DualPredictor.copy"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy()</span></code></a> methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>List</em><em>[</em><em>Any</em><em>]</em>) – list of two prediction models
+<span class="math notranslate nohighlight">\([\hat{f_1},\hat{f_2}]\)</span>.</p></li>
+<li><p><strong>is_trained</strong> (<em>List</em><em>[</em><em>bool</em><em>]</em>) – list of boolean flag that informs if the
+models are pre-trained. True value will skip the fitting of the
+corresponding model.</p></li>
+<li><p><strong>compile_kwargs</strong> (<em>List</em>) – list of keyword arguments to be used if needed
+to compile the underlying models.</p></li>
+</ul>
+</dd>
+</dl>
+<p id="example-dualpredictor">Joint conditional mean / quantile regression example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">DualPredictor</span>
+<span class="kn">import</span> <span class="nn">tensorflow_addons</span> <span class="k">as</span> <span class="nn">tfa</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+
+<span class="c1"># Instantiate conditional mean model</span>
+<span class="n">rf_model</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1"># Instantiate 90-th quantile model</span>
+<span class="n">q_model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">()</span>
+<span class="n">q_model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;relu&quot;</span><span class="p">))</span>
+<span class="n">q_model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;relu&quot;</span><span class="p">))</span>
+<span class="n">pinball_loss</span><span class="o">=</span><span class="n">tfa</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">PinballLoss</span><span class="p">(</span><span class="n">tau</span><span class="o">=</span><span class="mf">.9</span><span class="p">)</span>
+<span class="n">compile_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;optimizer&#39;</span><span class="p">:</span><span class="s1">&#39;sgd&#39;</span><span class="p">,</span> <span class="s1">&#39;loss&#39;</span><span class="p">:</span><span class="n">pinball_loss</span><span class="p">}</span>
+
+<span class="c1"># The compile options need be passed to the constructor `DualPredictor`.</span>
+<span class="c1"># The wrapper will call compile on the internal copy of each model if needed.</span>
+<span class="c1"># Our predictor combines two regressors, of which only the second needs to be compiled.</span>
+<span class="n">tf_predictor</span> <span class="o">=</span> <span class="n">DualPredictor</span><span class="p">(</span><span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">rf_model</span><span class="p">,</span> <span class="n">q_model</span><span class="p">],</span>
+                             <span class="n">compile_args</span><span class="o">=</span><span class="p">[{},</span> <span class="n">compile_kwargs</span><span class="p">])</span>
+
+<span class="c1"># The fit method is provided with a given training dataset (X,y) and</span>
+<span class="c1"># the train configurations of the underlying models. In the example below,</span>
+<span class="c1"># no specific configuration is passed to `rf_model` whereas we want to</span>
+<span class="c1"># train the `q_model` over 10 epochs on batches containing 32 examples.</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="p">[{},</span> <span class="p">{</span><span class="s2">&quot;epochs&quot;</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="s2">&quot;batch_size&quot;</span><span class="p">:</span><span class="mi">32</span><span class="p">}])</span>
+
+<span class="c1"># The `DualPredictor.predict` method enables to pass keyword arguments</span>
+<span class="c1"># to the `predict` call of the underlying models. In the example below,</span>
+<span class="c1"># we want to turn off the verbosity of `q_model.predict`.</span>
+<span class="c1"># Besides, `y_pred` consists of a couple (y1, y2) for each new example.</span>
+<span class="c1"># If `X_new` is a (n,m) matrix, the shape of `y_pred` will be (n, 2).</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_new</span><span class="p">,</span> <span class="p">[{},</span> <span class="p">{</span><span class="s2">&quot;verbose&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}])</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.DualPredictor.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the predictor. The underlying models are either
+cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>copy of the predictor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor">DualPredictor</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – copy unsupported for provided models.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.DualPredictor.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit model to the training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – train features.</p></li>
+<li><p><strong>y</strong> (<em>Iterable</em>) – train labels.</p></li>
+<li><p><strong>dictargs</strong> (<em>List</em><em>[</em><em>dict</em><em>[</em><em>str</em><em>]</em><em>]</em>) – list of fit configurations to be
+passed to the <cite>fit</cite> method of the underlying models
+<span class="math notranslate nohighlight">\(\hat{f}_1\)</span> and <span class="math notranslate nohighlight">\(\hat{f}_2\)</span>, respectively.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details, check this <a class="reference internal" href="#example-dualpredictor"><span class="std std-ref">code snippet</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.DualPredictor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute predictions on new examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – new examples’ features.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – list of predict configurations to be passed to the
+<cite>predict</cite> method of the underlying models <span class="math notranslate nohighlight">\(\hat{f}_1\)</span> and
+<span class="math notranslate nohighlight">\(\hat{f}_2\)</span>, respectively.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>predictions <span class="math notranslate nohighlight">\(\hat{y}=\hat{f}(X)\)</span> associated to the new
+examples X. For an instance <span class="math notranslate nohighlight">\(X_i\)</span>, the prediction consists of
+a couple <span class="math notranslate nohighlight">\(\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))\)</span>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[ndarray]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – predicted values not formated as numpy
+ndarrays.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details, check this <a class="reference internal" href="#example-dualpredictor"><span class="std std-ref">code snippet</span></a>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="prediction.MeanVarPredictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">MeanVarPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[False,</span> <span class="pre">False]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></p>
+<p>Subclass of <a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">DualPredictor</span></code></a> to specifically wrap a conditional
+mean estimator <span class="math notranslate nohighlight">\(\hat{\mu}\)</span> and a conditional dispersion estimator
+<span class="math notranslate nohighlight">\(\hat{\sigma}\)</span>.</p>
+<blockquote>
+<div><p>Specifically, the dispersion model <span class="math notranslate nohighlight">\(\hat{\sigma}\)</span> is trained on the
+mean absolute deviation of <span class="math notranslate nohighlight">\(\hat{\mu}\)</span>’s predictions from the true
+labels <span class="math notranslate nohighlight">\(y\)</span>. Given two training algorithms <span class="math notranslate nohighlight">\({\cal A}_1\)</span> and
+<span class="math notranslate nohighlight">\({\cal A}_2\)</span> and a training dataset <span class="math notranslate nohighlight">\((X_{train}, y_{train})\)</span>:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\hat{\mu} \Leftarrow {\cal A}_1(X_{train}, y_{train})\]</div>
+<div class="math notranslate nohighlight">
+\[\hat{\sigma} \Leftarrow {\cal A}_2(X_{train},
+|\hat{\mu}(X_{train})-y_{train}|)\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">param List[Any] model<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of two prediction models
+<span class="math notranslate nohighlight">\([\hat{\mu},\hat{\sigma}]\)</span>.</p>
+</dd>
+<dt class="field-even">param List[bool] is_trained<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of boolean flag that informs if the
+models are pre-trained. True value will skip the fitting of the
+corresponding model.</p>
+</dd>
+<dt class="field-odd">param List compile_kwargs<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of keyword arguments to be used if
+needed to compile the underlying models <span class="math notranslate nohighlight">\(\hat{\mu}\)</span> and
+<span class="math notranslate nohighlight">\(\hat{\sigma}\)</span>, respectively.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p id="example-meanvarpredictor">Here follows an example of wrapping conditional mean and dispersion models:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">MeanVarPredictor</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+
+<span class="c1"># Instantiate conditional mean model</span>
+<span class="n">mu_model</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span>
+<span class="c1"># Instantiate conditional dispersion model</span>
+<span class="n">sigma_model</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span>
+    <span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_seed</span>
+<span class="p">)</span>
+
+<span class="c1"># The instantiation of a :class:`MeanVarPredictor` is simple as the</span>
+<span class="c1"># selected models do not require any compilation</span>
+<span class="n">mean_var_predictor</span> <span class="o">=</span> <span class="n">MeanVarPredictor</span><span class="p">([</span><span class="n">mu_model</span><span class="p">,</span> <span class="n">sigma_model</span><span class="p">])</span>
+
+<span class="c1"># The fit method is provided with a given training dataset (X,y).</span>
+<span class="c1"># We do not choose any specific the train configurations.</span>
+<span class="n">mean_var_predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+<span class="c1"># The method `predict` yields `y_pred` that consists of a couple</span>
+<span class="c1"># (y1, y2) for each new example.</span>
+<span class="c1"># If `X_new` is a (n,m) matrix, the shape of `y_pred` will be (n, 2).</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">mean_var_predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_new</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To see an example how to pass compilation/fit/predict configurations as
+arguments to the underlying models, check this
+<a class="reference internal" href="#example-dualpredictor"><span class="std std-ref">code snippet</span></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.MeanVarPredictor.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the predictor. The underlying models are either
+cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>copy of the predictor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor">DualPredictor</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – copy unsupported for provided models.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.MeanVarPredictor.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit models to the training data. The dispersion model
+<span class="math notranslate nohighlight">\(\hat{\sigma}\)</span> is trained on the mean absolute deviation of
+<span class="math notranslate nohighlight">\(\hat{mu}\)</span>’s predictions <span class="math notranslate nohighlight">\(\hat{\mu}\)</span> from the true labels
+<span class="math notranslate nohighlight">\(y\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – train features.</p></li>
+<li><p><strong>y</strong> (<em>Iterable</em>) – train labels.</p></li>
+<li><p><strong>dictargs</strong> (<em>List</em><em>[</em><em>dict</em><em>]</em>) – list of fit configurations to be passed to
+the <cite>fit</cite> method of the underlying models <span class="math notranslate nohighlight">\(\hat{\mu}\)</span> and
+<span class="math notranslate nohighlight">\(\hat{\sigma}\)</span>, respectively.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.MeanVarPredictor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute predictions on new examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – new examples’ features.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – list of predict configurations to be passed to the
+<cite>predict</cite> method of the underlying models <span class="math notranslate nohighlight">\(\hat{f}_1\)</span> and
+<span class="math notranslate nohighlight">\(\hat{f}_2\)</span>, respectively.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>predictions <span class="math notranslate nohighlight">\(\hat{y}=\hat{f}(X)\)</span> associated to the new
+examples X. For an instance <span class="math notranslate nohighlight">\(X_i\)</span>, the prediction consists of
+a couple <span class="math notranslate nohighlight">\(\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))\)</span>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[ndarray]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – predicted values not formated as numpy
+ndarrays.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details, check this <a class="reference internal" href="#example-dualpredictor"><span class="std std-ref">code snippet</span></a>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="conformalization.html" class="btn btn-neutral float-left" title="Conformalization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="calibration.html" class="btn btn-neutral float-right" title="Calibration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="conformalization.html" class="btn btn-neutral float-left" title="Conformalization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, IRT Antoine de Saint Exupéry - All rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry, CRIAQ and ANITI.</p>
-  </div>
+    <p>
+        &#169; Copyright 2022, IRT Antoine de Saint Exupéry - All rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry, CRIAQ and ANITI.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

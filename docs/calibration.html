@@ -1,48 +1,94 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Calibration &mdash; PUNCC 0.1 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/js/theme.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Splitting" href="splitting.html" />
     <link rel="prev" title="Prediction" href="prediction.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
 
           
+            <a href="index.html" class="icon icon-home"> PUNCC
           
-          <a href="index.html" class="icon icon-home">
-            PUNCC
+
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">🚀 Quickstart</a><ul>
@@ -60,17 +106,102 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a></li>
-<li class="toctree-l1"><a class="reference internal" href="classification.html">📊 Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP"><code class="docutils literal notranslate"><span class="pre">SplitCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP.fit"><code class="docutils literal notranslate"><span class="pre">SplitCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">SplitCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP.predict"><code class="docutils literal notranslate"><span class="pre">SplitCP.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.fit"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.predict"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR"><code class="docutils literal notranslate"><span class="pre">CQR</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR.fit"><code class="docutils literal notranslate"><span class="pre">CQR.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">CQR.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR.predict"><code class="docutils literal notranslate"><span class="pre">CQR.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus"><code class="docutils literal notranslate"><span class="pre">CVPlus</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus.fit"><code class="docutils literal notranslate"><span class="pre">CVPlus.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">CVPlus.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.CVPlus.predict"><code class="docutils literal notranslate"><span class="pre">CVPlus.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.EnbPI"><code class="docutils literal notranslate"><span class="pre">EnbPI</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.EnbPI.fit"><code class="docutils literal notranslate"><span class="pre">EnbPI.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.EnbPI.predict"><code class="docutils literal notranslate"><span class="pre">EnbPI.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.AdaptiveEnbPI"><code class="docutils literal notranslate"><span class="pre">AdaptiveEnbPI</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.AdaptiveEnbPI.fit"><code class="docutils literal notranslate"><span class="pre">AdaptiveEnbPI.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.AdaptiveEnbPI.predict"><code class="docutils literal notranslate"><span class="pre">AdaptiveEnbPI.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="classification.html">📊 Classification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.APS"><code class="docutils literal notranslate"><span class="pre">APS</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.fit"><code class="docutils literal notranslate"><span class="pre">APS.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.predict"><code class="docutils literal notranslate"><span class="pre">APS.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">💻 API</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="prediction.html">Prediction</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Calibration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a></li>
-<li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a></li>
-<li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="prediction.html">Prediction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.BasePredictor"><code class="docutils literal notranslate"><span class="pre">BasePredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.DualPredictor"><code class="docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Calibration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.BaseSplitter"><code class="docutils literal notranslate"><span class="pre">BaseSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.IdSplitter"><code class="docutils literal notranslate"><span class="pre">IdSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.RandomSplitter"><code class="docutils literal notranslate"><span class="pre">RandomSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.KFoldSplitter"><code class="docutils literal notranslate"><span class="pre">KFoldSplitter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.mad"><code class="docutils literal notranslate"><span class="pre">mad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score"><code class="docutils literal notranslate"><span class="pre">raps_score()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_mad"><code class="docutils literal notranslate"><span class="pre">scaled_mad()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#overview">Overview</a><ul>
@@ -82,8 +213,18 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">🖼️ Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_ace"><code class="docutils literal notranslate"><span class="pre">regression_ace()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_mean_coverage"><code class="docutils literal notranslate"><span class="pre">regression_mean_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_sharpness"><code class="docutils literal notranslate"><span class="pre">regression_sharpness()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">🖼️ Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="plotting.html#plotting.plot_prediction_intervals"><code class="docutils literal notranslate"><span class="pre">plot_prediction_intervals()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="theory_overview.html">📈 Theory overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#uncertainty-quantification">Uncertainty Quantification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-prediction">Conformal Prediction</a></li>
@@ -107,64 +248,369 @@
 </li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">PUNCC</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="api.html">💻 API</a></li>
-      <li class="breadcrumb-item active">Calibration</li>
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="api.html">💻 API</a> &raquo;</li>
+        
+      <li>Calibration</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
             <a href="_sources/calibration.rst.txt" rel="nofollow"> View page source</a>
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <section id="calibration">
-<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this heading">¶</a></h1>
+<span class="target" id="module-calibration"></span><p>This module implements the core calibrator, providing a structure to estimate
+the nonconformity scores on the calibration set and to compute the prediction
+sets.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">BaseCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonconf_score_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_set_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><a class="reference internal" href="#calibration.BaseCalibrator" title="calibration.BaseCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a> offers a framework to compute user-defined
+nonconformity scores on calibration dataset(s) (<a class="reference internal" href="#calibration.BaseCalibrator.fit" title="calibration.BaseCalibrator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>) and to use for
+constructing and/or calibrating prediction sets (<a class="reference internal" href="#calibration.BaseCalibrator.calibrate" title="calibration.BaseCalibrator.calibrate"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibrate()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nonconf_score_func</strong> (<em>callable</em>) – nonconformity score function.</p></li>
+<li><p><strong>pred_set_func</strong> (<em>callable</em>) – prediction set construction function.</p></li>
+<li><p><strong>weight_func</strong> (<em>callable</em>) – function that takes as argument an array of
+features X and returns associated “conformality” weights,
+defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – provided <code class="xref py py-data docutils literal notranslate"><span class="pre">weight_method</span></code> is not suitable.</p>
+</dd>
+</dl>
+<p id="example-basecalibrator"><strong>Regression calibrator example:</strong></p>
+<p>Consider a pretrained model <span class="math notranslate nohighlight">\(\hat{f}\)</span>, a calibration dataset
+<span class="math notranslate nohighlight">\((X_{calib}, y_{calib})\)</span> and a test dataset <span class="math notranslate nohighlight">\((X_{test}, y_{test})\)</span>.
+The model <span class="math notranslate nohighlight">\(\hat{f}\)</span> generates predictions on the calibration and
+test sets:</p>
+<div class="math notranslate nohighlight">
+\[y_{pred, calib}=\hat{f}(X_{calib})\]</div>
+<div class="math notranslate nohighlight">
+\[y_{pred, test}=\hat{f}(X_{test})\]</div>
+<p>Two function need to be defined before instantiating the
+<a class="reference internal" href="#calibration.BaseCalibrator" title="calibration.BaseCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a>: a nonconformity score function and a definition of
+how the prediction sets are computed. In the example below, these are
+implemented from scratch but a collection of ready-to-use nonconformity
+scores and prediction sets are provided in the modules
+<a class="reference internal" href="nonconformity_scores.html#nonconformity-scores"><span class="std std-ref">nonconformity_scores</span></a> and
+<a class="reference internal" href="prediction_sets.html#prediction-sets"><span class="std std-ref">prediction_sets</span></a>, respectively.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.calibration</span> <span class="kn">import</span> <span class="n">BaseCalibrator</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># First, we define a nonconformity score function that takes as argument</span>
+<span class="c1"># the predicted values y_pred = model(X) and the true labels y_true. In</span>
+<span class="c1"># this example, we reimplement the mean absolute deviation that is</span>
+<span class="c1"># already defined in `deel.puncc.api.nonconformity_scores.mad`</span>
+<span class="k">def</span> <span class="nf">nonconformity_function</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_true</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_pred</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">)</span>
+
+<span class="c1"># Prediction sets are computed based on points predictions and</span>
+<span class="c1"># the quantiles of nonconformity scores. The function below returns a</span>
+<span class="c1"># fixed size interval around the point predictions.</span>
+<span class="k">def</span> <span class="nf">prediction_set_function</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">scores_quantile</span><span class="p">):</span>
+    <span class="n">y_lo</span> <span class="o">=</span> <span class="n">y_pred</span> <span class="o">-</span> <span class="n">scores_quantile</span>
+    <span class="n">y_hi</span> <span class="o">=</span> <span class="n">y_pred</span> <span class="o">+</span> <span class="n">scores_quantile</span>
+    <span class="k">return</span> <span class="n">y_lo</span><span class="p">,</span> <span class="n">y_hi</span>
+
+<span class="c1"># The calibrator is instantiated by passing the two functions defined</span>
+<span class="c1"># above to the constructor.</span>
+<span class="n">calibrator</span> <span class="o">=</span> <span class="n">BaseCalibrator</span><span class="p">(</span>
+    <span class="n">nonconf_score_func</span><span class="o">=</span><span class="n">nonconformity_function</span><span class="p">,</span>
+    <span class="n">pred_set_func</span><span class="o">=</span><span class="n">prediction_set_function</span>
+<span class="p">)</span>
+
+<span class="c1"># Generate dummy data and predictions</span>
+<span class="n">y_pred_calib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">y_true_calib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">y_pred_test</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+
+<span class="c1"># The nonconformity scores are computed by calling the `fit` method</span>
+<span class="c1"># on the calibration dataset.</span>
+<span class="n">calibrator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_pred</span><span class="o">=</span><span class="n">y_pred_calib</span><span class="p">,</span> <span class="n">y_true</span><span class="o">=</span><span class="n">y_true_calib</span><span class="p">)</span>
+
+<span class="c1"># The lower and upper bounds of the prediction interval are then returned</span>
+<span class="c1"># by the call to calibrate on the new data w.r.t a risk level of 10%.</span>
+<span class="n">y_pred_low</span><span class="p">,</span> <span class="n">y_pred_high</span> <span class="o">=</span> <span class="n">calibrator</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="n">y_pred</span><span class="o">=</span><span class="n">y_pred_test</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">.1</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator.barber_weights">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">barber_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.barber_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and normalize inference weights of the nonconformity distribution
+based on <a class="reference external" href="https://arxiv.org/abs/2202.13415">Barber et al.</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>weights</strong> (<em>ndarray</em>) – weights assigned to the samples.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>normalized weights.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator.calibrate">
+<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.calibrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute calibrated prediction sets for new examples w.r.t a
+significance level <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> (<em>float</em>) – significance level (max miscoverage target).</p></li>
+<li><p><strong>y_pred</strong> (<em>Iterable</em>) – predicted values.</p></li>
+<li><p><strong>weights</strong> (<em>Iterable</em>) – weights to be associated to the nonconformity
+scores. Defaults to None when all the scores
+are equiprobable.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>prediction set.
+In case of regression, returns (y_lower, y_upper).
+In case of classification, returns (classes,).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[ndarray]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>RuntimeError</strong> – <a class="reference internal" href="#calibration.BaseCalibrator.calibrate" title="calibration.BaseCalibrator.calibrate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calibrate()</span></code></a> called before <a class="reference internal" href="#calibration.BaseCalibrator.fit" title="calibration.BaseCalibrator.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
+<li><p><strong>ValueError</strong> – failed check on <code class="xref py py-data docutils literal notranslate"><span class="pre">alpha</span></code> w.r.t size of the
+calibration set.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute and store nonconformity scores on the calibration set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y_true</strong> (<em>Iterable</em>) – true labels.</p></li>
+<li><p><strong>y_pred</strong> (<em>Iterable</em>) – predicted values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator.get_nonconformity_scores">
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.get_nonconformity_scores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of computed nonconformity scores on the calibration set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nonconformity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator.get_norm_weights">
+<span class="sig-name descname"><span class="pre">get_norm_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.get_norm_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter of normalized weights associated to the nonconformity
+scores on the calibration set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>normalized weights of nonconformity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.BaseCalibrator.set_norm_weights">
+<span class="sig-name descname"><span class="pre">set_norm_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norm_weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.set_norm_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setter of normalized weights associated to the nonconformity
+scores on the calibration set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>norm_weights</strong> (<em>ndarray</em>) – normalized weights array</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="calibration.CvPlusCalibrator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">CvPlusCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kfold_calibrators</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Meta calibrator that combines the estimations of nonconformity
+scores by each K-Fold calibrator and produces associated prediction
+intervals based on <a class="reference external" href="https://arxiv.org/abs/1905.02928">CV+</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>kfold_calibrators_dict</strong> (<em>dict</em>) – collection of calibrators for each
+K-fold (disjoint calibration subsets). Each calibrator needs to priorly
+estimate the nonconformity scores w.r.t the associated calibration fold.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.CvPlusCalibrator.calibrate">
+<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kfold_predictors_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator.calibrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute calibrated prediction intervals for new examples X.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – test features.</p></li>
+<li><p><strong>kfold_predictors_dict</strong> (<em>dict</em>) – dictionnary of predictors trained
+on each fold.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – significance level (maximum miscoverage target).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>y_lower, y_upper.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[ndarray]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.CvPlusCalibrator.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if all calibrators have already been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – one or more of the calibrators did not estimate
+the nonconformity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="prediction.html" class="btn btn-neutral float-left" title="Prediction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="splitting.html" class="btn btn-neutral float-right" title="Splitting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="prediction.html" class="btn btn-neutral float-left" title="Prediction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, IRT Antoine de Saint Exupéry - All rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry, CRIAQ and ANITI.</p>
-  </div>
+    <p>
+        &#169; Copyright 2022, IRT Antoine de Saint Exupéry - All rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry, CRIAQ and ANITI.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
