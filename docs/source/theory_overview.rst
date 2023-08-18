@@ -173,7 +173,7 @@ If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the a
 
 .. Let :math:`(X_{new}, Y_{new})` be a test point, where :math:`Y_{new}` is not observable at inference time.
 
-The lower and upper bounds of the prediction interval are given by: 
+The lower and upper bounds of the prediction interval are given by:
 
     1. Compute :math:`\bar{R}_{L} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
     2. :math:`\widehat{L}_{\alpha}(X_{new}) = \lfloor \alpha (n+1) \rfloor`-th smallest value in :math:`\bar{R}_{L}` (lower bound)

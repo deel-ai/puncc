@@ -26,6 +26,7 @@ the nonconformity scores on the calibration set and to compute the prediction
 sets.
 """
 import logging
+import warnings
 from typing import Callable
 from typing import Iterable
 from typing import Optional
@@ -248,6 +249,142 @@ class BaseCalibrator:
         w_norm[weights_len] = 1 / (sum_weights + 1)
 
         return w_norm
+
+
+class ScoreCalibrator:
+    """:class:`ScoreCalibrator` offers a framework to compute user-defined
+    scores on a calibration dataset (:func:`fit`) and to test the conformity
+    of new data points (:func:`is_conformal`) with respect to a significance
+    (error) level :math:`\\alpha`. Such calibrator can be used for example
+    to calibrate the decision threshold of anomaly detection scores.
+
+    :param callable nonconf_score_func: nonconformity score function.
+
+    .. _example scorecalibrator:
+
+    **Anomaly detection example:**
+
+
+    Consider the two moons dataset. We want to detect anomalous points in a new
+    sample generated following a uniform distribution. The LOF algorithm is
+    used to obtain anomaly scores; then a :class:`ScoreCalibrator` is
+    instantiated to decide which scores are conformal (not anomalies) with
+    respect to a significance level :math:`\\alpha`.
+
+    .. code-block:: python
+
+        import numpy as np
+        from sklearn.datasets import make_moons
+        from sklearn.neighbors import LocalOutlierFactor
+        import matplotlib.pyplot as plt
+
+        from deel.puncc.api.calibration import ScoreCalibrator
+
+        # First, we generate the two moons dataset, considered as the
+        # calibration set
+        calibration_set = 4*make_moons(n_samples=1000, noise=0.05,
+            random_state=0)[0] - np.array([0.5, 0.25])
+
+        # Generate new data points
+        rng = np.random.RandomState(42)
+        new_samples = rng.uniform(low=-6, high=6, size=(150, 2))
+
+        # Instantiate the LOF anomaly detection algorithm
+        algorithm = LocalOutlierFactor(n_neighbors=35, novelty=True)
+
+        # Fit the LOF on the calibration dataset
+        algorithm.fit(X=calibration_set)
+
+        # The nonconformity scores are defined as the LOF (anomaly) scores.
+        # By default, score_samples return the opposite of LOF scores.
+        ncf = lambda X: -algorithm.score_samples(X)
+
+        # The ScoreCalibrator is instantiated by passing the LOF score function
+        # to the constructor
+        cad = ScoreCalibrator(nonconf_score_func=ncf)
+
+        # The LOF scores are computed by calling the `fit` method
+        # on the calibration dataset
+        cad.fit(calibration_set)
+
+        # We set the target false detection rate to 1%
+        alpha = .01
+
+        # The method `is_conformal` is called on the new data points
+        # to test which are conformal (not anomalous) and which are not
+        results = cad.is_conformal(z=new_samples, alpha=alpha)
+        not_anomalies = new_samples[results]
+        anomalies = new_samples[np.invert(results)]
+
+        # Plot the results
+        plt.scatter(calibration_set[:,0], calibration_set[:,1],
+                    s=10, label="Inliers")
+        plt.scatter(not_anomalies[:, 0], not_anomalies[:, 1], s=40, marker="x",
+                    color="blue", label="Normal")
+        plt.scatter(anomalies[:, 0], anomalies[:, 1], s=40, marker="x",
+                    color="red", label="Anomaly")
+        plt.xticks(())
+        plt.yticks(())
+        plt.legend(loc="lower left")
+
+    """
+
+    def __init__(self, nonconf_score_func: Callable):
+        self.nonconf_score_func = nonconf_score_func
+        self._nonconf_scores = None
+        self._calib_len = 0
+
+    def fit(self, z: Iterable):
+        """Compute and store nonconformity scores on the calibration set.
+
+        :param Iterable z: calibration dataset.
+        """
+        self._nonconf_scores = self.nonconf_score_func(z)
+        self._calib_len = len(self._nonconf_scores)
+
+    def set_nonconformity_scores(self, scores: np.array):
+        """Setter of nonconformity scores. Can be used instead of calling
+        :func:`fit` if the nonconformity scores are already computed.
+
+        :param ndarray scores: nonconformity scores.
+        """
+        if self._nonconf_scores is not None:
+            warnings.warn(
+                "Warning........... You are overwriting previously computed or provided scores."
+            )
+        self._nonconf_scores = np.copy(scores)
+        self._calib_len = len(self._nonconf_scores)
+
+    def get_nonconformity_scores(self) -> np.ndarray:
+        """Getter of computed nonconformity scores on the calibration set.
+
+        :returns: nonconformity scores.
+        :rtype: np.ndarray
+        """
+        return self._nonconf_scores
+
+    def is_conformal(self, z: Iterable, alpha: float) -> np.ndarray[bool]:
+        """Test if new data points `z` are conformal. The test result is True
+        if the new sample is conformal w.r.t a significance level
+        :math:`\\alpha` and False otherwise.
+
+        :param Iterable z: new samples.
+        :param float alpha: significance level.
+
+        :returns: conformity test results.
+        :rtype: np.ndarray[bool]
+        """
+        if self._nonconf_scores is None:
+            raise RuntimeError(
+                "Run `fit` or 'set_nonconformity_scores' methods before calling `is_conformal`."
+            )
+
+        n = self._calib_len
+        q_hat = quantile(self._nonconf_scores, q=(1 - alpha) * (n + 1) / n)
+
+        test_nonconf_scores = self.nonconf_score_func(z)
+
+        return test_nonconf_scores <= q_hat
 
 
 class CvPlusCalibrator:

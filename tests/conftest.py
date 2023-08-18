@@ -25,11 +25,11 @@ import pytest
 from sklearn import datasets
 from tensorflow.keras.datasets import mnist
 from tensorflow.keras.utils import to_categorical
+from sklearn.datasets import make_moons
 
 
 @pytest.fixture
 def diabetes_data():
-
     # Load the diabetes dataset
     diabetes_X, diabetes_y = datasets.load_diabetes(return_X_y=True)
 
@@ -69,7 +69,6 @@ def mnist_data():
 
 @pytest.fixture
 def rand_reg_data():
-
     X_pred_calib = 10 * np.random.randn(100, 4)
     X_pred_test = 10 * np.random.randn(100, 4)
     X_test = 10 * np.random.randn(100, 4)
@@ -83,7 +82,6 @@ def rand_reg_data():
 
 @pytest.fixture
 def rand_class_data():
-
     X_pred_calib = 10 * np.random.randn(100, 4)
     X_pred_test = 10 * np.random.randn(100, 4)
     X_test = 10 * np.random.randn(100, 4)
@@ -97,3 +95,18 @@ def rand_class_data():
     y_test = np.random.randint(4, size=100)
 
     return y_pred_calib, y_calib, y_pred_test, y_test
+
+
+@pytest.fixture
+def rand_anomaly_detection_data():
+    # First, we generate the two moons dataset
+    # This is considered as the calibration set
+    calibration_set = 4 * make_moons(
+        n_samples=1000, noise=0.05, random_state=0
+    )[0] - np.array([0.5, 0.25])
+
+    # Generate uniformly new data point
+    rng = np.random.RandomState(42)
+    new_samples = rng.uniform(low=-6, high=6, size=(150, 2))
+
+    return calibration_set, new_samples

@@ -16,13 +16,13 @@ We want to evaluate the uncertainty associated with the prediction using **induc
 💾 Diabetes Dataset
 *******************
 
-The dataset contains information about 442 diabetes patients. The goal is 
-predict from physiological variables a quantitative measure of disease 
+The dataset contains information about 442 diabetes patients. The goal is
+predict from physiological variables a quantitative measure of disease
 progression in one year.
 
 * There are ten standardized features corresponding to the age, sex, body mass
-  index, average blood pressure, and six blood serum measurements. 
-* The target is the measure of diabetes progression during one year for each 
+  index, average blood pressure, and six blood serum measurements.
+* The target is the measure of diabetes progression during one year for each
   patient.
 
 for more information, check the official
@@ -44,12 +44,12 @@ for more information, check the official
    Features shape: (442, 10)
    Target's shape: (442,)
 
-From all the features, we want our model to capture only the link between 
-body mass index and the evolution of the disease. 
+From all the features, we want our model to capture only the link between
+body mass index and the evolution of the disease.
 
 .. code-block:: python
 
-   import numpy as np 
+   import numpy as np
 
    # Use only BMI feature
    diabetes_X = diabetes_X[:, 2, np.newaxis]
