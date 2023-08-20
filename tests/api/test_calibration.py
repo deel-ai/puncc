@@ -24,6 +24,7 @@ from typing import Callable
 
 import numpy as np
 import pytest
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
 
 from deel.puncc.api import nonconformity_scores
@@ -113,13 +114,18 @@ def test_anomaly_detection_calibrator(
     rand_anomaly_detection_data, alpha, random_state
 ):
     # Generate data
-    (z_calib, z_test) = rand_anomaly_detection_data
+    (z_train, z_test) = rand_anomaly_detection_data
+
+    # Split data into proper fitting and calibration sets
+    z_fit, z_calib = train_test_split(
+        z_train, train_size=0.8, random_state=random_state
+    )
 
     # Instantiate the LOF anomaly detection algorithm
     algorithm = LocalOutlierFactor(n_neighbors=35, novelty=True)
 
-    # Fit the LOF on the calibration dataset
-    algorithm.fit(X=z_calib)
+    # Fit the LOF on the proper fitting dataset
+    algorithm.fit(X=z_fit)
 
     # The nonconformity scores are defined as the LOF scores (anomaly score).
     # By default, score_samples return the opposite of LOF scores.
@@ -143,6 +149,6 @@ def test_anomaly_detection_calibrator(
     anomalies = z_test[np.invert(results)]
 
     assert anomalies is not None
-    assert anomalies.shape == (120, 2)
+    assert anomalies.shape == (117, 2)
     assert not_anomalies is not None
-    assert not_anomalies.shape == (30, 2)
+    assert not_anomalies.shape == (33, 2)

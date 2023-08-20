@@ -275,25 +275,28 @@ class ScoreCalibrator:
 
         import numpy as np
         from sklearn.datasets import make_moons
+        from sklearn.model_selection import train_test_split
         from sklearn.neighbors import LocalOutlierFactor
         import matplotlib.pyplot as plt
 
         from deel.puncc.api.calibration import ScoreCalibrator
 
-        # First, we generate the two moons dataset, considered as the
-        # calibration set
-        calibration_set = 4*make_moons(n_samples=1000, noise=0.05,
+        # First, we generate the two moons dataset
+        dataset = 4*make_moons(n_samples=1000, noise=0.05,
             random_state=0)[0] - np.array([0.5, 0.25])
+
+        # Split data into proper fitting and calibration sets
+        fit_set, calib_set = train_test_split(dataset, train_size=.8)
 
         # Generate new data points
         rng = np.random.RandomState(42)
-        new_samples = rng.uniform(low=-6, high=6, size=(150, 2))
+        new_samples = rng.uniform(low=-6, high=8, size=(200, 2))
 
         # Instantiate the LOF anomaly detection algorithm
         algorithm = LocalOutlierFactor(n_neighbors=35, novelty=True)
 
-        # Fit the LOF on the calibration dataset
-        algorithm.fit(X=calibration_set)
+        # Fit the LOF on the proper fitting dataset
+        algorithm.fit(X=fit_set)
 
         # The nonconformity scores are defined as the LOF (anomaly) scores.
         # By default, score_samples return the opposite of LOF scores.
@@ -305,7 +308,7 @@ class ScoreCalibrator:
 
         # The LOF scores are computed by calling the `fit` method
         # on the calibration dataset
-        cad.fit(calibration_set)
+        cad.fit(calib_set)
 
         # We set the target false detection rate to 1%
         alpha = .01
@@ -317,7 +320,7 @@ class ScoreCalibrator:
         anomalies = new_samples[np.invert(results)]
 
         # Plot the results
-        plt.scatter(calibration_set[:,0], calibration_set[:,1],
+        plt.scatter(calib_set[:,0], calib_set[:,1],
                     s=10, label="Inliers")
         plt.scatter(not_anomalies[:, 0], not_anomalies[:, 1], s=40, marker="x",
                     color="blue", label="Normal")
@@ -363,7 +366,7 @@ class ScoreCalibrator:
         """
         return self._nonconf_scores
 
-    def is_conformal(self, z: Iterable, alpha: float) -> np.ndarray[bool]:
+    def is_conformal(self, z: Iterable, alpha: float) -> np.ndarray:
         """Test if new data points `z` are conformal. The test result is True
         if the new sample is conformal w.r.t a significance level
         :math:`\\alpha` and False otherwise.
