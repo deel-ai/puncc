@@ -23,10 +23,10 @@
 """
 This module implements usual anomaly detection wrappers.
 """
+import logging
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
-import logging
 
 import numpy as np
 
