@@ -259,6 +259,9 @@ class ScoreCalibrator:
     to calibrate the decision threshold of anomaly detection scores.
 
     :param callable nonconf_score_func: nonconformity score function.
+    :param callable weight_func: function that takes as argument an array of
+        data points and returns associated "conformality" weights,
+        defaults to None.
 
     .. _example scorecalibrator:
 
@@ -332,10 +335,13 @@ class ScoreCalibrator:
 
     """
 
-    def __init__(self, nonconf_score_func: Callable):
+    def __init__(
+        self, nonconf_score_func: Callable, weight_func: Callable = None
+    ):
         self.nonconf_score_func = nonconf_score_func
         self._nonconf_scores = None
         self._calib_len = 0
+        self.weight_func = weight_func
 
     def fit(self, z: Iterable):
         """Compute and store nonconformity scores on the calibration set.
@@ -383,7 +389,14 @@ class ScoreCalibrator:
             )
 
         n = self._calib_len
-        q_hat = quantile(self._nonconf_scores, q=(1 - alpha) * (n + 1) / n)
+        weights = None
+
+        if self.weight_func:
+            weights = self.weight_func(z)
+
+        q_hat = quantile(
+            self._nonconf_scores, q=(1 - alpha) * (n + 1) / n, w=weights
+        )
 
         test_nonconf_scores = self.nonconf_score_func(z)
 
@@ -461,6 +474,7 @@ class CvPlusCalibrator:
         # Init the collection of upper and lower bounds of the K-fold's PIs
         concat_y_lo = None
         concat_y_hi = None
+        concat_norm_weights = None
 
         for k, predictor in kfold_predictors_dict.items():
             # Predictions
@@ -472,6 +486,7 @@ class CvPlusCalibrator:
             # nonconformity scores
             kth_calibrator = self.kfold_calibrators_dict[k]
             nconf_scores = kth_calibrator.get_nonconformity_scores()
+            norm_weights = kth_calibrator.get_norm_weights()
 
             # Reshaping nonconformity scores to broadcast them
             # on y_pred samples when computing the prediction sets
@@ -491,20 +506,36 @@ class CvPlusCalibrator:
                 (concat_y_lo, concat_y_hi) = kth_calibrator.pred_set_func(
                     y_pred, nconf_scores
                 )
+                if norm_weights is not None:
+                    concat_norm_weights = norm_weights
             else:
                 y_lo, y_hi = kth_calibrator.pred_set_func(y_pred, nconf_scores)
                 concat_y_lo = np.concatenate(
                     [concat_y_lo, y_lo], axis=1  # type: ignore
                 )
                 concat_y_hi = np.concatenate([concat_y_hi, y_hi], axis=1)
+                if norm_weights is not None:
+                    concat_norm_weights = np.concatenate(
+                        [concat_norm_weights, norm_weights]
+                    )
 
         # sanity check
         if concat_y_lo is None or concat_y_hi is None:
             raise RuntimeError("This should never happen.")
 
+        if concat_norm_weights is None:
+            weights = None
+        else:
+            weights = concat_norm_weights
+            infty_array = np.array([np.inf])
+            concat_y_lo = np.concatenate([concat_y_lo, infty_array])
+            concat_y_hi = np.concatenate([concat_y_hi, infty_array])
+
         y_lo = -1 * quantile(
-            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib)
+            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib), w=weights
         )
-        y_hi = quantile(concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib))
+        y_hi = quantile(
+            concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib), w=weights
+        )
 
         return y_lo, y_hi

@@ -144,7 +144,7 @@ def test_anomaly_detection_calibrator(
 
     # The method `is_conformal` is called on the new data points
     # to test which are conformal (not anomalous) and which are not
-    results = cad.is_conformal(z=z_test, alpha=alpha)
+    results = cad.is_conformal(z_test, alpha=alpha)
     not_anomalies = z_test[results]
     anomalies = z_test[np.invert(results)]
 
