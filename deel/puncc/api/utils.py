@@ -364,7 +364,7 @@ def quantile_multidim(a: np.ndarray, p: np.ndarray) -> np.ndarray:
     :returns: empirical quantiles.
     :rtype: ndarray
     """
-    return np.array([np.quantile(col, q=proba, method="inverted_cdf") for col, proba in zip(a, p)])
+    return np.array([np.quantile(col, q=proba, method="inverted_cdf") for col, proba in zip(a.T, p)])
 
 
 def quantile_multidim_weighted(a: np.ndarray, p: np.ndarray, weights: np.ndarray) -> np.ndarray:
