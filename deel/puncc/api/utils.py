@@ -342,5 +342,3 @@ def quantile(a: Iterable, q: float or np.ndarray, w: np.ndarray = None) -> np.nd
     logger.debug(f"Quantiles array: {quantile_array}")
 
     return quantile_array
-    
-    
