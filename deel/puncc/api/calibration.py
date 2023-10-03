@@ -186,7 +186,8 @@ class BaseCalibrator:
             raise RuntimeError("Run `fit` method before calling `calibrate`.")
 
         # Check consistency of alpha w.r.t the size of calibration data
-        alpha_calib_check(alpha=alpha, n=self._len_calib)
+        if weights is None:
+            alpha_calib_check(alpha=alpha, n=self._len_calib)
 
         # Compute weighted quantiles
         ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
