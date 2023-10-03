@@ -111,6 +111,14 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="anomaly_detection.html">🚩 Anomaly detection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD"><code class="docutils literal notranslate"><span class="pre">SplitCAD</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.fit"><code class="docutils literal notranslate"><span class="pre">SplitCAD.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.predict"><code class="docutils literal notranslate"><span class="pre">SplitCAD.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">💻 API</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
@@ -127,6 +135,7 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
@@ -198,6 +207,7 @@
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#references">References</a></li>
 </ul>
 </li>
@@ -470,6 +480,150 @@ the nonconformity scores.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="calibration.ScoreCalibrator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">ScoreCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nonconf_score_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p><a class="reference internal" href="#calibration.ScoreCalibrator" title="calibration.ScoreCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a> offers a framework to compute user-defined
+scores on a calibration dataset (<a class="reference internal" href="#calibration.ScoreCalibrator.fit" title="calibration.ScoreCalibrator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>) and to test the conformity
+of new data points (<a class="reference internal" href="#calibration.ScoreCalibrator.is_conformal" title="calibration.ScoreCalibrator.is_conformal"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_conformal()</span></code></a>) with respect to a significance
+(error) level <span class="math notranslate nohighlight">\(\alpha\)</span>. Such calibrator can be used for example
+to calibrate the decision threshold of anomaly detection scores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nonconf_score_func</strong> (<em>callable</em>) – nonconformity score function.</p></li>
+<li><p><strong>weight_func</strong> (<em>callable</em>) – function that takes as argument an array of
+data points and returns associated “conformality” weights,
+defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+<p id="example-scorecalibrator"><strong>Anomaly detection example:</strong></p>
+<p>Consider the two moons dataset. We want to detect anomalous points in a new
+sample generated following a uniform distribution. The LOF algorithm is
+used to obtain anomaly scores; then a <a class="reference internal" href="#calibration.ScoreCalibrator" title="calibration.ScoreCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a> is
+instantiated to decide which scores are conformal (not anomalies) with
+respect to a significance level <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_moons</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.neighbors</span> <span class="kn">import</span> <span class="n">LocalOutlierFactor</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">deel.puncc.api.calibration</span> <span class="kn">import</span> <span class="n">ScoreCalibrator</span>
+
+<span class="c1"># First, we generate the two moons dataset</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">make_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">])</span>
+
+<span class="c1"># Split data into proper fitting and calibration sets</span>
+<span class="n">fit_set</span><span class="p">,</span> <span class="n">calib_set</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">train_size</span><span class="o">=</span><span class="mf">.8</span><span class="p">)</span>
+
+<span class="c1"># Generate new data points</span>
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">new_samples</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">6</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+<span class="c1"># Instantiate the LOF anomaly detection algorithm</span>
+<span class="n">algorithm</span> <span class="o">=</span> <span class="n">LocalOutlierFactor</span><span class="p">(</span><span class="n">n_neighbors</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">novelty</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Fit the LOF on the proper fitting dataset</span>
+<span class="n">algorithm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">fit_set</span><span class="p">)</span>
+
+<span class="c1"># The nonconformity scores are defined as the LOF (anomaly) scores.</span>
+<span class="c1"># By default, score_samples return the opposite of LOF scores.</span>
+<span class="n">ncf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">X</span><span class="p">:</span> <span class="o">-</span><span class="n">algorithm</span><span class="o">.</span><span class="n">score_samples</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="c1"># The ScoreCalibrator is instantiated by passing the LOF score function</span>
+<span class="c1"># to the constructor</span>
+<span class="n">cad</span> <span class="o">=</span> <span class="n">ScoreCalibrator</span><span class="p">(</span><span class="n">nonconf_score_func</span><span class="o">=</span><span class="n">ncf</span><span class="p">)</span>
+
+<span class="c1"># The LOF scores are computed by calling the `fit` method</span>
+<span class="c1"># on the calibration dataset</span>
+<span class="n">cad</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">calib_set</span><span class="p">)</span>
+
+<span class="c1"># We set the target false detection rate to 1%</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">.01</span>
+
+<span class="c1"># The method `is_conformal` is called on the new data points</span>
+<span class="c1"># to test which are conformal (not anomalous) and which are not</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">cad</span><span class="o">.</span><span class="n">is_conformal</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">new_samples</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+<span class="n">not_anomalies</span> <span class="o">=</span> <span class="n">new_samples</span><span class="p">[</span><span class="n">results</span><span class="p">]</span>
+<span class="n">anomalies</span> <span class="o">=</span> <span class="n">new_samples</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">results</span><span class="p">)]</span>
+
+<span class="c1"># Plot the results</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">calib_set</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">calib_set</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">s</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Inliers&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">not_anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">not_anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Normal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Anomaly&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;lower left&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.ScoreCalibrator.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.fit" title="Permalink to this definition"></a></dt>
+<dd><p>Compute and store nonconformity scores on the calibration set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>z</strong> (<em>Iterable</em>) – calibration dataset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.ScoreCalibrator.get_nonconformity_scores">
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.get_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Getter of computed nonconformity scores on the calibration set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nonconformity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.ScoreCalibrator.is_conformal">
+<span class="sig-name descname"><span class="pre">is_conformal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.is_conformal" title="Permalink to this definition"></a></dt>
+<dd><p>Test if new data points <cite>z</cite> are conformal. The test result is True
+if the new sample is conformal w.r.t a significance level
+<span class="math notranslate nohighlight">\(\alpha\)</span> and False otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<em>Iterable</em>) – new samples.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – significance level.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>conformity test results.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray[bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="calibration.ScoreCalibrator.set_nonconformity_scores">
+<span class="sig-name descname"><span class="pre">set_nonconformity_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.set_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<dd><p>Setter of nonconformity scores. Can be used instead of calling
+<a class="reference internal" href="#calibration.ScoreCalibrator.fit" title="calibration.ScoreCalibrator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> if the nonconformity scores are already computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scores</strong> (<em>ndarray</em>) – nonconformity scores.</p>
 </dd>
 </dl>
 </dd></dl>

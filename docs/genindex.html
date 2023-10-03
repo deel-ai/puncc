@@ -107,6 +107,14 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="anomaly_detection.html">🚩 Anomaly detection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD"><code class="docutils literal notranslate"><span class="pre">SplitCAD</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.fit"><code class="docutils literal notranslate"><span class="pre">SplitCAD.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.predict"><code class="docutils literal notranslate"><span class="pre">SplitCAD.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">💻 API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
@@ -123,6 +131,7 @@
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
@@ -194,6 +203,7 @@
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#references">References</a></li>
 </ul>
 </li>
@@ -373,7 +383,11 @@
       <ul>
         <li><a href="calibration.html#calibration.CvPlusCalibrator.fit">(calibration.CvPlusCalibrator method)</a>
 </li>
+        <li><a href="calibration.html#calibration.ScoreCalibrator.fit">(calibration.ScoreCalibrator method)</a>
+</li>
         <li><a href="conformalization.html#conformalization.ConformalPredictor.fit">(conformalization.ConformalPredictor method)</a>
+</li>
+        <li><a href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.fit">(deel.puncc.anomaly_detection.SplitCAD method)</a>
 </li>
         <li><a href="classification.html#deel.puncc.classification.APS.fit">(deel.puncc.classification.APS method)</a>
 </li>
@@ -407,6 +421,8 @@
       <li><a href="calibration.html#calibration.BaseCalibrator.get_nonconformity_scores">get_nonconformity_scores() (calibration.BaseCalibrator method)</a>
 
       <ul>
+        <li><a href="calibration.html#calibration.ScoreCalibrator.get_nonconformity_scores">(calibration.ScoreCalibrator method)</a>
+</li>
         <li><a href="conformalization.html#conformalization.ConformalPredictor.get_nonconformity_scores">(conformalization.ConformalPredictor method)</a>
 </li>
         <li><a href="conformalization.html#conformalization.CrossValCpAggregator.get_nonconformity_scores">(conformalization.CrossValCpAggregator method)</a>
@@ -437,6 +453,10 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="splitting.html#splitting.IdSplitter">IdSplitter (class in splitting)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="calibration.html#calibration.ScoreCalibrator.is_conformal">is_conformal() (calibration.ScoreCalibrator method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -527,6 +547,8 @@
       <ul>
         <li><a href="conformalization.html#conformalization.CrossValCpAggregator.predict">(conformalization.CrossValCpAggregator method)</a>
 </li>
+        <li><a href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.predict">(deel.puncc.anomaly_detection.SplitCAD method)</a>
+</li>
         <li><a href="classification.html#deel.puncc.classification.APS.predict">(deel.puncc.classification.APS method)</a>
 </li>
         <li><a href="classification.html#deel.puncc.classification.RAPS.predict">(deel.puncc.classification.RAPS method)</a>
@@ -610,11 +632,17 @@
 </li>
       <li><a href="prediction_sets.html#prediction_sets.scaled_interval">scaled_interval() (in module prediction_sets)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="nonconformity_scores.html#nonconformity_scores.scaled_mad">scaled_mad() (in module nonconformity_scores)</a>
 </li>
+      <li><a href="calibration.html#calibration.ScoreCalibrator">ScoreCalibrator (class in calibration)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="calibration.html#calibration.ScoreCalibrator.set_nonconformity_scores">set_nonconformity_scores() (calibration.ScoreCalibrator method)</a>
+</li>
       <li><a href="calibration.html#calibration.BaseCalibrator.set_norm_weights">set_norm_weights() (calibration.BaseCalibrator method)</a>
+</li>
+      <li><a href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD">SplitCAD (class in deel.puncc.anomaly_detection)</a>
 </li>
       <li><a href="regression.html#deel.puncc.regression.SplitCP">SplitCP (class in deel.puncc.regression)</a>
 </li>

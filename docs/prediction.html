@@ -111,6 +111,14 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="anomaly_detection.html">🚩 Anomaly detection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD"><code class="docutils literal notranslate"><span class="pre">SplitCAD</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.fit"><code class="docutils literal notranslate"><span class="pre">SplitCAD.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.predict"><code class="docutils literal notranslate"><span class="pre">SplitCAD.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">💻 API</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
@@ -127,6 +135,7 @@
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
@@ -198,6 +207,7 @@
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#references">References</a></li>
 </ul>
 </li>
@@ -341,13 +351,13 @@ cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.BasePredictor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.fit" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.fit" title="Permalink to this definition"></a></dt>
 <dd><p>Fit model to the training data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>X</strong> (<em>Iterable</em>) – train features.</p></li>
-<li><p><strong>y</strong> (<em>Iterable</em>) – train labels.</p></li>
+<li><p><strong>y</strong> (<em>Optional</em><em>[</em><em>Iterable</em><em>]</em>) – train labels. Defaults to None (unsupervised).</p></li>
 <li><p><strong>kwargs</strong> – keyword arguments to be passed to the call <a class="reference internal" href="#prediction.BasePredictor.fit" title="prediction.BasePredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>
 on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</span>.</p></li>
 </ul>
