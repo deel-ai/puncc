@@ -237,6 +237,11 @@ Regularized Adaptive Prediction Sets (RAPS)
 
 TBC
 
+Conformal Anomaly Detection
+---------------------------
+
+TBC
+
 References
 ----------
 
