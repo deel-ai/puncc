@@ -65,20 +65,20 @@ class SplitCAD:
             0
         ] - np.array([0.5, 0.25])
 
-        # We generate uniformly new (test) data point
+        # We generate uniformly new (test) data points
         rng = np.random.RandomState(42)
         z_test = rng.uniform(low=-6, high=6, size=(150, 2))
 
 
+        # The nonconformity scores are defined as the IF scores (anomaly score).
+        # By default, score_samples return the opposite of IF scores.
+        # We need to redefine the predict to output the nonconformity scores.
         class ADPredictor(BasePredictor):
             def predict(self, X):
                 return -self.model.score_samples(X)
 
-
         # Instantiate the Isolation Forest (IF) anomaly detection model
         # and wrap it in a predictor
-        # The nonconformity scores are defined as the IF scores (anomaly score).
-        # By default, score_samples return the opposite of IF scores.
         if_predictor = ADPredictor(IsolationForest(random_state=42))
 
         # Instantiate CAD on top of IF predictor

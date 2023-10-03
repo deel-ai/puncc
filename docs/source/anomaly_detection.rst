@@ -1,4 +1,4 @@
-.. _anomaly detection:
+.. _anomaly_detection:
 
 🚩 Anomaly detection
 ====================
