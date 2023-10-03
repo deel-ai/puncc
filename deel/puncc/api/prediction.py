@@ -28,6 +28,7 @@ from copy import deepcopy
 from typing import Any
 from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 import numpy as np
@@ -136,11 +137,11 @@ class BasePredictor:
         if self.compile_kwargs:
             _ = self.model.compile(**self.compile_kwargs)
 
-    def fit(self, X: Iterable, y: Iterable, **kwargs) -> None:
+    def fit(self, X: Iterable, y: Optional[Iterable] = None, **kwargs) -> None:
         """Fit model to the training data.
 
         :param Iterable X: train features.
-        :param Iterable y: train labels.
+        :param Optional[Iterable] y: train labels. Defaults to None (unsupervised).
         :param kwargs: keyword arguments to be passed to the call :func:`fit`
             on the underlying model :math:`\hat{f}`.
 
@@ -150,7 +151,10 @@ class BasePredictor:
             <example basepredictor>`.
 
         """
-        self.model.fit(X, y, **kwargs)
+        if y is None:
+            self.model.fit(X, **kwargs)
+        else:
+            self.model.fit(X, y, **kwargs)
         # self.is_trained = True
 
     def predict(self, X: Iterable, **kwargs) -> np.ndarray:

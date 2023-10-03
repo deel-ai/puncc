@@ -56,7 +56,7 @@ pip install git+https://github.com/deel-ai/puncc
 You can alternatively clone the repo and use the makefile to automatically create a virtual environment
 and install the requirements:
 
-* For users: 
+* For users:
 
 ```bash
 make install-user

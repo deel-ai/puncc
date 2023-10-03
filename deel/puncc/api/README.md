@@ -11,7 +11,7 @@ The currently implemented conformal regression procedures are the following:
 * `deel.puncc.regression.aEnbPI`: locally adaptive Ensemble Batch Prediction Intervals method
 
 The currently implemented conformal classification procedures are the following:
-* `deel.puncc.classification.APS`: Adaptive Prediction Sets. 
+* `deel.puncc.classification.APS`: Adaptive Prediction Sets.
 * `deel.puncc.classification.RAPS`: Regularized Adaptive Prediction Sets. APS is a special case where regularization term is nulled ($\lambda = 0$).
 
 Each of these procedures conformalize point-based or interval-based models that are wrapped in a predictor and passed as argument to the constructor. Wrapping the models in a predictor (`deel.puncc.api.prediction`) enables to work with several ML/DL libraries and data structures.
