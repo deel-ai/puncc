@@ -139,7 +139,7 @@ def test_anomaly_detection_calibrator(
     # on the calibration dataset
     cad.fit(z_calib)
 
-    # We set the target false detection rate to 1%
+    # We set the maximum false detection rate to 1%
     alpha = 0.01
 
     # The method `is_conformal` is called on the new data points

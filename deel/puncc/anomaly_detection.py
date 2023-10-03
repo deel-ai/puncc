@@ -38,32 +38,94 @@ logger = logging.getLogger(__name__)
 
 
 class SplitCAD:
-    """Split conformal anomaly detection method. For more details, we refer the user to
-    the :ref:`theory overview page <theory_overview>`.
+    """Split conformal anomaly detection method based on Laxhammar's algorithm.
+    The anomaly detection is based on the calibrated threshold (through
+    conformal prediction) of underlying anomaly detection (model's) scores.
+    For more details, we refer the user to the :ref:`theory overview
+    page <theory_overview>`.
 
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
     :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
-    :param callable weight_func: function that takes as argument an array of
-        features X and returns associated "conformality" weights, defaults to
-        None.
+
+    Example::
+
+        import numpy as np
+        from sklearn.ensemble import IsolationForest
+        from sklearn.datasets import make_moons
+        import matplotlib.pyplot as plt
+
+        from deel.puncc.anomaly_detection import SplitCAD
+        from deel.puncc.api.prediction import BasePredictor
+
+        # We generate the two moons dataset
+        dataset = 4 * make_moons(n_samples=1000, noise=0.05, random_state=0)[
+            0
+        ] - np.array([0.5, 0.25])
+
+        # We generate uniformly new (test) data point
+        rng = np.random.RandomState(42)
+        z_test = rng.uniform(low=-6, high=6, size=(150, 2))
+
+
+        class ADPredictor(BasePredictor):
+            def predict(self, X):
+                return -self.model.score_samples(X)
+
+
+        # Instantiate the Isolation Forest (IF) anomaly detection model
+        # and wrap it in a predictor
+        # The nonconformity scores are defined as the IF scores (anomaly score).
+        # By default, score_samples return the opposite of IF scores.
+        if_predictor = ADPredictor(IsolationForest(random_state=42))
+
+        # Instantiate CAD on top of IF predictor
+        if_cad = SplitCAD(if_predictor, train=True, random_state=0)
+
+        # Fit the IF on the proper fitting dataset and
+        # calibrate it using calibration dataset.
+        # The two datasets are sampled randomly with a ration of 7:3,
+        # respectively.
+        if_cad.fit(z=dataset, fit_ratio=0.7)
+
+        # We set the maximum false detection rate to 1%
+        alpha = 0.01
+
+        # The method `predict` is called on the new data points
+        # to test which are anomalous and which are not
+        results = if_cad.predict(z_test, alpha=alpha)
+
+        anomalies = z_test[results]
+        not_anomalies = z_test[np.invert(results)]
+
+        # Plot results
+        plt.scatter(dataset[:, 0], dataset[:, 1], s=10, label="Inliers")
+        plt.scatter(
+            anomalies[:, 0],
+            anomalies[:, 1],
+            marker="x",
+            color="red",
+            s=40,
+            label="Anomalies",
+        )
+        plt.scatter(
+            not_anomalies[:, 0],
+            not_anomalies[:, 1],
+            marker="x",
+            color="blue",
+            s=40,
+            label="Normal",
+        )
+        plt.xticks(())
+        plt.yticks(())
+        plt.legend()
     """
 
-    def __init__(
-        self,
-        predictor,
-        *,
-        train=True,
-        random_state: float = None,
-        weight_func=None,
-    ):
+    def __init__(self, predictor, *, train=True, random_state: float = None):
         self.predictor = predictor
-        self.calibrator = ScoreCalibrator(
-            nonconf_score_func=predictor.predict,
-            weight_func=weight_func,
-        )
+        self.calibrator = ScoreCalibrator(nonconf_score_func=predictor.predict)
 
         self.train = train
 
