@@ -75,9 +75,7 @@ def logit_normalization_check(y: Iterable):
     """
     logits_sum = np.sum(np.array(list(y)), -1)
     if np.any(np.abs(logits_sum - 1) > 1e-5):
-        raise ValueError(
-            f"Logits must some to 1. Provided logit array {logits_sum}"
-        )
+        raise ValueError(f"Logits must some to 1. Provided logit array {logits_sum}")
 
 
 def sample_len_check(a: Iterable, b: Iterable):
@@ -108,9 +106,7 @@ def features_len_check(a: Iterable, b: Iterable):
     supported_types_check(a, b)
 
     if a.shape[-1] != b.shape[-1]:
-        raise ValueError(
-            "X_fit and X_calib must contain the same number of features."
-        )
+        raise ValueError("X_fit and X_calib must contain the same number of features.")
 
 
 def supported_types_check(*data: Iterable):
@@ -129,13 +125,9 @@ def supported_types_check(*data: Iterable):
             a, (pd.DataFrame, pd.Series)
         ):
             pass
-        elif pkgutil.find_loader("tensorflow") is not None and isinstance(
-            a, tf.Tensor
-        ):
+        elif pkgutil.find_loader("tensorflow") is not None and isinstance(a, tf.Tensor):
             pass
-        elif pkgutil.find_loader("torch") is not None and isinstance(
-            a, torch.Tensor
-        ):
+        elif pkgutil.find_loader("torch") is not None and isinstance(a, torch.Tensor):
             pass
         else:
             raise TypeError(
@@ -258,19 +250,17 @@ def quantile(a: Iterable, p: float or np.ndarray, weights: np.ndarray = None) ->
 
     if isinstance(a, np.ndarray):
         pass
-    elif pkgutil.find_loader("pandas") is not None and isinstance(
-        a, pd.DataFrame
-    ):
+    elif pkgutil.find_loader("pandas") is not None and isinstance(a, pd.DataFrame):
         a = a.to_numpy()
-    elif pkgutil.find_loader("tensorflow") is not None and isinstance(
-        a, tf.Tensor
-    ):
+    elif pkgutil.find_loader("tensorflow") is not None and isinstance(a, tf.Tensor):
         a = a.numpy()
     # elif pkgutil.find_loader("torch") is not None:
     #     if isinstance(a, torch.Tensor):
     #         a = a.cpu().detach().numpy()
     else:
-        raise RuntimeError("Fatal error.")
+        raise RuntimeError(
+            "Unsupported data type for argument [a].\n Please provide a numpy ndarray, a pandas dataframe or a tensorflow tensor."
+        )
 
     # Sanity checks
     if np.any(p <= 0) or np.any(p >= 1):
@@ -279,28 +269,41 @@ def quantile(a: Iterable, p: float or np.ndarray, weights: np.ndarray = None) ->
     # Dim checks for a and q
     if a.ndim > 2:
         raise ValueError("a must be a 1D or 2D array.")
-    elif a.ndim == 1 and isinstance(p, np.ndarray):
-        raise ValueError("p must be a scalar when a is a 1D array.")
-    elif a.ndim == 1 and weights is None:
-        quantile = quantile_unidim(a, p)
-    elif a.ndim == 1 and weights.shape != a.shape[0]:
-        raise ValueError("a and weights must have the same shape when a is a 1D array.")
-    elif a.ndim == 1:
-        quantile = quantile_unidim_weighted(a, p, weights)
-    elif a.ndim == 2 and isinstance(p, float):
-        p = np.repeat(p, a.shape[1])
-    elif a.ndim == 2 and p.shape != (a.shape[1],):
-        raise ValueError("p must be a float or have the same shape as the number of columns of a.")
-    elif a.ndim == 2 and weights is None:
-        quantile = quantile_multidim(a, p)
-    elif a.ndim == 2 and weights.shape == (a.shape[0],):
-        w = np.tile(weights, (a.shape[1],1)).T
-    elif a.ndim == 2 and weights.shape != a.shape:
-        raise ValueError("weights must be of shape (n,) or (n, m) where (n,m) is the shape of a.")
-    else:
-        quantile = quantile_multidim_weighted(a, p, weights)
 
-    return quantile
+    if a.ndim == 1 and isinstance(p, np.ndarray):
+        raise ValueError("p must be a scalar when a is a 1D array.")
+
+    if a.ndim == 1 and weights is None:
+        return quantile_unidim(a, p)
+    
+    if a.ndim == 1 and weights.shape != a.shape:
+        raise ValueError("a and weights must have the same shape when a is a 1D array.")
+
+    if a.ndim == 1:
+        return quantile_unidim_weighted(a, p, weights)
+
+    if a.ndim == 2 and isinstance(p, float):
+        p = np.repeat(p, a.shape[1])
+
+    if a.ndim == 2 and p.shape != (a.shape[1],):
+        raise ValueError(
+            "p must be a float or have the same shape as the number of columns of a."
+        )
+
+    if a.ndim == 2 and weights is None:
+        return quantile_multidim(a, p)
+
+    if a.ndim == 2 and weights.shape == (a.shape[0],):
+        weights = np.tile(weights, (a.shape[1], 1)).T
+        print("shape of a is", a.shape)
+        print("shape of w is", weights.shape)
+
+    if a.ndim == 2 and weights.shape != a.shape:
+        raise ValueError(
+            "weights must be of shape (n,) or (n, m) where (n,m) is the shape of a."
+        )
+
+    return quantile_multidim_weighted(a, p, weights)
 
 
 def quantile_unidim(a: np.ndarray, p: float) -> float:
@@ -329,9 +332,7 @@ def quantile_unidim_weighted(a: np.ndarray, p: float, weights: np.ndarray) -> fl
     # Normalization check
     norm_condition = np.isclose(np.sum(weights) - 1, 0, atol=1e-14)
     if ~norm_condition:
-        error = (
-            f"weights is not normalized. Sum of weights is {np.sum(weights)}"
-        )
+        error = f"weights is not normalized. Sum of weights is {np.sum(weights)}"
         raise RuntimeError(error)
 
     # Values are sorted in ascending order
@@ -339,17 +340,15 @@ def quantile_unidim_weighted(a: np.ndarray, p: float, weights: np.ndarray) -> fl
     logger.debug(f"Sorted indices: {sorted_idxs}")
 
     # Reorder weights (ascending column values of a) and compute cumulative sum
-    sorted_cumsum_weights = np.cumsum(np.sort(weights))
+    sorted_cumsum_weights = np.cumsum(weights[sorted_idxs])
     logger.debug(f"Sorted weights cumulative sum: {sorted_cumsum_weights}")
 
     # Get the smallest index for which the cumulative sum of weights exceeds p
     min_idx_reaching_p = np.sum(sorted_cumsum_weights < p)
-    logger.debug(
-        f"First index per column where cumsum exceeds q: {min_idx_reaching_p}"
-    )
+    logger.debug(f"First index per column where cumsum exceeds q: {min_idx_reaching_p}")
 
     # Collect the p-th quantile (first value whose probability mass exceeds p)
-    quantile = a[sorted_idxs][min_idx_reaching_p]
+    quantile = a[sorted_idxs[min_idx_reaching_p]]
     logger.debug(f"Quantiles array: {quantile}")
 
     return quantile
@@ -364,10 +363,14 @@ def quantile_multidim(a: np.ndarray, p: np.ndarray) -> np.ndarray:
     :returns: empirical quantiles.
     :rtype: ndarray
     """
-    return np.array([np.quantile(col, q=proba, method="inverted_cdf") for col, proba in zip(a.T, p)])
+    return np.array(
+        [np.quantile(col, q=proba, method="inverted_cdf") for col, proba in zip(a.T, p)]
+    )
 
 
-def quantile_multidim_weighted(a: np.ndarray, p: np.ndarray, weights: np.ndarray) -> np.ndarray:
+def quantile_multidim_weighted(
+    a: np.ndarray, p: np.ndarray, weights: np.ndarray
+) -> np.ndarray:
     """Estimate the columnwise p-th empirical weighted quantiles of a 2D array.
 
     :param ndarray a: collection of n samples
@@ -388,4 +391,9 @@ def quantile_multidim_weighted(a: np.ndarray, p: np.ndarray, weights: np.ndarray
         raise RuntimeError(error)
 
     # Empirical Weighted Quantile
-    return np.array([quantile_unidim_weighted(col, proba, w) for col, proba, w in zip(a.T, p, weights.T)])
+    return np.array(
+        [
+            quantile_unidim_weighted(col, proba, w)
+            for col, proba, w in zip(a.T, p, weights.T)
+        ]
+    )

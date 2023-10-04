@@ -197,7 +197,7 @@ class BaseCalibrator:
         residuals_Q = quantile(
             lemma_residuals,
             1 - alpha,
-            w=weights,
+            weights=weights,
         )
 
         return self.pred_set_func(y_pred, scores_quantile=residuals_Q)

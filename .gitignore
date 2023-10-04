@@ -22,3 +22,6 @@ puncc-user-env/
 .tox
 docs/build
 docs/source/modules.rst
+
+# Working drafts
+dirty_nbs/
