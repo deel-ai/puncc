@@ -14,17 +14,17 @@ help:
 	@echo "       updatetools pre-commit tool"
 
 prepare-dev:
-	python -m venv puncc-dev-env
-	. puncc-dev-env/bin/activate && pip install --upgrade pip
-	. puncc-dev-env/bin/activate && pip install -e .[dev]
+	python3 -m venv puncc-dev-env
+	. puncc-dev-env/bin/activate && python -m pip install --upgrade pip
+	. puncc-dev-env/bin/activate && python -m pip install -e .[dev]
 	. puncc-dev-env/bin/activate && pre-commit install
 	. puncc-dev-env/bin/activate && pre-commit install-hooks
 
 install-user:
-	python -m venv puncc-user-env
-	. puncc-user-env/bin/activate && pip install --upgrade pip
-	. puncc-user-env/bin/activate && pip install -e .[interactive]
-	python -m ipykernel install --user --name=puncc-user-env
+	python3 -m venv puncc-user-env
+	. puncc-user-env/bin/activate && python -m pip install --upgrade pip
+	. puncc-user-env/bin/activate && python -m pip install -e .[interactive]
+	. puncc-user-env/bin/activate && python -m ipykernel install --user --name=puncc-user-env
 
 check_all:
 	. puncc-env/bin/activate && pre-commit run --all-files

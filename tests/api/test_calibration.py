@@ -24,10 +24,13 @@ from typing import Callable
 
 import numpy as np
 import pytest
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import LocalOutlierFactor
 
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
+from deel.puncc.api.calibration import ScoreCalibrator
 
 
 @pytest.mark.parametrize(
@@ -35,7 +38,6 @@ from deel.puncc.api.calibration import BaseCalibrator
     [[0.1, 42], [0.3, 42], [0.5, 42], [0.7, 42], [0.9, 42]],
 )
 def test_regression_calibrator(rand_reg_data, alpha, random_state):
-
     # Generate data
     (y_pred_calib, y_calib, y_pred_test, y_test) = rand_reg_data
 
@@ -82,7 +84,6 @@ def test_regression_calibrator(rand_reg_data, alpha, random_state):
     [[0.1, 42], [0.3, 42], [0.5, 42], [0.7, 42], [0.9, 42]],
 )
 def test_classification_calibrator(rand_class_data, alpha, random_state):
-
     # Generate data
     (y_pred_calib, y_calib, y_pred_test, y_test) = rand_class_data
 
@@ -103,3 +104,51 @@ def test_classification_calibrator(rand_class_data, alpha, random_state):
     set_pred = calibrator.calibrate(y_pred=y_pred_test, alpha=alpha)
 
     assert set_pred is not None
+
+
+@pytest.mark.parametrize(
+    "alpha, random_state",
+    [[0.1, 42], [0.3, 42], [0.5, 42], [0.7, 42], [0.9, 42]],
+)
+def test_anomaly_detection_calibrator(
+    rand_anomaly_detection_data, alpha, random_state
+):
+    # Generate data
+    (z_train, z_test) = rand_anomaly_detection_data
+
+    # Split data into proper fitting and calibration sets
+    z_fit, z_calib = train_test_split(
+        z_train, train_size=0.8, random_state=random_state
+    )
+
+    # Instantiate the LOF anomaly detection algorithm
+    algorithm = LocalOutlierFactor(n_neighbors=35, novelty=True)
+
+    # Fit the LOF on the proper fitting dataset
+    algorithm.fit(X=z_fit)
+
+    # The nonconformity scores are defined as the LOF scores (anomaly score).
+    # By default, score_samples return the opposite of LOF scores.
+    ncf = lambda X: -algorithm.score_samples(X)
+
+    # The ScoreCalibrator is instantiated by passing the LOF score function
+    # to the constructor
+    cad = ScoreCalibrator(nonconf_score_func=ncf)
+
+    # The LOF scores are computed by calling the `fit` method
+    # on the calibration dataset
+    cad.fit(z_calib)
+
+    # We set the maximum false detection rate to 1%
+    alpha = 0.01
+
+    # The method `is_conformal` is called on the new data points
+    # to test which are conformal (not anomalous) and which are not
+    results = cad.is_conformal(z_test, alpha=alpha)
+    not_anomalies = z_test[results]
+    anomalies = z_test[np.invert(results)]
+
+    assert anomalies is not None
+    assert anomalies.shape == (117, 2)
+    assert not_anomalies is not None
+    assert not_anomalies.shape == (33, 2)

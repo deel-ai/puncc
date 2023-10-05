@@ -25,7 +25,8 @@
 </div>
 <br>
 
-***Puncc*** (**P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library that integrates a collection of state-of-the-art conformal prediction algorithms and related techniques for regression and classification problems. It can be used with any predictive model to provide rigorous uncertainty estimations.
+***Puncc*** (short for **P**redictive **un**certainty **c**alibration and **c**onformalization) is an open-source Python library. It seamlessly integrates a collection of state-of-the-art conformal prediction algorithms and associated techniques for diverse machine learning tasks, including regression, classification and anomaly detection.
+***Puncc*** can be used with any predictive model to provide rigorous uncertainty estimations.
 Under data exchangeability (or *i.i.d*), the generated prediction sets are guaranteed to cover the true outputs within a user-defined error $\alpha$.
 
 Documentation is available [**online**](https://deel-ai.github.io/puncc/index.html).
@@ -33,6 +34,7 @@ Documentation is available [**online**](https://deel-ai.github.io/puncc/index.ht
 ## 📚 Table of contents
 
 - [🐾 Installation](#-installation)
+- [📖 Documentation](#-documentation)
 - [👨‍🎓 Tutorials](#-tutorials)
 - [🚀 QuickStart](#-quickstart)
 - [📚 Citation](#-citation)
@@ -50,10 +52,11 @@ You can directly install the library using pip:
 pip install git+https://github.com/deel-ai/puncc
 ```
 
+<!--
 You can alternatively clone the repo and use the makefile to automatically create a virtual environment
 and install the requirements:
 
-* For users: 
+* For users:
 
 ```bash
 make install-user
@@ -64,6 +67,11 @@ make install-user
 ```bash
 make prepare-dev
 ```
+-->
+
+## 📖 Documentation
+
+For comprehensive documentation, we encourage you to visit the [**official documentation page**](https://deel-ai.github.io/puncc/index.html).
 
 ## 👨‍🎓 Tutorials
 
@@ -136,7 +144,20 @@ A quick comparison of both approaches is provided in the [API tutorial](docs/api
 
 ## 📚 Citation
 
-This library was initially built to support the work presented in our COPA 2022 paper on conformal prediction for time series. If you use our library for your work, please cite our paper:
+If you use our library for your work, please cite our paper:
+
+```
+@inproceedings{mendil2023puncc,
+  title={PUNCC: a Python Library for Predictive Uncertainty Calibration and Conformalization},
+  author={Mendil, Mouhcine and Mossina, Luca and Vigouroux, David},
+  booktitle={Conformal and Probabilistic Prediction with Applications},
+  pages={582--601},
+  year={2023},
+  organization={PMLR}
+}
+```
+
+*Puncc* has been used to support the work presented in our COPA 2022 paper on conformal prediction for time series. 
 
 ```
 @inproceedings{mendil2022robust,
