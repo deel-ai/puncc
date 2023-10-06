@@ -234,12 +234,14 @@ def get_min_max_alpha_calib(
     return (1 / (n + 1), 1)
 
 
-def quantile(a: Iterable, p: float or np.ndarray, weights: np.ndarray = None) -> np.ndarray:  # type: ignore
+def quantile(
+    a: Iterable, q: float or np.ndarray, w: np.ndarray = None
+) -> np.ndarray:  # type: ignore
     """Estimate the columnwise p-th empirical weighted quantiles.
 
     :param Iterable a: collection of n samples
-    :param float or np.ndarray p: p-th quantiles to compute. All elements must be in the open interval (0, 1).
-    :param ndarray weights: vector of size n. By default, weights is None and equal weights
+    :param float or np.ndarray q: q-th quantiles to compute. All elements must be in (0, 1).
+    :param ndarray w: vector of size n. By default, w is None and equal weights
         (:math:`1/n`) are associated.
 
     :returns: weighted empirical quantiles.
@@ -259,141 +261,144 @@ def quantile(a: Iterable, p: float or np.ndarray, weights: np.ndarray = None) ->
     #         a = a.cpu().detach().numpy()
     else:
         raise RuntimeError(
-            "Unsupported data type for argument [a].\n Please provide a numpy ndarray, a pandas dataframe or a tensorflow tensor."
+            "Unsupported data type for argument [a].\n"
+            "Please provide a numpy ndarray, a pandas dataframe or a tensorflow tensor."
         )
 
     # Sanity checks
-    if np.any(p <= 0) or np.any(p >= 1):
-        raise ValueError("All coordinates of p must be in the open interval (0, 1).")
+    if np.any(q <= 0) or np.any(q >= 1):
+        raise ValueError("All coordinates of [q] must be in the open interval (0, 1).")
 
     # Dim checks for a and q
     if a.ndim > 2:
-        raise ValueError("a must be a 1D or 2D array.")
+        raise ValueError("[a] must be a 1D or 2D array.")
 
-    if a.ndim == 1 and isinstance(p, np.ndarray):
-        raise ValueError("p must be a scalar when a is a 1D array.")
+    if a.ndim == 1 and isinstance(q, np.ndarray):
+        raise ValueError("[q] must be a scalar when a is a 1D array.")
 
-    if a.ndim == 1 and weights is None:
-        return quantile_unidim(a, p)
-    
-    if a.ndim == 1 and weights.shape != a.shape:
-        raise ValueError("a and weights must have the same shape when a is a 1D array.")
+    if a.ndim == 1 and w is None:
+        return quantile_unidim(a, q)
+
+    if a.ndim == 1 and w.shape != a.shape:
+        raise ValueError("[a] and [w] must have the same shape when [a] is a 1D array.")
 
     if a.ndim == 1:
-        return quantile_unidim_weighted(a, p, weights)
+        return quantile_unidim_weighted(a, q, w)
 
-    if a.ndim == 2 and isinstance(p, float):
-        p = np.repeat(p, a.shape[1])
+    if a.ndim == 2 and isinstance(q, float):
+        q = np.repeat(q, a.shape[1])
 
-    if a.ndim == 2 and p.shape != (a.shape[1],):
+    if a.ndim == 2 and q.shape != (a.shape[1],):
         raise ValueError(
-            "p must be a float or have the same shape as the number of columns of a."
+            "[q] must be a float or have the same shape as the number of columns of [a]."
         )
 
-    if a.ndim == 2 and weights is None:
-        return quantile_multidim(a, p)
+    if a.ndim == 2 and w is None:
+        return quantile_multidim(a, q)
 
-    if a.ndim == 2 and weights.shape == (a.shape[0],):
-        weights = np.tile(weights, (a.shape[1], 1)).T
+    if a.ndim == 2 and w.shape == (a.shape[0],):
+        w = np.tile(w, (a.shape[1], 1)).T
         print("shape of a is", a.shape)
-        print("shape of w is", weights.shape)
+        print("shape of w is", w.shape)
 
-    if a.ndim == 2 and weights.shape != a.shape:
+    if a.ndim == 2 and w.shape != a.shape:
         raise ValueError(
             "weights must be of shape (n,) or (n, m) where (n,m) is the shape of a."
         )
 
-    return quantile_multidim_weighted(a, p, weights)
+    return quantile_multidim_weighted(a, q, w)
 
 
-def quantile_unidim(a: np.ndarray, p: float) -> float:
-    """Estimate the p-th empirical quantile of a 1D array.
+def quantile_unidim(a: np.ndarray, q: float) -> float:
+    """Estimate the q-th empirical quantile of a 1D array.
 
     :param ndarray a: collection of n samples
-    :param float p: p-th quantile to compute. Must be in the open interval (0, 1).
+    :param float q: q-th quantile to compute. Must be in the open interval (0, 1).
 
     :returns: empirical quantile.
     :rtype: float
     """
-    return np.quantile(a, p, method="inverted_cdf")
+    return np.quantile(a, q, method="inverted_cdf")
 
 
-def quantile_unidim_weighted(a: np.ndarray, p: float, weights: np.ndarray) -> float:
-    """Estimate the p-th empirical weighted quantile of a 1D array.
+def quantile_unidim_weighted(a: np.ndarray, q: float, w: np.ndarray) -> float:
+    """Estimate the q-th empirical weighted quantile of a 1D array.
 
     :param ndarray a: collection of n samples
-    :param float p: p-th quantile to compute. Must be in the open interval (0, 1).
-    :param ndarray weights: vector of size n.
+    :param float q: q-th quantile to compute. Must be in the open interval (0, 1).
+    :param ndarray w: vector of size n.
 
     :returns: weighted empirical quantile.
     :rtype: float
     """
 
     # Normalization check
-    norm_condition = np.isclose(np.sum(weights) - 1, 0, atol=1e-14)
+    norm_condition = np.isclose(np.sum(w) - 1, 0, atol=1e-14)
     if ~norm_condition:
-        error = f"weights is not normalized. Sum of weights is {np.sum(weights)}"
+        error = f"w is not normalized. Sum of weights is {np.sum(w)}"
         raise RuntimeError(error)
 
     # Values are sorted in ascending order
     sorted_idxs = np.argsort(a)
-    logger.debug(f"Sorted indices: {sorted_idxs}")
+    logger.debug("Sorted indices: %s", sorted_idxs)
 
     # Reorder weights (ascending column values of a) and compute cumulative sum
-    sorted_cumsum_weights = np.cumsum(weights[sorted_idxs])
-    logger.debug(f"Sorted weights cumulative sum: {sorted_cumsum_weights}")
+    sorted_cumsum_weights = np.cumsum(w[sorted_idxs])
+    logger.debug("Sorted weights cumulative sum: %s", sorted_cumsum_weights)
 
     # Get the smallest index for which the cumulative sum of weights exceeds p
-    min_idx_reaching_p = np.sum(sorted_cumsum_weights < p)
-    logger.debug(f"First index per column where cumsum exceeds q: {min_idx_reaching_p}")
+    min_idx_reaching_q = np.sum(sorted_cumsum_weights < q)
+    logger.debug(
+        "First index per column where cumsum exceeds q: %s", min_idx_reaching_q
+    )
 
     # Collect the p-th quantile (first value whose probability mass exceeds p)
-    quantile = a[sorted_idxs[min_idx_reaching_p]]
-    logger.debug(f"Quantiles array: {quantile}")
+    quantile_res = a[sorted_idxs[min_idx_reaching_q]]
+    logger.debug("Quantiles array: %s", quantile_res)
 
-    return quantile
+    return quantile_res
 
 
-def quantile_multidim(a: np.ndarray, p: np.ndarray) -> np.ndarray:
-    """Estimate the columnwise p-th empirical quantiles of a 2D array.
+def quantile_multidim(a: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """Estimate the columnwise q-th empirical quantiles of a 2D array.
 
     :param ndarray a: collection of n samples
-    :param ndarray p: p-th quantiles to compute, array of shape (a[1],). All elements must be in the open interval (0, 1).
+    :param ndarray q: q-th quantiles to compute, array of shape (a[1],). All elements must be in the open interval (0, 1).
 
     :returns: empirical quantiles.
     :rtype: ndarray
     """
     return np.array(
-        [np.quantile(col, q=proba, method="inverted_cdf") for col, proba in zip(a.T, p)]
+        [np.quantile(col, q=proba, method="inverted_cdf") for col, proba in zip(a.T, q)]
     )
 
 
 def quantile_multidim_weighted(
-    a: np.ndarray, p: np.ndarray, weights: np.ndarray
+    a: np.ndarray, q: np.ndarray, w: np.ndarray
 ) -> np.ndarray:
-    """Estimate the columnwise p-th empirical weighted quantiles of a 2D array.
+    """Estimate the columnwise q-th empirical weighted quantiles of a 2D array.
 
     :param ndarray a: collection of n samples
-    :param ndarray p: p-th quantiles to compute, array of shape (a[1],). All elements must be in the open interval (0, 1).
-    :param ndarray weights: matrix of the same shape as a.
+    :param ndarray q: q-th quantiles to compute, array of shape (a[1],). All elements must be in the open interval (0, 1).
+    :param ndarray w: matrix of the same shape as a.
 
     :returns: weighted empirical quantiles.
     :rtype: ndarray
     """
 
     # Normalization check
-    norm_condition = np.isclose(np.sum(weights, axis=0) - 1, 0, atol=1e-14)
+    norm_condition = np.isclose(np.sum(w, axis=0) - 1, 0, atol=1e-14)
     if ~np.all(norm_condition):
         error = (
-            "weights is not normalized. Sum of weights on"
-            + f"columns is {np.sum(weights, axis=0)}"
+            "w is not normalized. Sum of weights on"
+            + f"columns is {np.sum(w, axis=0)}"
         )
         raise RuntimeError(error)
 
     # Empirical Weighted Quantile
     return np.array(
         [
-            quantile_unidim_weighted(col, proba, w)
-            for col, proba, w in zip(a.T, p, weights.T)
+            quantile_unidim_weighted(col, proba, weight)
+            for col, proba, weight in zip(a.T, q, w.T)
         ]
     )
