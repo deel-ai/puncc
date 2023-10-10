@@ -264,7 +264,8 @@ class ConformalPredictor:
         :returns: y_pred, y_lower, y_higher.
         :rtype: Tuple[ndarray]
         """
-
+        print("Predicting")
+        print("Shape of X is: ", X.shape)
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
 
@@ -374,6 +375,8 @@ class CrossValCpAggregator:
         :returns: y_pred, y_lower, y_higher.
         :rtype: Tuple[Iterable]
         """
+        print("Predicting inside CrossValCpAggregator")
+        print("Shape of X is: ", X.shape)
         assert (
             self._predictors.keys() == self._calibrators.keys()
         ), "K-fold predictors are not well calibrated."
@@ -382,6 +385,7 @@ class CrossValCpAggregator:
 
         # No cross-val strategy if K = 1
         if K == 1:
+            print("K = 1")
             for k in self._predictors.keys():
                 predictor = self._predictors[k]
                 calibrator = self._calibrators[k]
@@ -397,6 +401,8 @@ class CrossValCpAggregator:
             y_pred = None
 
             if self.method == "cv+":
+                print("cv+")
+                print("Shape of X is: ", X.shape)
                 cvp_calibrator = CvPlusCalibrator(self._calibrators)
                 set_pred = cvp_calibrator.calibrate(
                     X=X,

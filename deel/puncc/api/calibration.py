@@ -465,7 +465,6 @@ class CvPlusCalibrator:
         :returns: y_lower, y_upper.
         :rtype: Tuple[ndarray]
         """
-
         # Check if all calibrators have already been fitted
         self.fit()
 
@@ -519,7 +518,7 @@ class CvPlusCalibrator:
                     concat_norm_weights = np.concatenate(
                         [concat_norm_weights, norm_weights]
                     )
-
+        
         # sanity check
         if concat_y_lo is None or concat_y_hi is None:
             raise RuntimeError("This should never happen.")
@@ -533,10 +532,9 @@ class CvPlusCalibrator:
             concat_y_hi = np.concatenate([concat_y_hi, infty_array])
 
         y_lo = -1 * quantile(
-            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib), w=weights
+            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib), w=weights, axis=1
         )
         y_hi = quantile(
-            concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib), w=weights
+            concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib), w=weights, axis=1
         )
-
         return y_lo, y_hi
