@@ -299,7 +299,8 @@ def quantile_unweighted(
     """
     if axis is not None and axis % a.ndim == -1:
         raise ValueError("axis value cannot coincide with features axis.")
-    elif isinstance(q, float):
+
+    if isinstance(q, float):
         return np.quantile(a, q, axis=axis, method="inverted_cdf")
     elif a.shape[-1] != len(q):
         raise ValueError("a and q must have the same number of features.")
@@ -332,7 +333,8 @@ def quantile_weighted_unidim(
     # Dimension checks
     if w.ndim != 1:
         raise ValueError("w must be a 1D array.")
-    elif len(w) != len(a):
+
+    if len(w) != len(a):
         raise ValueError("a and w must have the same length.")
 
     # Normalization check

@@ -518,7 +518,7 @@ class CvPlusCalibrator:
                     concat_norm_weights = np.concatenate(
                         [concat_norm_weights, norm_weights]
                     )
-        
+
         # sanity check
         if concat_y_lo is None or concat_y_hi is None:
             raise RuntimeError("This should never happen.")
