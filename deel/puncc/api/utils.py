@@ -302,7 +302,8 @@ def quantile_unweighted(
 
     if isinstance(q, float):
         return np.quantile(a, q, axis=axis, method="inverted_cdf")
-    elif a.shape[-1] != len(q):
+    
+    if a.shape[-1] != len(q):
         raise ValueError("a and q must have the same number of features.")
     quantile_res = np.array(
         [
