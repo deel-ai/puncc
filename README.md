@@ -158,7 +158,7 @@ If you use our library for your work, please cite our paper:
 }
 ```
 
-*Puncc* has been used to support the work presented in our COPA 2022 paper on conformal prediction for time series. 
+*Puncc* has been used to support the work presented in our COPA 2022 paper on conformal prediction for time series.
 
 ```
 @inproceedings{mendil2022robust,

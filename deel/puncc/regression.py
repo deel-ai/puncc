@@ -197,8 +197,15 @@ class SplitCP:
             and X_calib is not None
             and y_calib is not None
         ):
+            if self.train is True:
+                raise RuntimeError(
+                    "Argument 'train' is True but no training dataset provided."
+                )
             splitter = IdSplitter(
-                np.empty_like(X_calib), np.empty_like(y_calib), X_calib, y_calib
+                np.empty_like(X_calib),
+                np.empty_like(y_calib),
+                X_calib,
+                y_calib,
             )
 
         else:
