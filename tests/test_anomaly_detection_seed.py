@@ -24,12 +24,11 @@ from typing import Callable
 
 import numpy as np
 import pytest
-
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import LocalOutlierFactor
 
-from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.anomaly_detection import SplitCAD
+from deel.puncc.api.prediction import BasePredictor
 
 RESULTS = {
     "split_cad": {"normal_shape": (33, 2), "anomaly_shape": (117, 2)},
