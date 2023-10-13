@@ -271,3 +271,30 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     #     return torch.maximum(diff_lo, diff_hi)
 
     raise RuntimeError("Fatal Error. Type check failed !")
+
+
+def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Coordinatewise difference.
+
+    .. math::
+
+        R = y_{\\text{pred}}-y_{\\text{true}}
+
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
+
+    :returns: coordinatewise difference.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    supported_types_check(y_pred, y_true)
+
+    if pkgutil.find_loader("torch") is not None and isinstance(
+        y_pred, torch.Tensor
+    ):
+        y_pred = y_pred.cpu().detach().numpy()
+        y_true = y_true.cpu().detach().numpy()
+        return np.squeeze(y_pred) - np.squeeze(y_true)
+
+    return y_pred - y_true
