@@ -37,6 +37,13 @@ def bonferroni(alpha: float, nvars: int) -> float:
     :returns: corrected coverage level.
     :rtype: float.
     """
+    # Sanity checks
+    if alpha <= 0 or alpha >= 1:
+        raise ValueError("alpha must be in (0,1)")
+
+    if nvars <= 0:
+        raise ValueError("nvars must be a positive integer")
+
     return alpha / nvars
 
 
@@ -50,12 +57,14 @@ def weighted_bonferroni(alpha: float, weights: np.ndarray) -> np.ndarray:
     :returns: array of corrected featurewise coverage levels.
     :rtype: np.ndarray.
     """
+    # Sanity checks
+    if alpha <= 0 or alpha >= 1:
+        raise ValueError("alpha must be in (0,1)")
 
     # Positivity check
     positiveness_condition = np.all(weights > 0)
     if not positiveness_condition:
-        error = "weights must be positive"
-        raise RuntimeError(error)
+        raise RuntimeError("weights must be positive")
 
     # Normalization check
     norm_condition = np.isclose(np.sum(weights) - 1, 0, atol=1e-14)
