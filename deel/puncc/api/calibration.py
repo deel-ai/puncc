@@ -532,9 +532,15 @@ class CvPlusCalibrator:
             concat_y_hi = np.concatenate([concat_y_hi, infty_array])
 
         y_lo = -1 * quantile(
-            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib), w=weights, axis=1
+            -1 * concat_y_lo,
+            (1 - alpha) * (1 + 1 / self._len_calib),
+            w=weights,
+            axis=1,
         )
         y_hi = quantile(
-            concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib), w=weights, axis=1
+            concat_y_hi,
+            (1 - alpha) * (1 + 1 / self._len_calib),
+            w=weights,
+            axis=1,
         )
         return y_lo, y_hi

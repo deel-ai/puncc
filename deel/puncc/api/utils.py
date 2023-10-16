@@ -30,6 +30,7 @@ from typing import Any
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 
@@ -75,7 +76,9 @@ def logit_normalization_check(y: Iterable):
     """
     logits_sum = np.sum(np.array(list(y)), -1)
     if np.any(np.abs(logits_sum - 1) > 1e-5):
-        raise ValueError(f"Logits must some to 1. Provided logit array {logits_sum}")
+        raise ValueError(
+            f"Logits must some to 1. Provided logit array {logits_sum}"
+        )
 
 
 def sample_len_check(a: Iterable, b: Iterable):
@@ -106,7 +109,9 @@ def features_len_check(a: Iterable, b: Iterable):
     supported_types_check(a, b)
 
     if a.shape[-1] != b.shape[-1]:
-        raise ValueError("X_fit and X_calib must contain the same number of features.")
+        raise ValueError(
+            "X_fit and X_calib must contain the same number of features."
+        )
 
 
 def supported_types_check(*data: Iterable):
@@ -125,9 +130,13 @@ def supported_types_check(*data: Iterable):
             a, (pd.DataFrame, pd.Series)
         ):
             pass
-        elif pkgutil.find_loader("tensorflow") is not None and isinstance(a, tf.Tensor):
+        elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+            a, tf.Tensor
+        ):
             pass
-        elif pkgutil.find_loader("torch") is not None and isinstance(a, torch.Tensor):
+        elif pkgutil.find_loader("torch") is not None and isinstance(
+            a, torch.Tensor
+        ):
             pass
         else:
             raise TypeError(
@@ -235,12 +244,15 @@ def get_min_max_alpha_calib(
 
 
 def quantile(
-    a: Iterable, q: float or np.ndarray, w: np.ndarray = None, axis: int = None
-) -> float or np.ndarray:  # type: ignore
+    a: Iterable,
+    q: Union[float, np.ndarray],
+    w: np.ndarray = None,
+    axis: int = None,
+) -> Union[float, np.ndarray]:  # type: ignore
     """Estimate the columnwise p-th empirical weighted quantiles.
 
     :param Iterable a: collection of n samples
-    :param float or np.ndarray q: q-th quantiles to compute. All elements must be in (0, 1).
+    :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
     :param ndarray w: vector of size n. By default, w is None and equal weights
         (:math:`1/n`) are associated.
     :param int axis: axis along which to compute quantiles. If None,
@@ -249,16 +261,20 @@ def quantile(
     :raises ValueError: all coordinates of q must be in (0, 1).
 
     :returns: weighted empirical quantiles.
-    :rtype: float or ndarray
+    :rtype: Union[float, np.ndarray]
     """
     # type checks:
     supported_types_check(a)
 
     if isinstance(a, np.ndarray):
         pass
-    elif pkgutil.find_loader("pandas") is not None and isinstance(a, pd.DataFrame):
+    elif pkgutil.find_loader("pandas") is not None and isinstance(
+        a, pd.DataFrame
+    ):
         a = a.to_numpy()
-    elif pkgutil.find_loader("tensorflow") is not None and isinstance(a, tf.Tensor):
+    elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+        a, tf.Tensor
+    ):
         a = a.numpy()
     # elif pkgutil.find_loader("torch") is not None:
     #     if isinstance(a, torch.Tensor):
@@ -271,7 +287,9 @@ def quantile(
 
     # Sanity checks
     if np.any(q <= 0) or np.any(q >= 1):
-        raise ValueError("All coordinates of [q] must be in the open interval (0, 1).")
+        raise ValueError(
+            "All coordinates of [q] must be in the open interval (0, 1)."
+        )
 
     # Unweighted case
     if w is None:
@@ -282,20 +300,20 @@ def quantile(
 
 
 def quantile_unweighted(
-    a: np.ndarray, q: float or np.ndarray, axis: int = None
-) -> float or np.ndarray:
+    a: np.ndarray, q: Union[float, np.ndarray], axis: int = None
+) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional q-th empirical quantiles.
 
     :param ndarray a: collection of n samples
-    :param float or np.ndarray q: q-th quantiles to compute. All elements must be in (0, 1).
+    :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
     :param int axis: axis along which to compute quantiles. If None,
-        quantiles are computed along the flattened array.
+        quantiles are computed along all axes except the last axis, i.e. the feature axi.
 
     :raises ValueError: cannot take quantiles along features axis.
     :raises ValueError: a and q must have the same number of features if q is an array.
 
     :returns: empirical quantiles.
-    :rtype: float or ndarray.
+    :rtype: Union[float, np.ndarray].
     """
     if axis is not None and axis % a.ndim == -1:
         raise ValueError("axis value cannot coincide with features axis.")
@@ -311,12 +329,14 @@ def quantile_unweighted(
             for i in range(len(q))
         ]
     )
-    return np.squeeze(np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0)))
+    return np.squeeze(
+        np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0))
+    )
 
 
 def quantile_weighted_unidim(
     a: np.ndarray, q: float, w: np.ndarray, axis=None
-) -> float or np.ndarray:
+) -> Union[float, np.ndarray]:
     """Estimate the one-dimensional weighted q-th empirical quantiles.
 
     :param ndarray a: collection of n samples
@@ -329,7 +349,7 @@ def quantile_weighted_unidim(
     :raises ValueError: a and w must have the same length.
 
     :returns: empirical weighted quantiles.
-    :rtype: float or ndarray.
+    :rtype: Union[float, np.ndarray].
     """
     # Dimension checks
     if w.ndim != 1:
@@ -353,7 +373,9 @@ def quantile_weighted_unidim(
     logger.debug("Sorted weights cumulative sum: %s", sorted_cumsum_weights)
 
     # Get the smallest index for which the cumulative sum of weights exceeds p
-    min_idx_reaching_q = np.sum(sorted_cumsum_weights < q, axis=axis, keepdims=True)
+    min_idx_reaching_q = np.sum(
+        sorted_cumsum_weights < q, axis=axis, keepdims=True
+    )
     logger.debug(
         "First index per column where cumsum exceeds q: %s", min_idx_reaching_q
     )
@@ -368,12 +390,12 @@ def quantile_weighted_unidim(
 
 
 def quantile_weighted(
-    a: np.ndarray, q: float or np.ndarray, w: np.ndarray, axis: int = None
-) -> float or np.ndarray:
+    a: np.ndarray, q: Union[float, np.ndarray], w: np.ndarray, axis: int = None
+) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional weighted q-th empirical quantiles.
 
     :param ndarray a: collection of n samples
-    :param float or np.ndarray q: q-th quantiles to compute. All elements must be in (0, 1).
+    :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
     :param ndarray w: array of weights.
     :param int axis: axis along which to compute quantiles. If None,
         quantiles are computed along the flattened array.
@@ -384,7 +406,7 @@ def quantile_weighted(
     :raises ValueError: w and q must have the same number of features if w is a 2D array.
 
     :returns: empirical weighted quantiles.
-    :rtype: float or ndarray.
+    :rtype: Union[float, np.ndarray].
     """
     if axis is not None and axis % a.ndim == -1:
         raise ValueError("axis value cannot coincide with features axis.")
@@ -422,4 +444,6 @@ def quantile_weighted(
             ]
         )
 
-    return np.squeeze(np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0)))
+    return np.squeeze(
+        np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0))
+    )
