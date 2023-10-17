@@ -36,6 +36,7 @@ import numpy as np
 
 from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
+from deel.puncc.api.correction import bonferroni
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +162,7 @@ class BaseCalibrator:
         alpha: float,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
+        correction: Optional[Callable] = bonferroni,
     ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction sets for new examples w.r.t a
         significance level :math:`\\alpha`.
@@ -170,6 +172,9 @@ class BaseCalibrator:
         :param Iterable weights: weights to be associated to the nonconformity
                                  scores. Defaults to None when all the scores
                                  are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing
+                                    in the case of multivariate regression.
+                                    Defaults to Bonferroni correction.
 
         :returns: prediction set.
                   In case of regression, returns (y_lower, y_upper).
@@ -184,6 +189,8 @@ class BaseCalibrator:
 
         if self._residuals is None:
             raise RuntimeError("Run `fit` method before calling `calibrate`.")
+        
+        alpha = correction(alpha)
 
         # Check consistency of alpha w.r.t the size of calibration data
         if weights is None:
