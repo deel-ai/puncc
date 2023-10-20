@@ -408,7 +408,7 @@ def quantile_weighted(
     :returns: empirical weighted quantiles.
     :rtype: Union[float, np.ndarray].
     """
-    if axis is not None and axis % a.ndim == -1:
+    if axis is not None and axis not in (a.ndim-1, -1):
         raise ValueError("axis value cannot coincide with features axis.")
 
     if axis is not None and len(w) != a.shape[axis]:
