@@ -303,7 +303,7 @@ def quantile(
 
 
 def quantile_unweighted(
-    a: np.ndarray, 
+    a: np.ndarray,
     q: Union[float, np.ndarray],
     axis: int = None,
     feature_axis: int = None
@@ -399,9 +399,9 @@ def quantile_weighted_unidim(
 
 
 def quantile_weighted(
-    a: np.ndarray, 
+    a: np.ndarray,
     q: Union[float, np.ndarray],
-    w: np.ndarray, 
+    w: np.ndarray,
     axis: int = None,
     feature_axis: int = None
 ) -> Union[float, np.ndarray]:
@@ -455,7 +455,7 @@ def quantile_weighted(
         quantile_res = np.array(
             [
                 quantile_weighted_unidim(
-                    np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis), 
+                    np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis),
                         q[i], w[..., i], axis=axis)
                 for i in range(len(q))
             ]
