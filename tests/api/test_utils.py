@@ -184,13 +184,13 @@ class QuantileCheck(unittest.TestCase):
         expected_result = np.array([3, 20])
 
         np.testing.assert_array_equal(
-            expected_result, quantile(a=self.a_np, q=p_2d, axis=0)
+            expected_result, quantile(a=self.a_np, q=p_2d, axis=0, feature_axis=1)
         )
         np.testing.assert_array_equal(
-            expected_result, quantile(a=self.a_df, q=p_2d, axis=0)
+            expected_result, quantile(a=self.a_df, q=p_2d, axis=0, feature_axis=1)
         )
         np.testing.assert_array_equal(
-            expected_result, quantile(a=self.a_tensor, q=p_2d, axis=0)
+            expected_result, quantile(a=self.a_tensor, q=p_2d, axis=0, feature_axis=1)
         )
 
     def test_weight_quantile2d(self):
@@ -240,11 +240,11 @@ class QuantileCheck(unittest.TestCase):
         expected_result = np.array([4, 10])
 
         np.testing.assert_array_equal(
-            expected_result, quantile(a=self.a_np, q=p_2d, w=weights, axis=0)
+            expected_result, quantile(a=self.a_np, q=p_2d, w=weights, axis=0, feature_axis=1)
         )
         np.testing.assert_array_equal(
-            expected_result, quantile(a=self.a_df, q=p_2d, w=weights, axis=0)
+            expected_result, quantile(a=self.a_df, q=p_2d, w=weights, axis=0, feature_axis=1)
         )
         np.testing.assert_array_equal(
-            expected_result, quantile(a=self.a_tensor, q=p_2d, w=weights, axis=0)
+            expected_result, quantile(a=self.a_tensor, q=p_2d, w=weights, axis=0, feature_axis=1)
         )

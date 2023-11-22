@@ -248,8 +248,9 @@ def quantile(
     q: Union[float, np.ndarray],
     w: np.ndarray = None,
     axis: int = None,
+    feature_axis: int = None,
 ) -> Union[float, np.ndarray]:  # type: ignore
-    """Estimate the columnwise p-th empirical weighted quantiles.
+    """Estimate the columnwise q-th empirical weighted quantiles.
 
     :param Iterable a: collection of n samples
     :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
@@ -257,6 +258,8 @@ def quantile(
         (:math:`1/n`) are associated.
     :param int axis: axis along which to compute quantiles. If None,
         quantiles are computed along the flattened array.
+    :param int feature_axis: if multidim quantile, feature_axis is the axis corresponding
+        to the features.
 
     :raises ValueError: all coordinates of q must be in (0, 1).
 
@@ -293,39 +296,45 @@ def quantile(
 
     # Unweighted case
     if w is None:
-        return quantile_unweighted(a, q, axis=axis)
+        return quantile_unweighted(a, q, axis=axis, feature_axis=feature_axis)
 
     # Weighted case
-    return quantile_weighted(a, q, w, axis=axis)
+    return quantile_weighted(a, q, w, axis=axis, feature_axis=feature_axis)
 
 
 def quantile_unweighted(
-    a: np.ndarray, q: Union[float, np.ndarray], axis: int = None
+    a: np.ndarray, 
+    q: Union[float, np.ndarray],
+    axis: int = None,
+    feature_axis: int = None
 ) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional q-th empirical quantiles.
 
     :param ndarray a: collection of n samples
     :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
     :param int axis: axis along which to compute quantiles. If None,
-        quantiles are computed along all axes except the last axis, i.e. the feature axi.
+        quantiles are computed along all axes except the feature_axis.
+    :param int feature_axis: if multidim quantile, feature_axis is the axis
+        wich corresponds to the features.
 
-    :raises ValueError: cannot take quantiles along features axis.
+    :raises ValueError: axis value cannot coincide with features axis.
     :raises ValueError: a and q must have the same number of features if q is an array.
 
     :returns: empirical quantiles.
     :rtype: Union[float, np.ndarray].
     """
-    if axis is not None and axis % a.ndim == -1:
+    if axis is not None and axis == feature_axis:
         raise ValueError("axis value cannot coincide with features axis.")
 
     if isinstance(q, float):
         return np.quantile(a, q, axis=axis, method="inverted_cdf")
 
-    if a.shape[-1] != len(q):
+    if a.shape[feature_axis] != len(q):
         raise ValueError("a and q must have the same number of features.")
     quantile_res = np.array(
         [
-            np.quantile(a[..., i], q[i], axis=axis, method="inverted_cdf")
+            np.quantile(np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis),
+                        q[i], axis=axis, method="inverted_cdf")
             for i in range(len(q))
         ]
     )
@@ -390,7 +399,11 @@ def quantile_weighted_unidim(
 
 
 def quantile_weighted(
-    a: np.ndarray, q: Union[float, np.ndarray], w: np.ndarray, axis: int = None
+    a: np.ndarray, 
+    q: Union[float, np.ndarray],
+    w: np.ndarray, 
+    axis: int = None,
+    feature_axis: int = None
 ) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional weighted q-th empirical quantiles.
 
@@ -399,6 +412,8 @@ def quantile_weighted(
     :param ndarray w: array of weights.
     :param int axis: axis along which to compute quantiles. If None,
         quantiles are computed along the flattened array.
+    :param int feature_axis: if multidim quantile, feature_axis is the axis
+        wich corresponds to the features.
 
     :raises ValueError: cannot take quantiles along features axis.
     :raises ValueError: w must be have the same number of elements as a along axis.
@@ -408,7 +423,7 @@ def quantile_weighted(
     :returns: empirical weighted quantiles.
     :rtype: Union[float, np.ndarray].
     """
-    if axis is not None and axis not in (a.ndim-1, -1):
+    if axis is not None and axis == feature_axis:
         raise ValueError("axis value cannot coincide with features axis.")
 
     if axis is not None and len(w) != a.shape[axis]:
@@ -439,7 +454,9 @@ def quantile_weighted(
     else:
         quantile_res = np.array(
             [
-                quantile_weighted_unidim(a[..., i], q[i], w[..., i], axis=axis)
+                quantile_weighted_unidim(
+                    np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis), 
+                        q[i], w[..., i], axis=axis)
                 for i in range(len(q))
             ]
         )
