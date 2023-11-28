@@ -59,6 +59,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#id2">⚙️ Conformal prediction</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#conformal-anomaly-detection">🚩 Conformal Anomaly Detection</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#two-moons-dataset">💾 Two moons Dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#anomaly-detection-model">🔮 Anomaly detection model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">⚙️ Conformal Anomaly Detection</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -238,24 +244,31 @@
            <div itemprop="articleBody">
              
   <section id="quickstart">
-<h1><a class="toc-backref" href="#id4" role="doc-backlink">🚀 Quickstart</a><a class="headerlink" href="#quickstart" title="Permalink to this heading"></a></h1>
+<h1><a class="toc-backref" href="#id5" role="doc-backlink">🚀 Quickstart</a><a class="headerlink" href="#quickstart" title="Permalink to this heading"></a></h1>
 <nav class="contents" id="table-of-contents">
 <p class="topic-title">Table of Contents</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#quickstart" id="id4">🚀 Quickstart</a></p>
+<li><p><a class="reference internal" href="#quickstart" id="id5">🚀 Quickstart</a></p>
 <ul>
-<li><p><a class="reference internal" href="#conformal-regression" id="id5">📈 Conformal Regression</a></p>
+<li><p><a class="reference internal" href="#conformal-regression" id="id6">📈 Conformal Regression</a></p>
 <ul>
-<li><p><a class="reference internal" href="#diabetes-dataset" id="id6">💾 Diabetes Dataset</a></p></li>
-<li><p><a class="reference internal" href="#prediction-model" id="id7">🔮 Prediction model</a></p></li>
-<li><p><a class="reference internal" href="#conformal-prediction" id="id8">⚙️ Conformal prediction</a></p></li>
+<li><p><a class="reference internal" href="#diabetes-dataset" id="id7">💾 Diabetes Dataset</a></p></li>
+<li><p><a class="reference internal" href="#prediction-model" id="id8">🔮 Prediction model</a></p></li>
+<li><p><a class="reference internal" href="#conformal-prediction" id="id9">⚙️ Conformal prediction</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#conformal-classification" id="id9">📊 Conformal Classification</a></p>
+<li><p><a class="reference internal" href="#conformal-classification" id="id10">📊 Conformal Classification</a></p>
 <ul>
-<li><p><a class="reference internal" href="#mnist-dataset" id="id10">💾 MNIST Dataset</a></p></li>
-<li><p><a class="reference internal" href="#id1" id="id11">🔮 Prediction Model</a></p></li>
-<li><p><a class="reference internal" href="#id2" id="id12">⚙️ Conformal prediction</a></p></li>
+<li><p><a class="reference internal" href="#mnist-dataset" id="id11">💾 MNIST Dataset</a></p></li>
+<li><p><a class="reference internal" href="#id1" id="id12">🔮 Prediction Model</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id13">⚙️ Conformal prediction</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#conformal-anomaly-detection" id="id14">🚩 Conformal Anomaly Detection</a></p>
+<ul>
+<li><p><a class="reference internal" href="#two-moons-dataset" id="id15">💾 Two moons Dataset</a></p></li>
+<li><p><a class="reference internal" href="#anomaly-detection-model" id="id16">🔮 Anomaly detection model</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id17">⚙️ Conformal Anomaly Detection</a></p></li>
 </ul>
 </li>
 </ul>
@@ -263,12 +276,12 @@
 </ul>
 </nav>
 <section id="conformal-regression">
-<h2><a class="toc-backref" href="#id5" role="doc-backlink">📈 Conformal Regression</a><a class="headerlink" href="#conformal-regression" title="Permalink to this heading"></a></h2>
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">📈 Conformal Regression</a><a class="headerlink" href="#conformal-regression" title="Permalink to this heading"></a></h2>
 <p>Let’s consider a simple regression problem on diabetes data provided in
 <a class="reference external" href="https://scikit-learn.org/stable/datasets/toy_dataset.html#diabetes-dataset">Scikit-learn</a>.
 We want to evaluate the uncertainty associated with the prediction using <strong>inductive (or split) conformal prediction</strong>.</p>
 <section id="diabetes-dataset">
-<h3><a class="toc-backref" href="#id6" role="doc-backlink">💾 Diabetes Dataset</a><a class="headerlink" href="#diabetes-dataset" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">💾 Diabetes Dataset</a><a class="headerlink" href="#diabetes-dataset" title="Permalink to this heading"></a></h3>
 <p>The dataset contains information about 442 diabetes patients. The goal is
 predict from physiological variables a quantitative measure of disease
 progression in one year.</p>
@@ -332,7 +345,7 @@ needs to be sampled for each new example in the test set.</p>
 </div>
 </section>
 <section id="prediction-model">
-<h3><a class="toc-backref" href="#id7" role="doc-backlink">🔮 Prediction model</a><a class="headerlink" href="#prediction-model" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">🔮 Prediction model</a><a class="headerlink" href="#prediction-model" title="Permalink to this heading"></a></h3>
 <p>We consider a simple linear regression model from
 <a class="reference external" href="https://scikit-learn.org/stable/modules/linear_model.html">scikit-learn regression module</a>,
 to be trained later on <span class="math notranslate nohighlight">\({\cal D_{fit}}\)</span>:</p>
@@ -362,7 +375,7 @@ checkout <a class="reference internal" href="prediction.html"><span class="doc">
 </div>
 </section>
 <section id="conformal-prediction">
-<h3><a class="toc-backref" href="#id8" role="doc-backlink">⚙️ Conformal prediction</a><a class="headerlink" href="#conformal-prediction" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">⚙️ Conformal prediction</a><a class="headerlink" href="#conformal-prediction" title="Permalink to this heading"></a></h3>
 <p>For this example, the prediction intervals are obtained throught the split
 conformal prediction method provided by the class
 <a class="reference internal" href="regression.html#deel.puncc.regression.SplitCP" title="deel.puncc.regression.SplitCP"><code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.regression.SplitCP</span></code></a>. Other methods are presented
@@ -406,22 +419,22 @@ Average width: 211.38
 <p>In addition, <cite>puncc</cite> provides plotting tools in <code class="xref py py-mod docutils literal notranslate"><span class="pre">deel.puncc.plotting</span></code>
 to visualize the prediction intervals and whether or not the observations
 are covered:</p>
-<figure class="align-center" id="id3">
+<figure class="align-center" id="id4">
 <a class="reference internal image-reference" href="_images/results_quickstart_split_cp_pi.png"><img alt="_images/results_quickstart_split_cp_pi.png" src="_images/results_quickstart_split_cp_pi.png" style="width: 600px; height: 300px;" /></a>
 <figcaption>
-<p><span class="caption-text">90%-prediction interval with the split conformal prediction method</span><a class="headerlink" href="#id3" title="Permalink to this image"></a></p>
+<p><span class="caption-text">90%-prediction interval with the split conformal prediction method</span><a class="headerlink" href="#id4" title="Permalink to this image"></a></p>
 </figcaption>
 </figure>
 </section>
 </section>
 <section id="conformal-classification">
-<h2><a class="toc-backref" href="#id9" role="doc-backlink">📊 Conformal Classification</a><a class="headerlink" href="#conformal-classification" title="Permalink to this heading"></a></h2>
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">📊 Conformal Classification</a><a class="headerlink" href="#conformal-classification" title="Permalink to this heading"></a></h2>
 <p>Let’s tackle the classic problem of
 <a class="reference external" href="https://en.wikipedia.org/wiki/MNIST_database">MNIST handwritten digits</a>
 classification. The goal is to evaluate through <strong>conformal prediction</strong> the
 uncertainty associated with predictive classifiers.</p>
 <section id="mnist-dataset">
-<h3><a class="toc-backref" href="#id10" role="doc-backlink">💾 MNIST Dataset</a><a class="headerlink" href="#mnist-dataset" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">💾 MNIST Dataset</a><a class="headerlink" href="#mnist-dataset" title="Permalink to this heading"></a></h3>
 <p>MNIST dataset contains a large number of <span class="math notranslate nohighlight">\(28 \times 28\)</span> digit images to which are associated digit labels.
 As the data generating process is considered i.i.d (check <a class="reference external" href="https://newsletter.altdeep.ai/p/the-story-of-mnist-and-the-perils">this post</a>),
 conformal prediction is applicable 👏.</p>
@@ -464,7 +477,7 @@ aforementioned steps:</p>
 </div>
 </section>
 <section id="id1">
-<h3><a class="toc-backref" href="#id11" role="doc-backlink">🔮 Prediction Model</a><a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">🔮 Prediction Model</a><a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
 <p>We consider a convnet defined as follows:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">random</span>
 <span class="kn">from</span> <span class="nn">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
@@ -500,7 +513,7 @@ Note that our model is not already trained (<cite>is_trained = False</cite>), we
 </div>
 </section>
 <section id="id2">
-<h3><a class="toc-backref" href="#id12" role="doc-backlink">⚙️ Conformal prediction</a><a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id13" role="doc-backlink">⚙️ Conformal prediction</a><a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
 <p id="classification-example">The <a class="reference internal" href="theory_overview.html#theory-raps"><span class="std std-ref">RAPS</span></a> procedure is chosen to conformalize our convnet classifier.
 Such algorithm has two hyparameters <span class="math notranslate nohighlight">\(\lambda\)</span> and <span class="math notranslate nohighlight">\(k_{reg}\)</span> that encourage smaller prediction sets.</p>
 <p>To start off gently, we will ignore the regularization term (<span class="math notranslate nohighlight">\(\lambda = 0\)</span>), which simply turns the procedure into <a class="reference internal" href="theory_overview.html#theory-aps"><span class="std std-ref">APS</span></a>:</p>
@@ -558,6 +571,159 @@ and the average empirical size of the prediction sets on the test examples:</p>
 Average set size : 1.03
 </pre></div>
 </div>
+</section>
+</section>
+<section id="conformal-anomaly-detection">
+<h2><a class="toc-backref" href="#id14" role="doc-backlink">🚩 Conformal Anomaly Detection</a><a class="headerlink" href="#conformal-anomaly-detection" title="Permalink to this heading"></a></h2>
+<p>Let’s consider the two moons dataset and a collection of data points randomly
+scattered across a plane. Among these points, some will stand out as outliers,
+deviating significantly from the crescent-shaped clusters.
+Using an isolation forest algorithm, we generate anomaly scores for each data point.
+Subsequently, we wrap the model with conformal anomaly detection to calibrate
+the detection threshold. This ensures that the False Detection Rate (FDR)
+remains below the user-specified threshold <span class="math notranslate nohighlight">\(\\alpha\)</span>.</p>
+<section id="two-moons-dataset">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink">💾 Two moons Dataset</a><a class="headerlink" href="#two-moons-dataset" title="Permalink to this heading"></a></h3>
+<p>The two moons dataset is a synthetic dataset that consists of two
+crescent-shaped clusters of points. It is a popular dataset for evaluating
+anomaly detection algorithms because it is easy to visualize and has a
+well-defined structure. In the code below, we generate 5000 examples from the
+two moons distribution. In addition, we generate 300 new points distributed
+uniformly across the plane.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_moons</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">5000</span>
+<span class="n">n_new</span> <span class="o">=</span> <span class="mi">350</span>
+
+<span class="c1"># We generate the two moons dataset</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">make_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)[</span>
+   <span class="mi">0</span>
+<span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">])</span>
+
+<span class="c1"># We generate uniformly new (test) data points</span>
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">z_test</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">6</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">n_new</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="anomaly-detection-model">
+<h3><a class="toc-backref" href="#id16" role="doc-backlink">🔮 Anomaly detection model</a><a class="headerlink" href="#anomaly-detection-model" title="Permalink to this heading"></a></h3>
+<p>We use the Isolation Forest (IF) algorithm to produce anomaly scores.
+Such model will be trained in the following section.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">IsolationForest</span>
+
+<span class="n">ad_model</span> <span class="o">=</span> <span class="n">IsolationForest</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Similarily to conformal regression and conformal classification,
+the underlying model needs to be wrapped in a wrapper provided in the module
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">deel.puncc.api.prediction</span></code>. For more information about model wrappers
+and supported ML/DL libraries, checkout <a class="reference internal" href="prediction.html"><span class="doc">the documentation</span></a>.</p>
+<p>By default, the method <cite>score_samples</cite> returns the opposite of
+the anomaly scores.
+We need to redefine the <cite>predict</cite> call to output the anomaly score:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">BasePredictor</span>
+
+<span class="c1"># We redefine the predict method to return the opposite of IF scores</span>
+<span class="k">class</span> <span class="nc">ADPredictor</span><span class="p">(</span><span class="n">BasePredictor</span><span class="p">):</span>
+   <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+      <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">score_samples</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+<span class="c1"># wrap the (IF) anomaly detection model in a predictor</span>
+<span class="n">if_predictor</span> <span class="o">=</span> <span class="n">ADPredictor</span><span class="p">(</span><span class="n">ad_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id17" role="doc-backlink">⚙️ Conformal Anomaly Detection</a><a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<p>The <a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD" title="deel.puncc.anomaly_detection.SplitCAD"><code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.anomaly_detection.SplitCAD</span></code></a> wrapper is used to train
+and calibrate the IF anomaly detector  using 70% and 30% of the two moons
+dataset, respectively.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.anomaly_detection</span> <span class="kn">import</span> <span class="n">SplitCAD</span>
+
+<span class="c1"># Instantiate CAD on top of IF predictor</span>
+<span class="n">if_cad</span> <span class="o">=</span> <span class="n">SplitCAD</span><span class="p">(</span><span class="n">if_predictor</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Fit the IF on the proper fitting dataset and</span>
+<span class="c1"># calibrate it using calibration dataset.</span>
+<span class="c1"># The two datasets are sampled randomly with a ration of 7:3,</span>
+<span class="c1"># respectively.</span>
+<span class="n">if_cad</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">fit_ratio</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, we call CAD to obtain conformal anomaly detections:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We set the maximum false detection rate to 5%</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="c1"># The method `predict` is called on the new data points</span>
+<span class="c1"># to test which are anomalous and which are not</span>
+<span class="n">cad_results</span> <span class="o">=</span> <span class="n">if_cad</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">z_test</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+<span class="n">cad_anomalies</span> <span class="o">=</span> <span class="n">z_test</span><span class="p">[</span><span class="n">cad_results</span><span class="p">]</span>
+<span class="n">cad_not_anomalies</span> <span class="o">=</span> <span class="n">z_test</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">cad_results</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Let’s compare the results before and after the calibration.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Detect anomalies with underlying IF model (no conformal)</span>
+<span class="n">if_results</span> <span class="o">=</span> <span class="n">if_cad</span><span class="o">.</span><span class="n">predictor</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">z_test</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+<span class="n">if_not_anomalies</span> <span class="o">=</span> <span class="n">z_test</span><span class="p">[</span><span class="n">if_results</span><span class="p">]</span>
+<span class="n">if_anomalies</span> <span class="o">=</span> <span class="n">z_test</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">if_results</span><span class="p">)]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Plot if results</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">dataset</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dataset</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Inliers&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+   <span class="n">if_not_anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+   <span class="n">if_not_anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+   <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+   <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+   <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+   <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Normal&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+   <span class="n">if_anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+   <span class="n">if_anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+   <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+   <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+   <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+   <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Anomaly&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(())</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(())</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Isolation Forest&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;lower left&quot;</span><span class="p">)</span>
+
+<span class="c1"># Plot cad results</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">dataset</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dataset</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Inliers&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+   <span class="n">cad_not_anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+   <span class="n">cad_not_anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+   <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+   <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+   <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+   <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Normal&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+   <span class="n">cad_anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+   <span class="n">cad_anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+   <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+   <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+   <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+   <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Anomaly&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(())</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(())</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Conformalized Isolation Forest&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;lower left&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_images/results_quickstart_split_cad_if.png"><img alt="_images/results_quickstart_split_cad_if.png" src="_images/results_quickstart_split_cad_if.png" style="width: 600px; height: 300px;" /></a>
+</figure>
+<p>By calibrating the detection threshold, it is clear from the figure above that
+conformal anomaly detection reduces false alarms rate.</p>
 </section>
 </section>
 </section>
