@@ -13,6 +13,7 @@
 # Virtual environment
 puncc-dev-env/
 puncc-user-env/
+.venv/
 
 # Local demo files
 **demo/
@@ -21,3 +22,6 @@ puncc-user-env/
 .tox
 docs/build
 docs/source/modules.rst
+
+# Working drafts
+dirty_nbs/

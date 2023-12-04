@@ -44,7 +44,9 @@ logger = logging.getLogger(__name__)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
+def raps_set(
+    Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1
+) -> List:
     """RAPS prediction set.
 
     .. warning::

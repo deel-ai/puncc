@@ -264,7 +264,6 @@ class ConformalPredictor:
         :returns: y_pred, y_lower, y_higher.
         :rtype: Tuple[ndarray]
         """
-
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
 
@@ -318,7 +317,8 @@ class CrossValCpAggregator:
 
         if method not in ("cv+"):
             raise NotImplementedError(
-                f"Method {method} is not implemented. " + "Please choose 'cv+'."
+                f"Method {method} is not implemented. "
+                + "Please choose 'cv+'."
             )
 
         self.method = method

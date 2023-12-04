@@ -106,7 +106,9 @@ class RandomSplitter(BaseSplitter):
 
     def __init__(self, ratio, random_state=None):
         if (ratio <= 0) or (ratio >= 1):
-            raise ValueError(f"Ratio must be in (0,1). Provided value: {ratio}")
+            raise ValueError(
+                f"Ratio must be in (0,1). Provided value: {ratio}"
+            )
         self.ratio = ratio
         super().__init__(random_state=random_state)
 
@@ -176,10 +178,17 @@ class KFoldSplitter(BaseSplitter):
             ):
                 if isinstance(y, pd.DataFrame):
                     folds.append(
-                        (X.iloc[fit], y.iloc[fit], X.iloc[calib], y.iloc[calib])
+                        (
+                            X.iloc[fit],
+                            y.iloc[fit],
+                            X.iloc[calib],
+                            y.iloc[calib],
+                        )
                     )
                 else:
-                    folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
+                    folds.append(
+                        (X.iloc[fit], y[fit], X.iloc[calib], y[calib])
+                    )
 
             else:
                 bool_fit_idx = np.array([i in fit for i in range(len(X))])
