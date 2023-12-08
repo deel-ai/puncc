@@ -57,7 +57,7 @@ def test_conformalpredictor():
     # Definition of a calibrator, built for a given nonconformity scores
     # and a procedure to build the prediction sets
     calibrator = BaseCalibrator(
-        nonconf_score_func=nonconformity_scores.mad,
+        nonconf_score_func=nonconformity_scores.absolute_difference,
         pred_set_func=prediction_sets.constant_interval,
     )
 

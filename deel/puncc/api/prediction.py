@@ -461,5 +461,5 @@ class MeanVarPredictor(DualPredictor):
         """
         self.models[0].fit(X, y, **dictargs[0])
         mu_pred = self.models[0].predict(X)
-        mads = nonconformity_scores.mad(mu_pred, y)
+        mads = nonconformity_scores.absolute_difference(mu_pred, y)
         self.models[1].fit(X, mads, **dictargs[1])
