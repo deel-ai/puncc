@@ -50,7 +50,7 @@ Documentation is available [**online**](https://deel-ai.github.io/puncc/index.ht
 You can directly install the library using pip:
 
 ```bash
-pip install pip
+pip install puncc
 ```
 
 <!--
