@@ -39,15 +39,17 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
     "aps": {"cov": 0.89, "size": 1.92},
+    "aps-norand": {"cov": 0.98, "size": 3.91},
     "raps": {"cov": 0.89, "size": 1.9},
+    "raps-norand": {"cov": 0.98, "size": 3.51},
 }
 
 
 @pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
+    "alpha, random_state, rand",
+    [(0.1, 42, True)],
 )
-def test_aps(mnist_data, alpha, random_state):
+def test_aps(mnist_data, alpha, random_state, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
@@ -79,7 +81,7 @@ def test_aps(mnist_data, alpha, random_state):
     )
 
     # APS
-    aps_cp = APS(class_predictor)
+    aps_cp = APS(class_predictor, rand=rand)
     aps_cp.fit(
         X_fit=X_fit,
         y_fit=y_fit_cat,
@@ -98,10 +100,64 @@ def test_aps(mnist_data, alpha, random_state):
 
 
 @pytest.mark.parametrize(
-    "alpha, random_state, lambd, k_reg",
-    [(0.1, 42, 0.01, 1)],
+    "alpha, random_state, rand",
+    [(0.1, 42, False)],
 )
-def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
+def test_aps_norand(mnist_data, alpha, random_state, rand):
+    tf.keras.utils.set_random_seed(random_state)
+
+    # Get data
+    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+
+    # Split fit and calib datasets
+    X_fit, X_calib = X_train[:50000], X_train[50000:]
+    y_fit, y_calib = y_train[:50000], y_train[50000:]
+    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+
+    # One hot encoding of classes
+    y_fit_cat = to_categorical(y_fit)
+    y_calib_cat = to_categorical(y_calib)
+    y_test_cat = to_categorical(y_test)
+
+    # Classification model
+    nn_model = models.Sequential()
+    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
+    nn_model.add(layers.Dense(10, activation="softmax"))
+    compile_kwargs = {
+        "optimizer": "rmsprop",
+        "loss": "categorical_crossentropy",
+        "metrics": [],
+    }
+    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
+    # Predictor wrapper
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
+
+    # APS
+    aps_cp = APS(class_predictor, rand=rand)
+    aps_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit_cat,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        **fit_kwargs
+    )
+    y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
+
+    # Compute marginal coverage
+    coverage = metrics.classification_mean_coverage(y_test, set_pred)
+    width = metrics.classification_mean_size(set_pred)
+    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
+    assert RESULTS["aps-norand"] == res
+
+
+@pytest.mark.parametrize(
+    "alpha, random_state, lambd, k_reg, rand",
+    [(0.1, 42, 0.01, 1, True)],
+)
+def test_raps(mnist_data, alpha, random_state, lambd, k_reg, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
@@ -133,7 +189,7 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
     )
 
     # RAPS
-    raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd)
+    raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd, rand=rand)
     raps_cp.fit(
         X_fit=X_fit,
         y_fit=y_fit_cat,
@@ -149,3 +205,57 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg):
     width = metrics.classification_mean_size(set_pred)
     res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
     assert RESULTS["raps"] == res
+
+
+@pytest.mark.parametrize(
+    "alpha, random_state, lambd, k_reg, rand",
+    [(0.1, 42, 0.01, 1, False)],
+)
+def test_raps_norand(mnist_data, alpha, random_state, lambd, k_reg, rand):
+    tf.keras.utils.set_random_seed(random_state)
+
+    # Get data
+    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+
+    # Split fit and calib datasets
+    X_fit, X_calib = X_train[:50000], X_train[50000:]
+    y_fit, y_calib = y_train[:50000], y_train[50000:]
+    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+
+    # One hot encoding of classes
+    y_fit_cat = to_categorical(y_fit)
+    y_calib_cat = to_categorical(y_calib)
+    y_test_cat = to_categorical(y_test)
+
+    # Classification model
+    nn_model = models.Sequential()
+    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
+    nn_model.add(layers.Dense(10, activation="softmax"))
+    compile_kwargs = {
+        "optimizer": "rmsprop",
+        "loss": "categorical_crossentropy",
+        "metrics": [],
+    }
+    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
+    # Predictor wrapper
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
+
+    # RAPS
+    raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd, rand=rand)
+    raps_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit_cat,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        **fit_kwargs
+    )
+    y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
+
+    # Compute marginal coverage
+    coverage = metrics.classification_mean_coverage(y_test, set_pred)
+    width = metrics.classification_mean_size(set_pred)
+    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
+    assert RESULTS["raps-norand"] == res

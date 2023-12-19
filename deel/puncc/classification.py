@@ -55,6 +55,8 @@ class RAPS:
         from which the regularization is applied. For example,
         if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
         an extra penalty of size :math:`\\lambda`.
+    : param bool rand: turn on or off randomization used in raps algorithm.
+        One consequence of turning off randomization is avoiding empty prediction sets.
 
     .. note::
 
@@ -138,18 +140,19 @@ class RAPS:
     def __init__(
         self,
         predictor,
-        train=True,
+        train: bool = True,
         random_state: float = None,
-        lambd=0,
-        k_reg=1,
+        lambd: float = 0,
+        k_reg: int = 1,
+        rand: bool = True,
     ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.raps_score_builder(
-                lambd=lambd, k_reg=k_reg
+                lambd=lambd, k_reg=k_reg, rand=rand
             ),
             pred_set_func=prediction_sets.raps_set_builder(
-                lambd=lambd, k_reg=k_reg
+                lambd=lambd, k_reg=k_reg, rand=rand
             ),
             weight_func=None,
         )
@@ -267,6 +270,8 @@ class APS(RAPS):
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
+    : param bool rand: turn on or off randomization used in aps algorithm.
+        One consequence of turning off randomization is avoiding empty prediction sets.
 
     .. _example aps:
 
@@ -340,5 +345,5 @@ class APS(RAPS):
 
     """
 
-    def __init__(self, predictor, train=True):
-        super().__init__(predictor=predictor, train=train, lambd=0)
+    def __init__(self, predictor, train=True, rand=True):
+        super().__init__(predictor=predictor, train=train, lambd=0, rand=rand)

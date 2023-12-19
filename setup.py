@@ -62,14 +62,15 @@ dev_requirements = [
 setuptools.setup(
     name="puncc",
     version="0.7",
-    author=", ".join(["Mouhcine Mendil", "Luca Mossina"]),
+    author=", ".join(["Mouhcine Mendil", "Luca Mossina", "Joseba Dalmau"]),
     author_email=", ".join(
         [
             "mouhcine.mendil@irt-saintexupery.com",
             "luca.mossina@irt-saintexupery.com",
+            "joseba.dalmau@irt-saintexupery.com",
         ]
     ),
-    description="Predictive Uncertainty Calibration and Conformalization Library",
+    description="Predictive UNcertainty Calibration and Conformalization Library",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/deel-ai/puncc",
@@ -79,11 +80,11 @@ setuptools.setup(
         "interactive": interactive_requirements,
         "dev": dev_requirements,
     },
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     classifiers=[
-        "License :: MIT License",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Operating System :: Cross-platform",
+        "Operating System :: OS Independent",
     ],
 )

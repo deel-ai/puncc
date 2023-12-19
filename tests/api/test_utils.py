@@ -133,6 +133,32 @@ class AlphaCheck(unittest.TestCase):
         with self.assertRaises(ValueError):
             alpha_calib_check(alpha=0.01, n=10)
 
+    def test_proper_alpha_multidim(self):
+        max_n = 10000
+        n_vals = np.random.randint(10, high=max_n, size=100)
+        for n in n_vals:
+            lower_bound = 1 / (n + 1)
+            alpha_vals = (1 - lower_bound) * np.random.random_sample(
+                size=(100)
+            ) + lower_bound
+            alpha_calib_check(alpha_vals, n=n)
+
+    def test_out_lowerbound_alpha_multidim(self):
+        with self.assertRaises(ValueError):
+            alpha = np.array([0, 0.5, 0.5, 0.5])
+            alpha_calib_check(alpha, n=100000)
+
+    def test_out_upperbound_alpha_multidim(self):
+        with self.assertRaises(ValueError):
+            alpha = np.array([1, 0.5, 0.5, 0.5])
+            alpha_calib_check(alpha, n=100000)
+
+    def test_too_low_alpha_multidim(self):
+        with self.assertRaises(ValueError):
+            alpha = np.array([0.01, 0.5, 0.5, 0.5])
+            alpha_calib_check(alpha, n=10)
+
+
 
 class QuantileCheck(unittest.TestCase):
     def test_simple_quantile1d(self):
