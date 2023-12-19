@@ -48,7 +48,11 @@ if pkgutil.find_loader("torch") is not None:
 
 
 def raps_score(
-    Y_pred: Iterable, y_true: Iterable, lambd: float = 0, k_reg: int = 1
+    Y_pred: Iterable,
+    y_true: Iterable,
+    lambd: float = 0,
+    k_reg: int = 1,
+    rand: bool = True,
 ) -> Iterable:
     """RAPS nonconformity score.
 
@@ -69,6 +73,8 @@ def raps_score(
         from which the regularization is applied. For example,
         if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
         an extra penalty of size :math:`\\lambda`.
+    : param bool rand: turn on or off the randomization term that smoothes the
+        discrete probability mass jump when including a new class.
 
 
     :returns: RAPS nonconformity scores.
@@ -84,8 +90,6 @@ def raps_score(
         raise NotImplementedError(
             "RAPS/APS nonconformity scores only implemented for ndarrays"
         )
-    # Generate u randomly from a uniform distribution
-    u = np.random.uniform(size=len(y_true))
 
     # Sort classes by descending probability order
     class_ranking = np.argsort(-Y_pred, axis=1)
@@ -104,17 +108,27 @@ def raps_score(
     # Threshold of cumulative probability mass to include the real class
     E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
 
-    E = [
-        E[i]
-        + lambd * np.maximum((L[i] + 1 - k_reg), 0)
-        - u[i] * sorted_proba[i, L[i]]
-        for i in range(y_true.shape[0])
-    ]
+    if rand:
+        # Generate u randomly from a uniform distribution
+        u = np.random.uniform(size=len(y_true))
+        E = [
+            E[i]
+            + lambd * np.maximum((L[i] + 1 - k_reg), 0)
+            - u[i] * sorted_proba[i, L[i]]
+            for i in range(y_true.shape[0])
+        ]
+    else:
+        E = [
+            E[i] + lambd * np.maximum((L[i] + 1 - k_reg), 0)
+            for i in range(y_true.shape[0])
+        ]
 
     return np.array(E)
 
 
-def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
+def raps_score_builder(
+    lambd: float = 0, k_reg: int = 1, rand: bool = True
+) -> Callable:
     """RAPS nonconformity score builder. When called, returns a RAPS
     nonconformity score function :func:`raps_score` with given initialitation
     of regularization hyperparameters.
@@ -126,6 +140,8 @@ def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has
         an extra penalty of size :math:`\\lambda`.
+    : param bool rand: turn on or off the randomization term that smoothes the
+        discrete probability mass jump when including a new class.
 
     :returns: RAPS nonconformity score function that takes two parameters:
         `Y_pred` and `y_true`.
@@ -134,7 +150,7 @@ def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
     """
 
     def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> np.ndarray:
-        return raps_score(Y_pred, y_true, lambd, k_reg)
+        return raps_score(Y_pred, y_true, lambd, k_reg, rand)
 
     return _raps_score_function
 

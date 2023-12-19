@@ -23,10 +23,10 @@ copyright = (
     " - All rights reserved. DEEL is a research program operated by IVADO, "
     "IRT Saint Exupéry, CRIAQ and ANITI"
 )
-author = "Mouhcine Mendil, Luca Mossina"
+author = "Mouhcine Mendil, Luca Mossina and Joseba Dalmau"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+release = "0.7"
 
 
 # -- General configuration ---------------------------------------------------

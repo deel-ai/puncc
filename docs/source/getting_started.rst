@@ -372,23 +372,23 @@ and the average empirical size of the prediction sets on the test examples:
 🚩 Conformal Anomaly Detection
 ------------------------------
 
-Let's consider the two moons dataset and a collection of data points randomly 
-scattered across a plane. Among these points, some will stand out as outliers, 
-deviating significantly from the crescent-shaped clusters. 
-Using an isolation forest algorithm, we generate anomaly scores for each data point. 
-Subsequently, we wrap the model with conformal anomaly detection to calibrate 
-the detection threshold. This ensures that the False Detection Rate (FDR) 
+Let's consider the two moons dataset and a collection of data points randomly
+scattered across a plane. Among these points, some will stand out as outliers,
+deviating significantly from the crescent-shaped clusters.
+Using an isolation forest algorithm, we generate anomaly scores for each data point.
+Subsequently, we wrap the model with conformal anomaly detection to calibrate
+the detection threshold. This ensures that the False Detection Rate (FDR)
 remains below the user-specified threshold :math:`\\alpha`.
 
 
 💾 Two moons Dataset
 ********************
 
-The two moons dataset is a synthetic dataset that consists of two 
-crescent-shaped clusters of points. It is a popular dataset for evaluating 
-anomaly detection algorithms because it is easy to visualize and has a 
-well-defined structure. In the code below, we generate 5000 examples from the 
-two moons distribution. In addition, we generate 300 new points distributed 
+The two moons dataset is a synthetic dataset that consists of two
+crescent-shaped clusters of points. It is a popular dataset for evaluating
+anomaly detection algorithms because it is easy to visualize and has a
+well-defined structure. In the code below, we generate 5000 examples from the
+two moons distribution. In addition, we generate 300 new points distributed
 uniformly across the plane.
 
 .. code-block:: python
@@ -413,22 +413,22 @@ uniformly across the plane.
 🔮 Anomaly detection model
 **************************
 
-We use the Isolation Forest (IF) algorithm to produce anomaly scores. 
+We use the Isolation Forest (IF) algorithm to produce anomaly scores.
 Such model will be trained in the following section.
 
 .. code-block:: python
 
    from sklearn.ensemble import IsolationForest
 
-   ad_model = IsolationForest(random_state=42) 
+   ad_model = IsolationForest(random_state=42)
 
-Similarily to conformal regression and conformal classification, 
-the underlying model needs to be wrapped in a wrapper provided in the module 
-:mod:`deel.puncc.api.prediction`. For more information about model wrappers 
+Similarily to conformal regression and conformal classification,
+the underlying model needs to be wrapped in a wrapper provided in the module
+:mod:`deel.puncc.api.prediction`. For more information about model wrappers
 and supported ML/DL libraries, checkout :doc:`the documentation <prediction>`.
 
-By default, the method `score_samples` returns the opposite of 
-the anomaly scores. 
+By default, the method `score_samples` returns the opposite of
+the anomaly scores.
 We need to redefine the `predict` call to output the anomaly score:
 
 .. code-block:: python
@@ -447,9 +447,9 @@ We need to redefine the `predict` call to output the anomaly score:
 ⚙️ Conformal Anomaly Detection
 ******************************
 
-The :class:`deel.puncc.anomaly_detection.SplitCAD` wrapper is used to train 
-and calibrate the IF anomaly detector  using 70% and 30% of the two moons 
-dataset, respectively. 
+The :class:`deel.puncc.anomaly_detection.SplitCAD` wrapper is used to train
+and calibrate the IF anomaly detector  using 70% and 30% of the two moons
+dataset, respectively.
 
 .. code-block:: python
 
@@ -476,7 +476,7 @@ Now, we call CAD to obtain conformal anomaly detections:
    cad_anomalies = z_test[cad_results]
    cad_not_anomalies = z_test[np.invert(cad_results)]
 
-Let's compare the results before and after the calibration. 
+Let's compare the results before and after the calibration.
 
 .. code-block:: python
 
@@ -541,5 +541,5 @@ Let's compare the results before and after the calibration.
    :height: 300px
    :figclass: align-center
 
-By calibrating the detection threshold, it is clear from the figure above that 
-conformal anomaly detection reduces false alarms rate. 
+By calibrating the detection threshold, it is clear from the figure above that
+conformal anomaly detection reduces false alarms rate.

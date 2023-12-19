@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 def raps_set(
-    Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1
+    Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1, rand: bool = True
 ) -> List:
     """RAPS prediction set.
 
@@ -67,6 +67,8 @@ def raps_set(
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
         extra penalty of size :math:`\\lambda`.
+    : param bool rand: turn on or off the randomization term that smoothes the
+        discrete probability mass jump when including a new class.
 
 
     :returns: RAPS prediction sets.
@@ -80,8 +82,9 @@ def raps_set(
 
     logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
 
-    # Generate u randomly from a uniform distribution
-    u = np.random.uniform(size=pred_len)
+    if rand:
+        # Generate u randomly from a uniform distribution
+        u = np.random.uniform(size=pred_len)
 
     # 1-alpha th empirical quantile of conformity scores
     tau = scores_quantile
@@ -111,6 +114,14 @@ def raps_set(
         pred_len,
     )
 
+    if not rand:
+        # Build prediction set
+        prediction_sets = [
+            list(idx_class_pred_ranking[i, : L[i]]) for i in range(pred_len)
+        ]
+        return (prediction_sets,)
+
+    ## The following code runs only when rand argument is True
     # For indexing, use L-1 to denote the L-th element
     # Residual of cumulative probability mass (regularized) and tau
     proba_excess = [
@@ -145,7 +156,9 @@ def raps_set(
     return (prediction_sets,)
 
 
-def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
+def raps_set_builder(
+    lambd: float = 0, k_reg: int = 1, rand: bool = True
+) -> Callable:
     """RAPS prediction set builder. When called, returns a RAPS prediction set
     function :func:`raps_set` with given initialitation of regularization
     hyperparameters.
@@ -157,6 +170,8 @@ def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
         extra penalty of size :math:`\\lambda`.
+    : param bool rand: turn on or off the randomization term that smoothes the
+        discrete probability mass jump when including a new class.
 
     :returns: RAPS prediction set function that takes two parameters:
         `Y_pred` and `scores_quantile`.
@@ -174,7 +189,9 @@ def raps_set_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
     # @TODO: type checking and co
 
     def _raps_set_function(Y_pred, scores_quantile):
-        return raps_set(Y_pred, scores_quantile, lambd=lambd, k_reg=k_reg)
+        return raps_set(
+            Y_pred, scores_quantile, lambd=lambd, k_reg=k_reg, rand=rand
+        )
 
     return _raps_set_function
 

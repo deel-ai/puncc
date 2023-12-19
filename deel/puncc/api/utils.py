@@ -145,7 +145,7 @@ def supported_types_check(*data: Iterable):
             )
 
 
-def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
+def alpha_calib_check(alpha: Union[float, np.ndarray], n: int, complement_check: bool = False):
     """Check if the value of alpha :math:`\\alpha` is consistent with the size
     of calibration set :math:`n`.
 
@@ -162,7 +162,7 @@ def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
 
         0 < \\alpha \cdot (1+1/n) < 1 \implies 0 < \\alpha < n/(n+1)
 
-    :param float alpha: target quantile order.
+    :param float or np.ndarray alpha: target quantile order.
     :param int n: size of the calibration dataset.
     :param bool complement_check: complementary check to compute the
         :math:`\\alpha \cdot (1+1/n)`-th quantile, required by some methods
@@ -172,26 +172,30 @@ def alpha_calib_check(alpha: float, n: int, complement_check: bool = False):
         calibration set.
     """
 
-    if alpha < 1 / (n + 1):
+    if np.any(alpha < 1 / (n + 1)):
         raise ValueError(
-            f"Alpha is too small: (alpha={alpha}, n={n}) {alpha} < {1/(n+1)}. "
+            f"Alpha is too small: (alpha={alpha}, n={n}) "
+            + f"{alpha} < {1/(n+1)} for at least one of its coordinates. "
             + "Increase alpha or the size of the calibration set."
         )
 
-    if alpha >= 1:
+    if np.any(alpha >= 1):
         raise ValueError(
-            f"Alpha={alpha} is too large. Decrease alpha such that alpha < 1."
+            f"Alpha={alpha} is too large. " 
+            + "Decrease alpha such that all of its coordinates are < 1."
         )
 
-    if complement_check and alpha > n / (n + 1):
+    if complement_check and np.any(alpha > n / (n + 1)):
         raise ValueError(
-            f"Alpha is too large: (alpha={alpha}, n={n}) {alpha} < {n/(n+1)}. "
+            f"Alpha is too large: (alpha={alpha}, n={n}) "
+            + f"{alpha} < {n/(n+1)} for at least on of its coordinates. "
             + "Decrease alpha or increase the size of the calibration set."
         )
 
-    if complement_check and alpha <= 0:
+    if complement_check and np.any(alpha <= 0):
         raise ValueError(
-            f"Alpha={alpha} is too small. Increase alpha such that alpha > 0."
+            f"Alpha={alpha} is too small. "
+            + "Increase alpha such that all of its coordinates > 0."
         )
 
 
