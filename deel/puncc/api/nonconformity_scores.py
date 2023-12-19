@@ -142,8 +142,8 @@ def raps_score_builder(lambd: float = 0, k_reg: int = 1) -> Callable:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """Mean Absolute Deviation (MAD).
+def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Absolute Deviation.
 
     .. math::
 
@@ -169,19 +169,20 @@ def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
     return abs(y_pred - y_true)
 
 
-def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """Scaled Mean Absolute Deviation (MAD). Considering
+def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Scaled Absolute Deviation, normalized by an estimation of the conditional
+    mean absolute deviation (conditional MAD). Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
     .. math::
 
         R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}}
 
-    :param Iterable Y_pred:
+    :param Iterable Y_pred: point and conditional MAD predictions.
         :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
     :param Iterable y_true: true labels.
 
-    :returns: scaled mean absolute deviation.
+    :returns: scaled absolute deviation.
     :rtype: Iterable
 
     :raises TypeError: unsupported data types.
@@ -205,7 +206,7 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
 
     # MAD then Scaled MAD and computed
-    mean_absolute_deviation = mad(y_pred, y_true)
+    mean_absolute_deviation = absolute_difference(y_pred, y_true)
     if np.any(sigma_pred < 0):
         raise RuntimeError("All MAD predictions should be positive.")
     return mean_absolute_deviation / (sigma_pred + EPSILON)
@@ -271,3 +272,30 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     #     return torch.maximum(diff_lo, diff_hi)
 
     raise RuntimeError("Fatal Error. Type check failed !")
+
+
+def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Coordinatewise difference.
+
+    .. math::
+
+        R = y_{\\text{pred}}-y_{\\text{true}}
+
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
+
+    :returns: coordinatewise difference.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    supported_types_check(y_pred, y_true)
+
+    if pkgutil.find_loader("torch") is not None and isinstance(
+        y_pred, torch.Tensor
+    ):
+        y_pred = y_pred.cpu().detach().numpy()
+        y_true = y_true.cpu().detach().numpy()
+        return np.squeeze(y_pred) - np.squeeze(y_true)
+
+    return y_pred - y_true

@@ -63,7 +63,7 @@ class ConformalPredictorCheck(unittest.TestCase):
 
         # Definition of a calibrator
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.mad,
+            nonconf_score_func=nonconformity_scores.absolute_difference,
             pred_set_func=prediction_sets.constant_interval,
         )
 

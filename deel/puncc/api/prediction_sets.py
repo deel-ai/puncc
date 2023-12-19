@@ -44,7 +44,9 @@ logger = logging.getLogger(__name__)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def raps_set(Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1) -> List:
+def raps_set(
+    Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1
+) -> List:
     """RAPS prediction set.
 
     .. warning::
@@ -261,6 +263,110 @@ def cqr_interval(
         on a calibration set for a given :math:`\\alpha`.
 
     :returns: scaled prediction intervals :math:`I`.
+    :rtype: Tuple[ndarray]
+    """
+    supported_types_check(Y_pred)
+
+    if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+        raise RuntimeError(
+            "Each Y_pred must contain lower and higher quantiles predictions, respectively."
+        )
+
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        Y_pred, pd.DataFrame
+    ):
+        q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+    else:
+        q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
+
+    y_lo = q_lo - scores_quantile
+    y_hi = q_hi + scores_quantile
+    return y_lo, y_hi
+
+
+def constant_set(
+    y_pred: Iterable, scores_quantile: np.ndarray
+) -> Tuple[np.ndarray]:
+    """Constant prediction set centered on `y_pred`. The size of the
+    margin is `scores_quantile` (noted :math:`\gamma_{\\alpha}`).
+
+    .. math::
+
+        I = \\Pi_{k=1}^m[y^k_{\\text{pred}} - \gamma^k_{\\alpha}, 
+        y^k_{\\text{pred}} + \gamma^k_{\\alpha}]
+
+    :param Iterable y_pred: predictions.
+    :param ndarray scores_quantile: multivariate quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
+
+    :returns: prediction sets :math:`I`.
+    :rtype: Tuple[ndarray]
+    """
+    supported_types_check(y_pred)
+
+
+    y_lo = y_pred - scores_quantile
+    y_hi = y_pred + scores_quantile
+    return y_lo, y_hi
+
+
+def scaled_set(
+    Y_pred: Iterable, scores_quantile: np.ndarray
+) -> Tuple[np.ndarray]:
+    """Scaled prediction set centered on `y_pred`. Considering
+    :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
+    the size of the margin is proportional to `scores_quantile`
+    :math:`\gamma_{\\alpha}`.
+
+    .. math::
+
+        I = \\Pi_{k=1}^m[\mu^k_{\\text{pred}} - \gamma^k_{\\alpha} \cdot \sigma^k_{\\text{pred}},
+        y^k_{\\text{pred}} + \gamma^k_{\\alpha} \cdot \sigma^k_{\\text{pred}}]
+
+    :param Iterable y_pred: predictions.
+    :param ndarray scores_quantile: multivariate quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
+
+    :returns: scaled prediction sets :math:`I`.
+    :rtype: Tuple[ndarray]
+    """
+    supported_types_check(Y_pred)
+
+    if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+        raise RuntimeError(
+            "Each Y_pred must contain a point prediction and a dispersion estimation."
+        )
+
+    if pkgutil.find_loader("pandas") is not None and isinstance(
+        Y_pred, pd.DataFrame
+    ):
+        y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
+    else:
+        y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
+
+    y_lo = y_pred - scores_quantile * sigma_pred
+    y_hi = y_pred + scores_quantile * sigma_pred
+    return y_lo, y_hi
+
+
+def cqr_set(
+    Y_pred: Iterable, scores_quantile: np.ndarray
+) -> Tuple[np.ndarray]:
+    """CQR prediction set. Considering
+    :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction
+    interval is built from the upper and lower quantiles predictions and
+    `scores_quantile` :math:`\gamma_{\\alpha}`.
+
+    .. math::
+
+        I = \Pi_{k=1}^m[q^k_{\\text{lo}} - \gamma^k_{\\alpha}, 
+        q^k_{\\text{lo}} + \gamma^k_{\\alpha}]
+
+    :param Iterable y_pred: predictions.
+    :param ndarray scores_quantile: multivariate quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
+
+    :returns: scaled prediction sets :math:`I`.
     :rtype: Tuple[ndarray]
     """
     supported_types_check(Y_pred)
