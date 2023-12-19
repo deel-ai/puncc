@@ -115,7 +115,7 @@ class SplitCP:
     ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.mad,
+            nonconf_score_func=nonconformity_scores.absolute_difference,
             pred_set_func=prediction_sets.constant_interval,
             weight_func=weight_func,
         )
@@ -336,7 +336,7 @@ class LocallyAdaptiveCP(SplitCP):
             weight_func=weight_func,
         )
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.scaled_mad,
+            nonconf_score_func=nonconformity_scores.scaled_ad,
             pred_set_func=prediction_sets.scaled_interval,
             weight_func=weight_func,
         )
@@ -495,7 +495,7 @@ class CVPlus:
     def __init__(self, predictor, *, K: int, random_state=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.mad,
+            nonconf_score_func=nonconformity_scores.absolute_difference,
             pred_set_func=prediction_sets.constant_interval,
             weight_func=None,
         )
@@ -673,7 +673,7 @@ class EnbPI:
         :returns: residuals.
         :rtype: ndarray
         """
-        return nonconformity_scores.mad(y_pred, y_true)
+        return nonconformity_scores.absolute_difference(y_pred, y_true)
 
     def _compute_pi(self, y_pred, w):
         """Compute prediction intervals.
@@ -702,7 +702,7 @@ class EnbPI:
         #   For each training sample X_i, the LOO estimate is built from
         #   averaging the predictions of bootstrap models whose OOB include X_i
         loo_pred = (self._oob_matrix * boot_pred.T).sum(-1)
-        residuals = nonconformity_scores.mad(y_pred=loo_pred, y_true=y_true)
+        residuals = nonconformity_scores.absolute_difference(y_pred=loo_pred, y_true=y_true)
         return list(residuals)
 
     def _compute_loo_predictions(self, boot_pred):
@@ -997,7 +997,7 @@ class AdaptiveEnbPI(EnbPI):
         :rtype: ndarray
 
         """
-        return nonconformity_scores.scaled_mad(y_pred, y_true)
+        return nonconformity_scores.scaled_ad(y_pred, y_true)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
         loo_pred = (self._oob_matrix * boot_pred[:, :, 0].T).sum(-1)
