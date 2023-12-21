@@ -94,43 +94,38 @@ Conformal prediction enables to transform point predictions into interval predic
 <img src="docs/assets/cp_process.png"/>
 </figure>
 
-Many conformal prediction algorithms can easily be applied using *puncc*.  The code snippet below shows the example of split conformal prediction wrapping a linear model,  done in few lines of code:
+Many conformal prediction algorithms can easily be applied using *puncc*.  The code snippet below shows the example of split conformal prediction with a pretrained linear model:
 
-```python
-from sklearn import linear_model
-from deel.puncc.api.prediction import BasePredictor
+ ```python
+ from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.regression import SplitCP
 
-# Load training data and test data
+# Load calibration and test data
 # ...
 
-# Instanciate a linear regression model
-# linear_model = ...
+# Pretrained regression model
+# trained_linear_model = ...
 
+# Wrap the model to enable interoperability with different ML libraries 
+trained_predictor =  BasePredictor(trained_linear_model)
 
-# Create a predictor to wrap the linear regression model defined earlier.
-# This enables interoperability with different ML libraries.
-# The argument `is_trained` is set to False to tell that the the linear model
-# needs to be trained before the calibration.
-lin_reg_predictor =  BasePredictor(linear_model, is_trained=False)
+# Instanciate the split conformal wrapper for the linear model.
+# Train argument is set to False because we do not want to retrain the model
+split_cp = SplitCP(trained_predictor, train=False)
 
-# Instanciate the split cp wrapper around the linear predictor.
-split_cp = SplitCP(lin_reg_predictor)
+# With a calibration dataset, compute (and store) nonconformity scores
+split_cp.fit(X_calib=X_calib, y_calib=y_calib)
 
-# Fit model (as is_trained` is False) on the fit dataset and
-# compute the residuals on the calibration dataset.
-# The fit (resp. calibration) subset is randomly sampled from the training
-# data and constitutes 80% (resp. 20%) of it (fit_ratio = 80%).
-split_cp.fit(X_train, y_train, fit_ratio=.8)
-
-# The predict returns the output of the linear model y_pred and
-# the calibrated interval [y_pred_lower, y_pred_upper].
-y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+# Obtain the model's point prediction y_pred and prediction interval
+# PI = [y_pred_lower, y_pred_upper] for a target coverage of 90% (1-alpha).
+y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=0.1)
 ```
+
 
 The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is higher than $90$% (see [Introduction tutorial](docs/puncc_intro.ipynb)):
 
 <figure style="text-align:center">
-<img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method"/>
+<img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method" width="70%"/>
 <div align=center>90% Prediction Interval with Split Conformal Prediction.</div>
 </figure>
 <br>

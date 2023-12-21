@@ -33,7 +33,7 @@ import numpy as np
 
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
-from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import BasePredictor, DualPredictor
 from deel.puncc.api.splitting import BaseSplitter
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class ConformalPredictor:
 
     :param deel.puncc.api.prediction.BasePredictor predictor: model wrapper.
     :param deel.puncc.api.prediction.BaseCalibrator calibrator: nonconformity
-        computation strategy and interval predictor.
+        computation strategy and set predictor.
     :param deel.puncc.api.prediction.BaseSplitter splitter: fit/calibration
         split strategy.
     :param str method: method to handle the ensemble prediction and calibration
@@ -124,7 +124,27 @@ class ConformalPredictor:
         train: bool = True,
     ):
         self.calibrator = calibrator
-        self.predictor = predictor
+
+        if isinstance(predictor, (BasePredictor, DualPredictor)):
+            self.predictor = predictor
+
+        elif not hasattr(predictor, "fit"):
+            raise RuntimeError(
+                "Provided model has no fit method. "
+                + "Use a BasePredictor or a DualPredictor to build "
+                + "a compatible predictor."
+            )
+
+        elif not hasattr(predictor, "predict"):
+            raise RuntimeError(
+                "Provided model has no predict method. "
+                + "Use a BasePredictor or a DualPredictor to build "
+                + "a compatible predictor."
+            )
+
+        else:
+            self.predictor = BasePredictor(predictor, is_trained=not train)
+
         self.splitter = splitter
         self.method = method
         self.train = train
@@ -217,8 +237,12 @@ class ConformalPredictor:
             # Make local copies of the structure of the predictor and the calibrator.
             # In case of a K-fold like splitting strategy, these structures are
             # inherited by the predictor/calibrator used in each fold.
-            predictor = self.predictor.copy()
-            calibrator = deepcopy(self.calibrator)
+            if len(splits) > 1:
+                predictor = self.predictor.copy()
+                calibrator = deepcopy(self.calibrator)
+            else:
+                predictor = self.predictor
+                calibrator = self.calibrator
 
             if self.train:
                 logger.info(f"Fitting model on fold {i+cached_len}")
@@ -290,7 +314,9 @@ class ConformalPredictor:
         with open(path, "rb") as input_file:
             saved_dict = pickle.load(input_file)
 
-        loaded_cp = ConformalPredictor(None, None, None)
+        loaded_cp = ConformalPredictor(
+            calibrator=None, predictor=BasePredictor(None), splitter=None
+        )
         loaded_cp.__dict__.update(saved_dict)
         return loaded_cp
 
