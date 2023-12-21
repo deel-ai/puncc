@@ -167,19 +167,20 @@ If you use our library for your work, please cite our paper:
 }
 ```
 
-## 💻 Contributing
-
-Contributions are welcome! Feel free to report an issue or open a pull
-request. Take a look at our guidelines [here](CONTRIBUTING.md).
 
 ## 🙏 Acknowledgments
 
 <img align="right" src="https://www.deel.ai/wp-content/uploads/2021/05/logo-DEEL.png" width="25%">
 This project received funding from the French ”Investing for the Future – PIA3” program within the Artificial and Natural Intelligence Toulouse Institute (ANITI). The authors gratefully acknowledge the support of the <a href="https://www.deel.ai/"> DEEL </a> project.
 
-## 👨‍💻 Creators
+## 👨‍💻 About the Developers
 
-[Mouhcine MENDIL](https://github.com/M-Mouhcine) initially developed this library as a research tool, with assistance from [Lucas MOSSINA](https://github.com/lmossina). We have recently welcomed [Joseba DALMAU](https://github.com/jdalch) to the team to help enhance **puncc** and work on the development of new features.
+Puncc's development team is a group of passionate scientists and engineers who are committed to developing a dependable and user-friendly open-source software. We are always looking for new contributors to this initiative. If you are interested in helping us develop puncc, please feel free to get involved.
+
+## 💻 Contributing
+
+Contributions are welcome! Feel free to report an issue or open a pull
+request. Take a look at our guidelines [here](CONTRIBUTING.md).
 
 ## 🔑 License
 
