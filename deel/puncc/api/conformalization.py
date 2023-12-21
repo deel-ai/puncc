@@ -33,7 +33,8 @@ import numpy as np
 
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
-from deel.puncc.api.prediction import BasePredictor, DualPredictor
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.splitting import BaseSplitter
 
 logger = logging.getLogger(__name__)

@@ -106,7 +106,7 @@ from deel.puncc.regression import SplitCP
 # Pretrained regression model
 # trained_linear_model = ...
 
-# Wrap the model to enable interoperability with different ML libraries 
+# Wrap the model to enable interoperability with different ML libraries
 trained_predictor =  BasePredictor(trained_linear_model)
 
 # Instanciate the split conformal wrapper for the linear model.

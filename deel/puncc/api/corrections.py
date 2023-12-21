@@ -29,7 +29,7 @@ import numpy as np
 
 def bonferroni(alpha: float, nvars: int) -> float:
     """Bonferroni correction for multiple comparisons.
-    
+
     :param float alpha: nominal coverage level.
     :param int nvars: number of output features.
 
@@ -37,7 +37,7 @@ def bonferroni(alpha: float, nvars: int) -> float:
     :returns: corrected coverage level.
     :rtype: float.
     """
-    # Sanity checks
+    # Sanity checks
     if alpha <= 0 or alpha >= 1:
         raise ValueError("alpha must be in (0,1)")
 
@@ -49,19 +49,19 @@ def bonferroni(alpha: float, nvars: int) -> float:
 
 def weighted_bonferroni(alpha: float, weights: np.ndarray) -> np.ndarray:
     """Weighted Bonferroni correction for multiple comparisons.
-    
+
     :param float alpha: nominal coverage level.
     :param np.ndarray weights: weights associated to each output feature.
-    
-    
+
+
     :returns: array of corrected featurewise coverage levels.
     :rtype: np.ndarray.
     """
-    # Sanity checks
+    # Sanity checks
     if alpha <= 0 or alpha >= 1:
         raise ValueError("alpha must be in (0,1)")
 
-    # Positivity check
+    # Positivity check
     positiveness_condition = np.all(weights > 0)
     if not positiveness_condition:
         raise RuntimeError("weights must be positive")
