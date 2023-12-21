@@ -123,11 +123,12 @@ y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=0.1)
 
 
 The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is higher than $90$% (see [Introduction tutorial](docs/puncc_intro.ipynb)):
-
+<div align="center">
 <figure style="text-align:center">
 <img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method" width="70%"/>
 <div align=center>90% Prediction Interval with Split Conformal Prediction.</div>
 </figure>
+</div>
 <br>
 
 ### More flexibility with the API
