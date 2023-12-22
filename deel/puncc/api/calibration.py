@@ -36,7 +36,7 @@ import numpy as np
 
 from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
-from deel.puncc.api.correction import bonferroni
+from deel.puncc.api.corrections import bonferroni
 
 logger = logging.getLogger(__name__)
 
@@ -186,28 +186,7 @@ class BaseCalibrator:
             calibration set.
 
         """
-
-        if self._residuals is None:
-            raise RuntimeError("Run `fit` method before calling `calibrate`.")
-        
-        alpha = correction(alpha)
-
-        # Check consistency of alpha w.r.t the size of calibration data
-        if weights is None:
-            alpha_calib_check(alpha=alpha, n=self._len_calib)
-
-        # Compute weighted quantiles
-        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
-        ## The coverage guarantee holds with 1) the inflated
-        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
-        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
-        infty_array = np.array([np.inf])
-        lemma_residuals = np.concatenate((self._residuals, infty_array))
-        residuals_Q = quantile(
-            lemma_residuals,
-            1 - alpha,
-            w=weights,
-        )
+        residuals_Q = self.compute_quantile(alpha=alpha, weights=weights, correction=correction)
 
         return self.pred_set_func(y_pred, scores_quantile=residuals_Q)
 
@@ -236,6 +215,57 @@ class BaseCalibrator:
         :rtype: np.ndarray
         """
         return self._residuals
+    
+    def compute_quantile(
+        self,
+        *,
+        alpha: float,
+        weights: Optional[Iterable] = None,
+        correction: Optional[Callable] = bonferroni,
+    ) -> np.ndarray:
+        """Compute quantile of scores w.r.t a
+        significance level :math:`\\alpha`.
+
+        :param float alpha: significance level (max miscoverage target).
+        :param Iterable weights: weights to be associated to the nonconformity
+                                 scores. Defaults to None when all the scores
+                                 are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing
+                                    in the case of multivariate regression.
+                                    Defaults to Bonferroni correction.
+
+        :returns: quantile
+        :rtype: ndarray
+
+        :raises RuntimeError: :meth:`compute_quantile` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set.
+
+        """
+
+        if self._residuals is None:
+            raise RuntimeError("Run `fit` method before calling `calibrate`.")
+        
+        alpha = correction(alpha)
+
+        # Check consistency of alpha w.r.t the size of calibration data
+        if weights is None:
+            alpha_calib_check(alpha=alpha, n=self._len_calib)
+
+        # Compute weighted quantiles
+        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
+        ## The coverage guarantee holds with 1) the inflated
+        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
+        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
+        infty_array = np.array([np.inf])
+        lemma_residuals = np.concatenate((self._residuals, infty_array))
+        residuals_Q = quantile(
+            lemma_residuals,
+            1 - alpha,
+            w=weights,
+        )
+
+        return residuals_Q
 
     @staticmethod
     def barber_weights(weights: np.ndarray) -> np.ndarray:
