@@ -55,8 +55,9 @@ class RAPS:
         from which the regularization is applied. For example,
         if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
         an extra penalty of size :math:`\\lambda`.
-    : param bool rand: turn on or off randomization used in raps algorithm.
-        One consequence of turning off randomization is avoiding empty prediction sets.
+    :param bool rand: turn on or off randomization used in raps algorithm.
+        One consequence of turning off randomization is avoiding empty
+        prediction sets.
 
     .. note::
 
@@ -270,8 +271,9 @@ class APS(RAPS):
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
-    : param bool rand: turn on or off randomization used in aps algorithm.
-        One consequence of turning off randomization is avoiding empty prediction sets.
+    :param bool rand: turn on or off randomization used in aps algorithm.
+        One consequence of turning off randomization is avoiding empty
+        prediction sets.
 
     .. _example aps:
 
