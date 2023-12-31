@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📊 Classification &mdash; PUNCC 0.1 documentation</title>
+  <title>📊 Classification &mdash; PUNCC 0.7.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -254,7 +254,7 @@ and <code class="xref py py-func docutils literal notranslate"><span class="pre"
 compliance of models from various ML/DL libraries (such as Keras and scikit-learn) to <strong>puncc</strong>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="deel.puncc.classification.RAPS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.classification.</span></span><span class="sig-name descname"><span class="pre">RAPS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.classification.RAPS" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.classification.</span></span><span class="sig-name descname"><span class="pre">RAPS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.classification.RAPS" title="Permalink to this definition"></a></dt>
 <dd><p>Implementation of Regularized Adaptive Prediction Sets (RAPS).
 The hyperparameters <span class="math notranslate nohighlight">\(\lambda\)</span> and <span class="math notranslate nohighlight">\(k_{reg}\)</span> are used to
 encourage small prediction sets. For more details, we refer the user to the
@@ -274,6 +274,9 @@ regularization and the implementation identifies with <strong>APS</strong>.</p><
 from which the regularization is applied. For example,
 if <span class="math notranslate nohighlight">\(k_{reg} = 3\)</span>, then the fourth most likely estimated class has
 an extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
+<li><p><strong>rand</strong> (<em>bool</em>) – turn on or off randomization used in raps algorithm.
+One consequence of turning off randomization is avoiding empty
+prediction sets.</p></li>
 </ul>
 </dd>
 </dl>
@@ -414,7 +417,7 @@ prediction set set_pred</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="deel.puncc.classification.APS">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.classification.</span></span><span class="sig-name descname"><span class="pre">APS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.classification.APS" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.classification.</span></span><span class="sig-name descname"><span class="pre">APS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.classification.APS" title="Permalink to this definition"></a></dt>
 <dd><p>Implementation of Adaptive Prediction Sets (APS).
 For more details, we refer the user to the
 <a class="reference internal" href="theory_overview.html#theory-aps"><span class="std std-ref">theory overview page</span></a>.</p>
@@ -424,6 +427,9 @@ For more details, we refer the user to the
 <li><p><strong>predictor</strong> (<a class="reference internal" href="prediction.html#prediction.BasePredictor" title="prediction.BasePredictor"><em>BasePredictor</em></a>) – a predictor implementing fit and predict.</p></li>
 <li><p><strong>train</strong> (<em>bool</em>) – if False, prediction model(s) will not be trained and
 will be used as is. Defaults to True.</p></li>
+<li><p><strong>rand</strong> (<em>bool</em>) – turn on or off randomization used in aps algorithm.
+One consequence of turning off randomization is avoiding empty
+prediction sets.</p></li>
 </ul>
 </dd>
 </dl>

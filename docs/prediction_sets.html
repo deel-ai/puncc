@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prediction sets &mdash; PUNCC 0.1 documentation</title>
+  <title>Prediction sets &mdash; PUNCC 0.7.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -302,7 +302,7 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.raps_set">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set" title="Permalink to this definition"></a></dt>
 <dd><p>RAPS prediction set.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -326,18 +326,24 @@ from which the regularization is applied. For example, if
 extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>RAPS prediction sets.</p>
+</dl>
+<dl class="simple">
+<dt>: param bool rand: turn on or off the randomization term that smoothes the</dt><dd><p>discrete probability mass jump when including a new class.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Iterable</p>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>RAPS prediction sets.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Iterable</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.raps_set_builder">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set_builder" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set_builder" title="Permalink to this definition"></a></dt>
 <dd><p>RAPS prediction set builder. When called, returns a RAPS prediction set
 function <a class="reference internal" href="#prediction_sets.raps_set" title="prediction_sets.raps_set"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_set()</span></code></a> with given initialitation of regularization
 hyperparameters.</p>
@@ -353,12 +359,18 @@ from which the regularization is applied. For example, if
 extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>RAPS prediction set function that takes two parameters:
+</dl>
+<dl class="simple">
+<dt>: param bool rand: turn on or off the randomization term that smoothes the</dt><dd><p>discrete probability mass jump when including a new class.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>RAPS prediction set function that takes two parameters:
 <cite>Y_pred</cite> and <cite>scores_quantile</cite>.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Callable</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Callable</p>
 </dd>
 </dl>
 </dd></dl>

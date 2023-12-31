@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Utils &mdash; PUNCC 0.1 documentation</title>
+  <title>Utils &mdash; PUNCC 0.7.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -261,7 +261,7 @@ the interval (0,1). From this, we derive the condition:</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>alpha</strong> (<em>float</em>) – target quantile order.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em><em> or </em><em>np.ndarray</em>) – target quantile order.</p></li>
 <li><p><strong>n</strong> (<em>int</em>) – size of the calibration dataset.</p></li>
 <li><p><strong>complement_check</strong> (<em>bool</em>) – complementary check to compute the
 <span class="math notranslate nohighlight">\(\alpha \cdot (1+1/n)\)</span>-th quantile, required by some methods

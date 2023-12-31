@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nonconformity scores &mdash; PUNCC 0.1 documentation</title>
+  <title>Nonconformity scores &mdash; PUNCC 0.7.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -300,7 +300,7 @@ when building a <a class="reference internal" href="calibration.html#calibration
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.raps_score">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score" title="Permalink to this definition"></a></dt>
 <dd><p>RAPS nonconformity score.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -321,6 +321,8 @@ regularization and the implementation identifies with <strong>APS</strong>.</p><
 from which the regularization is applied. For example,
 if <span class="math notranslate nohighlight">\(k_{reg} = 3\)</span>, then the fourth most likely estimated class has
 an extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
+<li><p><strong>rand</strong> (<em>bool</em>) – turn on or off the randomization term that smoothes the
+discrete probability mass jump when including a new class.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -334,7 +336,7 @@ an extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)<
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.raps_score_builder">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score_builder" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score_builder" title="Permalink to this definition"></a></dt>
 <dd><p>RAPS nonconformity score builder. When called, returns a RAPS
 nonconformity score function <a class="reference internal" href="#nonconformity_scores.raps_score" title="nonconformity_scores.raps_score"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_score()</span></code></a> with given initialitation
 of regularization hyperparameters.</p>
@@ -348,6 +350,8 @@ regularization and the implementation identifies with <strong>APS</strong>.</p><
 from which the regularization is applied. For example, if
 <span class="math notranslate nohighlight">\(k_{reg} = 3\)</span>, then the fourth most likely estimated class has
 an extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
+<li><p><strong>rand</strong> (<em>bool</em>) – turn on or off the randomization term that smoothes the
+discrete probability mass jump when including a new class.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
