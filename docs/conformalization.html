@@ -254,11 +254,13 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>predictor</strong> (<em>deel.puncc.api.prediction.BasePredictor</em>) – model wrapper.</p></li>
+<li><p><strong>predictor</strong> (<em>deel.puncc.api.prediction.BasePredictor</em><em> | </em><em>object</em>) – underlying model to be conformalized. The model can directly be
+passed as argument if it already has <cite>fit</cite> and <cite>predict</cite> methods.</p></li>
 <li><p><strong>calibrator</strong> (<em>deel.puncc.api.prediction.BaseCalibrator</em>) – nonconformity
 computation strategy and set predictor.</p></li>
 <li><p><strong>splitter</strong> (<em>deel.puncc.api.prediction.BaseSplitter</em>) – fit/calibration
-split strategy.</p></li>
+split strategy. The splitter can be set to None if the underlying
+model is pretrained.</p></li>
 <li><p><strong>method</strong> (<em>str</em>) – method to handle the ensemble prediction and calibration
 in case the splitter is a K-fold-like strategy. Defaults to ‘cv+’ to
 follow cv+ procedure.</p></li>
@@ -297,7 +299,8 @@ The models have to be trained during the call <a class="reference internal" href
 <span class="c1"># Regression linear model</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span>
 
-<span class="c1"># Definition of a predictor</span>
+<span class="c1"># Definition of a predictor. Note that it is not required to wrap</span>
+<span class="c1"># the model here because it already implements fit and predict methods</span>
 <span class="n">predictor</span> <span class="o">=</span> <span class="n">BasePredictor</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
 <span class="c1"># Definition of a calibrator, built for a given nonconformity scores</span>
