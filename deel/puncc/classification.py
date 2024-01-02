@@ -165,7 +165,7 @@ class RAPS:
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
-            splitter=None,
+            splitter=object(),
             train=self.train,
         )
 
