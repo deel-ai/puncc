@@ -157,7 +157,7 @@ def test_anomaly_detection_calibrator(
 @pytest.mark.parametrize(
     "alpha, random_state",
     [[0.1, 42], [0.3, 42], [0.5, 42], [0.7, 42], [0.9, 42],
-    [np.array(0.1, 0.3), 42], [np.array(0.5, 0.7), 42]]
+    [np.array([0.1, 0.3]), 42], [np.array([0.5, 0.7]), 42]]
 )
 def test_multivariate_regression_calibrator(
     rand_multivariate_reg_data, alpha, random_state

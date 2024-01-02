@@ -27,7 +27,7 @@ when building a :ref:`calibrator <calibration>` for multivariate regression or o
 import numpy as np
 
 
-def bonferroni(alpha: float, nvars: int) -> float:
+def bonferroni(alpha: float, nvars: int =1) -> float:
     """Bonferroni correction for multiple comparisons.
     
     :param float alpha: nominal coverage level.
@@ -38,7 +38,7 @@ def bonferroni(alpha: float, nvars: int) -> float:
     :rtype: float.
     """
     # Sanity checks
-    if alpha <= 0 or alpha >= 1:
+    if np.any(alpha <= 0) or np.any(alpha >= 1):
         raise ValueError("alpha must be in (0,1)")
 
     if nvars <= 0:
