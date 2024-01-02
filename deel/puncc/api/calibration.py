@@ -218,7 +218,7 @@ class BaseCalibrator:
         :rtype: np.ndarray
         """
         return self._residuals
-    
+
     def compute_quantile(
         self,
         *,
@@ -248,7 +248,7 @@ class BaseCalibrator:
 
         if self._residuals is None:
             raise RuntimeError("Run `fit` method before calling `calibrate`.")
-        
+
         alpha = correction(alpha)
 
         # Check consistency of alpha w.r.t the size of calibration data
