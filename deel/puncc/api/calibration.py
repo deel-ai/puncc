@@ -499,6 +499,7 @@ class CvPlusCalibrator:
         X: Iterable,
         kfold_predictors_dict: dict,
         alpha: float,
+        correction: Optional[Callable] = bonferroni,
     ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction intervals for new examples X.
 
@@ -512,6 +513,9 @@ class CvPlusCalibrator:
         """
         # Check if all calibrators have already been fitted
         self.fit()
+
+        # Perform correction 
+        alpha = correction(alpha)
 
         # Check consistency of alpha w.r.t the size of calibration data
         alpha_calib_check(alpha=alpha, n=self._len_calib)
