@@ -81,6 +81,19 @@ def rand_reg_data():
 
 
 @pytest.fixture
+def rand_multivariate_reg_data():
+    X_pred_calib = 10 * np.random.randn(100, 8)
+    X_pred_test = 10 * np.random.randn(100, 8)
+    X_test = 10 * np.random.randn(100, 8)
+    y_pred_calib = 4 * np.random.randn(100, 2) + 1
+    y_calib = 2 * np.random.randn(100, 2) + 1
+    y_pred_test = 4 * np.random.randn(100, 2) + 2
+    y_test = 2 * np.random.randn(100, 2) + 1
+
+    return y_pred_calib, y_calib, y_pred_test, y_test
+
+
+@pytest.fixture
 def rand_class_data():
     X_pred_calib = 10 * np.random.randn(100, 4)
     X_pred_test = 10 * np.random.randn(100, 4)

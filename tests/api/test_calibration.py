@@ -152,3 +152,52 @@ def test_anomaly_detection_calibrator(
     assert anomalies.shape == (117, 2)
     assert not_anomalies is not None
     assert not_anomalies.shape == (33, 2)
+
+
+@pytest.mark.parametrize(
+    "alpha, random_state",
+    [[0.1, 42], [0.3, 42], [0.5, 42], [0.7, 42], [0.9, 42],
+    [np.array([0.1, 0.3]), 42], [np.array([0.5, 0.7]), 42]]
+)
+def test_multivariate_regression_calibrator(
+    rand_multivariate_reg_data, alpha, random_state
+    ):
+    # Generate data
+    (y_pred_calib, y_calib, y_pred_test, y_test) = rand_multivariate_reg_data
+
+    # Nonconformity score function that takes as argument
+    # the predicted values y_pred = model(X) and the true labels y_true. In
+    # this example, we reimplement the mean absolute deviation that is
+    # already defined in `deel.puncc.api.nonconformity_scores.mad`
+    def nonconformity_function(y_pred, y_true):
+        return np.abs(y_pred - y_true)
+
+    # Prediction sets are computed based on point predictions and
+    # the quantiles of nonconformity scores. The function below returns a
+    # fixed size rectangle around the point predictions.
+    def prediction_set_function(y_pred, scores_quantile):
+        y_lo = y_pred - scores_quantile
+        y_hi = y_pred + scores_quantile
+        return y_lo, y_hi
+
+    # The calibrator is instantiated by passing the two functions defined
+    # above to the constructor.
+    calibrator = BaseCalibrator(
+        nonconf_score_func=nonconformity_function,
+        pred_set_func=prediction_set_function,
+    )
+
+    # The nonconformity scores are computed by calling the `fit` method
+    # on the calibration dataset.
+    calibrator.fit(y_pred=y_pred_calib, y_true=y_calib)
+
+    # The lower and upper bounds of the prediction interval are then returned
+    # by the call to calibrate on the new data w.r.t a risk level alpha.
+    y_pred_lower, y_pred_upper = calibrator.calibrate(
+        y_pred=y_pred_test, alpha=alpha
+    )
+
+    assert y_pred_lower is not None
+    assert y_pred_upper is not None
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
