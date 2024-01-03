@@ -227,7 +227,8 @@ class SplitCP:
         :rtype: Tuple[ndarray]
 
         """
-
+        # TODO conformal_predictor is instantiated in __init__
+        # This condition should be updated
         if self.conformal_predictor is None:
             raise RuntimeError("Fit method should be called before predict.")
 
@@ -702,7 +703,9 @@ class EnbPI:
         #   For each training sample X_i, the LOO estimate is built from
         #   averaging the predictions of bootstrap models whose OOB include X_i
         loo_pred = (self._oob_matrix * boot_pred.T).sum(-1)
-        residuals = nonconformity_scores.absolute_difference(y_pred=loo_pred, y_true=y_true)
+        residuals = nonconformity_scores.absolute_difference(
+            y_pred=loo_pred, y_true=y_true
+        )
         return list(residuals)
 
     def _compute_loo_predictions(self, boot_pred):

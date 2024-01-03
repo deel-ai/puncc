@@ -309,7 +309,7 @@ def constant_set(
 
     .. math::
 
-        I = \\Pi_{k=1}^m[y^k_{\\text{pred}} - \gamma^k_{\\alpha}, 
+        I = \\Pi_{k=1}^m[y^k_{\\text{pred}} - \gamma^k_{\\alpha},
         y^k_{\\text{pred}} + \gamma^k_{\\alpha}]
 
     :param Iterable y_pred: predictions.
@@ -320,7 +320,6 @@ def constant_set(
     :rtype: Tuple[ndarray]
     """
     supported_types_check(y_pred)
-
 
     y_lo = y_pred - scores_quantile
     y_hi = y_pred + scores_quantile
@@ -366,9 +365,7 @@ def scaled_set(
     return y_lo, y_hi
 
 
-def cqr_set(
-    Y_pred: Iterable, scores_quantile: np.ndarray
-) -> Tuple[np.ndarray]:
+def cqr_set(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
     """CQR prediction set. Considering
     :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction
     interval is built from the upper and lower quantiles predictions and
@@ -376,7 +373,7 @@ def cqr_set(
 
     .. math::
 
-        I = \Pi_{k=1}^m[q^k_{\\text{lo}} - \gamma^k_{\\alpha}, 
+        I = \Pi_{k=1}^m[q^k_{\\text{lo}} - \gamma^k_{\\alpha},
         q^k_{\\text{lo}} + \gamma^k_{\\alpha}]
 
     :param Iterable y_pred: predictions.

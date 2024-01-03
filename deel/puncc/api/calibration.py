@@ -34,9 +34,9 @@ from typing import Tuple
 
 import numpy as np
 
+from deel.puncc.api.corrections import bonferroni
 from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
-from deel.puncc.api.corrections import bonferroni
 
 logger = logging.getLogger(__name__)
 
@@ -151,11 +151,11 @@ class BaseCalibrator:
         """
         # TODO check structure match in supported types
         logger.info("Computing nonconformity scores ...")
-        logger.debug(f"Shape of y_pred: {y_pred.shape}")
-        logger.debug(f"Shape of y_true: {y_true.shape}")
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
-        if y_pred.ndim > 1:
+        if (
+            y_pred.ndim > 1
+        ):  # TODO make sure that ndim can be applied to all types
             self._feature_axis = -1
         logger.debug("Nonconformity scores computed !")
 
@@ -189,7 +189,9 @@ class BaseCalibrator:
             calibration set.
 
         """
-        residuals_Q = self.compute_quantile(alpha=alpha, weights=weights, correction=correction)
+        residuals_Q = self.compute_quantile(
+            alpha=alpha, weights=weights, correction=correction
+        )
 
         return self.pred_set_func(y_pred, scores_quantile=residuals_Q)
 
@@ -261,7 +263,7 @@ class BaseCalibrator:
         ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
         ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
         if self._residuals.ndim > 1:
-            infty_array = np.full((1,self._residuals.shape[-1]), np.inf)
+            infty_array = np.full((1, self._residuals.shape[-1]), np.inf)
         else:
             infty_array = np.array([np.inf])
         lemma_residuals = np.concatenate((self._residuals, infty_array), axis=0)
@@ -269,7 +271,7 @@ class BaseCalibrator:
             lemma_residuals,
             1 - alpha,
             w=weights,
-            feature_axis=self._feature_axis
+            feature_axis=self._feature_axis,
         )
 
         return residuals_Q
@@ -528,7 +530,7 @@ class CvPlusCalibrator:
             if y_pred is None:
                 raise RuntimeError("No prediction obtained with cv+.")
 
-            # Check for multivariate predictions
+            # Check for multivariate predictions
             if y_pred.ndim > 1:
                 self._feature_axis = -1
 
@@ -559,9 +561,7 @@ class CvPlusCalibrator:
                     concat_norm_weights = norm_weights
             else:
                 y_lo, y_hi = kth_calibrator.pred_set_func(y_pred, nconf_scores)
-                concat_y_lo = np.concatenate(
-                    [concat_y_lo, y_lo], axis=1  # type: ignore
-                )
+                concat_y_lo = np.concatenate([concat_y_lo, y_lo], axis=1)
                 concat_y_hi = np.concatenate([concat_y_hi, y_hi], axis=1)
                 if norm_weights is not None:
                     concat_norm_weights = np.concatenate(
@@ -585,13 +585,13 @@ class CvPlusCalibrator:
             (1 - alpha) * (1 + 1 / self._len_calib),
             w=weights,
             axis=1,
-            feature_axis=self._feature_axis
+            feature_axis=self._feature_axis,
         )
         y_hi = quantile(
             concat_y_hi,
             (1 - alpha) * (1 + 1 / self._len_calib),
             w=weights,
             axis=1,
-            feature_axis=self._feature_axis
+            feature_axis=self._feature_axis,
         )
         return y_lo, y_hi

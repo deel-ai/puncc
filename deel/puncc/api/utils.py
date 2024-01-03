@@ -255,7 +255,7 @@ def quantile(
     w: np.ndarray = None,
     axis: int = None,
     feature_axis: int = None,
-) -> Union[float, np.ndarray]:  # type: ignore
+) -> Union[float, np.ndarray]:
     """Estimate the columnwise q-th empirical weighted quantiles.
 
     :param Iterable a: collection of n samples
@@ -312,7 +312,7 @@ def quantile_unweighted(
     a: np.ndarray,
     q: Union[float, np.ndarray],
     axis: int = None,
-    feature_axis: int = None
+    feature_axis: int = None,
 ) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional q-th empirical quantiles.
 
@@ -339,8 +339,12 @@ def quantile_unweighted(
         raise ValueError("a and q must have the same number of features.")
     quantile_res = np.array(
         [
-            np.quantile(np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis),
-                        q[i], axis=axis, method="inverted_cdf")
+            np.quantile(
+                np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis),
+                q[i],
+                axis=axis,
+                method="inverted_cdf",
+            )
             for i in range(len(q))
         ]
     )
@@ -409,7 +413,7 @@ def quantile_weighted(
     q: Union[float, np.ndarray],
     w: np.ndarray,
     axis: int = None,
-    feature_axis: int = None
+    feature_axis: int = None,
 ) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional weighted q-th empirical quantiles.
 
@@ -461,8 +465,13 @@ def quantile_weighted(
         quantile_res = np.array(
             [
                 quantile_weighted_unidim(
-                    np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis),
-                        q[i], w[..., i], axis=axis)
+                    np.expand_dims(
+                        a.take(i, axis=feature_axis), axis=feature_axis
+                    ),
+                    q[i],
+                    w[..., i],
+                    axis=axis,
+                )
                 for i in range(len(q))
             ]
         )

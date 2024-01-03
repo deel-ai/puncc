@@ -226,8 +226,8 @@ def plot_prediction_intervals(
         ax.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
         ax.fill_between(
             x=X,
-            y1=y_pred_upper,  # type: ignore
-            y2=y_pred_lower,  # type: ignore
+            y1=y_pred_upper,
+            y2=y_pred_lower,
             alpha=0.2,
             fc="b",
             ec="None",
