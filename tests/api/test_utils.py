@@ -159,7 +159,6 @@ class AlphaCheck(unittest.TestCase):
             alpha_calib_check(alpha, n=10)
 
 
-
 class QuantileCheck(unittest.TestCase):
     def test_simple_quantile1d(self):
         self.a_np = np.array([1, 2, 3, 4])

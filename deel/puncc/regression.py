@@ -127,7 +127,7 @@ class SplitCP:
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
-            splitter=None,
+            splitter=object(),
             train=train,
         )
 
@@ -343,7 +343,7 @@ class LocallyAdaptiveCP(SplitCP):
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
-            splitter=None,
+            splitter=object(),
             train=train,
         )
 
@@ -432,7 +432,7 @@ class CQR(SplitCP):
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
-            splitter=None,
+            splitter=object(),
             train=train,
         )
 

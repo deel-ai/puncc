@@ -28,13 +28,16 @@ import pickle
 from copy import deepcopy
 from typing import Iterable
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
 from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.splitting import BaseSplitter
+from deel.puncc.api.splitting import IdSplitter
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +45,14 @@ logger = logging.getLogger(__name__)
 class ConformalPredictor:
     """Conformal predictor class.
 
-    :param deel.puncc.api.prediction.BasePredictor predictor: model wrapper.
+    :param deel.puncc.api.prediction.BasePredictor | object predictor:
+        underlying model to be conformalized. The model can directly be
+        passed as argument if it already has `fit` and `predict` methods.
     :param deel.puncc.api.prediction.BaseCalibrator calibrator: nonconformity
-        computation strategy and interval predictor.
+        computation strategy and set predictor.
     :param deel.puncc.api.prediction.BaseSplitter splitter: fit/calibration
-        split strategy.
+        split strategy. The splitter can be set to None if the underlying
+        model is pretrained.
     :param str method: method to handle the ensemble prediction and calibration
         in case the splitter is a K-fold-like strategy. Defaults to 'cv+' to
         follow cv+ procedure.
@@ -86,7 +92,8 @@ class ConformalPredictor:
         # Regression linear model
         model = linear_model.LinearRegression()
 
-        # Definition of a predictor
+        # Definition of a predictor. Note that it is not required to wrap
+        # the model here because it already implements fit and predict methods
         predictor = BasePredictor(model)
 
         # Definition of a calibrator, built for a given nonconformity scores
@@ -118,13 +125,45 @@ class ConformalPredictor:
     def __init__(
         self,
         calibrator: BaseCalibrator,
-        predictor: BasePredictor,
+        predictor: Union[BasePredictor, object],
         splitter: BaseSplitter,
         method: str = "cv+",
         train: bool = True,
     ):
         self.calibrator = calibrator
-        self.predictor = predictor
+
+        if isinstance(predictor, (BasePredictor, DualPredictor)):
+            self.predictor = predictor
+
+        elif not hasattr(predictor, "predict"):
+            raise RuntimeError(
+                "Provided model has no predict method. "
+                + "Use a BasePredictor or a DualPredictor to build "
+                + "a compatible predictor."
+            )
+
+        elif train and not hasattr(predictor, "fit"):
+            raise RuntimeError(
+                "Provided model is not trained and has no fit method. "
+                + "Use a BasePredictor or a DualPredictor to build "
+                + "a compatible predictor."
+            )
+
+        else:
+            self.predictor = BasePredictor(predictor, is_trained=not train)
+
+        if train and splitter is None:
+            raise RuntimeError(
+                "The splitter argument is None but train is set to True. "
+                + "Please provide a correct splitter to train the underlying "
+                + "model."
+            )
+
+        if method != "cv+":
+            raise RuntimeError(
+                f"Method {method} is not implemented." + "Please choose 'cv+'."
+            )
+
         self.splitter = splitter
         self.method = method
         self.train = train
@@ -187,7 +226,10 @@ class ConformalPredictor:
         """
         # Get split folds. Each fold split is a iterable of a quadruple that
         # contains fit and calibration data.
-        splits = self.splitter(X, y)
+        if self.splitter is None:
+            splits = IdSplitter(X, y, X, y)()
+        else:
+            splits = self.splitter(X, y)
 
         # The Cross validation aggregator will aggregate the predictors and
         # calibrators fitted on each of the K splits.
@@ -217,10 +259,20 @@ class ConformalPredictor:
             # Make local copies of the structure of the predictor and the calibrator.
             # In case of a K-fold like splitting strategy, these structures are
             # inherited by the predictor/calibrator used in each fold.
-            predictor = self.predictor.copy()
-            calibrator = deepcopy(self.calibrator)
+            if len(splits) > 1:
+                predictor = self.predictor.copy()
+                calibrator = deepcopy(self.calibrator)
+            else:
+                predictor = self.predictor
+                calibrator = self.calibrator
 
             if self.train:
+                if self.splitter is None:
+                    raise RuntimeError(
+                        "The splitter argument is None but train is set to "
+                        + "True. Please provide a correct splitter to train "
+                        + "the underlying model."
+                    )
                 logger.info(f"Fitting model on fold {i+cached_len}")
                 predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
 
@@ -289,7 +341,9 @@ class ConformalPredictor:
         with open(path, "rb") as input_file:
             saved_dict = pickle.load(input_file)
 
-        loaded_cp = ConformalPredictor(None, None, None)
+        loaded_cp = ConformalPredictor(
+            calibrator=None, predictor=BasePredictor(None), splitter=object()
+        )
         loaded_cp.__dict__.update(saved_dict)
         return loaded_cp
 

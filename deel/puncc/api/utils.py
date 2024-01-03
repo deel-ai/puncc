@@ -145,7 +145,9 @@ def supported_types_check(*data: Iterable):
             )
 
 
-def alpha_calib_check(alpha: Union[float, np.ndarray], n: int, complement_check: bool = False):
+def alpha_calib_check(
+    alpha: Union[float, np.ndarray], n: int, complement_check: bool = False
+):
     """Check if the value of alpha :math:`\\alpha` is consistent with the size
     of calibration set :math:`n`.
 
@@ -181,7 +183,7 @@ def alpha_calib_check(alpha: Union[float, np.ndarray], n: int, complement_check:
 
     if np.any(alpha >= 1):
         raise ValueError(
-            f"Alpha={alpha} is too large. " 
+            f"Alpha={alpha} is too large. "
             + "Decrease alpha such that all of its coordinates are < 1."
         )
 

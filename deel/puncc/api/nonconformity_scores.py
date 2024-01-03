@@ -73,7 +73,7 @@ def raps_score(
         from which the regularization is applied. For example,
         if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
         an extra penalty of size :math:`\\lambda`.
-    : param bool rand: turn on or off the randomization term that smoothes the
+    :param bool rand: turn on or off the randomization term that smoothes the
         discrete probability mass jump when including a new class.
 
 
@@ -140,7 +140,7 @@ def raps_score_builder(
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has
         an extra penalty of size :math:`\\lambda`.
-    : param bool rand: turn on or off the randomization term that smoothes the
+    :param bool rand: turn on or off the randomization term that smoothes the
         discrete probability mass jump when including a new class.
 
     :returns: RAPS nonconformity score function that takes two parameters:

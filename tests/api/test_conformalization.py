@@ -55,6 +55,11 @@ class ConformalPredictorCheck(unittest.TestCase):
             X, y, test_size=0.2, random_state=0
         )
 
+        # Split train data in proper training and calibration
+        self.X_fit, self.X_calib, self.y_fit, self.y_calib = train_test_split(
+            self.X_train, self.y_train, test_size=0.5, random_state=0
+        )
+
         # Regression linear model
         model = linear_model.LinearRegression()
 
@@ -106,7 +111,7 @@ class ConformalPredictorCheck(unittest.TestCase):
     def test_pretrained_predictor(self):
         # Predictor initialized with trained model
         model = linear_model.LinearRegression()
-        model.fit(self.X_train, self.y_train)
+        model.fit(self.X_fit, self.y_fit)
         trained_predictor = BasePredictor(model, is_trained=True)
         notrained_predictor = BasePredictor(model, is_trained=False)
 
@@ -130,6 +135,36 @@ class ConformalPredictorCheck(unittest.TestCase):
             )
             # Compute nonconformity scores
             conformal_predictor.fit(self.X_train, self.y_train)
+
+        # Conformalization with no splitter (good)
+        conformal_predictor = ConformalPredictor(
+            predictor=trained_predictor,
+            calibrator=self.calibrator,
+            splitter=None,
+            train=False,
+        )
+        conformal_predictor.fit(self.X_calib, self.y_calib)
+        conformal_predictor.predict(self.X_test, alpha=0.1)
+
+        # Conformalization with no splitter (bad)
+        with self.assertRaises(RuntimeError):
+            conformal_predictor = ConformalPredictor(
+                predictor=notrained_predictor,
+                calibrator=self.calibrator,
+                splitter=None,
+                train=False,
+            )
+            conformal_predictor.fit(self.X_calib, self.y_calib)
+
+        # Conformalization with no splitter and train set to True (bad)
+        with self.assertRaises(RuntimeError):
+            conformal_predictor = ConformalPredictor(
+                predictor=notrained_predictor,
+                calibrator=self.calibrator,
+                splitter=None,
+                train=True,
+            )
+            conformal_predictor.fit(self.X_calib, self.y_calib)
 
     def test_get_nconf_scores_split(self):
         # Conformal predictor
