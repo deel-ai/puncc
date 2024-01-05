@@ -475,14 +475,11 @@ def scaled_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
     dy = np.abs(y_max - y_min)
 
     # Coordinates of covering bbox (upperbounds)
-    x_min_lo, y_min_lo = (
-        x_min - scores_quantile[0] * dx,
-        y_min - scores_quantile[1] * dy,
-    )
-    x_max_hi, y_max_hi = (
-        x_max + scores_quantile[2] * dx,
-        y_max + scores_quantile[3] * dy,
-    )
+    x_min_lo = x_min - scores_quantile[0] * dx
+    y_min_lo = y_min - scores_quantile[1] * dy
+    x_max_hi = x_max + scores_quantile[2] * dx
+    y_max_hi = y_max + scores_quantile[3] * dy
+
     Y_pred_hi = np.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
 
     # Coordinates of included bbox (lowerbounds)
