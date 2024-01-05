@@ -80,6 +80,7 @@ def raps_score(
     :returns: RAPS nonconformity scores.
     :rtype: Iterable
 
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 
@@ -147,6 +148,7 @@ def raps_score_builder(
         `Y_pred` and `y_true`.
     :rtype: Callable
 
+    :raises TypeError: unsupported data types.
     """
 
     def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> np.ndarray:
@@ -156,6 +158,33 @@ def raps_score_builder(
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Elementwise difference.
+
+    .. math::
+
+        R = y_{\\text{pred}}-y_{\\text{true}}
+
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
+
+    :returns: coordinatewise difference.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    supported_types_check(y_pred, y_true)
+
+    if pkgutil.find_loader("torch") is not None and isinstance(
+        y_pred, torch.Tensor
+    ):
+        y_pred = y_pred.cpu().detach().numpy()
+        y_true = y_true.cpu().detach().numpy()
+        return np.squeeze(y_pred) - np.squeeze(y_true)
+
+    return y_pred - y_true
 
 
 def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
@@ -173,16 +202,8 @@ def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :raises TypeError: unsupported data types.
     """
-    supported_types_check(y_pred, y_true)
 
-    if pkgutil.find_loader("torch") is not None and isinstance(
-        y_pred, torch.Tensor
-    ):
-        y_pred = y_pred.cpu().detach().numpy()
-        y_true = y_true.cpu().detach().numpy()
-        return abs(np.squeeze(y_pred) - np.squeeze(y_true))
-
-    return abs(y_pred - y_true)
+    return abs(difference(y_pred, y_true))
 
 
 def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
@@ -212,7 +233,7 @@ def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     # check y_true is a collection of point observations
     if len(y_true.shape) != 1:
-        raise RuntimeError("Each y_pred must contain a point observation.")
+        raise RuntimeError("Each y_true must contain a point observation.")
 
     if pkgutil.find_loader("pandas") is not None and isinstance(
         Y_pred, pd.DataFrame
@@ -244,6 +265,8 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :returns: CQR nonconformity scores.
     :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 
@@ -290,28 +313,44 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     raise RuntimeError("Fatal Error. Type check failed !")
 
 
-def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """Coordinatewise difference.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def scaled_bbox_difference(Y_pred: np.ndarray, Y_true: np.ndarray):
+    """Object detection scaled nonconformity score. Considering
+    :math:`Y_{\\text{pred}} = (\hat{x}_1, \hat{y}_1, \hat{x}_2, \hat{y}_2)` and
+    :math:`Y_{\\text{true}} = (x_1, y_1, x_2, y_2)`:
 
     .. math::
 
-        R = y_{\\text{pred}}-y_{\\text{true}}
+        R = (\\frac{\hat{x}_1-x_1}{\Delta x}, \\frac{\hat{y}_1-y_1}{\Delta y},
+        \\frac{\hat{x}_2-x_2}{\Delta x}, \\frac{\hat{y}_1-y_1}{\Delta y})
 
-    :param Iterable y_pred: predictions.
-    :param Iterable y_true: true labels.
+    where :math:`\Delta x = |\hat{x}_2 - \hat{x}_1|` and
+    :math:`\Delta y = |\hat{y}_2 - \hat{y}_1|`.
 
-    :returns: coordinatewise difference.
+    :param Iterable Y_pred: predicted coordinates of the bounding box.
+    :param Iterable y_true: true coordinates of the bounding box.
+
+    :returns: scaled object detection nonconformity scores.
     :rtype: Iterable
 
     :raises TypeError: unsupported data types.
     """
-    supported_types_check(y_pred, y_true)
+    if not isinstance(Y_pred, np.ndarray):
+        raise TypeError(
+            f"Unsupported data type {type(Y_pred)}."
+            + "Please provide a numpy ndarray"
+        )
 
-    if pkgutil.find_loader("torch") is not None and isinstance(
-        y_pred, torch.Tensor
-    ):
-        y_pred = y_pred.cpu().detach().numpy()
-        y_true = y_true.cpu().detach().numpy()
-        return np.squeeze(y_pred) - np.squeeze(y_true)
+    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
+        raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
 
-    return y_pred - y_true
+    # check y_true is formatted as a bbox with 4 coordinates
+    if Y_true.shape[1] != 4:
+        raise RuntimeError("Each Y_true must contain 4 bbox coordinates.")
+
+    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
+    dx = np.abs(x_max - x_min)
+    dy = np.abs(y_max - y_min)
+    return (Y_pred - Y_true) / np.hstack([dx, dy, dx, dy])

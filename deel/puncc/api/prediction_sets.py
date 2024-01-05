@@ -96,23 +96,14 @@ def raps_set(
 
     # Cumulative probability mass of (sorted by descending probability) classes
     # penalized by the regularization term
-    penal_cum_proba = [
-        sorted_cum_mass[i]
-        + lambd
-        * np.maximum(
-            np.arange(1, len(sorted_cum_mass[i]) + 1) - k_reg,
-            0,  # Because classes are ranked by probability, o_x(y) corresponds [1, 2, 3, ...]
-        )
-        for i in range(pred_len)
-    ]
+    penal_cum_proba = sorted_cum_mass + lambd * np.maximum(
+        np.arange(1, sorted_cum_mass.shape[-1] + 1) - k_reg, 0
+    )
 
     # L is the number of classes (+1) for which the cumulative probability mass
     # is below the threshold "tau"
     # The minimum is used in case the Y_pred logits are not well normalized
-    L = np.minimum(
-        np.sum(penal_cum_proba < tau, axis=-1) + 1,
-        pred_len,
-    )
+    L = np.minimum(np.sum(penal_cum_proba < tau, axis=-1) + 1, pred_len)
 
     if not rand:
         # Build prediction set
@@ -124,28 +115,23 @@ def raps_set(
     ## The following code runs only when rand argument is True
     # For indexing, use L-1 to denote the L-th element
     # Residual of cumulative probability mass (regularized) and tau
-    proba_excess = [
-        (
-            sorted_cum_mass[i, L[i] - 1]
-            + lambd * np.maximum(L[i] - k_reg, 0)
-            - tau
-        )
-        for i in range(pred_len)
-    ]
+    proba_excess = (
+        sorted_cum_mass[np.arange(pred_len), L - 1]
+        + lambd * np.maximum(L - k_reg, 0)
+        - tau
+    )
 
     # Indicator when regularization rank is exceeded
-    indic_L_greater_kreg = [1 if L[i] > k_reg else 0 for i in range(pred_len)]
+    indic_L_greater_kreg = np.where(L > k_reg, 1, 0)
 
     # Normalized probability mass excess
-    v = [
-        proba_excess[i]
-        / (sorted_proba[i, L[i] - 1] + lambd * indic_L_greater_kreg[i])
-        for i in range(pred_len)
-    ]
+    v = proba_excess / (
+        sorted_proba[np.arange(pred_len), L - 1] + lambd * indic_L_greater_kreg
+    )
 
     # Least likely class in the prediction set is removed
     # with a probability of norm_proba_excess
-    indic_excess_proba = [1 if u[i] <= v[i] else 0 for i in range(pred_len)]
+    indic_excess_proba = np.where(u <= v, 1, 0)
     L = L - indic_excess_proba
 
     # Build prediction set
@@ -177,6 +163,8 @@ def raps_set_builder(
         `Y_pred` and `scores_quantile`.
     :rtype: Callable
 
+    :raises ValueError: incorrect value of lambd or k_reg.
+    :raises TypeError: unsupported data types.
     """
     if lambd < 0:
         raise ValueError(
@@ -216,6 +204,8 @@ def constant_interval(
 
     :returns: prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred)
     y_lo = y_pred - scores_quantile
@@ -242,6 +232,8 @@ def scaled_interval(
 
     :returns: scaled prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred)
 
@@ -281,6 +273,8 @@ def cqr_interval(
 
     :returns: scaled prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred)
 
@@ -318,6 +312,8 @@ def constant_set(
 
     :returns: prediction sets :math:`I`.
     :rtype: Tuple[ndarray]
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred)
 
@@ -345,6 +341,8 @@ def scaled_set(
 
     :returns: scaled prediction sets :math:`I`.
     :rtype: Tuple[ndarray]
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred)
 
@@ -382,6 +380,8 @@ def cqr_set(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
 
     :returns: scaled prediction sets :math:`I`.
     :rtype: Tuple[ndarray]
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred)
 
@@ -400,3 +400,100 @@ def cqr_set(Y_pred: Iterable, scores_quantile: np.ndarray) -> Tuple[np.ndarray]:
     y_lo = q_lo - scores_quantile
     y_hi = q_hi + scores_quantile
     return y_lo, y_hi
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def constant_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
+    """
+    Generate the upper and lower bounds of the bounding box coordinates
+    for a given prediction.
+
+    :param np.ndarray Y_pred: the predicted bounding box coordinates.
+    :param np.ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
+
+    :return: The lower bound and upper bound coordinates of the bounding box.
+    :rtype: Tuple[np.ndarray, np.ndarray]
+
+    :raises TypeError: unsupported data types.
+    """
+    if not isinstance(Y_pred, np.ndarray):
+        raise TypeError(
+            f"Unsupported data type {type(Y_pred)}."
+            + "Please provide a numpy ndarray"
+        )
+
+    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
+        raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
+
+    # Recover each coordinate
+    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
+
+    # Coordinates of covering bbox (upperbounds)
+    x_min_lo, y_min_lo = x_min - scores_quantile[0], y_min - scores_quantile[1]
+    x_max_hi, y_max_hi = x_max + scores_quantile[2], y_max + scores_quantile[3]
+    Y_pred_hi = np.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
+
+    # Coordinates of included bbox (lowerbounds)
+    x_min_hi, y_min_hi = x_min + scores_quantile[0], y_min + scores_quantile[1]
+    x_max_lo, y_max_lo = x_max - scores_quantile[2], y_max - scores_quantile[3]
+    Y_pred_lo = np.hstack([x_min_hi, y_min_hi, x_max_lo, y_max_lo])
+
+    return Y_pred_lo, Y_pred_hi
+
+
+def scaled_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
+    """
+    Scaled upper and lower bounds of the bounding box coordinates
+    for a given prediction coordinates.
+
+    :param np.ndarray Y_pred: the predicted bounding box coordinates.
+    :param np.ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`.
+
+    :return: The lower bound and upper bound coordinates of the bounding box.
+    :rtype: Tuple[np.ndarray, np.ndarray]
+
+    :raises TypeError: unsupported data types.
+    """
+    if not isinstance(Y_pred, np.ndarray):
+        raise TypeError(
+            f"Unsupported data type {type(Y_pred)}."
+            + "Please provide a numpy ndarray"
+        )
+
+    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
+        raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
+
+    # Recover each coordinate
+    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
+
+    # Compute width and height of predicted bbox
+    dx = np.abs(x_max - x_min)
+    dy = np.abs(y_max - y_min)
+
+    # Coordinates of covering bbox (upperbounds)
+    x_min_lo, y_min_lo = (
+        x_min - scores_quantile[0] * dx,
+        y_min - scores_quantile[1] * dy,
+    )
+    x_max_hi, y_max_hi = (
+        x_max + scores_quantile[2] * dx,
+        y_max + scores_quantile[3] * dy,
+    )
+    Y_pred_hi = np.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
+
+    # Coordinates of included bbox (lowerbounds)
+    x_min_hi, y_min_hi = (
+        x_min + scores_quantile[0] * dx,
+        y_min + scores_quantile[1] * dy,
+    )
+    x_max_lo, y_max_lo = (
+        x_max - scores_quantile[2] * dx,
+        y_max - scores_quantile[3] * dy,
+    )
+    Y_pred_lo = np.hstack([x_min_hi, y_min_hi, x_max_lo, y_max_lo])
+
+    return Y_pred_lo, Y_pred_hi
