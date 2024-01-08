@@ -21,11 +21,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements usual conformal classification wrappers.
+This module implements conformal classification procedures.
 """
+from typing import Any
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 
@@ -33,6 +35,7 @@ from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import RandomSplitter
 
@@ -140,7 +143,7 @@ class RAPS:
 
     def __init__(
         self,
-        predictor,
+        predictor: Union[BasePredictor, Any],
         train: bool = True,
         random_state: float = None,
         lambd: float = 0,

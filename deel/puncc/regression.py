@@ -24,9 +24,12 @@
 This module implements usual conformal regression wrappers.
 """
 from copy import deepcopy
+from typing import Any
+from typing import Callable
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from sklearn.utils import resample
@@ -35,6 +38,9 @@ from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
+from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
 from deel.puncc.api.splitting import RandomSplitter
@@ -47,7 +53,7 @@ class SplitCP:
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-    :param float random_state: random seed used when the user does not
+    :param int random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
@@ -107,10 +113,10 @@ class SplitCP:
 
     def __init__(
         self,
-        predictor,
+        predictor: Union[BasePredictor, Any],
         *,
         train=True,
-        random_state: float = None,
+        random_state: int = None,
         weight_func=None,
     ):
         self.predictor = predictor
@@ -227,10 +233,6 @@ class SplitCP:
         :rtype: Tuple[ndarray]
 
         """
-        # TODO conformal_predictor is instantiated in __init__
-        # This condition should be updated
-        if self.conformal_predictor is None:
-            raise RuntimeError("Fit method should be called before predict.")
 
         (
             y_pred,
@@ -328,7 +330,12 @@ class LocallyAdaptiveCP(SplitCP):
     """
 
     def __init__(
-        self, predictor, *, train=True, random_state=None, weight_func=None
+        self,
+        predictor: MeanVarPredictor,
+        *,
+        train: bool = True,
+        random_state: int = None,
+        weight_func: Callable = None,
     ):
         super().__init__(
             predictor,
@@ -423,7 +430,13 @@ class CQR(SplitCP):
 
     """
 
-    def __init__(self, predictor, *, train=True, weight_func=None):
+    def __init__(
+        self,
+        predictor: DualPredictor,
+        *,
+        train: bool = True,
+        weight_func: Callable = None,
+    ):
         super().__init__(predictor, train=train, weight_func=weight_func)
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.cqr_score,
@@ -493,7 +506,7 @@ class CVPlus:
 
     """
 
-    def __init__(self, predictor, *, K: int, random_state=None):
+    def __init__(self, predictor: BasePredictor, *, K: int, random_state=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.absolute_difference,

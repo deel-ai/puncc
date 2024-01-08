@@ -46,7 +46,8 @@ def classification_mean_coverage(
     :param np.ndarray y_true: Observed label
     :param Tuple[np.ndarray] set_pred: label prediction set
 
-    :returns: Average coverage
+    :returns: average coverage, indicating the proportion of instances that are
+        correctly covered.
     :rtype: float
     """
     counter = 0
@@ -85,7 +86,8 @@ def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.
     :param ndarray y_pred_upper: upper bounds of the prediction intervals.
 
-    :returns: Average coverage
+    :returns: average coverage, indicating the proportion of instances that are
+        correctly covered.
     :rtype: float
     """
     return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
@@ -126,3 +128,48 @@ def regression_sharpness(y_pred_lower, y_pred_upper) -> float:
     :rtype: float
     """
     return (np.abs(y_pred_upper - y_pred_lower)).mean()
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def object_detection_mean_coverage(
+    y_pred_outer: np.ndarray, y_true: np.ndarray
+):
+    """
+    Calculate the mean coverage of conformal object detection predictions.
+    For each instance, coverage is defined as the true bounding box being inside
+    the predicted outer bounding box.
+
+    :param np.ndarray y_pred: array of predicted outer bounding boxes with shape (n, 4).
+    :type y_pred: np.ndarray
+    :param np.ndarray y_true: array of true bounding boxes with shape (n, 4).
+
+    :return: average coverage, indicating the proportion of objects that are
+        correctly covered.
+    :rtype: float
+
+    """
+    x_min_true, y_min_true, x_max_true, y_max_true = np.hsplit(y_true, 4)
+    x_min, y_min, x_max, y_max = np.hsplit(y_pred_outer, 4)
+    cov = (
+        (x_min <= x_min_true)
+        * (y_min <= y_min_true)
+        * (x_max >= x_max_true)
+        * (y_max >= y_max_true)
+    )
+    return np.mean(cov)
+
+
+def object_detection_mean_area(y_pred: np.ndarray):
+    """
+    Calculate the mean area of object bounding predictions.
+
+    :param np.ndarray y_pred: array of predicted bounding boxes with shape (n, 4).
+
+    :return: average area of the bounding boxes
+    :rtype: float
+
+    """
+    x_min, y_min, x_max, y_max = np.hsplit(y_pred, 4)
+    return np.mean((x_max - x_min) * (y_max - y_min))

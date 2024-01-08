@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements usual anomaly detection wrappers.
+This module implements conformal anomaly detection procedures.
 """
 import logging
 from typing import Iterable
