@@ -315,7 +315,9 @@ class ConformalPredictor:
         X: Iterable,
         alpha: float,
         correction_func: Optional[Callable] = bonferroni,
-    ) -> Tuple[np.ndarray]:
+    ) -> Union[
+        Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
+    ]:
         """Predict point, and interval estimates for X data.
 
         :param Iterable X: features.
@@ -324,8 +326,9 @@ class ConformalPredictor:
             testing in the case of multivariate regression. Defaults to
             Bonferroni correction.
 
-        :returns: y_pred, y_lower, y_higher.
-        :rtype: Tuple[ndarray]
+        :returns: (y_pred, y_lower, y_higher) or (y_pred, pred_set).
+        :rtype: Union[Tuple[np.ndarray, np.ndarray],
+            Tuple[np.ndarray, np.ndarray, np.ndarray]]
         """
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
@@ -432,7 +435,9 @@ class CrossValCpAggregator:
         X: Iterable,
         alpha: float,
         correction_func: Optional[Callable] = bonferroni,
-    ) -> Tuple[np.ndarray]:  #  type: ignore
+    ) -> Union[
+        Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
+    ]:  #  type: ignore
         """Predict point, interval and variability estimates for X data.
 
         :param Iterable X: features.
@@ -442,7 +447,8 @@ class CrossValCpAggregator:
             Bonferroni correction.
 
         :returns: y_pred, y_lower, y_higher.
-        :rtype: Tuple[Iterable]
+        :rtype: Union[Tuple[np.ndarray, np.ndarray],
+            Tuple[np.ndarray, np.ndarray, np.ndarray]]
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()

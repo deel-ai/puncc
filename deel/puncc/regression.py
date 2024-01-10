@@ -183,6 +183,12 @@ class SplitCP:
 
         """
 
+        # Check if predictor is trained. Suppose that it is trained if the
+        # predictor has not "is_trained" attribute
+        is_trained = not hasattr(self.predictor, "is_trained") or (
+            hasattr(self.predictor, "is_trained") and self.predictor.is_trained
+        )
+
         if X is not None and y is not None:
             splitter = RandomSplitter(
                 ratio=fit_ratio, random_state=self.random_state
@@ -197,7 +203,7 @@ class SplitCP:
             splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
 
         elif (
-            self.predictor.is_trained
+            is_trained
             and X_fit is None
             and y_fit is None
             and X_calib is not None
@@ -222,7 +228,9 @@ class SplitCP:
 
         self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
 
-    def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
+    def predict(
+        self, X_test: Iterable, alpha
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
         new samples.
 
@@ -230,7 +238,7 @@ class SplitCP:
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray]
+        :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
 
         """
 

@@ -318,7 +318,7 @@ def draw_bounding_box(
         # Draw the actual bounding box
         im_with_rectangle = ImageDraw.Draw(im)
         im_with_rectangle.rounded_rectangle(
-            box, outline=color, width=2, radius=5
+            box, outline=color, width=2, radius=1
         )
         # Draw the label
         im_with_rectangle.text(
@@ -329,7 +329,14 @@ def draw_bounding_box(
     if show:
         plt.figure(figsize=(10, 10))
         plt.imshow(im)
+        plt.xticks([])
+        plt.yticks([])
         if len(im.custom_lines) > 0:
-            _ = plt.legend(im.custom_lines, im.legends)
+            _ = plt.legend(
+                im.custom_lines,
+                im.legends,
+                loc="upper left",
+                bbox_to_anchor=(0, 0.85),
+            )
 
     return im
