@@ -192,6 +192,7 @@ class BasePredictor:
             or "keras" in model_type_str
             and pkgutil.find_loader("tensorflow") is not None
         ):
+            # pylint: disable=E1101
             model = tf.keras.models.clone_model(self.model)
             try:
                 model.set_weights(self.model.get_weights())
@@ -393,6 +394,7 @@ class DualPredictor:
             except Exception as e_outer:
                 if pkgutil.find_loader("tensorflow") is not None:
                     try:
+                        # pylint: disable=E1101
                         model_copy = tf.keras.models.clone_model(model)
                     except Exception as e_inner:
                         msg = (
