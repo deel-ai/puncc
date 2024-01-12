@@ -214,7 +214,7 @@ class IdPredictor(BasePredictor):
     :param model: model to be wrapped.
     """
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model=None, **kwargs):
         self.kwargs = kwargs
         super().__init__(model, is_trained=True)
 
