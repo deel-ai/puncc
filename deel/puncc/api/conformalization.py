@@ -26,7 +26,9 @@ This module provides the canvas for conformal prediction.
 import logging
 import pickle
 from copy import deepcopy
+from typing import Callable
 from typing import Iterable
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -34,6 +36,7 @@ import numpy as np
 
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
+from deel.puncc.api.corrections import bonferroni
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.splitting import BaseSplitter
@@ -180,7 +183,7 @@ class ConformalPredictor:
         """
 
         if self._cv_cp_agg is None:
-            return RuntimeError("Error: call 'fit' method first.")
+            raise RuntimeError("Error: call 'fit' method first.")
 
         return self._cv_cp_agg.get_nonconformity_scores()
 
@@ -195,7 +198,7 @@ class ConformalPredictor:
         """
 
         if self._cv_cp_agg is None:
-            return RuntimeError("Error: call 'fit' method first.")
+            raise RuntimeError("Error: call 'fit' method first.")
 
         return self._cv_cp_agg.get_weights()
 
@@ -307,20 +310,30 @@ class ConformalPredictor:
             self._cv_cp_agg.append_predictor(i + cached_len, predictor)
             self._cv_cp_agg.append_calibrator(i + cached_len, calibrator)
 
-    def predict(self, X: Iterable, alpha: float) -> Tuple[np.ndarray]:
+    def predict(
+        self,
+        X: Iterable,
+        alpha: float,
+        correction_func: Optional[Callable] = bonferroni,
+    ) -> Union[
+        Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
+    ]:
         """Predict point, and interval estimates for X data.
 
         :param Iterable X: features.
         :param float alpha: significance level (max miscoverage target).
+        :param Callable correction_func: correction for multiple hypothesis
+            testing in the case of multivariate regression. Defaults to
+            Bonferroni correction.
 
-        :returns: y_pred, y_lower, y_higher.
-        :rtype: Tuple[ndarray]
+        :returns: (y_pred, y_lower, y_higher) or (y_pred, pred_set).
+        :rtype: Union[Tuple[np.ndarray, np.ndarray],
+            Tuple[np.ndarray, np.ndarray, np.ndarray]]
         """
-
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
 
-        return self._cv_cp_agg.predict(X, alpha)
+        return self._cv_cp_agg.predict(X, alpha, correction_func)
 
     def save(self, path):
         """Serialize current conformal predictor and write it into file.
@@ -418,15 +431,24 @@ class CrossValCpAggregator:
         }
 
     def predict(
-        self, X: Iterable, alpha: float
-    ) -> Tuple[np.ndarray]:  #  type: ignore
+        self,
+        X: Iterable,
+        alpha: float,
+        correction_func: Optional[Callable] = bonferroni,
+    ) -> Union[
+        Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
+    ]:  #  type: ignore
         """Predict point, interval and variability estimates for X data.
 
         :param Iterable X: features.
         :param float alpha: significance level (max miscoverage target).
+        :param Callable correction_func: correction for multiple hypothesis
+            testing in the case of multivariate regression. Defaults to
+            Bonferroni correction.
 
         :returns: y_pred, y_lower, y_higher.
-        :rtype: Tuple[Iterable]
+        :rtype: Union[Tuple[np.ndarray, np.ndarray],
+            Tuple[np.ndarray, np.ndarray, np.ndarray]]
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()
@@ -443,11 +465,14 @@ class CrossValCpAggregator:
                 norm_weights = calibrator.get_norm_weights()
                 y_pred = predictor.predict(X=X)
                 set_pred = calibrator.calibrate(
-                    alpha=alpha, y_pred=y_pred, weights=norm_weights
+                    alpha=alpha,
+                    y_pred=y_pred,
+                    weights=norm_weights,
+                    correction=correction_func,
                 )
                 return (y_pred, *set_pred)
 
-        else:
+        else:  # TODO support multireg with CV
             y_pred = None
 
             if self.method == "cv+":
@@ -457,7 +482,7 @@ class CrossValCpAggregator:
                     kfold_predictors_dict=self._predictors,
                     alpha=alpha,
                 )
-                return (y_pred, *set_pred)  # type: ignore
+                return (y_pred, *set_pred)
 
             raise RuntimeError(
                 f"Method {self.method} is not implemented."

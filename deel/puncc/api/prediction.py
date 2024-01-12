@@ -52,10 +52,6 @@ class BasePredictor:
     :param compile_kwargs: keyword arguments to be used if needed during the
         call :func:`model.compile` on the underlying model
 
-    .. note::
-
-        Currently supported ML libraries are **scikit-learn**-like and **Keras**.
-
     .. _example basepredictor:
 
     Sklearn regression examples::
@@ -196,6 +192,7 @@ class BasePredictor:
             or "keras" in model_type_str
             and pkgutil.find_loader("tensorflow") is not None
         ):
+            # pylint: disable=E1101
             model = tf.keras.models.clone_model(self.model)
             try:
                 model.set_weights(self.model.get_weights())
@@ -208,6 +205,39 @@ class BasePredictor:
             model=model, is_trained=self.is_trained, **self.compile_kwargs
         )
         return predictor_copy
+
+
+class IdPredictor(BasePredictor):
+    """Subclass of :class:`BasePredictor` to directly wrap existing predictions.
+    The predictions are directly returned without any modification.
+
+    :param model: model to be wrapped.
+    """
+
+    def __init__(self, model=None, **kwargs):
+        self.kwargs = kwargs
+        super().__init__(model, is_trained=True)
+
+    def predict(self, X: Iterable):
+        """Returns the input argument as output data.
+
+        :param Iterable X: predictions.
+
+        :return: predictions.
+        :rtype: np.ndarray
+        """
+        return X
+
+    def predict_with_model(self, X):
+        """
+        Predicts the output using the wrapped model.
+
+        :param Iterable X: the input features to build predictions.
+
+        :return: predictions.
+        :rtype: np.ndarray
+        """
+        return self.model.predict(X)
 
 
 class DualPredictor:
@@ -364,6 +394,7 @@ class DualPredictor:
             except Exception as e_outer:
                 if pkgutil.find_loader("tensorflow") is not None:
                     try:
+                        # pylint: disable=E1101
                         model_copy = tf.keras.models.clone_model(model)
                     except Exception as e_inner:
                         msg = (
@@ -461,5 +492,5 @@ class MeanVarPredictor(DualPredictor):
         """
         self.models[0].fit(X, y, **dictargs[0])
         mu_pred = self.models[0].predict(X)
-        mads = nonconformity_scores.mad(mu_pred, y)
+        mads = nonconformity_scores.absolute_difference(mu_pred, y)
         self.models[1].fit(X, mads, **dictargs[1])

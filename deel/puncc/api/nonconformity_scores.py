@@ -80,6 +80,7 @@ def raps_score(
     :returns: RAPS nonconformity scores.
     :rtype: Iterable
 
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 
@@ -147,6 +148,7 @@ def raps_score_builder(
         `Y_pred` and `y_true`.
     :rtype: Callable
 
+    :raises TypeError: unsupported data types.
     """
 
     def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> np.ndarray:
@@ -158,8 +160,35 @@ def raps_score_builder(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """Mean Absolute Deviation (MAD).
+def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Elementwise difference.
+
+    .. math::
+
+        R = y_{\\text{pred}}-y_{\\text{true}}
+
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
+
+    :returns: coordinatewise difference.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    supported_types_check(y_pred, y_true)
+
+    if pkgutil.find_loader("torch") is not None and isinstance(
+        y_pred, torch.Tensor
+    ):
+        y_pred = y_pred.cpu().detach().numpy()
+        y_true = y_true.cpu().detach().numpy()
+        return np.squeeze(y_pred) - np.squeeze(y_true)
+
+    return y_pred - y_true
+
+
+def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Absolute Deviation.
 
     .. math::
 
@@ -173,31 +202,24 @@ def mad(y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :raises TypeError: unsupported data types.
     """
-    supported_types_check(y_pred, y_true)
 
-    if pkgutil.find_loader("torch") is not None and isinstance(
-        y_pred, torch.Tensor
-    ):
-        y_pred = y_pred.cpu().detach().numpy()
-        y_true = y_true.cpu().detach().numpy()
-        return abs(np.squeeze(y_pred) - np.squeeze(y_true))
-
-    return abs(y_pred - y_true)
+    return abs(difference(y_pred, y_true))
 
 
-def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
-    """Scaled Mean Absolute Deviation (MAD). Considering
+def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
+    """Scaled Absolute Deviation, normalized by an estimation of the conditional
+    mean absolute deviation (conditional MAD). Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
     .. math::
 
         R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}}
 
-    :param Iterable Y_pred:
+    :param Iterable Y_pred: point and conditional MAD predictions.
         :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
     :param Iterable y_true: true labels.
 
-    :returns: scaled mean absolute deviation.
+    :returns: scaled absolute deviation.
     :rtype: Iterable
 
     :raises TypeError: unsupported data types.
@@ -211,7 +233,7 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     # check y_true is a collection of point observations
     if len(y_true.shape) != 1:
-        raise RuntimeError("Each y_pred must contain a point observation.")
+        raise RuntimeError("Each y_true must contain a point observation.")
 
     if pkgutil.find_loader("pandas") is not None and isinstance(
         Y_pred, pd.DataFrame
@@ -221,7 +243,7 @@ def scaled_mad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
 
     # MAD then Scaled MAD and computed
-    mean_absolute_deviation = mad(y_pred, y_true)
+    mean_absolute_deviation = absolute_difference(y_pred, y_true)
     if np.any(sigma_pred < 0):
         raise RuntimeError("All MAD predictions should be positive.")
     return mean_absolute_deviation / (sigma_pred + EPSILON)
@@ -243,6 +265,8 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :returns: CQR nonconformity scores.
     :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 
@@ -287,3 +311,46 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     #     return torch.maximum(diff_lo, diff_hi)
 
     raise RuntimeError("Fatal Error. Type check failed !")
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+def scaled_bbox_difference(Y_pred: np.ndarray, Y_true: np.ndarray):
+    """Object detection scaled nonconformity score. Considering
+    :math:`Y_{\\text{pred}} = (\hat{x}_1, \hat{y}_1, \hat{x}_2, \hat{y}_2)` and
+    :math:`Y_{\\text{true}} = (x_1, y_1, x_2, y_2)`:
+
+    .. math::
+
+        R = (\\frac{\hat{x}_1-x_1}{\Delta x}, \\frac{\hat{y}_1-y_1}{\Delta y},
+        \\frac{\hat{x}_2-x_2}{\Delta x}, \\frac{\hat{y}_1-y_1}{\Delta y})
+
+    where :math:`\Delta x = |\hat{x}_2 - \hat{x}_1|` and
+    :math:`\Delta y = |\hat{y}_2 - \hat{y}_1|`.
+
+    :param Iterable Y_pred: predicted coordinates of the bounding box.
+    :param Iterable y_true: true coordinates of the bounding box.
+
+    :returns: scaled object detection nonconformity scores.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    if not isinstance(Y_pred, np.ndarray):
+        raise TypeError(
+            f"Unsupported data type {type(Y_pred)}."
+            + "Please provide a numpy ndarray"
+        )
+
+    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
+        raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
+
+    # check y_true is formatted as a bbox with 4 coordinates
+    if Y_true.shape[1] != 4:
+        raise RuntimeError("Each Y_true must contain 4 bbox coordinates.")
+
+    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
+    dx = np.abs(x_max - x_min)
+    dy = np.abs(y_max - y_min)
+    return (Y_pred - Y_true) / np.hstack([dx, dy, dx, dy])

@@ -24,10 +24,12 @@
 This module provides correction functions for multiple hypothesis testing. To be used
 when building a :ref:`calibrator <calibration>` for multivariate regression or object detection.
 """
+from typing import Union
+
 import numpy as np
 
 
-def bonferroni(alpha: float, nvars: int) -> float:
+def bonferroni(alpha: float, nvars: int = 1) -> Union[float, np.ndarray]:
     """Bonferroni correction for multiple comparisons.
 
     :param float alpha: nominal coverage level.
@@ -35,16 +37,19 @@ def bonferroni(alpha: float, nvars: int) -> float:
 
 
     :returns: corrected coverage level.
-    :rtype: float.
+    :rtype: float or ndarray.
     """
     # Sanity checks
-    if alpha <= 0 or alpha >= 1:
+    if np.any(alpha <= 0) or np.any(alpha >= 1):
         raise ValueError("alpha must be in (0,1)")
 
     if nvars <= 0:
         raise ValueError("nvars must be a positive integer")
 
-    return alpha / nvars
+    if nvars == 1:
+        return alpha
+
+    return np.ones(nvars) * alpha / nvars
 
 
 def weighted_bonferroni(alpha: float, weights: np.ndarray) -> np.ndarray:

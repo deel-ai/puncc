@@ -24,9 +24,12 @@
 This module implements usual conformal regression wrappers.
 """
 from copy import deepcopy
+from typing import Any
+from typing import Callable
 from typing import Iterable
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import numpy as np
 from sklearn.utils import resample
@@ -35,6 +38,9 @@ from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
+from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
 from deel.puncc.api.splitting import RandomSplitter
@@ -47,7 +53,7 @@ class SplitCP:
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-    :param float random_state: random seed used when the user does not
+    :param int random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
     :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
@@ -107,15 +113,15 @@ class SplitCP:
 
     def __init__(
         self,
-        predictor,
+        predictor: Union[BasePredictor, Any],
         *,
         train=True,
-        random_state: float = None,
+        random_state: int = None,
         weight_func=None,
     ):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.mad,
+            nonconf_score_func=nonconformity_scores.absolute_difference,
             pred_set_func=prediction_sets.constant_interval,
             weight_func=weight_func,
         )
@@ -177,6 +183,12 @@ class SplitCP:
 
         """
 
+        # Check if predictor is trained. Suppose that it is trained if the
+        # predictor has not "is_trained" attribute
+        is_trained = not hasattr(self.predictor, "is_trained") or (
+            hasattr(self.predictor, "is_trained") and self.predictor.is_trained
+        )
+
         if X is not None and y is not None:
             splitter = RandomSplitter(
                 ratio=fit_ratio, random_state=self.random_state
@@ -191,7 +203,7 @@ class SplitCP:
             splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
 
         elif (
-            self.predictor.is_trained
+            is_trained
             and X_fit is None
             and y_fit is None
             and X_calib is not None
@@ -216,7 +228,9 @@ class SplitCP:
 
         self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
 
-    def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
+    def predict(
+        self, X_test: Iterable, alpha
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
         new samples.
 
@@ -224,12 +238,9 @@ class SplitCP:
         :param float alpha: target maximum miscoverage.
 
         :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray]
+        :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
 
         """
-
-        if self.conformal_predictor is None:
-            raise RuntimeError("Fit method should be called before predict.")
 
         (
             y_pred,
@@ -327,7 +338,12 @@ class LocallyAdaptiveCP(SplitCP):
     """
 
     def __init__(
-        self, predictor, *, train=True, random_state=None, weight_func=None
+        self,
+        predictor: MeanVarPredictor,
+        *,
+        train: bool = True,
+        random_state: int = None,
+        weight_func: Callable = None,
     ):
         super().__init__(
             predictor,
@@ -336,7 +352,7 @@ class LocallyAdaptiveCP(SplitCP):
             weight_func=weight_func,
         )
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.scaled_mad,
+            nonconf_score_func=nonconformity_scores.scaled_ad,
             pred_set_func=prediction_sets.scaled_interval,
             weight_func=weight_func,
         )
@@ -422,7 +438,13 @@ class CQR(SplitCP):
 
     """
 
-    def __init__(self, predictor, *, train=True, weight_func=None):
+    def __init__(
+        self,
+        predictor: DualPredictor,
+        *,
+        train: bool = True,
+        weight_func: Callable = None,
+    ):
         super().__init__(predictor, train=train, weight_func=weight_func)
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.cqr_score,
@@ -492,10 +514,10 @@ class CVPlus:
 
     """
 
-    def __init__(self, predictor, *, K: int, random_state=None):
+    def __init__(self, predictor: BasePredictor, *, K: int, random_state=None):
         self.predictor = predictor
         self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.mad,
+            nonconf_score_func=nonconformity_scores.absolute_difference,
             pred_set_func=prediction_sets.constant_interval,
             weight_func=None,
         )
@@ -673,7 +695,7 @@ class EnbPI:
         :returns: residuals.
         :rtype: ndarray
         """
-        return nonconformity_scores.mad(y_pred, y_true)
+        return nonconformity_scores.absolute_difference(y_pred, y_true)
 
     def _compute_pi(self, y_pred, w):
         """Compute prediction intervals.
@@ -702,7 +724,9 @@ class EnbPI:
         #   For each training sample X_i, the LOO estimate is built from
         #   averaging the predictions of bootstrap models whose OOB include X_i
         loo_pred = (self._oob_matrix * boot_pred.T).sum(-1)
-        residuals = nonconformity_scores.mad(y_pred=loo_pred, y_true=y_true)
+        residuals = nonconformity_scores.absolute_difference(
+            y_pred=loo_pred, y_true=y_true
+        )
         return list(residuals)
 
     def _compute_loo_predictions(self, boot_pred):
@@ -997,7 +1021,7 @@ class AdaptiveEnbPI(EnbPI):
         :rtype: ndarray
 
         """
-        return nonconformity_scores.scaled_mad(y_pred, y_true)
+        return nonconformity_scores.scaled_ad(y_pred, y_true)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
         loo_pred = (self._oob_matrix * boot_pred[:, :, 0].T).sum(-1)

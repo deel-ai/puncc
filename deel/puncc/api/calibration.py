@@ -34,6 +34,7 @@ from typing import Tuple
 
 import numpy as np
 
+from deel.puncc.api.corrections import bonferroni
 from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
 
@@ -134,6 +135,7 @@ class BaseCalibrator:
         self._len_calib = 0
         self._residuals = None
         self._norm_weights = None
+        self._feature_axis = None
 
     def fit(
         self,
@@ -149,10 +151,12 @@ class BaseCalibrator:
         """
         # TODO check structure match in supported types
         logger.info("Computing nonconformity scores ...")
-        logger.debug(f"Shape of y_pred: {y_pred.shape}")
-        logger.debug(f"Shape of y_true: {y_true.shape}")
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
+        if (
+            y_pred.ndim > 1
+        ):  # TODO make sure that ndim can be applied to all types
+            self._feature_axis = -1
         logger.debug("Nonconformity scores computed !")
 
     def calibrate(
@@ -161,6 +165,7 @@ class BaseCalibrator:
         alpha: float,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
+        correction: Optional[Callable] = bonferroni,
     ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction sets for new examples w.r.t a
         significance level :math:`\\alpha`.
@@ -170,6 +175,9 @@ class BaseCalibrator:
         :param Iterable weights: weights to be associated to the nonconformity
                                  scores. Defaults to None when all the scores
                                  are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing
+                                    in the case of multivariate regression.
+                                    Defaults to Bonferroni correction.
 
         :returns: prediction set.
                   In case of regression, returns (y_lower, y_upper).
@@ -181,25 +189,8 @@ class BaseCalibrator:
             calibration set.
 
         """
-
-        if self._residuals is None:
-            raise RuntimeError("Run `fit` method before calling `calibrate`.")
-
-        # Check consistency of alpha w.r.t the size of calibration data
-        if weights is None:
-            alpha_calib_check(alpha=alpha, n=self._len_calib)
-
-        # Compute weighted quantiles
-        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
-        ## The coverage guarantee holds with 1) the inflated
-        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
-        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
-        infty_array = np.array([np.inf])
-        lemma_residuals = np.concatenate((self._residuals, infty_array))
-        residuals_Q = quantile(
-            lemma_residuals,
-            1 - alpha,
-            w=weights,
+        residuals_Q = self.compute_quantile(
+            alpha=alpha, weights=weights, correction=correction
         )
 
         return self.pred_set_func(y_pred, scores_quantile=residuals_Q)
@@ -229,6 +220,61 @@ class BaseCalibrator:
         :rtype: np.ndarray
         """
         return self._residuals
+
+    def compute_quantile(
+        self,
+        *,
+        alpha: float,
+        weights: Optional[Iterable] = None,
+        correction: Optional[Callable] = bonferroni,
+    ) -> np.ndarray:
+        """Compute quantile of scores w.r.t a
+        significance level :math:`\\alpha`.
+
+        :param float alpha: significance level (max miscoverage target).
+        :param Iterable weights: weights to be associated to the nonconformity
+                                 scores. Defaults to None when all the scores
+                                 are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing
+                                    in the case of multivariate regression.
+                                    Defaults to Bonferroni correction.
+
+        :returns: quantile
+        :rtype: ndarray
+
+        :raises RuntimeError: :meth:`compute_quantile` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set.
+
+        """
+
+        if self._residuals is None:
+            raise RuntimeError("Run `fit` method before calling `calibrate`.")
+
+        alpha = correction(alpha)
+
+        # Check consistency of alpha w.r.t the size of calibration data
+        if weights is None:
+            alpha_calib_check(alpha=alpha, n=self._len_calib)
+
+        # Compute weighted quantiles
+        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
+        ## The coverage guarantee holds with 1) the inflated
+        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
+        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
+        if self._residuals.ndim > 1:
+            infty_array = np.full((1, self._residuals.shape[-1]), np.inf)
+        else:
+            infty_array = np.array([np.inf])
+        lemma_residuals = np.concatenate((self._residuals, infty_array), axis=0)
+        residuals_Q = quantile(
+            lemma_residuals,
+            1 - alpha,
+            w=weights,
+            feature_axis=self._feature_axis,
+        )
+
+        return residuals_Q
 
     @staticmethod
     def barber_weights(weights: np.ndarray) -> np.ndarray:
@@ -418,6 +464,7 @@ class CvPlusCalibrator:
     def __init__(self, kfold_calibrators: dict):
         self.kfold_calibrators_dict = kfold_calibrators
         self._len_calib = None
+        self._feature_axis = None
 
         # Sanity checks:
         #   - The collection of calibrators is not None
@@ -465,7 +512,6 @@ class CvPlusCalibrator:
         :returns: y_lower, y_upper.
         :rtype: Tuple[ndarray]
         """
-
         # Check if all calibrators have already been fitted
         self.fit()
 
@@ -483,6 +529,10 @@ class CvPlusCalibrator:
 
             if y_pred is None:
                 raise RuntimeError("No prediction obtained with cv+.")
+
+            # Check for multivariate predictions
+            if y_pred.ndim > 1:
+                self._feature_axis = -1
 
             # nonconformity scores
             kth_calibrator = self.kfold_calibrators_dict[k]
@@ -511,9 +561,7 @@ class CvPlusCalibrator:
                     concat_norm_weights = norm_weights
             else:
                 y_lo, y_hi = kth_calibrator.pred_set_func(y_pred, nconf_scores)
-                concat_y_lo = np.concatenate(
-                    [concat_y_lo, y_lo], axis=1  # type: ignore
-                )
+                concat_y_lo = np.concatenate([concat_y_lo, y_lo], axis=1)
                 concat_y_hi = np.concatenate([concat_y_hi, y_hi], axis=1)
                 if norm_weights is not None:
                     concat_norm_weights = np.concatenate(
@@ -533,10 +581,17 @@ class CvPlusCalibrator:
             concat_y_hi = np.concatenate([concat_y_hi, infty_array])
 
         y_lo = -1 * quantile(
-            -1 * concat_y_lo, (1 - alpha) * (1 + 1 / self._len_calib), w=weights
+            -1 * concat_y_lo,
+            (1 - alpha) * (1 + 1 / self._len_calib),
+            w=weights,
+            axis=1,
+            feature_axis=self._feature_axis,
         )
         y_hi = quantile(
-            concat_y_hi, (1 - alpha) * (1 + 1 / self._len_calib), w=weights
+            concat_y_hi,
+            (1 - alpha) * (1 + 1 / self._len_calib),
+            w=weights,
+            axis=1,
+            feature_axis=self._feature_axis,
         )
-
         return y_lo, y_hi

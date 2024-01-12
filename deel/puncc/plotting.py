@@ -28,6 +28,10 @@ from typing import Optional
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import PIL
+from matplotlib.lines import Line2D
+from PIL import Image
+from PIL import ImageDraw
 
 SMALL_SIZE = 8
 MEDIUM_SIZE = 10
@@ -226,8 +230,8 @@ def plot_prediction_intervals(
         ax.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
         ax.fill_between(
             x=X,
-            y1=y_pred_upper,  # type: ignore
-            y2=y_pred_lower,  # type: ignore
+            y1=y_pred_upper,
+            y2=y_pred_lower,
             alpha=0.2,
             fc="b",
             ec="None",
@@ -256,3 +260,83 @@ def plot_prediction_intervals(
         matplotlib.rcParams.update(current_rcparams)
 
     return ax
+
+
+# Adapated from https://github.com/christianversloot/machine-learning-articles
+# TODO, add example in docstring
+def draw_bounding_box(
+    box: Optional[np.ndarray] = None,
+    label: Optional[str] = "",
+    image: Optional[PIL.Image.Image] = None,
+    image_path: Optional[str] = None,
+    color: Optional[str] = "red",
+    legend: Optional[str] = "",
+    show: Optional[bool] = False,
+):
+    """
+    Draw a bounding box on a given image.
+
+    :param tuple box: the coordinates of the bounding box in the format
+        (x_min, y_min, x_max, y_max).
+    :param str label: the label for the bounding box.
+    :param PIL.Image.Image image: the image object to draw on. If provided,
+        image_path is ignored.
+    :param str image_path: the path to the image file. Should be provided if
+        image is not.
+    :param str color: the color of the bounding box outline and label.
+    :param str legend: the legend for the plot.
+    :param bool show: whether to display the image with the bounding box and
+        legend.
+
+    :return: the image object with the bounding box and label.
+    :rtype: PIL.Image.Image
+    """
+
+    # Check if either image or image_path is provided
+    if image is None and image_path is None:
+        raise ValueError("Either image or image_path must be provided.")
+
+    # If image is provided, use it. Otherwise, open the image from the image_path
+    if image is not None:
+        im = image
+    elif image_path is not None:
+        im = Image.open(image_path).copy()
+    else:
+        raise ValueError("Either image or image_path must be provided.")
+
+    # Add legend to the image
+    if legend != "":
+        if not hasattr(im, "custom_lines"):
+            im.custom_lines = []
+            im.legends = []
+
+        if legend not in im.legends:
+            im.custom_lines.append(Line2D([0], [0], color=color, lw=2))
+            im.legends.append(legend)
+
+    if box is not None:
+        # Draw the actual bounding box
+        im_with_rectangle = ImageDraw.Draw(im)
+        im_with_rectangle.rounded_rectangle(
+            box, outline=color, width=2, radius=1
+        )
+        # Draw the label
+        im_with_rectangle.text(
+            (box[0] + 3, box[1]), label, fill=color, stroke_fill=color
+        )
+
+    # Display the image if show is True
+    if show:
+        plt.figure(figsize=(10, 10))
+        plt.imshow(im)
+        plt.xticks([])
+        plt.yticks([])
+        if len(im.custom_lines) > 0:
+            _ = plt.legend(
+                im.custom_lines,
+                im.legends,
+                loc="upper left",
+                bbox_to_anchor=(0, 0.85),
+            )
+
+    return im

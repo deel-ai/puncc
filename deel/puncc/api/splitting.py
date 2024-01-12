@@ -176,7 +176,12 @@ class KFoldSplitter(BaseSplitter):
             ):
                 if isinstance(y, pd.DataFrame):
                     folds.append(
-                        (X.iloc[fit], y.iloc[fit], X.iloc[calib], y.iloc[calib])
+                        (
+                            X.iloc[fit],
+                            y.iloc[fit],
+                            X.iloc[calib],
+                            y.iloc[calib],
+                        )
                     )
                 else:
                     folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))

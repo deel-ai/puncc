@@ -15,6 +15,7 @@ disable=
     W0105, # allow no effect string statement
     W0102, # allow dangerous default value []
     W0511, # allow todos
+    W0632, # allow unbalanced-tuple-unpacking
     W0221, # allow arguments override
     W0707, #
     W0718, # allow catching too general exception Exception
@@ -23,7 +24,7 @@ disable=
     W1401, # alow anomalous backslash in string
 
 [FORMAT]
-max-line-length=120
+max-line-length=100
 max-args=10
 max-attributes=12
 max-branches=15
