@@ -16,6 +16,7 @@ true outputs within a user-defined error :math:`\alpha`.
    getting_started
    regression
    classification
+   object_detection
    anomaly_detection
    api
    metrics

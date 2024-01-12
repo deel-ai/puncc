@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🖼️ Plotting &mdash; PUNCC 0.7.4 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=020ce317"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -116,6 +118,15 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="object_detection.html">🖼️ Object Detection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise.fit"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise.predict"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="anomaly_detection.html">🚩 Anomaly detection</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD"><code class="docutils literal notranslate"><span class="pre">SplitCAD</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.fit"><code class="docutils literal notranslate"><span class="pre">SplitCAD.fit()</span></code></a></li>
@@ -134,6 +145,7 @@
 <li class="toctree-l3"><a class="reference internal" href="prediction.html">Prediction</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.BasePredictor"><code class="docutils literal notranslate"><span class="pre">BasePredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.DualPredictor"><code class="docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.IdPredictor"><code class="docutils literal notranslate"><span class="pre">IdPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
@@ -156,18 +168,22 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.absolute_difference"><code class="docutils literal notranslate"><span class="pre">absolute_difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.mad"><code class="docutils literal notranslate"><span class="pre">mad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.difference"><code class="docutils literal notranslate"><span class="pre">difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score"><code class="docutils literal notranslate"><span class="pre">raps_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_mad"><code class="docutils literal notranslate"><span class="pre">scaled_mad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_ad"><code class="docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_bbox_difference"><code class="docutils literal notranslate"><span class="pre">scaled_bbox_difference()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
 </ul>
 </li>
@@ -185,12 +201,15 @@
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.object_detection_mean_area"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_area()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.object_detection_mean_coverage"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_ace"><code class="docutils literal notranslate"><span class="pre">regression_ace()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_mean_coverage"><code class="docutils literal notranslate"><span class="pre">regression_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_sharpness"><code class="docutils literal notranslate"><span class="pre">regression_sharpness()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">🖼️ Plotting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#plotting.draw_bounding_box"><code class="docutils literal notranslate"><span class="pre">draw_bounding_box()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#plotting.plot_prediction_intervals"><code class="docutils literal notranslate"><span class="pre">plot_prediction_intervals()</span></code></a></li>
 </ul>
 </li>
@@ -213,6 +232,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-object-detection">Conformal Object Detection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#references">References</a></li>
 </ul>
 </li>
@@ -243,11 +263,40 @@
            <div itemprop="articleBody">
              
   <section id="module-plotting">
-<span id="id1"></span><span id="plotting"></span><h1>🖼️ Plotting<a class="headerlink" href="#module-plotting" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><span id="plotting"></span><h1>🖼️ Plotting<a class="headerlink" href="#module-plotting" title="Link to this heading"></a></h1>
 <p>This module provides plotting functions for conformal prediction.</p>
 <dl class="py function">
+<dt class="sig sig-object py" id="plotting.draw_bounding_box">
+<span class="sig-prename descclassname"><span class="pre">plotting.</span></span><span class="sig-name descname"><span class="pre">draw_bounding_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">box</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'red'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.draw_bounding_box" title="Link to this definition"></a></dt>
+<dd><p>Draw a bounding box on a given image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>box</strong> (<em>tuple</em>) – the coordinates of the bounding box in the format
+(x_min, y_min, x_max, y_max).</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – the label for the bounding box.</p></li>
+<li><p><strong>image</strong> (<em>PIL.Image.Image</em>) – the image object to draw on. If provided,
+image_path is ignored.</p></li>
+<li><p><strong>image_path</strong> (<em>str</em>) – the path to the image file. Should be provided if
+image is not.</p></li>
+<li><p><strong>color</strong> (<em>str</em>) – the color of the bounding box outline and label.</p></li>
+<li><p><strong>legend</strong> (<em>str</em>) – the legend for the plot.</p></li>
+<li><p><strong>show</strong> (<em>bool</em>) – whether to display the image with the bounding box and
+legend.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the image object with the bounding box and label.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PIL.Image.Image</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="plotting.plot_prediction_intervals">
-<span class="sig-prename descclassname"><span class="pre">plotting.</span></span><span class="sig-name descname"><span class="pre">plot_prediction_intervals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fig_kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.plot_prediction_intervals" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">plotting.</span></span><span class="sig-name descname"><span class="pre">plot_prediction_intervals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fig_kw</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.plot_prediction_intervals" title="Link to this definition"></a></dt>
 <dd><p>Plot prediction intervals whose bounds are given by <cite>y_pred_lower</cite> and
 <cite>y_pred_upper</cite>. True and predicted (if provided) point values are also
 displayed.</p>

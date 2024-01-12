@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prediction sets &mdash; PUNCC 0.7.4 documentation</title>
+  <title>🖼️ Object Detection &mdash; PUNCC 0.7.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
@@ -19,12 +19,11 @@
         <script src="_static/documentation_options.js?v=020ce317"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="📏 Metrics" href="metrics.html" />
-    <link rel="prev" title="Nonconformity scores" href="nonconformity_scores.html" /> 
+    <link rel="next" title="🚩 Anomaly detection" href="anomaly_detection.html" />
+    <link rel="prev" title="📊 Classification" href="classification.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -119,11 +118,11 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="object_detection.html">🖼️ Object Detection</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise.fit"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.fit()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.get_nonconformity_scores()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="object_detection.html#deel.puncc.object_detection.SplitBoxWise.predict"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.predict()</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">🖼️ Object Detection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#deel.puncc.object_detection.SplitBoxWise"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.object_detection.SplitBoxWise.fit"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.object_detection.SplitBoxWise.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.object_detection.SplitBoxWise.predict"><code class="docutils literal notranslate"><span class="pre">SplitBoxWise.predict()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -136,8 +135,8 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="reference internal" href="api.html">💻 API</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="api.html">💻 API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
@@ -178,14 +177,14 @@
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_bbox_difference"><code class="docutils literal notranslate"><span class="pre">scaled_bbox_difference()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Prediction sets</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -253,10 +252,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="api.html">💻 API</a></li>
-      <li class="breadcrumb-item active">Prediction sets</li>
+      <li class="breadcrumb-item active">🖼️ Object Detection</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/prediction_sets.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/object_detection.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -264,227 +262,171 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-prediction_sets">
-<span id="id1"></span><span id="prediction-sets"></span><h1>Prediction sets<a class="headerlink" href="#module-prediction_sets" title="Link to this heading"></a></h1>
-<p>This module provides prediction sets for conformal prediction. To be used when
-building a <a class="reference internal" href="calibration.html#calibration"><span class="std std-ref">calibrator</span></a>.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.constant_bbox">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">constant_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.constant_bbox" title="Link to this definition"></a></dt>
-<dd><p>Generate the upper and lower bounds of the bounding box coordinates for
-a given prediction.</p>
+  <section id="object-detection">
+<span id="id1"></span><h1>🖼️ Object Detection<a class="headerlink" href="#object-detection" title="Link to this heading"></a></h1>
+<p>Currently implemented conformal object detection methods are listed in this page.</p>
+<p>Each of these wrappers conformalize object localization models that are passed
+as argument in the object constructor.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="deel.puncc.object_detection.SplitBoxWise">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.object_detection.</span></span><span class="sig-name descname"><span class="pre">SplitBoxWise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'additive'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.object_detection.SplitBoxWise" title="Link to this definition"></a></dt>
+<dd><p>Implementation of box-wise conformal object detection. For more info,
+we refer the user to the <a class="reference internal" href="theory_overview.html#theory-splitboxwise"><span class="std std-ref">theory overview page</span></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Y_pred</strong> (<em>np.ndarray</em>) – the predicted bounding box coordinates.</p></li>
-<li><p><strong>scores_quantile</strong> (<em>np.ndarray</em>) – quantile of nonconformity scores computed
-on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span>.</p></li>
+<li><p><strong>predictor</strong> (<a class="reference internal" href="prediction.html#prediction.BasePredictor" title="prediction.BasePredictor"><em>BasePredictor</em></a><em> | </em><em>Any</em>) – a predictive model.</p></li>
+<li><p><strong>train</strong> (<em>bool</em>) – if False, prediction model(s) will not be (re)trained.
+Defaults to False.</p></li>
+<li><p><strong>weight_func</strong> (<em>callable</em>) – function that takes as argument an array of
+features X and returns associated “conformality” weights, defaults to
+None.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – chose between “additive” or “multiplicative” box-wise
+conformalization.</p></li>
+<li><p><strong>random_state</strong> (<em>int</em>) – random seed used when the user does not
+provide a custom fit/calibration split in <cite>fit</cite> method.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>the lower bound and upper bound coordinates of the bounding box.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[np.ndarray, np.ndarray]</p>
-</dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
+<dd class="field-even"><p><strong>ValueError</strong> – if method is not ‘additive’ or ‘multiplicative’.</p>
 </dd>
 </dl>
-</dd></dl>
+<p id="example-splitboxwise">Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.object_detection</span> <span class="kn">import</span> <span class="n">SplitBoxWise</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.constant_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">constant_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.constant_interval" title="Link to this definition"></a></dt>
-<dd><p>Constant prediction interval centered on <cite>y_pred</cite>. The size of the
-margin is <cite>scores_quantile</cite> (noted <span class="math notranslate nohighlight">\(\gamma_{\alpha}\)</span>).</p>
-<div class="math notranslate nohighlight">
-\[I = [y_{\text{pred}} - \gamma_{\alpha}, y_{\text{pred}} +
-\gamma_{\alpha}]\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>y_pred</strong> (<em>Iterable</em>) – predictions.</p></li>
-<li><p><strong>scores_quantile</strong> (<em>ndarray</em>) – quantile of nonconformity scores computed
-on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>prediction intervals <span class="math notranslate nohighlight">\(I\)</span>.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[ndarray]</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
-</dd>
-</dl>
-</dd></dl>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.cqr_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">cqr_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.cqr_interval" title="Link to this definition"></a></dt>
-<dd><p>CQR prediction interval. Considering
-<span class="math notranslate nohighlight">\(Y_{\text{pred}} = (q_{\text{lo}}, q_{\text{hi}})\)</span>, the prediction
-interval is built from the upper and lower quantiles predictions and
-<cite>scores_quantile</cite> <span class="math notranslate nohighlight">\(\gamma_{\alpha}\)</span>.</p>
-<div class="math notranslate nohighlight">
-\[I = [q_{\text{lo}} - \gamma_{\alpha}, q_{\text{lo}} +
-\gamma_{\alpha}]\]</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>y_pred</strong> (<em>Iterable</em>) – predictions.</p></li>
-<li><p><strong>scores_quantile</strong> (<em>ndarray</em>) – quantile of nonconformity scores computed
-on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>scaled prediction intervals <span class="math notranslate nohighlight">\(I\)</span>.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[ndarray]</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
-</dd>
-</dl>
-</dd></dl>
+<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">object_detection_mean_coverage</span>
+<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">object_detection_mean_area</span>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.raps_set">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set" title="Link to this definition"></a></dt>
-<dd><p>RAPS prediction set.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This signature is incompatible with the interface of calibrators.
-<strong>Use</strong> <a class="reference internal" href="#prediction_sets.raps_set_builder" title="prediction_sets.raps_set_builder"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a> <strong>to properly initialize</strong>
-<code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.api.calibration.BaseCalibrator</span></code>.</p>
+<span class="c1"># Generate a random regression problem</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_regression</span><span class="p">(</span>
+    <span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">n_informative</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">n_targets</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Create dummy object localization data formated as (x1, y1, x2, y2)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+
+<span class="c1"># Split data into train and test</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Split train data into fit and calibration</span>
+<span class="n">X_fit</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_fit</span><span class="p">,</span> <span class="n">y_calib</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+
+<span class="c1"># Create a random forest model</span>
+<span class="n">rf_model</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># CP method initialization</span>
+<span class="n">od_cp</span> <span class="o">=</span> <span class="n">SplitBoxWise</span><span class="p">(</span><span class="n">rf_model</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;multiplicative&quot;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># The call to `fit` trains the model and computes the nonconformity</span>
+<span class="c1"># scores on the calibration set</span>
+<span class="n">od_cp</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_fit</span><span class="o">=</span><span class="n">X_fit</span><span class="p">,</span> <span class="n">y_fit</span><span class="o">=</span><span class="n">y_fit</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+
+<span class="c1"># The predict method infers prediction intervals with respect to</span>
+<span class="c1"># the significance level alpha = 20%</span>
+<span class="n">y_pred</span><span class="p">,</span> <span class="n">box_inner</span><span class="p">,</span> <span class="n">box_outer</span> <span class="o">=</span> <span class="n">od_cp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="c1"># Compute marginal coverage and average width of the prediction intervals</span>
+<span class="n">coverage</span> <span class="o">=</span> <span class="n">object_detection_mean_coverage</span><span class="p">(</span><span class="n">box_outer</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+<span class="n">average_area</span> <span class="o">=</span> <span class="n">object_detection_mean_area</span><span class="p">(</span><span class="n">box_outer</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Marginal coverage: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="deel.puncc.object_detection.SplitBoxWise.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cached</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.object_detection.SplitBoxWise.fit" title="Link to this definition"></a></dt>
+<dd><p>This method fits the models on the fit data
+and computes nonconformity scores on calibration data.
+If (X, y) are provided, randomly split data into
+fit and calib subsets w.r.t to the fit_ratio.
+In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
+the conformalization is performed on the given user defined
+fit and calibration sets.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If X and y are provided, <cite>fit</cite> ignores
+any user-defined fit/calib split.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Y_pred</strong> (<em>Iterable</em>) – <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})\)</span>
-where <span class="math notranslate nohighlight">\(P_{\text{C}_i}\)</span> is logit associated to class i.</p></li>
-<li><p><strong>scores_quantile</strong> (<em>ndarray</em>) – quantile of nonconformity scores computed
-on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span></p></li>
-<li><p><strong>lambd</strong> (<em>float</em>) – positive weight associated to the regularization term
-that encourages small set sizes. If <span class="math notranslate nohighlight">\(\lambda = 0\)</span>, there is no
-regularization and the implementation identifies with <strong>APS</strong>.</p></li>
-<li><p><strong>k_reg</strong> (<em>float</em>) – class rank (ordered by descending probability) starting
-from which the regularization is applied. For example, if
-<span class="math notranslate nohighlight">\(k_{reg} = 3\)</span>, then the fourth most likely estimated class has an
-extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
+<li><p><strong>X</strong> (<em>Iterable</em>) – features from the training dataset.</p></li>
+<li><p><strong>y</strong> (<em>Iterable</em>) – labels from the training dataset.</p></li>
+<li><p><strong>fit_ratio</strong> (<em>float</em>) – the proportion of samples assigned to the
+fit subset.</p></li>
+<li><p><strong>X_fit</strong> (<em>Iterable</em>) – features from the fit dataset.</p></li>
+<li><p><strong>y_fit</strong> (<em>Iterable</em>) – labels from the fit dataset.</p></li>
+<li><p><strong>X_calib</strong> (<em>Iterable</em>) – features from the calibration dataset.</p></li>
+<li><p><strong>y_calib</strong> (<em>Iterable</em>) – labels from the calibration dataset.</p></li>
+<li><p><strong>use_cached</strong> (<em>bool</em>) – if set, enables to add the previously computed
+nonconformity scores (if any) to the pool estimated in the current
+call to <cite>fit</cite>. The aggregation follows the CV+
+procedure.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – predict configuration to be passed to the model’s
+fit method.</p></li>
 </ul>
-</dd>
-</dl>
-<dl class="simple">
-<dt>: param bool rand: turn on or off the randomization term that smoothes the</dt><dd><p>discrete probability mass jump when including a new class.</p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>RAPS prediction sets.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Iterable</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.raps_set_builder">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set_builder" title="Link to this definition"></a></dt>
-<dd><p>RAPS prediction set builder. When called, returns a RAPS prediction set
-function <a class="reference internal" href="#prediction_sets.raps_set" title="prediction_sets.raps_set"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_set()</span></code></a> with given initialitation of regularization
-hyperparameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>lambd</strong> (<em>float</em>) – positive weight associated to the regularization term
-that encourages small set sizes. If <span class="math notranslate nohighlight">\(\lambda = 0\)</span>, there is no
-regularization and the implementation identifies with <strong>APS</strong>.</p></li>
-<li><p><strong>k_reg</strong> (<em>float</em>) – class rank (ordered by descending probability) starting
-from which the regularization is applied. For example, if
-<span class="math notranslate nohighlight">\(k_{reg} = 3\)</span>, then the fourth most likely estimated class has an
-extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="simple">
-<dt>: param bool rand: turn on or off the randomization term that smoothes the</dt><dd><p>discrete probability mass jump when including a new class.</p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>RAPS prediction set function that takes two parameters:
-<cite>Y_pred</cite> and <cite>scores_quantile</cite>.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Callable</p>
-</dd>
-<dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ValueError</strong> – incorrect value of lambd or k_reg.</p></li>
-<li><p><strong>TypeError</strong> – unsupported data types.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.scaled_bbox">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_bbox" title="Link to this definition"></a></dt>
-<dd><p>Scaled upper and lower bounds of the bounding box coordinates
-for a given prediction coordinates.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>Y_pred</strong> (<em>np.ndarray</em>) – the predicted bounding box coordinates.</p></li>
-<li><p><strong>scores_quantile</strong> (<em>np.ndarray</em>) – quantile of nonconformity scores computed
-on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The coordinates of the inner and outer bounding boxes.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[np.ndarray, np.ndarray]</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
+<dd class="field-even"><p><strong>RuntimeError</strong> – no dataset provided.</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="prediction_sets.scaled_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_interval" title="Link to this definition"></a></dt>
-<dd><p>Scaled prediction interval centered on <cite>y_pred</cite>. Considering
-<span class="math notranslate nohighlight">\(Y_{\text{pred}} = (\mu_{\text{pred}}, \sigma_{\text{pred}})\)</span>,
-the size of the margin is proportional to <cite>scores_quantile</cite>
-<span class="math notranslate nohighlight">\(\gamma_{\alpha}\)</span>.</p>
-<div class="math notranslate nohighlight">
-\[I = [\mu_{\text{pred}} - \gamma_{\alpha} \cdot \sigma_{\text{pred}},
-y_{\text{pred}} + \gamma_{\alpha} \cdot \sigma_{\text{pred}}]\]</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="deel.puncc.object_detection.SplitBoxWise.get_nonconformity_scores">
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.object_detection.SplitBoxWise.get_nonconformity_scores" title="Link to this definition"></a></dt>
+<dd><p>Get computed nonconformity scores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>computed nonconfomity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deel.puncc.object_detection.SplitBoxWise.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction_func=&lt;function</span> <span class="pre">SplitBoxWise.&lt;lambda&gt;&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.object_detection.SplitBoxWise.predict" title="Link to this definition"></a></dt>
+<dd><p>Conformal object detection (w.r.t target miscoverage alpha) for
+new samples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>y_pred</strong> (<em>Iterable</em>) – predictions.</p></li>
-<li><p><strong>scores_quantile</strong> (<em>ndarray</em>) – quantile of nonconformity scores computed
-on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span>.</p></li>
+<li><p><strong>X_test</strong> (<em>Iterable</em>) – features of new samples.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – target maximum miscoverage.</p></li>
+<li><p><strong>correction_func</strong> (<em>Callable</em>) – correction for multiple hypothesis
+testing in the case of multivariate regression. Defaults to
+Bonferroni correction.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>scaled prediction intervals <span class="math notranslate nohighlight">\(I\)</span>.</p>
+<dd class="field-even"><p>y_pred, y_lower, y_higher</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple[ndarray]</p>
 </dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
-</dd>
 </dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -493,8 +435,8 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="nonconformity_scores.html" class="btn btn-neutral float-left" title="Nonconformity scores" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="metrics.html" class="btn btn-neutral float-right" title="📏 Metrics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="classification.html" class="btn btn-neutral float-left" title="📊 Classification" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="anomaly_detection.html" class="btn btn-neutral float-right" title="🚩 Anomaly detection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
