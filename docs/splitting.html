@@ -1,24 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Splitting &mdash; PUNCC 0.7.4 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=020ce317"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -264,11 +262,11 @@
            <div itemprop="articleBody">
              
   <section id="splitting">
-<h1>Splitting<a class="headerlink" href="#splitting" title="Link to this heading"></a></h1>
+<h1>Splitting<a class="headerlink" href="#splitting" title="Permalink to this heading"></a></h1>
 <p>Helpers to define how to assign data into fit and calibration sets.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="splitting.BaseSplitter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">BaseSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.BaseSplitter" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">BaseSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.BaseSplitter" title="Permalink to this definition"></a></dt>
 <dd><p>Abstract structure of a splitter. A splitter provides a function
 that assignes data points to fit and calibration sets.</p>
 <dl class="field-list simple">
@@ -280,7 +278,7 @@ that assignes data points to fit and calibration sets.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="splitting.IdSplitter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">IdSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_calib</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_calib</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.IdSplitter" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">IdSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_calib</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_calib</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.IdSplitter" title="Permalink to this definition"></a></dt>
 <dd><p>Identity splitter that wraps an already existing data assignment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -294,7 +292,7 @@ that assignes data points to fit and calibration sets.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="splitting.IdSplitter.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.IdSplitter.__call__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.IdSplitter.__call__" title="Permalink to this definition"></a></dt>
 <dd><p>Wraps into a splitter the provided fit and calibration subsets.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -319,7 +317,7 @@ for interoperability.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="splitting.RandomSplitter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">RandomSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.RandomSplitter" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">RandomSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.RandomSplitter" title="Permalink to this definition"></a></dt>
 <dd><p>Random splitter that assign samples given a ratio.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -332,7 +330,7 @@ for interoperability.</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="splitting.RandomSplitter.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.RandomSplitter.__call__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.RandomSplitter.__call__" title="Permalink to this definition"></a></dt>
 <dd><p>Implements a random split strategy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -355,7 +353,7 @@ for interoperability.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="splitting.KFoldSplitter">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">KFoldSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.KFoldSplitter" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">splitting.</span></span><span class="sig-name descname"><span class="pre">KFoldSplitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.KFoldSplitter" title="Permalink to this definition"></a></dt>
 <dd><p>KFold data splitter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -367,7 +365,7 @@ for interoperability.</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="splitting.KFoldSplitter.__call__">
-<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.KFoldSplitter.__call__" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#splitting.KFoldSplitter.__call__" title="Permalink to this definition"></a></dt>
 <dd><p>Implements a K-fold split strategy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

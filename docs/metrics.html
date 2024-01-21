@@ -1,24 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📏 Metrics &mdash; PUNCC 0.7.4 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=020ce317"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -264,11 +262,11 @@
            <div itemprop="articleBody">
              
   <section id="module-metrics">
-<span id="id1"></span><span id="metrics"></span><h1>📏 Metrics<a class="headerlink" href="#module-metrics" title="Link to this heading"></a></h1>
+<span id="id1"></span><span id="metrics"></span><h1>📏 Metrics<a class="headerlink" href="#module-metrics" title="Permalink to this heading"></a></h1>
 <p>This module provides conformal prediction metrics.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.classification_mean_coverage">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">classification_mean_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.classification_mean_coverage" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">classification_mean_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.classification_mean_coverage" title="Permalink to this definition"></a></dt>
 <dd><p>Compute empirical coverage of the prediction sets.</p>
 <p>Given the <span class="math notranslate nohighlight">\(i\)</span>-th prediction set <span class="math notranslate nohighlight">\(S(X_i)\)</span>, the coverage is:</p>
 <ul class="simple">
@@ -296,7 +294,7 @@ correctly covered.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.classification_mean_size">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">classification_mean_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.classification_mean_size" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">classification_mean_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.classification_mean_size" title="Permalink to this definition"></a></dt>
 <dd><p>Compute average size of the prediction sets.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -313,7 +311,7 @@ correctly covered.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.object_detection_mean_area">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">object_detection_mean_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.object_detection_mean_area" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">object_detection_mean_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.object_detection_mean_area" title="Permalink to this definition"></a></dt>
 <dd><p>Calculate the mean area of object bounding predictions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -330,7 +328,7 @@ correctly covered.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.object_detection_mean_coverage">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">object_detection_mean_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred_outer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.object_detection_mean_coverage" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">object_detection_mean_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred_outer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.object_detection_mean_coverage" title="Permalink to this definition"></a></dt>
 <dd><p>Calculate the mean coverage of conformal object detection predictions.
 For each instance, coverage is defined as the true bounding box being inside
 the predicted outer bounding box.</p>
@@ -353,7 +351,7 @@ correctly covered.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.regression_ace">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">regression_ace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.regression_ace" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">regression_ace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.regression_ace" title="Permalink to this definition"></a></dt>
 <dd><p>Compte the Average Coverage Error (ACE).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -386,7 +384,7 @@ prediction intervals are maginally conservative.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.regression_mean_coverage">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">regression_mean_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.regression_mean_coverage" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">regression_mean_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.regression_mean_coverage" title="Permalink to this definition"></a></dt>
 <dd><p>Compute average coverage on several prediction intervals.</p>
 <p>Given the <span class="math notranslate nohighlight">\(i\)</span>-th prediction interval <span class="math notranslate nohighlight">\(C(X_i)\)</span>, the coverage is:</p>
 <blockquote>
@@ -417,7 +415,7 @@ correctly covered.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="metrics.regression_sharpness">
-<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">regression_sharpness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.regression_sharpness" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">regression_sharpness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred_upper</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.regression_sharpness" title="Permalink to this definition"></a></dt>
 <dd><p>Compute the average absolute width of the prediction intervals.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

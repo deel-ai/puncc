@@ -210,16 +210,58 @@ TBC
 Conformal Classification
 ------------------------
 
-.. Let :math:`[ \pi_a(x), \pi_b(x), \dots, \pi_z(x) ] = [\widehat{f}(x|Y=a), \widehat{f}(x|Y=b), \dots] = \widehat{f}(x)` be the output scores (e.g. softmax) of classifier :math:`\widehat{f}`,  and :math:`\pi_{(1)}(x), \pi_{(2)}(x), \dots, \pi_{(K)}(x)` the sequence of scores sorted in decreasing order.
+Classification aim to assign a label or category :math:`\widehat{y}` to a given 
+input :math:`X`. In practice, as the prediction could be subject to 
+uncertainty, conformal methods build **sets of likely labels** :math:`\widehat{C}(X)` that 
+includes the true label :math:`y` with high probability. More formally, the latter
+guarantee is written as follows:
 
-.. That is, :math:`\pi_{j \in \{a, b, \dots \}}(x)` is the score :math:`\in [0,1]` that quantifies how likely it is that ":math:`Y=j` is the true (unknown) label for x" according to the classifier :math:`\widehat{f}` trained on some data.
-.. The prediction is chosen to be the **most likely** label, which can be written as :math:`\text{argmax}_{1,2, \dots, K} \widehat{f}(x) = \pi_{(1)}(x)`.
+.. math::
 
-.. In practice, this prediction could be subject to uncertainty and conformal methods build **sets of likely labels** :math:`C(x)` such that :math:`P\{Y \in C(x) \} \geq 1 - \alpha`.
+    P\{y \in \widehat{C}(X) \} \geq 1 - \alpha
 
+such that :math:`\alpha` is the maximum error rate tolerated by the user 
+(for example 10\%).
 
-.. For example, let :math:`S(x; l) = \sum_{j \leq l} \pi_{(j)}(x)` be the sum of the first, sorted, :math:`l` output scores.
-.. The set :math:`\tilde{C}(x; \beta) = \{y |  \text{min}_l S(x; l) \geq \beta \}` for :math:`\beta := 1 - \alpha` such that :math:`P\{Y \in C(x; l) \} \geq 1 - \alpha`
+One can argue that most classification models come with a probability 
+(uncertainty) estimate for each possible class given an input :math:`X`. This 
+is for example the case when using neural networks with softmax outputs. Let's 
+first formalize the notation then briefly discuss why uncertainty estimated this 
+way is not reliable (calibration issue).
+
+Let :math:`\left(\pi_1(X), \pi_2(X), \dots, \pi_k(X) \right) = \widehat{f}(X) \in [0,1]^k` 
+be the output scores (e.g. softmax) of classifier :math:`\widehat{f}` and 
+:math:`\left(\pi_{(1)}(x), \pi_{(2)}(x), \dots, \pi_{(k)}(x)\right)` the sequence 
+of scores sorted in decreasing order (most likely to least likely class). 
+The :math:`j`-th score :math:`\pi_{j \in \{1, 2, \dots, k\}}(x) \in [0,1]` is 
+the score that quantifies how likely it is that :math:`j` is the true (unknown) 
+label for :math:`X` according to the classifier :math:`\widehat{f}`. The 
+prediction is chosen to be the **most likely** class :math:`(1)` associated to 
+:math:`\pi_{(1)}(X)`.
+
+Ideally, if the model :math:`\widehat{f}` has a good grasp of uncertainty,
+then it is well calibrated. This means that each predicted score :math:`\pi_i(X)` 
+is a precise approximation of the probability of observing class :math:`i` given 
+:math:`X`:
+
+.. math::
+
+    \mathbb{P}(i=y \,|\, \pi_i(X) = p) = p
+
+When the model is well-calibrated, conformal prediction is straightforward. 
+This invovles including the top-ranked classes starting by the most likely up 
+to rank :math:`i`, such that the culumated probability mass exceeds the 
+desired confidence level :math:`1-\alpha`:
+
+.. math::
+
+    \widehat{C}(X) = \{(1), (2), \dots, (j); \sum_{j=1}^{i}\pi_{(j)}(X) \ge 1-\alpha\}
+
+In reality, classification models are often poorly calibrated. Therefore, the 
+straightforward approach will lead to prediction sets that are either overconfident or 
+underconfident, failing to rigously achieve the coverage of the true 
+labels. To address this issue, researchers in the conformal prediction community 
+have proposed several methods to obtain theoretical guarantees in broader settings.  
 
 
 Adaptive Prediction Sets (APS)

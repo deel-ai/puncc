@@ -1,24 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prediction sets &mdash; PUNCC 0.7.4 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=020ce317"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -265,12 +263,12 @@
            <div itemprop="articleBody">
              
   <section id="module-prediction_sets">
-<span id="id1"></span><span id="prediction-sets"></span><h1>Prediction sets<a class="headerlink" href="#module-prediction_sets" title="Link to this heading"></a></h1>
+<span id="id1"></span><span id="prediction-sets"></span><h1>Prediction sets<a class="headerlink" href="#module-prediction_sets" title="Permalink to this heading"></a></h1>
 <p>This module provides prediction sets for conformal prediction. To be used when
 building a <a class="reference internal" href="calibration.html#calibration"><span class="std std-ref">calibrator</span></a>.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.constant_bbox">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">constant_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.constant_bbox" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">constant_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.constant_bbox" title="Permalink to this definition"></a></dt>
 <dd><p>Generate the upper and lower bounds of the bounding box coordinates for
 a given prediction.</p>
 <dl class="field-list simple">
@@ -295,7 +293,7 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.constant_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">constant_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.constant_interval" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">constant_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.constant_interval" title="Permalink to this definition"></a></dt>
 <dd><p>Constant prediction interval centered on <cite>y_pred</cite>. The size of the
 margin is <cite>scores_quantile</cite> (noted <span class="math notranslate nohighlight">\(\gamma_{\alpha}\)</span>).</p>
 <div class="math notranslate nohighlight">
@@ -323,7 +321,7 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.cqr_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">cqr_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.cqr_interval" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">cqr_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.cqr_interval" title="Permalink to this definition"></a></dt>
 <dd><p>CQR prediction interval. Considering
 <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (q_{\text{lo}}, q_{\text{hi}})\)</span>, the prediction
 interval is built from the upper and lower quantiles predictions and
@@ -353,7 +351,7 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.raps_set">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set" title="Permalink to this definition"></a></dt>
 <dd><p>RAPS prediction set.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -394,7 +392,7 @@ extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</sp
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.raps_set_builder">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set_builder" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">raps_set_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.raps_set_builder" title="Permalink to this definition"></a></dt>
 <dd><p>RAPS prediction set builder. When called, returns a RAPS prediction set
 function <a class="reference internal" href="#prediction_sets.raps_set" title="prediction_sets.raps_set"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_set()</span></code></a> with given initialitation of regularization
 hyperparameters.</p>
@@ -434,7 +432,7 @@ extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</sp
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.scaled_bbox">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_bbox" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_bbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_bbox" title="Permalink to this definition"></a></dt>
 <dd><p>Scaled upper and lower bounds of the bounding box coordinates
 for a given prediction coordinates.</p>
 <dl class="field-list simple">
@@ -459,7 +457,7 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.scaled_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_interval" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_interval" title="Permalink to this definition"></a></dt>
 <dd><p>Scaled prediction interval centered on <cite>y_pred</cite>. Considering
 <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (\mu_{\text{pred}}, \sigma_{\text{pred}})\)</span>,
 the size of the margin is proportional to <cite>scores_quantile</cite>

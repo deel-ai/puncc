@@ -1,24 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prediction &mdash; PUNCC 0.7.4 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=020ce317"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -265,11 +263,11 @@
            <div itemprop="articleBody">
              
   <section id="prediction">
-<span id="id1"></span><h1>Prediction<a class="headerlink" href="#prediction" title="Link to this heading"></a></h1>
-<p id="module-prediction">This module provides standard wrappings for ML models.</p>
+<span id="id1"></span><h1>Prediction<a class="headerlink" href="#prediction" title="Permalink to this heading"></a></h1>
+<span class="target" id="module-prediction"></span><p>This module provides standard wrappings for ML models.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="prediction.BasePredictor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">BasePredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">compile_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">BasePredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">compile_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Wrapper of a point prediction model <span class="math notranslate nohighlight">\(\hat{f}\)</span>. Enables to
 standardize the interface of predictors and to expose generic <a class="reference internal" href="#prediction.BasePredictor.fit" title="prediction.BasePredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>,
@@ -355,7 +353,7 @@ call <code class="xref py py-func docutils literal notranslate"><span class="pre
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.BasePredictor.copy">
-<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.copy" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a copy of the predictor. The underlying model is either
 cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 <dl class="field-list simple">
@@ -373,7 +371,7 @@ cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.BasePredictor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.fit" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.fit" title="Permalink to this definition"></a></dt>
 <dd><p>Fit model to the training data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -385,7 +383,7 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -396,7 +394,7 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.BasePredictor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.predict" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Compute predictions on new examples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -424,7 +422,7 @@ examples X.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="prediction.DualPredictor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">DualPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[False,</span> <span class="pre">False]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">DualPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[False,</span> <span class="pre">False]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Wrapper of <strong>two</strong> joint point prediction models
 <span class="math notranslate nohighlight">\((\hat{f_1},\hat{f_2})\)</span>.
@@ -485,7 +483,7 @@ to compile the underlying models.</p></li>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.DualPredictor.copy">
-<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.copy" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a copy of the predictor. The underlying models are either
 cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 <dl class="field-list simple">
@@ -503,7 +501,7 @@ cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.DualPredictor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.fit" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.fit" title="Permalink to this definition"></a></dt>
 <dd><p>Fit model to the training data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -516,7 +514,7 @@ passed to the <cite>fit</cite> method of the underlying models
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -527,7 +525,7 @@ passed to the <cite>fit</cite> method of the underlying models
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.DualPredictor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.predict" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Compute predictions on new examples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -561,7 +559,7 @@ ndarrays.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="prediction.IdPredictor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">IdPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">IdPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#prediction.BasePredictor" title="prediction.BasePredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">BasePredictor</span></code></a></p>
 <p>Subclass of <a class="reference internal" href="#prediction.BasePredictor" title="prediction.BasePredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">BasePredictor</span></code></a> to directly wrap existing predictions.
 The predictions are directly returned without any modification.</p>
@@ -572,7 +570,7 @@ The predictions are directly returned without any modification.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.copy">
-<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.copy" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a copy of the predictor. The underlying model is either
 cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 <dl class="field-list simple">
@@ -590,7 +588,7 @@ cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.fit" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.fit" title="Permalink to this definition"></a></dt>
 <dd><p>Fit model to the training data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -602,7 +600,7 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -613,7 +611,7 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.predict" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the input argument as output data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -630,7 +628,7 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.predict_with_model">
-<span class="sig-name descname"><span class="pre">predict_with_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.predict_with_model" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict_with_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.predict_with_model" title="Permalink to this definition"></a></dt>
 <dd><p>Predicts the output using the wrapped model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -649,7 +647,7 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 
 <dl class="py class">
 <dt class="sig sig-object py" id="prediction.MeanVarPredictor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">MeanVarPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[False,</span> <span class="pre">False]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">prediction.</span></span><span class="sig-name descname"><span class="pre">MeanVarPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[False,</span> <span class="pre">False]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compile_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></p>
 <p>Subclass of <a class="reference internal" href="#prediction.DualPredictor" title="prediction.DualPredictor"><code class="xref py py-class docutils literal notranslate"><span class="pre">DualPredictor</span></code></a> to specifically wrap a conditional
 mean estimator <span class="math notranslate nohighlight">\(\hat{\mu}\)</span> and a conditional dispersion estimator
@@ -713,7 +711,7 @@ arguments to the underlying models, check this
 <a class="reference internal" href="#example-dualpredictor"><span class="std std-ref">code snippet</span></a>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.MeanVarPredictor.copy">
-<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.copy" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.copy" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a copy of the predictor. The underlying models are either
 cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 <dl class="field-list simple">
@@ -731,7 +729,7 @@ cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.MeanVarPredictor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.fit" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.fit" title="Permalink to this definition"></a></dt>
 <dd><p>Fit models to the training data. The dispersion model
 <span class="math notranslate nohighlight">\(\hat{\sigma}\)</span> is trained on the mean absolute deviation of
 <span class="math notranslate nohighlight">\(\hat{mu}\)</span>’s predictions <span class="math notranslate nohighlight">\(\hat{\mu}\)</span> from the true labels
@@ -747,14 +745,14 @@ the <cite>fit</cite> method of the underlying models <span class="math notransla
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.MeanVarPredictor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.predict" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Compute predictions on new examples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

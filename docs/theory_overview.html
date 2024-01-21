@@ -1,24 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📈 Theory overview &mdash; PUNCC 0.7.4 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
-      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
-
-  
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=020ce317"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -263,9 +261,9 @@
            <div itemprop="articleBody">
              
   <section id="theory-overview">
-<span id="id1"></span><h1>📈 Theory overview<a class="headerlink" href="#theory-overview" title="Link to this heading"></a></h1>
+<span id="id1"></span><h1>📈 Theory overview<a class="headerlink" href="#theory-overview" title="Permalink to this heading"></a></h1>
 <section id="uncertainty-quantification">
-<h2>Uncertainty Quantification<a class="headerlink" href="#uncertainty-quantification" title="Link to this heading"></a></h2>
+<h2>Uncertainty Quantification<a class="headerlink" href="#uncertainty-quantification" title="Permalink to this heading"></a></h2>
 <p>In machine learning, we build predictive models from experience,
 by choosing the right approach for the right problem, and from the accessible
 data, via algorithms. Despite our best efforts, we can encounter some
@@ -280,7 +278,7 @@ underlying uncertainty that could stem from various sources or causes.</p>
 <p>Depending on the application fields of machine learning models, uncertainty can have major impacts on performance and/or safety.</p>
 </section>
 <section id="conformal-prediction">
-<h2>Conformal Prediction<a class="headerlink" href="#conformal-prediction" title="Link to this heading"></a></h2>
+<h2>Conformal Prediction<a class="headerlink" href="#conformal-prediction" title="Permalink to this heading"></a></h2>
 <p>Conformal Prediction (CP) is a set of <em>distribution-free</em>, <em>model-agnostic</em> and
 <em>non-asymptotic</em> methods to estimate uncertainty by constructing <strong>valid</strong> <em>prediction sets</em>, i.e. with guaranteed probability of marginal coverage.</p>
 <p>Given an error rate (or significance level) <span class="math notranslate nohighlight">\(\alpha \in (0,1)\)</span>, set by the user, a set of exchangeable (or more simply i.i.d.)
@@ -306,9 +304,9 @@ and awesome conformal prediction <a class="reference external" href="https://git
 be the training data and <span class="math notranslate nohighlight">\(\alpha \in (0, 1)\)</span> the significance level (target maximum error rate).</p>
 </section>
 <section id="conformal-regression">
-<h2>Conformal Regression<a class="headerlink" href="#conformal-regression" title="Link to this heading"></a></h2>
+<h2>Conformal Regression<a class="headerlink" href="#conformal-regression" title="Permalink to this heading"></a></h2>
 <section id="split-inductive-conformal">
-<h3>Split (inductive) Conformal<a class="headerlink" href="#split-inductive-conformal" title="Link to this heading"></a></h3>
+<h3>Split (inductive) Conformal<a class="headerlink" href="#split-inductive-conformal" title="Permalink to this heading"></a></h3>
 <p id="theory-splitcp">The split (also called inductive) conformal prediction <a class="reference internal" href="#papadopoulos2002" id="id3"><span>[Papadopoulos2002]</span></a> <a class="reference internal" href="#lei2018" id="id4"><span>[Lei2018]</span></a> requires a hold-out calibration
 dataset <span class="math notranslate nohighlight">\(D_{calibration}\)</span> to estimate prediction errors and use them to build the prediction interval for a new sample <span class="math notranslate nohighlight">\(X_{new}\)</span>.</p>
 <p>Given a prediction model <span class="math notranslate nohighlight">\(\widehat{f}\)</span> trained on <span class="math notranslate nohighlight">\(D_{train}\)</span>, the algorithm is summarized in the following:</p>
@@ -322,7 +320,7 @@ dataset <span class="math notranslate nohighlight">\(D_{calibration}\)</span> to
 <p>In the literature, the split conformal procedure has been combined with different nonconformity scores,
 which produced several methods. Some of them are presented hereafter.</p>
 <section id="locally-adaptive-conformal-regression">
-<h4>Locally Adaptive Conformal Regression<a class="headerlink" href="#locally-adaptive-conformal-regression" title="Link to this heading"></a></h4>
+<h4>Locally Adaptive Conformal Regression<a class="headerlink" href="#locally-adaptive-conformal-regression" title="Permalink to this heading"></a></h4>
 <p id="theory-lacp">The locally adaptive conformal regression <a class="reference internal" href="#papadopoulos2008" id="id5"><span>[Papadopoulos2008]</span></a> relies on scaled nonconformity scores:</p>
 <div class="math notranslate nohighlight">
 \[R_i = \frac{|\widehat{f}(X_i) - Y_i|}{\widehat{\sigma}(X_i)},\]</div>
@@ -338,7 +336,7 @@ usually improve the conditional coverage. The price is the higher computational 
 <span class="math notranslate nohighlight">\(\widehat{f}\)</span> and <span class="math notranslate nohighlight">\(\widehat{\sigma}\)</span>, on the proper training set.</p>
 </section>
 <section id="conformalized-quantile-regression-cqr">
-<h4>Conformalized Quantile Regression (CQR)<a class="headerlink" href="#conformalized-quantile-regression-cqr" title="Link to this heading"></a></h4>
+<h4>Conformalized Quantile Regression (CQR)<a class="headerlink" href="#conformalized-quantile-regression-cqr" title="Permalink to this heading"></a></h4>
 <p id="theory-cqr">Split conformal prediction can be extended to <a class="reference external" href="https://en.wikipedia.org/wiki/Quantile_regression">quantile predictors</a>  <span class="math notranslate nohighlight">\(q(\cdot)\)</span>
 by using the nonconformity score:</p>
 <div class="math notranslate nohighlight">
@@ -360,7 +358,7 @@ We could have an asymptotically, conditionally accurate predictor and also have 
 </section>
 </section>
 <section id="cross-validation-cv-jackknife">
-<h3>Cross-validation+ (CV+), Jackknife+<a class="headerlink" href="#cross-validation-cv-jackknife" title="Link to this heading"></a></h3>
+<h3>Cross-validation+ (CV+), Jackknife+<a class="headerlink" href="#cross-validation-cv-jackknife" title="Permalink to this heading"></a></h3>
 <p id="theory-cvplus">The <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">leave-one-out (LOO) and the k-fold cross-validation</a> are well known schemes used to estimate regression residuals on out-of-sample data.
 As shown below, one first splits the data into K partitions and then <em>holds out</em> a partition at a time to compute errors (nonconformity scores, in our case).
 Following this principle, <a class="reference internal" href="#barber2021" id="id7"><span>[Barber2021]</span></a> introduced the LOO <em>jackknife+</em> (JP) and the k-fold <em>Cross-validation+</em> (CV+).
@@ -391,35 +389,75 @@ Then, the conformalization step boils down to computing, for each <span class="m
 \[\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{L}_{\alpha}(X_{new}), \widehat{U}_{\alpha}(X_{new}) \Big].\]</div>
 </section>
 <section id="ensemble-batch-prediction-intervals-enbpi">
-<h3>Ensemble Batch Prediction Intervals (EnbPI)<a class="headerlink" href="#ensemble-batch-prediction-intervals-enbpi" title="Link to this heading"></a></h3>
+<h3>Ensemble Batch Prediction Intervals (EnbPI)<a class="headerlink" href="#ensemble-batch-prediction-intervals-enbpi" title="Permalink to this heading"></a></h3>
 <p id="theory-enbpi">Source: <a class="reference internal" href="#xu2021" id="id8"><span>[Xu2021]</span></a></p>
 <p>TBC</p>
 </section>
 </section>
 <section id="conformal-classification">
-<h2>Conformal Classification<a class="headerlink" href="#conformal-classification" title="Link to this heading"></a></h2>
+<h2>Conformal Classification<a class="headerlink" href="#conformal-classification" title="Permalink to this heading"></a></h2>
+<p>Classification aim to assign a label or category <span class="math notranslate nohighlight">\(\widehat{y}\)</span> to a given
+input <span class="math notranslate nohighlight">\(X\)</span>. In practice, as the prediction could be subject to
+uncertainty, conformal methods build <strong>sets of likely labels</strong> <span class="math notranslate nohighlight">\(\widehat{C}(X)\)</span> that
+includes the true label <span class="math notranslate nohighlight">\(y\)</span> with high probability. More formally, the latter
+guarantee is written as follows:</p>
+<div class="math notranslate nohighlight">
+\[P\{y \in \widehat{C}(X) \} \geq 1 - \alpha\]</div>
+<p>such that <span class="math notranslate nohighlight">\(\alpha\)</span> is the maximum error rate tolerated by the user
+(for example 10%).</p>
+<p>One can argue that most classification models come with a probability
+(uncertainty) estimate for each possible class given an input <span class="math notranslate nohighlight">\(X\)</span>. This
+is for example the case when using neural networks with softmax outputs. Let’s
+first formalize the notation then briefly discuss why uncertainty estimated this
+way is not reliable (calibration issue).</p>
+<p>Let <span class="math notranslate nohighlight">\(\left(\pi_1(X), \pi_2(X), \dots, \pi_k(X) \right) = \widehat{f}(X) \in [0,1]^k\)</span>
+be the output scores (e.g. softmax) of classifier <span class="math notranslate nohighlight">\(\widehat{f}\)</span> and
+<span class="math notranslate nohighlight">\(\left(\pi_{(1)}(x), \pi_{(2)}(x), \dots, \pi_{(k)}(x)\right)\)</span> the sequence
+of scores sorted in decreasing order (most likely to least likely class).
+The <span class="math notranslate nohighlight">\(j\)</span>-th score <span class="math notranslate nohighlight">\(\pi_{j \in \{1, 2, \dots, k\}}(x) \in [0,1]\)</span> is
+the score that quantifies how likely it is that <span class="math notranslate nohighlight">\(j\)</span> is the true (unknown)
+label for <span class="math notranslate nohighlight">\(X\)</span> according to the classifier <span class="math notranslate nohighlight">\(\widehat{f}\)</span>. The
+prediction is chosen to be the <strong>most likely</strong> class <span class="math notranslate nohighlight">\((1)\)</span> associated to
+<span class="math notranslate nohighlight">\(\pi_{(1)}(X)\)</span>.</p>
+<p>Ideally, if the model <span class="math notranslate nohighlight">\(\widehat{f}\)</span> has a good grasp of uncertainty,
+then it is well calibrated. This means that each predicted score <span class="math notranslate nohighlight">\(\pi_i(X)\)</span>
+is a precise approximation of the probability of observing class <span class="math notranslate nohighlight">\(i\)</span> given
+<span class="math notranslate nohighlight">\(X\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\mathbb{P}(i=y \,|\, \pi_i(X) = p) = p\]</div>
+<p>When the model is well-calibrated, conformal prediction is straightforward.
+This invovles including the top-ranked classes starting by the most likely up
+to rank <span class="math notranslate nohighlight">\(i\)</span>, such that the culumated probability mass exceeds the
+desired confidence level <span class="math notranslate nohighlight">\(1-\alpha\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\widehat{C}(X) = \{(1), (2), \dots, (j); \sum_{j=1}^{i}\pi_{(j)}(X) \ge 1-\alpha\}\]</div>
+<p>In reality, classification models are often poorly calibrated. Therefore, the
+straightforward approach will lead to prediction sets that are either overconfident or
+underconfident, failing to rigously achieve the coverage of the true
+labels. To address this issue, researchers in the conformal prediction community
+have proposed several methods to obtain theoretical guarantees in broader settings.</p>
 <section id="adaptive-prediction-sets-aps">
-<h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Link to this heading"></a></h3>
+<h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
 <p id="theory-aps">Source: <a class="reference internal" href="#romano2020" id="id9"><span>[Romano2020]</span></a></p>
 <p>TBC</p>
 </section>
 <section id="regularized-adaptive-prediction-sets-raps">
-<h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Link to this heading"></a></h3>
+<h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Permalink to this heading"></a></h3>
 <p id="theory-raps">Source: <a class="reference internal" href="#angelopoulos2021" id="id10"><span>[Angelopoulos2021]</span></a></p>
 <p>TBC</p>
 </section>
 </section>
 <section id="conformal-anomaly-detection">
-<h2>Conformal Anomaly Detection<a class="headerlink" href="#conformal-anomaly-detection" title="Link to this heading"></a></h2>
+<h2>Conformal Anomaly Detection<a class="headerlink" href="#conformal-anomaly-detection" title="Permalink to this heading"></a></h2>
 <p>TBC</p>
 </section>
 <section id="conformal-object-detection">
-<h2>Conformal Object Detection<a class="headerlink" href="#conformal-object-detection" title="Link to this heading"></a></h2>
+<h2>Conformal Object Detection<a class="headerlink" href="#conformal-object-detection" title="Permalink to this heading"></a></h2>
 <p id="theory-splitboxwise">Source: <a class="reference internal" href="#degrancey2022" id="id11"><span>[deGrancey2022]</span></a></p>
 <p>TBC</p>
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <div role="list" class="citation-list">
 <div class="citation" id="angelopoulos2021" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">Angelopoulos2021</a><span class="fn-bracket">]</span></span>
