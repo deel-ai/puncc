@@ -210,15 +210,15 @@ TBC
 Conformal Classification
 ------------------------
 
-Classification aim to assign a label or category :math:`\widehat{y}` to a given 
+Classification aims to assign a label or category :math:`\widehat{y}` to a given 
 input :math:`X`. In practice, as the prediction could be subject to 
 uncertainty, conformal methods build **sets of likely labels** :math:`\widehat{C}(X)` that 
-includes the true label :math:`y` with high probability. More formally, the latter
+includes the true label :math:`y` with high probability. More formally, the 
 guarantee is written as follows:
 
 .. math::
 
-    P\{y \in \widehat{C}(X) \} \geq 1 - \alpha
+    P\{y \in \widehat{C}(X) \} \geq 1 - \alpha, 
 
 such that :math:`\alpha` is the maximum error rate tolerated by the user 
 (for example 10\%).
@@ -249,7 +249,7 @@ is a precise approximation of the probability of observing class :math:`i` given
     \mathbb{P}(i=y \,|\, \pi_i(X) = p) = p
 
 When the model is well-calibrated, conformal prediction is straightforward. 
-This invovles including the top-ranked classes starting by the most likely up 
+This invovles including the top-ranked classes starting by the most likely one up 
 to rank :math:`i`, such that the culumated probability mass exceeds the 
 desired confidence level :math:`1-\alpha`:
 
@@ -259,9 +259,9 @@ desired confidence level :math:`1-\alpha`:
 
 In reality, classification models are often poorly calibrated. Therefore, the 
 straightforward approach will lead to prediction sets that are either overconfident or 
-underconfident, failing to rigously achieve the coverage of the true 
-labels. To address this issue, researchers in the conformal prediction community 
-have proposed several methods to obtain theoretical guarantees in broader settings.  
+underconfident, failing to rigously cover the true labels. To address this issue, 
+researchers in the conformal prediction community have proposed several methods 
+to obtain theoretical guarantees in broader settings.
 
 
 Adaptive Prediction Sets (APS)
