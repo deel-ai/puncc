@@ -396,13 +396,13 @@ Then, the conformalization step boils down to computing, for each <span class="m
 </section>
 <section id="conformal-classification">
 <h2>Conformal Classification<a class="headerlink" href="#conformal-classification" title="Permalink to this heading"></a></h2>
-<p>Classification aim to assign a label or category <span class="math notranslate nohighlight">\(\widehat{y}\)</span> to a given
+<p>Classification aims to assign a label or category <span class="math notranslate nohighlight">\(\widehat{y}\)</span> to a given
 input <span class="math notranslate nohighlight">\(X\)</span>. In practice, as the prediction could be subject to
 uncertainty, conformal methods build <strong>sets of likely labels</strong> <span class="math notranslate nohighlight">\(\widehat{C}(X)\)</span> that
-includes the true label <span class="math notranslate nohighlight">\(y\)</span> with high probability. More formally, the latter
+includes the true label <span class="math notranslate nohighlight">\(y\)</span> with high probability. More formally, the
 guarantee is written as follows:</p>
 <div class="math notranslate nohighlight">
-\[P\{y \in \widehat{C}(X) \} \geq 1 - \alpha\]</div>
+\[P\{y \in \widehat{C}(X) \} \geq 1 - \alpha,\]</div>
 <p>such that <span class="math notranslate nohighlight">\(\alpha\)</span> is the maximum error rate tolerated by the user
 (for example 10%).</p>
 <p>One can argue that most classification models come with a probability
@@ -426,16 +426,16 @@ is a precise approximation of the probability of observing class <span class="ma
 <div class="math notranslate nohighlight">
 \[\mathbb{P}(i=y \,|\, \pi_i(X) = p) = p\]</div>
 <p>When the model is well-calibrated, conformal prediction is straightforward.
-This invovles including the top-ranked classes starting by the most likely up
+This invovles including the top-ranked classes starting by the most likely one up
 to rank <span class="math notranslate nohighlight">\(i\)</span>, such that the culumated probability mass exceeds the
 desired confidence level <span class="math notranslate nohighlight">\(1-\alpha\)</span>:</p>
 <div class="math notranslate nohighlight">
 \[\widehat{C}(X) = \{(1), (2), \dots, (j); \sum_{j=1}^{i}\pi_{(j)}(X) \ge 1-\alpha\}\]</div>
 <p>In reality, classification models are often poorly calibrated. Therefore, the
 straightforward approach will lead to prediction sets that are either overconfident or
-underconfident, failing to rigously achieve the coverage of the true
-labels. To address this issue, researchers in the conformal prediction community
-have proposed several methods to obtain theoretical guarantees in broader settings.</p>
+underconfident, failing to rigously cover the true labels. To address this issue,
+researchers in the conformal prediction community have proposed several methods
+to obtain theoretical guarantees in broader settings.</p>
 <section id="adaptive-prediction-sets-aps">
 <h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
 <p id="theory-aps">Source: <a class="reference internal" href="#romano2020" id="id9"><span>[Romano2020]</span></a></p>
