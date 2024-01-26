@@ -47,7 +47,7 @@ yielding marginally valid prediction sets.
 
 In this page, we present the most common conformal prediction methods of the
 literature used on regression and classification models. We also refer to
-Angelopoulos and Bates [Angelopoulos2022]_ for a hands-on introduction to conformal prediction
+Angelopoulos and Bates [Angelo2022]_ for a hands-on introduction to conformal prediction
 and `awesome conformal prediction github <https://github.com/valeman/awesome-conformal-prediction>`_ for additional ressources.
 
 In the following, let :math:`D_{train} = {(X_i, Y_i)}_{i=1..n_{train}} \sim P_{XY}`
@@ -60,7 +60,7 @@ Split (inductive) Conformal
 ***************************
 .. _theory splitcp:
 
-The split (also called inductive) conformal prediction [Papadopoulos2002]_ [Lei2018]_ requires a hold-out calibration
+The split (also called inductive) conformal prediction [Papado2002]_ [Lei___2018]_ requires a hold-out calibration
 dataset :math:`D_{calibration}` to estimate prediction errors and use them to build the prediction interval for a new sample :math:`X_{new}`.
 
 Given a prediction model :math:`\widehat{f}` trained on :math:`D_{train}`, the algorithm is summarized in the following:
@@ -80,7 +80,7 @@ Locally Adaptive Conformal Regression
 #####################################
 .. _theory lacp:
 
-The locally adaptive conformal regression [Papadopoulos2008]_ relies on scaled nonconformity scores:
+The locally adaptive conformal regression [Papado2008]_ relies on scaled nonconformity scores:
 
 .. math::
 
@@ -190,7 +190,7 @@ Ensemble Batch Prediction Intervals (EnbPI)
 *******************************************
 .. _theory enbpi:
 
-Source: [Xu2021]_
+Source: [Xu____2021]_
 
 TBC
 
@@ -305,7 +305,7 @@ Regularized Adaptive Prediction Sets (RAPS)
 *******************************************
 .. _theory raps:
 
-Source: [Angelopoulos2021]_
+Source: [Angelo2021]_
 
 TBC
 
@@ -331,7 +331,7 @@ critical parameter in anomaly detection, as it determines which data points are
 flagged as anomalies. 
 
 
-Conformal Anomaly Detection (CAD) is a procedure based on conformal prediction and was introduced by R. Laxhammar et al. [Laxhammar2015]_. 
+Conformal Anomaly Detection (CAD) is a procedure based on conformal prediction and was introduced by R. Laxhammar et al. [Laxham2015]_. 
 It enables to calibrate the anomaly threshold to control the False Detection Rate (FDR), 
 i.e. to enforce an upper bound on the false alarm rate under a user-specified limit :math:`\alpha`. 
 
@@ -364,21 +364,21 @@ Conformal Object Detection
 --------------------------
 .. _theory splitboxwise:
 
-Source: [deGrancey2022]_
+Source: [deGran2022]_
 
 TBC
 
 References
 ----------
 
-.. [Angelopoulos2021] Angelopoulos, A. N., Bates, S., Jordan, M., & Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. https://openreview.net/forum?id=eNdiU_DbM9
-.. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
+.. [Angelo2021] Angelopoulos, A. N., Bates, S., Jordan, M., & Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. https://openreview.net/forum?id=eNdiU_DbM9
+.. [Angelo2022] Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
 .. [Barber2021] Barber, R. F., Candes, E. J., Ramdas, A., & Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. https://arxiv.org/abs/1905.02928
-.. [Laxhammar2015] Laxhammar, R., & Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94.
-.. [Lei2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
-.. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. https://link.springer.com/chapter/10.1007/3-540-36755-1_29
-.. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
-.. [deGrancey2022] de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.
+.. [Laxham2015] Laxhammar, R., & Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94.
+.. [Lei___2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
+.. [Papado2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. https://link.springer.com/chapter/10.1007/3-540-36755-1_29
+.. [Papado2008] Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
+.. [deGran2022] de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.
 .. [Romano2019] Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. https://arxiv.org/abs/1905.03222
 .. [Romano2020] Romano, Y., Sesia, M., & Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. https://arxiv.org/abs/2006.02544
-.. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. https://proceedings.mlr.press/v139/xu21h.html.
+.. [Xu____2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. https://proceedings.mlr.press/v139/xu21h.html.
