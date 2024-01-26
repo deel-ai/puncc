@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📈 Theory overview &mdash; PUNCC 0.7.4 documentation</title>
+  <title>📈 Theory overview &mdash; PUNCC 0.7.5 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -286,7 +286,7 @@ train data <span class="math notranslate nohighlight">\(\{ (X_i, Y_i) \}_{i=1}^{
 <span class="math notranslate nohighlight">\((X_{new}, Y_{new})\)</span> generated for a joint distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span>,
 a conformal prediction procedure builds prediction sets <span class="math notranslate nohighlight">\({C}_{\alpha}(\cdot)\)</span> so that:</p>
 <div class="math notranslate nohighlight">
-\[\mathbb{P} \Big\{ Y_{new} \in {C}_{\alpha}\left(X_{new}\right) \Big\} \geq 1 - \alpha.\]</div>
+\[\mathbb{P} \left( Y_{new} \in {C}_{\alpha}\left(X_{new}\right) \right) \geq 1 - \alpha.\]</div>
 <p>Over many calibration and test sets, <span class="math notranslate nohighlight">\({C}_{\alpha}(X_{new})\)</span> will contain
 the observed values of <span class="math notranslate nohighlight">\(Y_{new}\)</span> with frequency of <em>at least</em> <span class="math notranslate nohighlight">\((1-\alpha)\)</span>.</p>
 <p>Within the conformal prediction framework, the inequality above holds for any model,
@@ -298,8 +298,8 @@ as it can “conformalize” any existing predictor during or after training (bl
 yielding marginally valid prediction sets.</p>
 <p>In this page, we present the most common conformal prediction methods of the
 literature used on regression and classification models. We also refer to
-Angelopoulos and Bates <a class="reference internal" href="#angelopoulos2022" id="id2"><span>[Angelopoulos2022]</span></a> for a hands-on introduction to conformal prediction
-and awesome conformal prediction <a class="reference external" href="https://github.com/valeman/awesome-conformal-prediction">github</a> for additional ressources.</p>
+Angelopoulos and Bates <a class="reference internal" href="#angelo2022" id="id2"><span>[Angelo2022]</span></a> for a hands-on introduction to conformal prediction
+and <a class="reference external" href="https://github.com/valeman/awesome-conformal-prediction">awesome conformal prediction github</a> for additional ressources.</p>
 <p>In the following, let <span class="math notranslate nohighlight">\(D_{train} = {(X_i, Y_i)}_{i=1..n_{train}} \sim P_{XY}\)</span>
 be the training data and <span class="math notranslate nohighlight">\(\alpha \in (0, 1)\)</span> the significance level (target maximum error rate).</p>
 </section>
@@ -307,7 +307,7 @@ be the training data and <span class="math notranslate nohighlight">\(\alpha \in
 <h2>Conformal Regression<a class="headerlink" href="#conformal-regression" title="Permalink to this heading"></a></h2>
 <section id="split-inductive-conformal">
 <h3>Split (inductive) Conformal<a class="headerlink" href="#split-inductive-conformal" title="Permalink to this heading"></a></h3>
-<p id="theory-splitcp">The split (also called inductive) conformal prediction <a class="reference internal" href="#papadopoulos2002" id="id3"><span>[Papadopoulos2002]</span></a> <a class="reference internal" href="#lei2018" id="id4"><span>[Lei2018]</span></a> requires a hold-out calibration
+<p id="theory-splitcp">The split (also called inductive) conformal prediction <a class="reference internal" href="#papado2002" id="id3"><span>[Papado2002]</span></a> [Lei___2018]_ requires a hold-out calibration
 dataset <span class="math notranslate nohighlight">\(D_{calibration}\)</span> to estimate prediction errors and use them to build the prediction interval for a new sample <span class="math notranslate nohighlight">\(X_{new}\)</span>.</p>
 <p>Given a prediction model <span class="math notranslate nohighlight">\(\widehat{f}\)</span> trained on <span class="math notranslate nohighlight">\(D_{train}\)</span>, the algorithm is summarized in the following:</p>
 <ol class="arabic simple">
@@ -321,7 +321,7 @@ dataset <span class="math notranslate nohighlight">\(D_{calibration}\)</span> to
 which produced several methods. Some of them are presented hereafter.</p>
 <section id="locally-adaptive-conformal-regression">
 <h4>Locally Adaptive Conformal Regression<a class="headerlink" href="#locally-adaptive-conformal-regression" title="Permalink to this heading"></a></h4>
-<p id="theory-lacp">The locally adaptive conformal regression <a class="reference internal" href="#papadopoulos2008" id="id5"><span>[Papadopoulos2008]</span></a> relies on scaled nonconformity scores:</p>
+<p id="theory-lacp">The locally adaptive conformal regression <a class="reference internal" href="#papado2008" id="id4"><span>[Papado2008]</span></a> relies on scaled nonconformity scores:</p>
 <div class="math notranslate nohighlight">
 \[R_i = \frac{|\widehat{f}(X_i) - Y_i|}{\widehat{\sigma}(X_i)},\]</div>
 <p>where <span class="math notranslate nohighlight">\(\widehat{\sigma}(X_i)\)</span> is a measure of dispersion of the nonconformity scores at <span class="math notranslate nohighlight">\(X_i\)</span>.
@@ -348,7 +348,7 @@ For example, if we set <span class="math notranslate nohighlight">\(\alpha = 0.1
 <p class="admonition-title">Note</p>
 <p>It is common to split evenly <span class="math notranslate nohighlight">\(\alpha\)</span> as: <span class="math notranslate nohighlight">\(\alpha_{lo} = \alpha_{hi}= \frac{\alpha}{2}\)</span>, but users are free to do otherwise.</p>
 </div>
-<p>The procedure, named <em>Conformalized Quantile Regression</em> <a class="reference internal" href="#romano2019" id="id6"><span>[Romano2019]</span></a>, yields the following prediction interval:</p>
+<p>The procedure, named <em>Conformalized Quantile Regression</em> <a class="reference internal" href="#romano2019" id="id5"><span>[Romano2019]</span></a>, yields the following prediction interval:</p>
 <div class="math notranslate nohighlight">
 \[\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{q}_{\alpha_{lo}}(X_{new}) - \delta_{\alpha} \,,\, \widehat{q}_{1 - \alpha_{hi}}(X_{new}) + \delta_{\alpha} \Big].\]</div>
 <p>When data are exchangeable, the correction margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> guarantees finite-sample marginal coverage for the quantile predictions, and this holds also for misspecified (i.e. “bad”) predictors.</p>
@@ -361,7 +361,7 @@ We could have an asymptotically, conditionally accurate predictor and also have 
 <h3>Cross-validation+ (CV+), Jackknife+<a class="headerlink" href="#cross-validation-cv-jackknife" title="Permalink to this heading"></a></h3>
 <p id="theory-cvplus">The <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">leave-one-out (LOO) and the k-fold cross-validation</a> are well known schemes used to estimate regression residuals on out-of-sample data.
 As shown below, one first splits the data into K partitions and then <em>holds out</em> a partition at a time to compute errors (nonconformity scores, in our case).
-Following this principle, <a class="reference internal" href="#barber2021" id="id7"><span>[Barber2021]</span></a> introduced the LOO <em>jackknife+</em> (JP) and the k-fold <em>Cross-validation+</em> (CV+).
+Following this principle, <a class="reference internal" href="#barber2021" id="id6"><span>[Barber2021]</span></a> introduced the LOO <em>jackknife+</em> (JP) and the k-fold <em>Cross-validation+</em> (CV+).
 With these methods, one does <em>not need</em> a dedicated calibration set.</p>
 <a class="reference internal image-reference" href="_images/k-fold-scheme.png"><img alt="_images/k-fold-scheme.png" class="align-center" src="_images/k-fold-scheme.png" style="width: 600px;" /></a>
 <div class="line-block">
@@ -390,7 +390,7 @@ Then, the conformalization step boils down to computing, for each <span class="m
 </section>
 <section id="ensemble-batch-prediction-intervals-enbpi">
 <h3>Ensemble Batch Prediction Intervals (EnbPI)<a class="headerlink" href="#ensemble-batch-prediction-intervals-enbpi" title="Permalink to this heading"></a></h3>
-<p id="theory-enbpi">Source: <a class="reference internal" href="#xu2021" id="id8"><span>[Xu2021]</span></a></p>
+<p id="theory-enbpi">Source: [Xu____2021]_</p>
 <p>TBC</p>
 </section>
 </section>
@@ -402,7 +402,7 @@ uncertainty, conformal methods build <strong>sets of likely labels</strong> <spa
 includes the true label <span class="math notranslate nohighlight">\(y\)</span> with high probability. More formally, the
 guarantee is written as follows:</p>
 <div class="math notranslate nohighlight">
-\[P\{y \in \widehat{C}(X) \} \geq 1 - \alpha,\]</div>
+\[\mathbb{P}\left(y \in \widehat{C}(X) \right) \geq 1 - \alpha,\]</div>
 <p>such that <span class="math notranslate nohighlight">\(\alpha\)</span> is the maximum error rate tolerated by the user
 (for example 10%).</p>
 <p>One can argue that most classification models come with a probability
@@ -426,7 +426,7 @@ is a precise approximation of the probability of observing class <span class="ma
 <div class="math notranslate nohighlight">
 \[\mathbb{P}(i=y \,|\, \pi_i(X) = p) = p\]</div>
 <p>When the model is well-calibrated, conformal prediction is straightforward.
-This invovles including the top-ranked classes starting by the most likely one up
+This involves including the top-ranked classes starting by the most likely one up
 to rank <span class="math notranslate nohighlight">\(i\)</span>, such that the culumated probability mass exceeds the
 desired confidence level <span class="math notranslate nohighlight">\(1-\alpha\)</span>:</p>
 <div class="math notranslate nohighlight">
@@ -438,66 +438,126 @@ researchers in the conformal prediction community have proposed several methods
 to obtain theoretical guarantees in broader settings.</p>
 <section id="adaptive-prediction-sets-aps">
 <h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
-<p id="theory-aps">Source: <a class="reference internal" href="#romano2020" id="id9"><span>[Romano2020]</span></a></p>
-<p>TBC</p>
+<p id="theory-aps">Adaptive Prediction Sets (APS), proposed by <a class="reference internal" href="#romano2020" id="id7"><span>[Romano2020]</span></a>, is the equivalent of
+<a class="reference internal" href="#theory-cqr"><span class="std std-ref">CQR</span></a> for classification. For a user-defined <span class="math notranslate nohighlight">\(\alpha\)</span>,
+the main idea is to provide a threshold <span class="math notranslate nohighlight">\(\tau\)</span> of cumulative probability mass required
+to obtain the desired coverage <span class="math notranslate nohighlight">\(1-\alpha\)</span>. The prediction set is
+constructed by including the classes ranked by their predicted scores in
+decreasing order, until their cumulative scores exceed <span class="math notranslate nohighlight">\(\tau\)</span>.</p>
+<p>Let <span class="math notranslate nohighlight">\(\left(\pi_1(X), \pi_2(X), \dots, \pi_k(X) \right) = \widehat{f}(X) \in [0,1]^k\)</span>
+be the output scores (e.g. softmax) of classifier <span class="math notranslate nohighlight">\(\widehat{f}\)</span> and
+<span class="math notranslate nohighlight">\(\left(\pi_{(1)}(x), \pi_{(2)}(x), \dots, \pi_{(k)}(x)\right)\)</span> the sequence
+of scores sorted in decreasing order (most likely to least likely class).
+The APS defines the nonconformity score as the cumulative sum
+of the classifier’s ranked scores, from the most likely up to the score
+associated to true label <span class="math notranslate nohighlight">\(y\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[R = \sum_{j=(1)}^{(i)=y}\pi_{(j)}(X)\]</div>
+<p>The procedure aligns with split (inductive) conformal prediction:</p>
+<ol class="arabic simple">
+<li><p>Compute nonconformity scores on the calibration dataset: <span class="math notranslate nohighlight">\(\bar{R} = \{R_i\}_{}\)</span>, for <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>, where <span class="math notranslate nohighlight">\(n\)</span> is the size of <span class="math notranslate nohighlight">\(D_{calibration}\)</span>.</p></li>
+<li><p>Compute the calibrated threshold <span class="math notranslate nohighlight">\(\tau_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + \frac{1}{n})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\bar{R}\)</span>.</p></li>
+<li><p>Build the prediction interval <span class="math notranslate nohighlight">\(\widehat{C}_{\alpha}(X_{new}) = \{(1), (2), \dots, (c)\}\)</span> such that <span class="math notranslate nohighlight">\(c = \inf\{(i), \text{ }\sum_{j=(1)}^{(i)}\pi_{(j)}(X_{new}) \ge \tau_{\alpha}\}\)</span>.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the original paper, the nonconformity scores and the prediction set are
+functions of a random variable <span class="math notranslate nohighlight">\(u \sim Uniform(0,1)\)</span> (independent of <span class="math notranslate nohighlight">\(X\)</span>).
+This enables to obtain a tighter coverage close to <span class="math notranslate nohighlight">\(1-\alpha\)</span>. In puncc,
+you can choose to activate or not on the randomization.</p>
+</div>
 </section>
 <section id="regularized-adaptive-prediction-sets-raps">
 <h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Permalink to this heading"></a></h3>
-<p id="theory-raps">Source: <a class="reference internal" href="#angelopoulos2021" id="id10"><span>[Angelopoulos2021]</span></a></p>
+<p id="theory-raps">Source: <a class="reference internal" href="#angelo2021" id="id8"><span>[Angelo2021]</span></a></p>
 <p>TBC</p>
 </section>
 </section>
 <section id="conformal-anomaly-detection">
 <h2>Conformal Anomaly Detection<a class="headerlink" href="#conformal-anomaly-detection" title="Permalink to this heading"></a></h2>
-<p>TBC</p>
+<p>Consider a trained anomaly detector <span class="math notranslate nohighlight">\(\hat{f}\)</span> that predicts if a data point <span class="math notranslate nohighlight">\(X\)</span>
+is anomalous based on an anomaly score <span class="math notranslate nohighlight">\(\hat{s}\)</span> –or more generally any score
+function that evaluates the strangeness or inadequacy of a data point– such
+that:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\hat{f}(X) =
+\begin{cases}
+    \text{not anomaly} &amp; \text{if $\hat{s}(X) \le M_\text{threshold}$}\\
+  \text{anomaly} &amp; \text{if $\hat{s}(X) &gt; M_\text{threshold}$}
+\end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(M_\text{threshold}\)</span> is the anomaly score threshold, that is the lowest
+anomaly score associated to a data point to be considered anomalous. It is a
+critical parameter in anomaly detection, as it determines which data points are
+flagged as anomalies.</p>
+<p>Conformal Anomaly Detection (CAD) is a procedure based on conformal prediction and was introduced by R. Laxhammar et al. <a class="reference internal" href="#laxham2015" id="id9"><span>[Laxham2015]</span></a>.
+It enables to calibrate the anomaly threshold to control the False Detection Rate (FDR),
+i.e. to enforce an upper bound on the false alarm rate under a user-specified limit <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
+<p>CAD is based on split conformal prediction with the following particularities:</p>
+<ul class="simple">
+<li><p>It works in an unsupervised setup: the calibration dataset does not need to be labeled.</p></li>
+<li><p>For a data point <span class="math notranslate nohighlight">\(X\)</span>, the nonconformity score consists of the anomaly score <span class="math notranslate nohighlight">\(\hat{s}(X)\)</span>.</p></li>
+</ul>
+<p>Given a calibration dataset <span class="math notranslate nohighlight">\(D_{calibration}=\{(X_i)\}_{i=1..n}\)</span>, CAD procedure is as follows:</p>
+<ol class="arabic simple">
+<li><p>Compute nonconformity scores on the calibration dataset: <span class="math notranslate nohighlight">\(\bar{S} = \{\hat{s}(X_i)\}_{}\)</span>, for <span class="math notranslate nohighlight">\(i=1,\dots,n\)</span>.</p></li>
+<li><p>Compute <span class="math notranslate nohighlight">\(\hat{q}_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + \frac{1}{n})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\bar{S}\)</span>.</p></li>
+<li><p>Predict anomalies using the calibrated anomaly detector <span class="math notranslate nohighlight">\(\hat{C}\)</span>:</p></li>
+</ol>
+<div class="math notranslate nohighlight">
+\[\begin{split}\hat{C}_{\alpha}(X_{new}) =
+\begin{cases}
+    \text{not anomaly} &amp; \text{if $\hat{s}(X_{new}) \le \hat{q}_{\alpha}$}\\
+  \text{anomaly} &amp; \text{if $\hat{s}(X_{new}) &gt; \hat{q}_{\alpha}$}
+\end{cases}\end{split}\]</div>
+<p>When <span class="math notranslate nohighlight">\(X_1, \dots, X_n, X_{new}\)</span> are i.i.d, <span class="math notranslate nohighlight">\(\hat{C}\)</span> guarantees the FDR control property:</p>
+<div class="math notranslate nohighlight">
+\[\mathbb{P}\left(\hat{C}_{\alpha}(X_{new}) = \text{anomaly}\right) \le \alpha\]</div>
 </section>
 <section id="conformal-object-detection">
 <h2>Conformal Object Detection<a class="headerlink" href="#conformal-object-detection" title="Permalink to this heading"></a></h2>
-<p id="theory-splitboxwise">Source: <a class="reference internal" href="#degrancey2022" id="id11"><span>[deGrancey2022]</span></a></p>
+<p id="theory-splitboxwise">Source: <a class="reference internal" href="#degran2022" id="id10"><span>[deGran2022]</span></a></p>
 <p>TBC</p>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <div role="list" class="citation-list">
-<div class="citation" id="angelopoulos2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">Angelopoulos2021</a><span class="fn-bracket">]</span></span>
+<div class="citation" id="angelo2021" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">Angelo2021</a><span class="fn-bracket">]</span></span>
 <p>Angelopoulos, A. N., Bates, S., Jordan, M., &amp; Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. <a class="reference external" href="https://openreview.net/forum?id=eNdiU_DbM9">https://openreview.net/forum?id=eNdiU_DbM9</a></p>
 </div>
-<div class="citation" id="angelopoulos2022" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">Angelopoulos2022</a><span class="fn-bracket">]</span></span>
+<div class="citation" id="angelo2022" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">Angelo2022</a><span class="fn-bracket">]</span></span>
 <p>Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511</p>
 </div>
 <div class="citation" id="barber2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">Barber2021</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">Barber2021</a><span class="fn-bracket">]</span></span>
 <p>Barber, R. F., Candes, E. J., Ramdas, A., &amp; Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. <a class="reference external" href="https://arxiv.org/abs/1905.02928">https://arxiv.org/abs/1905.02928</a></p>
 </div>
-<div class="citation" id="lei2018" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">Lei2018</a><span class="fn-bracket">]</span></span>
-<p>Lei, J., G’Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. <a class="reference external" href="https://arxiv.org/abs/1604.04173">https://arxiv.org/abs/1604.04173</a></p>
+<div class="citation" id="laxham2015" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">Laxham2015</a><span class="fn-bracket">]</span></span>
+<p>Laxhammar, R., &amp; Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94.</p>
 </div>
-<div class="citation" id="papadopoulos2002" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">Papadopoulos2002</a><span class="fn-bracket">]</span></span>
+</div>
+<div role="list" class="citation-list">
+<div class="citation" id="papado2002" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">Papado2002</a><span class="fn-bracket">]</span></span>
 <p>Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. <a class="reference external" href="https://link.springer.com/chapter/10.1007/3-540-36755-1_29">https://link.springer.com/chapter/10.1007/3-540-36755-1_29</a></p>
 </div>
-<div class="citation" id="papadopoulos2008" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">Papadopoulos2008</a><span class="fn-bracket">]</span></span>
+<div class="citation" id="papado2008" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">Papado2008</a><span class="fn-bracket">]</span></span>
 <p>Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).</p>
 </div>
-<div class="citation" id="degrancey2022" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">deGrancey2022</a><span class="fn-bracket">]</span></span>
+<div class="citation" id="degran2022" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">deGran2022</a><span class="fn-bracket">]</span></span>
 <p>de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.</p>
 </div>
 <div class="citation" id="romano2019" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">Romano2019</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">Romano2019</a><span class="fn-bracket">]</span></span>
 <p>Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. <a class="reference external" href="https://arxiv.org/abs/1905.03222">https://arxiv.org/abs/1905.03222</a></p>
 </div>
 <div class="citation" id="romano2020" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">Romano2020</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">Romano2020</a><span class="fn-bracket">]</span></span>
 <p>Romano, Y., Sesia, M., &amp; Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. <a class="reference external" href="https://arxiv.org/abs/2006.02544">https://arxiv.org/abs/2006.02544</a></p>
-</div>
-<div class="citation" id="xu2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">Xu2021</a><span class="fn-bracket">]</span></span>
-<p>Xu, C. &amp; Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. <a class="reference external" href="https://proceedings.mlr.press/v139/xu21h.html">https://proceedings.mlr.press/v139/xu21h.html</a>.</p>
 </div>
 </div>
 </section>
