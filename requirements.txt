@@ -2,5 +2,5 @@ joblib
 matplotlib
 numpy
 pandas
-scikit-learn
+scikit-learn~=1.3.0
 tqdm

@@ -23,7 +23,7 @@
 """
 This module provides standard wrappings for ML models.
 """
-import pkgutil
+import importlib
 from copy import deepcopy
 from typing import Any
 from typing import Iterable
@@ -37,7 +37,7 @@ from deel.puncc.api import nonconformity_scores
 from deel.puncc.api.utils import dual_predictor_check
 from deel.puncc.api.utils import supported_types_check
 
-if pkgutil.find_loader("tensorflow") is not None:
+if importlib.util.find_spec("tensorflow") is not None:
     import tensorflow as tf
 
 
@@ -133,6 +133,10 @@ class BasePredictor:
         if self.compile_kwargs:
             _ = self.model.compile(**self.compile_kwargs)
 
+    def get_is_trained(self) -> bool:
+        """Get flag that informs if the model is pre-trained."""
+        return self.is_trained
+
     def fit(self, X: Iterable, y: Optional[Iterable] = None, **kwargs) -> None:
         """Fit model to the training data.
 
@@ -190,7 +194,7 @@ class BasePredictor:
         if (
             "tensorflow" in model_type_str
             or "keras" in model_type_str
-            and pkgutil.find_loader("tensorflow") is not None
+            and importlib.util.find_spec("tensorflow") is not None
         ):
             # pylint: disable=E1101
             model = tf.keras.models.clone_model(self.model)
@@ -319,6 +323,12 @@ class DualPredictor:
         if len(self.compile_args[1].keys()) != 0 and is_trained[1] is False:
             _ = self.models[1].compile(**self.compile_args[1])
 
+    def get_is_trained(self) -> bool:
+        """Get flag that informs if the models are pre-trained.
+        Returns True only when both models are pretrained.
+        """
+        return self.is_trained[0] and self.is_trained[1]
+
     def fit(
         self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]
     ) -> None:
@@ -392,7 +402,7 @@ class DualPredictor:
             try:
                 model_copy = deepcopy(model)
             except Exception as e_outer:
-                if pkgutil.find_loader("tensorflow") is not None:
+                if importlib.util.find_spec("tensorflow") is not None:
                     try:
                         # pylint: disable=E1101
                         model_copy = tf.keras.models.clone_model(model)
