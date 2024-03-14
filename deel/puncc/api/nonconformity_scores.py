@@ -30,7 +30,6 @@ from typing import Iterable
 
 import numpy as np
 
-from deel.puncc.api.utils import EPSILON
 from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
 
@@ -206,7 +205,7 @@ def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     return abs(difference(y_pred, y_true))
 
 
-def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
+def scaled_ad(Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12) -> Iterable:
     """Scaled Absolute Deviation, normalized by an estimation of the conditional
     mean absolute deviation (conditional MAD). Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
@@ -218,6 +217,7 @@ def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     :param Iterable Y_pred: point and conditional MAD predictions.
         :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
     :param Iterable y_true: true labels.
+    :param float eps: small positive value to avoid division by negative or zero.
 
     :returns: scaled absolute deviation.
     :rtype: Iterable
@@ -244,9 +244,12 @@ def scaled_ad(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     # MAD then Scaled MAD and computed
     mean_absolute_deviation = absolute_difference(y_pred, y_true)
-    if np.any(sigma_pred < 0):
-        raise RuntimeError("All MAD predictions should be positive.")
-    return mean_absolute_deviation / (sigma_pred + EPSILON)
+    if np.any(sigma_pred + eps <= 0):
+        print("Warning: calibration points with MAD predictions"
+              " below -eps won't be used for calibration.")
+
+    nonneg = sigma_pred + eps > 0
+    return mean_absolute_deviation[nonneg] / (sigma_pred[nonneg] + eps)
 
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:

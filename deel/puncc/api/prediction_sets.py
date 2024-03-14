@@ -214,7 +214,7 @@ def constant_interval(
 
 
 def scaled_interval(
-    Y_pred: Iterable, scores_quantile: np.ndarray
+    Y_pred: Iterable, scores_quantile: np.ndarray, eps: float = 1e-12
 ) -> Tuple[np.ndarray]:
     """Scaled prediction interval centered on `y_pred`. Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
@@ -229,6 +229,7 @@ def scaled_interval(
     :param Iterable y_pred: predictions.
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`.
+    :param float eps: small positive value to avoid singleton sets.
 
     :returns: scaled prediction intervals :math:`I`.
     :rtype: Tuple[ndarray]
@@ -249,8 +250,16 @@ def scaled_interval(
     else:
         y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
 
-    y_lo = y_pred - scores_quantile * sigma_pred
-    y_hi = y_pred + scores_quantile * sigma_pred
+    if np.any(sigma_pred + eps <= 0):
+        print("Warning: test points with MAD predictions below -eps"
+              " will have infinite sized prediction intervals.")
+
+    fints = sigma_pred + eps > 0
+    y_lo, y_hi = np.zeros_like(y_pred), np.zeros_like(y_pred)
+    y_lo[fints] = y_pred[fints] - scores_quantile * (sigma_pred[fints] + eps)
+    y_hi[fints] = y_pred[fints] + scores_quantile * (sigma_pred[fints] + eps)
+    y_lo[~fints] = -np.inf
+    y_hi[~fints] = np.inf
     return y_lo, y_hi
 
 
