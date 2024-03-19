@@ -33,6 +33,7 @@ from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.conformalization import ConformalPredictor
 from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.splitting import KFoldSplitter
 from deel.puncc.api.splitting import RandomSplitter
 
@@ -70,6 +71,12 @@ class ConformalPredictorCheck(unittest.TestCase):
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.absolute_difference,
             pred_set_func=prediction_sets.constant_interval,
+        )
+
+        # Definition of a dual calibrator
+        self.dual_calibrator = BaseCalibrator(
+            nonconf_score_func=nonconformity_scores.cqr_score,
+            pred_set_func=prediction_sets.cqr_interval,
         )
 
         # Random splitter
@@ -161,6 +168,70 @@ class ConformalPredictorCheck(unittest.TestCase):
             conformal_predictor = ConformalPredictor(
                 predictor=notrained_predictor,
                 calibrator=self.calibrator,
+                splitter=None,
+                train=True,
+            )
+            conformal_predictor.fit(self.X_calib, self.y_calib)
+
+    def test_pretrained_dualpredictor(self):
+        # Predictor initialized with trained model
+        model1 = linear_model.LinearRegression()
+        model2 = linear_model.LinearRegression()
+        model1.fit(self.X_fit, self.y_fit)
+        model2.fit(self.X_fit, self.y_fit)
+        trained_predictor = DualPredictor(
+            [model1, model2], is_trained=[True, True]
+        )
+        notrained_predictor = DualPredictor(
+            [model1, model2], is_trained=[False, True]
+        )
+
+        # Conformal predictor (good)
+        conformal_predictor = ConformalPredictor(
+            predictor=trained_predictor,
+            calibrator=self.dual_calibrator,
+            splitter=self.random_splitter,
+            train=False,
+        )
+        # Compute nonconformity scores
+        conformal_predictor.fit(self.X_train, self.y_train)
+
+        # Conformal predictor (bad)
+        with self.assertRaises(RuntimeError):
+            conformal_predictor = ConformalPredictor(
+                predictor=notrained_predictor,
+                calibrator=self.dual_calibrator,
+                splitter=self.random_splitter,
+                train=False,
+            )
+            # Compute nonconformity scores
+            conformal_predictor.fit(self.X_train, self.y_train)
+
+        # Conformalization with no splitter (good)
+        conformal_predictor = ConformalPredictor(
+            predictor=trained_predictor,
+            calibrator=self.dual_calibrator,
+            splitter=None,
+            train=False,
+        )
+        conformal_predictor.fit(self.X_calib, self.y_calib)
+        conformal_predictor.predict(self.X_test, alpha=0.1)
+
+        # Conformalization with no splitter (bad)
+        with self.assertRaises(RuntimeError):
+            conformal_predictor = ConformalPredictor(
+                predictor=notrained_predictor,
+                calibrator=self.dual_calibrator,
+                splitter=None,
+                train=False,
+            )
+            conformal_predictor.fit(self.X_calib, self.y_calib)
+
+        # Conformalization with no splitter and train set to True (bad)
+        with self.assertRaises(RuntimeError):
+            conformal_predictor = ConformalPredictor(
+                predictor=notrained_predictor,
+                calibrator=self.dual_calibrator,
                 splitter=None,
                 train=True,
             )

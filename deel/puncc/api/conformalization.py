@@ -280,9 +280,9 @@ class ConformalPredictor:
                 predictor.fit(X_fit, y_fit, **kwargs)  # Fit K-fold predictor
 
             # Make sure that predictor is already trained if train arg is False
-            elif self.train is False and predictor.is_trained is False:
+            elif self.train is False and predictor.get_is_trained() is False:
                 raise RuntimeError(
-                    "'train' argument is set to 'False' but model is not pre-trained"
+                    "'train' argument is set to 'False' but model(s) not pre-trained."
                 )
 
             else:  # Skipping training
