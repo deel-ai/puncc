@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; PUNCC 0.7.5 documentation</title>
+  <title>Index &mdash; PUNCC 0.7.7 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -144,6 +144,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -278,6 +282,7 @@
  | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
  
 </div>
 <h2 id="_">_</h2>
@@ -367,9 +372,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="prediction_sets.html#prediction_sets.constant_interval">constant_interval() (in module prediction_sets)</a>
 </li>
-      <li><a href="prediction.html#prediction.BasePredictor.copy">copy() (prediction.BasePredictor method)</a>
+      <li><a href="experimental.html#experimental.TorchPredictor.copy">copy() (experimental.TorchPredictor method)</a>
 
       <ul>
+        <li><a href="prediction.html#prediction.BasePredictor.copy">(prediction.BasePredictor method)</a>
+</li>
         <li><a href="prediction.html#prediction.DualPredictor.copy">(prediction.DualPredictor method)</a>
 </li>
         <li><a href="prediction.html#prediction.IdPredictor.copy">(prediction.IdPredictor method)</a>
@@ -412,6 +419,15 @@
       <li><a href="regression.html#deel.puncc.regression.EnbPI">EnbPI (class in deel.puncc.regression)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    experimental
+
+      <ul>
+        <li><a href="experimental.html#module-experimental">module</a>
+</li>
+      </ul></li>
+  </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
@@ -446,6 +462,8 @@
 </li>
         <li><a href="regression.html#deel.puncc.regression.SplitCP.fit">(deel.puncc.regression.SplitCP method)</a>
 </li>
+        <li><a href="experimental.html#experimental.TorchPredictor.fit">(experimental.TorchPredictor method)</a>
+</li>
         <li><a href="prediction.html#prediction.BasePredictor.fit">(prediction.BasePredictor method)</a>
 </li>
         <li><a href="prediction.html#prediction.DualPredictor.fit">(prediction.DualPredictor method)</a>
@@ -461,6 +479,16 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="prediction.html#prediction.BasePredictor.get_is_trained">get_is_trained() (prediction.BasePredictor method)</a>
+
+      <ul>
+        <li><a href="prediction.html#prediction.DualPredictor.get_is_trained">(prediction.DualPredictor method)</a>
+</li>
+        <li><a href="prediction.html#prediction.IdPredictor.get_is_trained">(prediction.IdPredictor method)</a>
+</li>
+        <li><a href="prediction.html#prediction.MeanVarPredictor.get_is_trained">(prediction.MeanVarPredictor method)</a>
+</li>
+      </ul></li>
       <li><a href="calibration.html#calibration.BaseCalibrator.get_nonconformity_scores">get_nonconformity_scores() (calibration.BaseCalibrator method)</a>
 
       <ul>
@@ -548,6 +576,8 @@
 </li>
         <li><a href="conformalization.html#module-conformalization">conformalization</a>
 </li>
+        <li><a href="experimental.html#module-experimental">experimental</a>
+</li>
         <li><a href="metrics.html#module-metrics">metrics</a>
 </li>
         <li><a href="nonconformity_scores.html#module-nonconformity_scores">nonconformity_scores</a>
@@ -623,6 +653,8 @@
         <li><a href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.predict">(deel.puncc.regression.LocallyAdaptiveCP method)</a>
 </li>
         <li><a href="regression.html#deel.puncc.regression.SplitCP.predict">(deel.puncc.regression.SplitCP method)</a>
+</li>
+        <li><a href="experimental.html#experimental.TorchPredictor.predict">(experimental.TorchPredictor method)</a>
 </li>
         <li><a href="prediction.html#prediction.BasePredictor.predict">(prediction.BasePredictor method)</a>
 </li>
@@ -714,6 +746,14 @@
       <li><a href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD">SplitCAD (class in deel.puncc.anomaly_detection)</a>
 </li>
       <li><a href="regression.html#deel.puncc.regression.SplitCP">SplitCP (class in deel.puncc.regression)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="experimental.html#experimental.TorchPredictor">TorchPredictor (class in experimental)</a>
 </li>
   </ul></td>
 </tr></table>

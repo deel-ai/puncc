@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prediction &mdash; PUNCC 0.7.5 documentation</title>
+  <title>Prediction &mdash; PUNCC 0.7.7 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -21,7 +21,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Calibration" href="calibration.html" />
+    <link rel="next" title="Experimental" href="experimental.html" />
     <link rel="prev" title="Conformalization" href="conformalization.html" /> 
 </head>
 
@@ -146,6 +146,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#prediction.DualPredictor"><code class="docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#prediction.IdPredictor"><code class="docutils literal notranslate"><span class="pre">IdPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
@@ -393,6 +397,17 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="prediction.BasePredictor.get_is_trained">
+<span class="sig-name descname"><span class="pre">get_is_trained</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.get_is_trained" title="Permalink to this definition"></a></dt>
+<dd><p>Get flag that informs if the model is pre-trained.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="prediction.BasePredictor.predict">
 <span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Compute predictions on new examples.</p>
@@ -524,6 +539,18 @@ passed to the <cite>fit</cite> method of the underlying models
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="prediction.DualPredictor.get_is_trained">
+<span class="sig-name descname"><span class="pre">get_is_trained</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.get_is_trained" title="Permalink to this definition"></a></dt>
+<dd><p>Get flag that informs if the models are pre-trained.
+Returns True only when both models are pretrained.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="prediction.DualPredictor.predict">
 <span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Compute predictions on new examples.</p>
@@ -607,6 +634,17 @@ on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</
 <p class="admonition-title">Note</p>
 <p>For more details, check this <a class="reference internal" href="#example-basepredictor"><span class="std std-ref">code snippets</span></a>.</p>
 </div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="prediction.IdPredictor.get_is_trained">
+<span class="sig-name descname"><span class="pre">get_is_trained</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.get_is_trained" title="Permalink to this definition"></a></dt>
+<dd><p>Get flag that informs if the model is pre-trained.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -751,6 +789,18 @@ the <cite>fit</cite> method of the underlying models <span class="math notransla
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="prediction.MeanVarPredictor.get_is_trained">
+<span class="sig-name descname"><span class="pre">get_is_trained</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.get_is_trained" title="Permalink to this definition"></a></dt>
+<dd><p>Get flag that informs if the models are pre-trained.
+Returns True only when both models are pretrained.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="prediction.MeanVarPredictor.predict">
 <span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dictargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[{},</span> <span class="pre">{}]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.predict" title="Permalink to this definition"></a></dt>
 <dd><p>Compute predictions on new examples.</p>
@@ -791,7 +841,7 @@ ndarrays.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="conformalization.html" class="btn btn-neutral float-left" title="Conformalization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="calibration.html" class="btn btn-neutral float-right" title="Calibration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="experimental.html" class="btn btn-neutral float-right" title="Experimental" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

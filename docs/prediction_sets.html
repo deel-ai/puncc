@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prediction sets &mdash; PUNCC 0.7.5 documentation</title>
+  <title>Prediction sets &mdash; PUNCC 0.7.7 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -146,6 +146,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.DualPredictor"><code class="docutils literal notranslate"><span class="pre">DualPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.IdPredictor"><code class="docutils literal notranslate"><span class="pre">IdPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
@@ -457,7 +461,7 @@ on a calibration set for a given <span class="math notranslate nohighlight">\(\a
 
 <dl class="py function">
 <dt class="sig sig-object py" id="prediction_sets.scaled_interval">
-<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_interval" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">prediction_sets.</span></span><span class="sig-name descname"><span class="pre">scaled_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scores_quantile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction_sets.scaled_interval" title="Permalink to this definition"></a></dt>
 <dd><p>Scaled prediction interval centered on <cite>y_pred</cite>. Considering
 <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (\mu_{\text{pred}}, \sigma_{\text{pred}})\)</span>,
 the size of the margin is proportional to <cite>scores_quantile</cite>
@@ -471,6 +475,7 @@ y_{\text{pred}} + \gamma_{\alpha} \cdot \sigma_{\text{pred}}]\]</div>
 <li><p><strong>y_pred</strong> (<em>Iterable</em>) – predictions.</p></li>
 <li><p><strong>scores_quantile</strong> (<em>ndarray</em>) – quantile of nonconformity scores computed
 on a calibration set for a given <span class="math notranslate nohighlight">\(\alpha\)</span>.</p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – small positive value to avoid singleton sets.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
