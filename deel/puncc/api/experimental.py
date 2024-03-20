@@ -23,9 +23,9 @@
 """
 This module provides experimental features. Use cautiously.
 """
-import pkgutil
+import importlib.util
 
-if pkgutil.find_loader("torch") is not None:
+if importlib.util.find_spec("torch") is not None:
     import torch
 
     class TorchPredictor:
