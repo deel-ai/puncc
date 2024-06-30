@@ -595,6 +595,72 @@ The predictions are directly returned without any modification.</p>
 <dd class="field-odd"><p><strong>model</strong> – model to be wrapped.</p>
 </dd>
 </dl>
+<p id="example-idpredictor">Conformal regression example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">IdPredictor</span>
+<span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">SplitCP</span>
+<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span><span class="p">,</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span> <span class="nn">deel.puncc.plotting</span> <span class="kn">import</span> <span class="n">plot_prediction_intervals</span>
+
+<span class="c1"># Generate data</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)</span>
+<span class="c1"># randomly shuffle the data</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="n">X_calib</span><span class="p">,</span> <span class="n">X_test</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:</span><span class="mi">4000</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="mi">1000</span><span class="p">:]</span>
+
+
+<span class="c1"># Define the real target function</span>
+<span class="k">def</span> <span class="nf">real_f</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">X</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">))</span> <span class="o">*</span> <span class="n">X</span> <span class="o">*</span> <span class="mf">0.5</span>
+
+
+<span class="c1"># Target values for the calibration and new data</span>
+<span class="n">y_calib</span> <span class="o">=</span> <span class="n">real_f</span><span class="p">(</span><span class="n">X_calib</span><span class="p">)</span>
+<span class="n">y_test</span> <span class="o">=</span> <span class="n">real_f</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+
+<span class="c1"># Suppose we can obtain predictions from an API call</span>
+<span class="k">def</span> <span class="nf">api_call</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">X</span>  <span class="c1"># This is a remote model that estimates of the target</span>
+
+
+<span class="c1"># The model can still be conformalized using the calibration data as follows</span>
+<span class="c1">## 1. Instantiate the Predictor wrapper, which serves as a container to host the predictions</span>
+<span class="n">dummy_predictor</span> <span class="o">=</span> <span class="n">IdPredictor</span><span class="p">()</span>
+
+<span class="c1">## 2. CP method initialization</span>
+<span class="n">split_cp</span> <span class="o">=</span> <span class="n">SplitCP</span><span class="p">(</span>
+    <span class="n">dummy_predictor</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>  <span class="c1"># train=False to avoid trying to retrain the model internally</span>
+
+<span class="c1">## 3. Request predictions on the calibration set</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">api_call</span><span class="p">(</span><span class="n">X_calib</span><span class="p">)</span>
+
+<span class="c1">## 4. The call to fit computes the nonconformity scores on the</span>
+<span class="c1">## calibration set. Instead of features, we need to provide the</span>
+<span class="c1">## predictions as X_calib along with the true target values.</span>
+<span class="n">split_cp</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_calib</span><span class="o">=</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+
+<span class="c1">## 5. The predict method infers prediction intervals with respect to</span>
+<span class="c1">## the significance level alpha = 10%. Make sure you provide the</span>
+<span class="c1">## point predictions on the test set.</span>
+<span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span> <span class="o">=</span> <span class="n">split_cp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+    <span class="n">api_call</span><span class="p">(</span><span class="n">X_test</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span>
+<span class="p">)</span>
+
+<span class="c1"># Compute marginal coverage and average width of the prediction intervals</span>
+<span class="n">coverage</span> <span class="o">=</span> <span class="n">regression_mean_coverage</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span><span class="p">)</span>
+<span class="n">width</span> <span class="o">=</span> <span class="n">regression_sharpness</span><span class="p">(</span>
+    <span class="n">y_pred_lower</span><span class="o">=</span><span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span><span class="o">=</span><span class="n">y_pred_upper</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Marginal coverage: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Average width: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plot_prediction_intervals</span><span class="p">(</span>
+    <span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="o">=</span><span class="n">y_pred</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.copy">
 <span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.copy" title="Permalink to this definition"></a></dt>
@@ -616,24 +682,12 @@ cloned (Keras model) or deepcopied (sklearn and similar models).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.fit">
 <span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.fit" title="Permalink to this definition"></a></dt>
-<dd><p>Fit model to the training data.</p>
+<dd><p>Fit method is not supported for IdPredictor. Raises a RuntimeError.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>X</strong> (<em>Iterable</em>) – train features.</p></li>
-<li><p><strong>y</strong> (<em>Optional</em><em>[</em><em>Iterable</em><em>]</em>) – train labels. Defaults to None (unsupervised).</p></li>
-<li><p><strong>kwargs</strong> – keyword arguments to be passed to the call <a class="reference internal" href="#prediction.IdPredictor.fit" title="prediction.IdPredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>
-on the underlying model <span class="math notranslate nohighlight">\(\hat{f}\)</span>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For more details, check this <a class="reference internal" href="#example-basepredictor"><span class="std std-ref">code snippets</span></a>.</p>
-</div>
 </dd></dl>
 
 <dl class="py method">
