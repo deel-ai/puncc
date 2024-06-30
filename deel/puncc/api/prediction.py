@@ -216,11 +216,91 @@ class IdPredictor(BasePredictor):
     The predictions are directly returned without any modification.
 
     :param model: model to be wrapped.
+
+    .. _example idpredictor:
+
+    Conformal regression example::
+
+        import numpy as np
+        from deel.puncc.api.prediction import IdPredictor
+        from deel.puncc.regression import SplitCP
+        from deel.puncc.metrics import regression_mean_coverage, regression_sharpness
+        from deel.puncc.plotting import plot_prediction_intervals
+
+        # Generate data
+        X = np.linspace(0, 20, 5000)
+        # randomly shuffle the data
+        np.random.shuffle(X)
+        X_calib, X_test = X[:4000], X[1000:]
+
+
+        # Define the real target function
+        def real_f(X):
+            return 2 * X + np.random.randn(len(X)) * X * 0.5
+
+
+        # Target values for the calibration and new data
+        y_calib = real_f(X_calib)
+        y_test = real_f(X_test)
+
+
+        # Suppose we can obtain predictions from an API call
+        def api_call(X):
+            return 2 * X  # This is a remote model that estimates of the target
+
+
+        # The model can still be conformalized using the calibration data as follows
+        ## 1. Instantiate the Predictor wrapper, which serves as a container to host the predictions
+        dummy_predictor = IdPredictor()
+
+        ## 2. CP method initialization
+        split_cp = SplitCP(
+            dummy_predictor, train=False
+        )  # train=False to avoid trying to retrain the model internally
+
+        ## 3. Request predictions on the calibration set
+        y_pred = api_call(X_calib)
+
+        ## 4. The call to fit computes the nonconformity scores on the
+        ## calibration set. Instead of features, we need to provide the
+        ## predictions as X_calib along with the true target values.
+        split_cp.fit(X_calib=y_pred, y_calib=y_calib)
+
+        ## 5. The predict method infers prediction intervals with respect to
+        ## the significance level alpha = 10%. Make sure you provide the
+        ## point predictions on the test set.
+        y_pred, y_pred_lower, y_pred_upper = split_cp.predict(
+            api_call(X_test), alpha=0.1
+        )
+
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(
+            y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+        )
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average width: {np.round(width, 2)}")
+
+        ax = plot_prediction_intervals(
+            y_test, y_pred_lower, y_pred_upper, X=X_test, y_pred=y_pred
+        )
+
+
+
+
+
     """
 
     def __init__(self, model=None, **kwargs):
         self.kwargs = kwargs
         super().__init__(model, is_trained=True)
+
+    def fit(self, X: Iterable, y: Optional[Iterable] = None, **kwargs) -> None:
+        """Fit method is not supported for IdPredictor. Raises a RuntimeError."""
+        raise RuntimeError(
+            "IdPredictor does not support fit method. Use BasePredictor in"
+            + " case you need to train the underlying model."
+        )
 
     def predict(self, X: Iterable):
         """Returns the input argument as output data.

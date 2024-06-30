@@ -76,15 +76,15 @@ For comprehensive documentation, we encourage you to visit the [**official docum
 
 ## 👨‍🎓 Tutorials
 
-We highly recommand following the introduction tutorials to get familiar with the library and its API:
 
-* [**Introduction tutorial**](docs/puncc_intro.ipynb)</font> <sub> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1TC_BM7JaEYtBIq6yuYB5U4cJjeg71Tch) </sub>
+We highly recommend following the introductory tutorials to get familiar with the library and its API.
 
-* [**API tutorial**](docs/api_intro.ipynb) <sub> [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1d06qQweM1X1eSrCnixA_MLEZil1vXewj) </sub>
-
-You can also familiarize yourself with the architecture of *puncc* to build more efficiently your own conformal prediction methods:
-
-* [**Architecture overview**](docs/puncc_architecture.ipynb)
+| Tutorial | Description | Link |
+|----------|-------------|------|
+| **Introduction Tutorial** | Get started with the basics of *puncc*. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1TC_BM7JaEYtBIq6yuYB5U4cJjeg71Tch) |
+| **API Tutorial** | Learn about the API and how to use it effectively. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/api_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1d06qQweM1X1eSrCnixA_MLEZil1vXewj) |
+| **Tutorial on CP with PyTorch** | Understand how to apply Conformal Prediction with PyTorch. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_pytorch.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1tNO6u5rt8Bklfq7n4gv_Qyi1BvV827JA?usp=sharing) |
+| **Architecture Overview** | Detailed overview of *puncc*'s architecture. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_architecture.ipynb) |
 
 ## 🚀 Quickstart
 
