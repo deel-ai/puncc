@@ -283,20 +283,43 @@ underlying uncertainty that could stem from various sources or causes.</p>
 </section>
 <section id="conformal-prediction">
 <h2>Conformal Prediction<a class="headerlink" href="#conformal-prediction" title="Permalink to this heading"></a></h2>
-<p>Conformal Prediction (CP) is a set of <em>distribution-free</em>, <em>model-agnostic</em> and
-<em>non-asymptotic</em> methods to estimate uncertainty by constructing <strong>valid</strong> <em>prediction sets</em>, i.e. with guaranteed probability of marginal coverage.</p>
+<p>Conformal Prediction (CP) is a set of methods to estimate uncertainty
+by constructing by constructing <strong>valid</strong> <em>prediction sets</em>,
+i.e. prediction sets with a probabilistic guarantee
+of marginal coverage.
+The following three features make CP methods particularly attractive:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><em>Distribution-free</em>. CP methods can be applied regardless of the underlying data-generating distribution.</p></li>
+<li><p><em>Model-agnostic</em>. CP works with any ML model, even with black-box models where we only have access to the outputs of the model.</p></li>
+<li><p><em>Non-asymptotic</em>. CP methods provide finite-sample probabilistic guarantees, that is, the guarantees hold without the need to assume that the number of available data grows to infinity.</p></li>
+</ul>
+</div></blockquote>
 <p>Given an error rate (or significance level) <span class="math notranslate nohighlight">\(\alpha \in (0,1)\)</span>, set by the user, a set of exchangeable (or more simply i.i.d.)
-train data <span class="math notranslate nohighlight">\(\{ (X_i, Y_i) \}_{i=1}^{n}\)</span> and test point
-<span class="math notranslate nohighlight">\((X_{new}, Y_{new})\)</span> generated for a joint distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span>,
-a conformal prediction procedure builds prediction sets <span class="math notranslate nohighlight">\({C}_{\alpha}(\cdot)\)</span> so that:</p>
+train data <span class="math notranslate nohighlight">\(\{ (X_i, Y_i) \}_{i=1}^{n}\)</span> and a test point
+<span class="math notranslate nohighlight">\((X_{new}, Y_{new})\)</span>,
+all of which are generated from the same joint distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span>,
+a conformal prediction procedure uses the training data
+to build prediction sets <span class="math notranslate nohighlight">\(\widehat{C}_{\alpha}(\cdot)\)</span> so that:</p>
 <div class="math notranslate nohighlight">
-\[\mathbb{P} \Big\{ Y_{new} \in {C}_{\alpha}\left(X_{new}\right) \Big\} \geq 1 - \alpha.\]</div>
-<p>Over many calibration and test sets, <span class="math notranslate nohighlight">\({C}_{\alpha}(X_{new})\)</span> will contain
+\[\mathbb{P} \Big\{ Y_{new} \in \widehat{C}_{\alpha}\left(X_{new}\right) \Big\} \geq 1 - \alpha.\]</div>
+<p>Over many calibration and test sets, <span class="math notranslate nohighlight">\(\widehat{C}_{\alpha}(X_{new})\)</span> will contain
 the observed values of <span class="math notranslate nohighlight">\(Y_{new}\)</span> with frequency of <em>at least</em> <span class="math notranslate nohighlight">\((1-\alpha)\)</span>.</p>
-<p>Within the conformal prediction framework, the inequality above holds for any model,
-any data distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span> and any finite sample sizes.
-It is noteworthy that the coverage probability is marginalized over <span class="math notranslate nohighlight">\(X\)</span>.
-Therefore, it is likely to undercover conditionally to some specific regions in the space of <span class="math notranslate nohighlight">\(X\)</span>.</p>
+<p>Usually, the conformal prediction method uses a point-predictor model <span class="math notranslate nohighlight">\(\widehat{f}\)</span>
+and turns it into the set predictor <span class="math notranslate nohighlight">\(C_\alpha\)</span>
+via a calibration procedure.
+Within the conformal prediction framework,
+the inequality above holds for any model,
+any data distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span> and any training set sample size, under the following minimal assumptions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><em>Exchangeability</em>. The data <span class="math notranslate nohighlight">\((X_1,Y_i),\dots, (X_n, Y_n), (X_{new}, Y_{new})\)</span> form an exchangeable sequence (this is a milder assumption than the data being i.i.d.).</p></li>
+<li><p><em>Independence of train and calibration data.</em> The data for the model training is independent from the data for the model calibration.</p></li>
+</ul>
+</div></blockquote>
+<p>It is noteworthy that the coverage probability is marginalized over <span class="math notranslate nohighlight">\(X\)</span>.
+Therefore, the CP algorithm is likely to achieve the coverage rate of <span class="math notranslate nohighlight">\(1-\alpha\)</span>
+by under-covering conditionally to some specific regions in the space of <span class="math notranslate nohighlight">\(X\)</span> and over-covering in other regions.</p>
 <p>Conformal prediction can act as a <em>post-processing procedure</em> to attain rigorous probability coverages,
 as it can “conformalize” any existing predictor during or after training (black box predictors),
 yielding marginally valid prediction sets.</p>
@@ -304,7 +327,7 @@ yielding marginally valid prediction sets.</p>
 literature used on regression and classification models. We also refer to
 Angelopoulos and Bates <a class="reference internal" href="#angelopoulos2022" id="id2"><span>[Angelopoulos2022]</span></a> for a hands-on introduction to conformal prediction
 and awesome conformal prediction <a class="reference external" href="https://github.com/valeman/awesome-conformal-prediction">github</a> for additional ressources.</p>
-<p>In the following, let <span class="math notranslate nohighlight">\(D_{train} = {(X_i, Y_i)}_{i=1..n_{train}} \sim P_{XY}\)</span>
+<p>In the following, let <span class="math notranslate nohighlight">\(D = {(X_i, Y_i)}_{i=1}^n \sim P_{XY}\)</span>
 be the training data and <span class="math notranslate nohighlight">\(\alpha \in (0, 1)\)</span> the significance level (target maximum error rate).</p>
 </section>
 <section id="conformal-regression">
@@ -312,14 +335,20 @@ be the training data and <span class="math notranslate nohighlight">\(\alpha \in
 <section id="split-inductive-conformal">
 <h3>Split (inductive) Conformal<a class="headerlink" href="#split-inductive-conformal" title="Permalink to this heading"></a></h3>
 <p id="theory-splitcp">The split (also called inductive) conformal prediction <a class="reference internal" href="#papadopoulos2002" id="id3"><span>[Papadopoulos2002]</span></a> <a class="reference internal" href="#lei2018" id="id4"><span>[Lei2018]</span></a> requires a hold-out calibration
-dataset <span class="math notranslate nohighlight">\(D_{calibration}\)</span> to estimate prediction errors and use them to build the prediction interval for a new sample <span class="math notranslate nohighlight">\(X_{new}\)</span>.</p>
+dataset: the dataset <span class="math notranslate nohighlight">\(D\)</span> is split into a proper training set
+<span class="math notranslate nohighlight">\(D_{train}=\big\lbrace(X_i,Y_i), i=1,\dots,n_{train}\big\rbrace\)</span>
+and an independent calibration dataset <span class="math notranslate nohighlight">\(D_{calib}=\big\lbrace(X_i,Y_i),i=1,\dots,n_{calib}\big\rbrace\)</span>.
+The purpose of the calibration dataset is
+to estimate prediction errors and use them to build the prediction interval for a new sample <span class="math notranslate nohighlight">\(X_{new}\)</span>.</p>
 <p>Given a prediction model <span class="math notranslate nohighlight">\(\widehat{f}\)</span> trained on <span class="math notranslate nohighlight">\(D_{train}\)</span>, the algorithm is summarized in the following:</p>
 <ol class="arabic simple">
-<li><p>Choose a nonconformity score <span class="math notranslate nohighlight">\(s\)</span>: <span class="math notranslate nohighlight">\(R = s(\widehat{f}(X),Y)\)</span>. For example, one can pick the mean absolute deviation <span class="math notranslate nohighlight">\(R = |\widehat{f}(X)-Y|\)</span>.</p></li>
-<li><p>Compute the nonconformity scores on the calibration dataset: <span class="math notranslate nohighlight">\(\bar{R} = \{R_i\}_{}\)</span>, for <span class="math notranslate nohighlight">\(i=1,\dots,|D_{calibration}|\)</span>, where <span class="math notranslate nohighlight">\(|D_{calibration}|\)</span> is the cardinality of <span class="math notranslate nohighlight">\(D_{calibration}\)</span>.</p></li>
-<li><p>Compute the error margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + \frac{1}{| D_{calibration} |})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\bar{R}\)</span>.</p></li>
-<li><p>Build the prediction interval <span class="math notranslate nohighlight">\(\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{f}(X_{new}) - \delta_{\alpha}^{f} \,,\, \widehat{f}(X_{new}) + \delta_{\alpha}^{f} \Big]\)</span>.</p></li>
+<li><p>Choose a nonconformity score <span class="math notranslate nohighlight">\(s\)</span>, and define the error <span class="math notranslate nohighlight">\(R\)</span> over a sample <span class="math notranslate nohighlight">\((X,Y)\)</span> as <span class="math notranslate nohighlight">\(R = s(\widehat{f}(X),Y)\)</span>. For example, one can pick the absolute deviation <span class="math notranslate nohighlight">\(R = |\widehat{f}(X)-Y|\)</span>.</p></li>
+<li><p>Compute the nonconformity scores on the calibration dataset: <span class="math notranslate nohighlight">\(\mathcal{R} = \{R_i\}_{}\)</span>, where <span class="math notranslate nohighlight">\(R_i=s(\widehat{f}(X_i), Y_i)\)</span> for <span class="math notranslate nohighlight">\(i=1,\dots,n_{calib}\)</span>.</p></li>
+<li><p>Compute the error margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>Build the prediction interval as</p></li>
 </ol>
+<div class="math notranslate nohighlight">
+\[\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{f}(X_{new}) - \delta_{\alpha} \,,\, \widehat{f}(X_{new}) + \delta_{\alpha} \Big].\]</div>
 <p>Note that this procedure yields a constant-width prediction interval centered on the point estimate <span class="math notranslate nohighlight">\(\widehat{f}(X_{new})\)</span>.</p>
 <p>In the literature, the split conformal procedure has been combined with different nonconformity scores,
 which produced several methods. Some of them are presented hereafter.</p>
@@ -341,13 +370,20 @@ usually improve the conditional coverage. The price is the higher computational 
 </section>
 <section id="conformalized-quantile-regression-cqr">
 <h4>Conformalized Quantile Regression (CQR)<a class="headerlink" href="#conformalized-quantile-regression-cqr" title="Permalink to this heading"></a></h4>
-<p id="theory-cqr">Split conformal prediction can be extended to <a class="reference external" href="https://en.wikipedia.org/wiki/Quantile_regression">quantile predictors</a>  <span class="math notranslate nohighlight">\(q(\cdot)\)</span>
-by using the nonconformity score:</p>
+<p id="theory-cqr">Split conformal prediction can be extended to <a class="reference external" href="https://en.wikipedia.org/wiki/Quantile_regression">quantile predictors</a>  <span class="math notranslate nohighlight">\(q(\cdot)\)</span>.
+Given a nominal error rate <span class="math notranslate nohighlight">\(\alpha,\)</span>
+and positive error rates <span class="math notranslate nohighlight">\(\alpha_{lo}\)</span>
+and <span class="math notranslate nohighlight">\(\alpha_{hi}\)</span>
+such that <span class="math notranslate nohighlight">\(\alpha_{lo}+\alpha_{hi}=1,\)</span>
+we denote by <span class="math notranslate nohighlight">\(\widehat{q}_{\alpha_{lo}}\)</span> and
+<span class="math notranslate nohighlight">\(\widehat{q}_{1-\alpha_{hi}}\)</span>
+the predictors of the <span class="math notranslate nohighlight">\(\alpha_{lo}\)</span> <em>-th</em> and <span class="math notranslate nohighlight">\((1-\alpha_{hi})\)</span> <em>-th</em> quantiles of <span class="math notranslate nohighlight">\(Y | X.\)</span>
+The quantile predictors are trained on <span class="math notranslate nohighlight">\(D_{train}\)</span>
+and calibrated on <span class="math notranslate nohighlight">\(D_{calib}\)</span>
+by using the following nonconformity score:</p>
 <div class="math notranslate nohighlight">
 \[R_i^{} = \text{max}\{ \widehat{q}_{\alpha_{lo}}(X_i) - Y_i, Y_i - \widehat{q}_{1 - \alpha_{hi}}(X_i)\},\]</div>
-<p>for <span class="math notranslate nohighlight">\(i=1,\dots,|D_{calibration}|\)</span>. <span class="math notranslate nohighlight">\(\widehat{q}_{\alpha_{lo}}\)</span> and <span class="math notranslate nohighlight">\(\widehat{q}_{1-\alpha_{hi}}\)</span> are
-the predictors of the <span class="math notranslate nohighlight">\(\alpha_{lo}\)</span> <em>-th</em> and <span class="math notranslate nohighlight">\((1-\alpha_{hi})\)</span> <em>-th</em> quantiles of <span class="math notranslate nohighlight">\(Y | X\)</span>, respectively.
-For example, if we set <span class="math notranslate nohighlight">\(\alpha = 0.1\)</span>, we would fit two predictors <span class="math notranslate nohighlight">\(\widehat{q}_{0.05}(\cdot)\)</span> and <span class="math notranslate nohighlight">\(\widehat{q}_{0.95}(\cdot)\)</span> on training data <span class="math notranslate nohighlight">\(D_{train}\)</span> and compute the scores on <span class="math notranslate nohighlight">\(D_{calibration}\)</span>.</p>
+<p>For example, if we set <span class="math notranslate nohighlight">\(\alpha = 0.1\)</span>, we would fit two predictors <span class="math notranslate nohighlight">\(\widehat{q}_{0.05}(\cdot)\)</span> and <span class="math notranslate nohighlight">\(\widehat{q}_{0.95}(\cdot)\)</span> on training data <span class="math notranslate nohighlight">\(D_{train}\)</span> and compute the scores on <span class="math notranslate nohighlight">\(D_{calibration}\)</span>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>It is common to split evenly <span class="math notranslate nohighlight">\(\alpha\)</span> as: <span class="math notranslate nohighlight">\(\alpha_{lo} = \alpha_{hi}= \frac{\alpha}{2}\)</span>, but users are free to do otherwise.</p>
@@ -356,7 +392,7 @@ For example, if we set <span class="math notranslate nohighlight">\(\alpha = 0.1
 <div class="math notranslate nohighlight">
 \[\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{q}_{\alpha_{lo}}(X_{new}) - \delta_{\alpha} \,,\, \widehat{q}_{1 - \alpha_{hi}}(X_{new}) + \delta_{\alpha} \Big].\]</div>
 <p>When data are exchangeable, the correction margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> guarantees finite-sample marginal coverage for the quantile predictions, and this holds also for misspecified (i.e. “bad”) predictors.</p>
-<p>If the fitted <span class="math notranslate nohighlight">\(\widehat{q}_{\alpha_{lo}}\)</span> and <span class="math notranslate nohighlight">\(\widehat{q}_{1-\alpha_{hi}}\)</span> approximate (empirically) well  the conditional distribution <span class="math notranslate nohighlight">\(Y | X\)</span> of the data, we will get a small margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span>: this means that on average, the prediction errors on the <span class="math notranslate nohighlight">\(D_{calibration}\)</span> were small.</p>
+<p>If the fitted <span class="math notranslate nohighlight">\(\widehat{q}_{\alpha_{lo}}\)</span> and <span class="math notranslate nohighlight">\(\widehat{q}_{1-\alpha_{hi}}\)</span> approximate (empirically) well  the conditional distribution <span class="math notranslate nohighlight">\(Y | X\)</span> of the data, we will get a small margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span>: this means that on average, the prediction errors on the <span class="math notranslate nohighlight">\(D_{calib}\)</span> were small.</p>
 <p>Also, if the base predictors have strong theoretical properties, our CP procedure inherits these properties of <span class="math notranslate nohighlight">\(\widehat{q}_{}(\cdot)\)</span>.
 We could have an asymptotically, conditionally accurate predictor and also have a theoretically valid, distribution-free guarantee on the marginal coverage!</p>
 </section>
@@ -394,16 +430,101 @@ Then, the conformalization step boils down to computing, for each <span class="m
 </section>
 <section id="ensemble-batch-prediction-intervals-enbpi">
 <h3>Ensemble Batch Prediction Intervals (EnbPI)<a class="headerlink" href="#ensemble-batch-prediction-intervals-enbpi" title="Permalink to this heading"></a></h3>
-<p id="theory-enbpi">Source: <a class="reference internal" href="#xu2021" id="id8"><span>[Xu2021]</span></a></p>
-<p>TBC</p>
+<p id="theory-enbpi">Introduced in <a class="reference internal" href="#xu2021" id="id8"><span>[Xu2021]</span></a>,
+the EnbPI algorithm builds prediction intervals
+for time series data of the form
+<span class="math notranslate nohighlight">\(Y_t = f(X_t) + \epsilon_t\)</span>,
+where <span class="math notranslate nohighlight">\(\epsilon_t\)</span> are identically distributed,
+but not necessarily independent.
+Given a training data set <span class="math notranslate nohighlight">\(D=\lbrace (X_i, Y_i) \rbrace_{i=1}^n\)</span>
+and a test set <span class="math notranslate nohighlight">\(D_{test} = \lbrace (X_t,Y_t) \rbrace_{t=n+1}^{n_{test}}\)</span>,
+the EnbPI algorithm aims at constructing prediction sets
+for each test point <span class="math notranslate nohighlight">\(X_t\)</span>.
+As with the CV+ or Jackknife+ methods,
+the EnbPI algorithm does not require a held-out calibration set,
+as it uses a bootstrap algorithm instead.
+Let <span class="math notranslate nohighlight">\(\mathcal{A}\)</span> be a training algorithm
+(i.e. an algorithm that maps a dataset to a predictor),
+and <span class="math notranslate nohighlight">\(\phi\)</span> an aggregation function
+that aggregates different individual models together,
+e.g. via a simple average, a bagging or an ensembling method.
+The algorithm EnbPI is performed in three stages:</p>
+<dl class="simple">
+<dt><strong>Training</strong></dt><dd><ol class="arabic simple">
+<li><p>Sample <span class="math notranslate nohighlight">\(B\)</span> bootstrap data sets <span class="math notranslate nohighlight">\(S_b\)</span>, for <span class="math notranslate nohighlight">\(b=1,\dots, B\)</span> with replacement from <span class="math notranslate nohighlight">\(D\)</span>.</p></li>
+<li><p>Train <span class="math notranslate nohighlight">\(B\)</span> bootstrap models <span class="math notranslate nohighlight">\(\widehat{f}^b = \mathcal{A}(S_b)\)</span>.</p></li>
+</ol>
+</dd>
+<dt><strong>Calibration</strong></dt><dd><ol class="arabic simple">
+<li><p>Compute the predictions on each training sample <span class="math notranslate nohighlight">\(X_i\in D\)</span>. Only the models <span class="math notranslate nohighlight">\(\widehat{f}^b\)</span> where <span class="math notranslate nohighlight">\(X_i\not\in S_b\)</span> are used in the aggregation: <span class="math notranslate nohighlight">\(\widehat{f}_{-i}(X_i):=\phi\big( \lbrace \widehat{f}^b(X_i) | X_i\not\in S_b\rbrace\big)\)</span>.</p></li>
+<li><p>Compute the errors <span class="math notranslate nohighlight">\(R_i=|Y_i-\widehat{f}_{-i}(X_i)|\)</span>, and stock them as <span class="math notranslate nohighlight">\(\mathcal{R}_1:=\lbrace R_i,i=1,\dots, n\rbrace\)</span>.</p></li>
+</ol>
+</dd>
+<dt><strong>Inference</strong></dt><dd><ol class="arabic simple">
+<li><p>Compute the predictions on each test sample <span class="math notranslate nohighlight">\(X_t\in D_{test}\)</span> by setting <span class="math notranslate nohighlight">\(\widehat{f}_{-t}(X_t):=  \frac{1}{T}\sum_{i=1}^T \widehat{f}_{-i}(X_t)\)</span>.</p></li>
+<li><p>Update the error set: <span class="math notranslate nohighlight">\(\mathcal R_t\)</span> (see below).</p></li>
+<li><p>Compute the width of the prediction intervals <span class="math notranslate nohighlight">\(\delta_{\alpha, t}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}_t\)</span>.</p></li>
+</ol>
+</dd>
+</dl>
+<p>The prediction interval for <span class="math notranslate nohighlight">\(X_t\)</span> is then given by</p>
+<div class="math notranslate nohighlight">
+\[\widehat{C}_{\alpha} = \big[ \widehat{f}_{-t}(X_t)-\delta_{\alpha, t}, \widehat{f}_{-t}(X_t)+\delta_{\alpha, t}].\]</div>
+<p>In order to update the error set <span class="math notranslate nohighlight">\(\mathcal{R}_t\)</span>,
+a <em>memory</em> parameter <span class="math notranslate nohighlight">\(s\)</span> is employed.
+Every <span class="math notranslate nohighlight">\(s\)</span> test examples, the first <span class="math notranslate nohighlight">\(s\)</span> errors in the set
+<span class="math notranslate nohighlight">\(\mathcal{R}\)</span> are dropped and the errors over the last <span class="math notranslate nohighlight">\(s\)</span>
+test examples are added to the error set <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.
+I.e. if <span class="math notranslate nohighlight">\(t-n = 0\ mod\ s\)</span> then <span class="math notranslate nohighlight">\(\mathcal{R}_t = \lbrace R_i, i=t-n,\dots,t-1\rbrace\)</span>
+and if <span class="math notranslate nohighlight">\(t-n \neq 0\ mod\ s\)</span> then <span class="math notranslate nohighlight">\(\mathcal{R}_t=\mathcal{R}_{t-1}\)</span>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The EnbPI algorithm does not provide an exact probabilistic guarantee as the previous CP methods do.
+The guarantee provided by the EnbPI algorithm is only approximate,
+and holds under additional assumptions on the error process
+<span class="math notranslate nohighlight">\(\epsilon_t\)</span>. However, it does not require the data to be exchangeable.</p>
+</div>
 </section>
 </section>
 <section id="conformal-classification">
 <h2>Conformal Classification<a class="headerlink" href="#conformal-classification" title="Permalink to this heading"></a></h2>
 <section id="adaptive-prediction-sets-aps">
 <h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
-<p id="theory-aps">Source: <a class="reference internal" href="#romano2020" id="id9"><span>[Romano2020]</span></a></p>
-<p>TBC</p>
+<p id="theory-aps">As for the Split Conformal Regression algorithm,
+the APS algorithm introduced in <a class="reference internal" href="#romano2020" id="id9"><span>[Romano2020]</span></a>
+requires us to split the data set <span class="math notranslate nohighlight">\(D\)</span> into a proper training set <span class="math notranslate nohighlight">\(D_{train}\)</span>
+and an independent calibration set <span class="math notranslate nohighlight">\(D_{calib}\)</span>.
+A classifier <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> is trained
+using the proper training set <span class="math notranslate nohighlight">\(D_{train}\)</span> only.
+We assume that the output of the classifier is given by the softmax scores for the different classes.
+I.e. for each input <span class="math notranslate nohighlight">\(x\)</span>,
+the output <span class="math notranslate nohighlight">\(\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))\)</span>
+is a probability vector and <span class="math notranslate nohighlight">\(k=1,\dots, K\)</span>
+represent the possible different classes in the classification task.</p>
+<blockquote>
+<div><p>We represent by <span class="math notranslate nohighlight">\(\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)\)</span>
+the softmax vector <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> arranged in decreasing order,
+i.e. <span class="math notranslate nohighlight">\((k)\)</span> is the index of the class having the <span class="math notranslate nohighlight">\(k\)</span>-th largest probability mass.</p>
+</div></blockquote>
+<p>In order to construct the prediction sets <span class="math notranslate nohighlight">\(\widehat{C}_\alpha\)</span>,
+the APS algorithm works in two stages:</p>
+<dl>
+<dt><strong>Calibration</strong></dt><dd><ol class="arabic simple">
+<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration data set, we compute the error <span class="math notranslate nohighlight">\(R_i\)</span> as the probability mass needed for reaching the true label <span class="math notranslate nohighlight">\(Y_i\)</span>, i.e. <span class="math notranslate nohighlight">\(R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)}\)</span>, wehere <span class="math notranslate nohighlight">\((k)=Y_i\)</span>.</p></li>
+<li><p>Stock all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+</ol>
+</dd>
+<dt><strong>Inference</strong></dt><dd><ol class="arabic simple">
+<li><p>Compute the error margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>The prediction set for a test point <span class="math notranslate nohighlight">\(X_{new}\)</span> is defined as</p></li>
+</ol>
+<div class="math notranslate nohighlight">
+\[\widehat{C}_{\alpha}(X_{new})=\big\lbrace
+(1),\dots,(k)
+\big\rbrace\quad \text{where}\quad
+k = \min\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)}\geq \delta_\alpha\big\rbrace.\]</div>
+</dd>
+</dl>
 </section>
 <section id="regularized-adaptive-prediction-sets-raps">
 <h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Permalink to this heading"></a></h3>
