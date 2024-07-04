@@ -23,7 +23,7 @@
 """
 This module provides data splitting schemes.
 """
-import pkgutil
+import importlib
 from abc import ABC
 from typing import Iterable
 from typing import List
@@ -36,7 +36,7 @@ from deel.puncc.api.utils import features_len_check
 from deel.puncc.api.utils import sample_len_check
 from deel.puncc.api.utils import supported_types_check
 
-if pkgutil.find_loader("pandas") is not None:
+if importlib.util.find_spec("pandas") is not None:
     import pandas as pd
 
 
@@ -171,7 +171,7 @@ class KFoldSplitter(BaseSplitter):
         folds = []
 
         for fit, calib in kfold.split(X):
-            if pkgutil.find_loader("pandas") is not None and isinstance(
+            if importlib.util.find_spec("pandas") is not None and isinstance(
                 X, pd.DataFrame
             ):
                 if isinstance(y, pd.DataFrame):

@@ -10,7 +10,10 @@ disable=
     C0302, # allow too many lines in module
     C0411, # allow custom import order
 
+    E0606, # allow false positive used-before-assignment
+
     R0801, # allow similar lines in 2 files
+    R0915, # allow too many statements
 
     W0105, # allow no effect string statement
     W0102, # allow dangerous default value []

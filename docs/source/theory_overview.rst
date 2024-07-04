@@ -20,26 +20,46 @@ Depending on the application fields of machine learning models, uncertainty can 
 Conformal Prediction
 --------------------
 
-Conformal Prediction (CP) is a set of *distribution-free*, *model-agnostic* and
-*non-asymptotic* methods to estimate uncertainty by constructing **valid** *prediction sets*, i.e. with guaranteed probability of marginal coverage.
+Conformal Prediction (CP) is a set of methods to estimate uncertainty
+by constructing by constructing **valid** *prediction sets*, 
+i.e. prediction sets with a probabilistic guarantee
+of marginal coverage.
+The following three features make CP methods particularly attractive:
+    - *Distribution-free*. CP methods can be applied regardless of the underlying data-generating distribution.
+    - *Model-agnostic*. CP works with any ML model, even with black-box models where we only have access to the outputs of the model.
+    - *Non-asymptotic*. CP methods provide finite-sample probabilistic guarantees, that is, the guarantees hold without the need to assume that the number of available data grows to infinity.
 
 Given an error rate (or significance level) :math:`\alpha \in (0,1)`, set by the user, a set of exchangeable (or more simply i.i.d.)
-train data :math:`\{ (X_i, Y_i) \}_{i=1}^{n}` and test point
-:math:`(X_{new}, Y_{new})` generated for a joint distribution :math:`\mathbb{P}_{XY}`,
-a conformal prediction procedure builds prediction sets :math:`{C}_{\alpha}(\cdot)` so that:
+train data :math:`\{ (X_i, Y_i) \}_{i=1}^{n}` and a test point
+:math:`(X_{new}, Y_{new})`,
+all of which are generated from the same joint distribution :math:`\mathbb{P}_{XY}`,
+a conformal prediction procedure uses the training data
+to build prediction sets :math:`\widehat{C}_{\alpha}(\cdot)` so that:
 
 .. math::
 
-    \mathbb{P} \Big\{ Y_{new} \in {C}_{\alpha}\left(X_{new}\right) \Big\} \geq 1 - \alpha.
+    \mathbb{P} \Big\{ Y_{new} \in \widehat{C}_{\alpha}\left(X_{new}\right) \Big\} \geq 1 - \alpha.
 
 
-Over many calibration and test sets, :math:`{C}_{\alpha}(X_{new})` will contain
+Over many calibration and test sets, :math:`\widehat{C}_{\alpha}(X_{new})` will contain
 the observed values of :math:`Y_{new}` with frequency of *at least* :math:`(1-\alpha)`.
 
-Within the conformal prediction framework, the inequality above holds for any model,
-any data distribution :math:`\mathbb{P}_{XY}` and any finite sample sizes.
+..
+    Within the conformal prediction framework, the inequality above holds for any model,
+    any data distribution :math:`\mathbb{P}_{XY}` and any finite sample sizes.
+
+Usually, the conformal prediction method uses a point-predictor model :math:`\widehat{f}` 
+and turns it into the set predictor :math:`C_\alpha` 
+via a calibration procedure.
+Within the conformal prediction framework, 
+the inequality above holds for any model,
+any data distribution :math:`\mathbb{P}_{XY}` and any training set sample size, under the following minimal assumptions:
+    - *Exchangeability*. The data :math:`(X_1,Y_i),\dots, (X_n, Y_n), (X_{new}, Y_{new})` form an exchangeable sequence (this is a milder assumption than the data being i.i.d.).
+    - *Independence of train and calibration data.* The data for the model training is independent from the data for the model calibration.
+
 It is noteworthy that the coverage probability is marginalized over :math:`X`.
-Therefore, it is likely to undercover conditionally to some specific regions in the space of :math:`X`.
+Therefore, the CP algorithm is likely to achieve the coverage rate of :math:`1-\alpha` 
+by under-covering conditionally to some specific regions in the space of :math:`X` and over-covering in other regions.
 
 Conformal prediction can act as a *post-processing procedure* to attain rigorous probability coverages,
 as it can "conformalize" any existing predictor during or after training (black box predictors),
@@ -50,7 +70,7 @@ literature used on regression and classification models. We also refer to
 Angelopoulos and Bates [Angelopoulos2022]_ for a hands-on introduction to conformal prediction
 and awesome conformal prediction `github <https://github.com/valeman/awesome-conformal-prediction>`_ for additional ressources.
 
-In the following, let :math:`D_{train} = {(X_i, Y_i)}_{i=1..n_{train}} \sim P_{XY}`
+In the following, let :math:`D = {(X_i, Y_i)}_{i=1}^n \sim P_{XY}`
 be the training data and :math:`\alpha \in (0, 1)` the significance level (target maximum error rate).
 
 Conformal Regression
@@ -61,14 +81,22 @@ Split (inductive) Conformal
 .. _theory splitcp:
 
 The split (also called inductive) conformal prediction [Papadopoulos2002]_ [Lei2018]_ requires a hold-out calibration
-dataset :math:`D_{calibration}` to estimate prediction errors and use them to build the prediction interval for a new sample :math:`X_{new}`.
+dataset: the dataset :math:`D` is split into a proper training set 
+:math:`D_{train}=\big\lbrace(X_i,Y_i), i=1,\dots,n_{train}\big\rbrace` 
+and an independent calibration dataset :math:`D_{calib}=\big\lbrace(X_i,Y_i),i=1,\dots,n_{calib}\big\rbrace`. 
+The purpose of the calibration dataset is
+to estimate prediction errors and use them to build the prediction interval for a new sample :math:`X_{new}`.
 
 Given a prediction model :math:`\widehat{f}` trained on :math:`D_{train}`, the algorithm is summarized in the following:
 
-#. Choose a nonconformity score :math:`s`: :math:`R = s(\widehat{f}(X),Y)`. For example, one can pick the mean absolute deviation :math:`R = |\widehat{f}(X)-Y|`.
-#. Compute the nonconformity scores on the calibration dataset: :math:`\bar{R} = \{R_i\}_{}`, for :math:`i=1,\dots,|D_{calibration}|`, where :math:`|D_{calibration}|` is the cardinality of :math:`D_{calibration}`.
-#. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + \frac{1}{| D_{calibration} |})`-th empirical quantile of :math:`\bar{R}`.
-#. Build the prediction interval :math:`\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{f}(X_{new}) - \delta_{\alpha}^{f} \,,\, \widehat{f}(X_{new}) + \delta_{\alpha}^{f} \Big]`.
+#. Choose a nonconformity score :math:`s`, and define the error :math:`R` over a sample :math:`(X,Y)` as :math:`R = s(\widehat{f}(X),Y)`. For example, one can pick the absolute deviation :math:`R = |\widehat{f}(X)-Y|`.
+#. Compute the nonconformity scores on the calibration dataset: :math:`\mathcal{R} = \{R_i\}_{}`, where :math:`R_i=s(\widehat{f}(X_i), Y_i)` for :math:`i=1,\dots,n_{calib}`.
+#. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+#. Build the prediction interval as
+
+.. math::
+
+    \widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{f}(X_{new}) - \delta_{\alpha} \,,\, \widehat{f}(X_{new}) + \delta_{\alpha} \Big].
 
 Note that this procedure yields a constant-width prediction interval centered on the point estimate :math:`\widehat{f}(X_{new})`.
 
@@ -105,15 +133,22 @@ Conformalized Quantile Regression (CQR)
 #######################################
 .. _theory cqr:
 
-Split conformal prediction can be extended to `quantile predictors <https://en.wikipedia.org/wiki/Quantile_regression>`_  :math:`q(\cdot)`
-by using the nonconformity score:
+Split conformal prediction can be extended to `quantile predictors <https://en.wikipedia.org/wiki/Quantile_regression>`_  :math:`q(\cdot)`.
+Given a nominal error rate :math:`\alpha,`
+and positive error rates :math:`\alpha_{lo}` 
+and :math:`\alpha_{hi}` 
+such that :math:`\alpha_{lo}+\alpha_{hi}=1,`
+we denote by :math:`\widehat{q}_{\alpha_{lo}}` and 
+:math:`\widehat{q}_{1-\alpha_{hi}}`
+the predictors of the :math:`\alpha_{lo}` *-th* and :math:`(1-\alpha_{hi})` *-th* quantiles of :math:`Y | X.`
+The quantile predictors are trained on :math:`D_{train}`
+and calibrated on :math:`D_{calib}` 
+by using the following nonconformity score:
 
 .. math::
 
     R_i^{} = \text{max}\{ \widehat{q}_{\alpha_{lo}}(X_i) - Y_i, Y_i - \widehat{q}_{1 - \alpha_{hi}}(X_i)\},
 
-for :math:`i=1,\dots,|D_{calibration}|`. :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{1-\alpha_{hi}}` are
-the predictors of the :math:`\alpha_{lo}` *-th* and :math:`(1-\alpha_{hi})` *-th* quantiles of :math:`Y | X`, respectively.
 For example, if we set :math:`\alpha = 0.1`, we would fit two predictors :math:`\widehat{q}_{0.05}(\cdot)` and :math:`\widehat{q}_{0.95}(\cdot)` on training data :math:`D_{train}` and compute the scores on :math:`D_{calibration}`.
 
 
@@ -129,7 +164,7 @@ The procedure, named *Conformalized Quantile Regression* [Romano2019]_, yields t
 
 When data are exchangeable, the correction margin :math:`\delta_{\alpha}` guarantees finite-sample marginal coverage for the quantile predictions, and this holds also for misspecified (i.e. "bad") predictors.
 
-If the fitted :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{1-\alpha_{hi}}` approximate (empirically) well  the conditional distribution :math:`Y | X` of the data, we will get a small margin :math:`\delta_{\alpha}`: this means that on average, the prediction errors on the :math:`D_{calibration}` were small.
+If the fitted :math:`\widehat{q}_{\alpha_{lo}}` and :math:`\widehat{q}_{1-\alpha_{hi}}` approximate (empirically) well  the conditional distribution :math:`Y | X` of the data, we will get a small margin :math:`\delta_{\alpha}`: this means that on average, the prediction errors on the :math:`D_{calib}` were small.
 
 Also, if the base predictors have strong theoretical properties, our CP procedure inherits these properties of :math:`\widehat{q}_{}(\cdot)`.
 We could have an asymptotically, conditionally accurate predictor and also have a theoretically valid, distribution-free guarantee on the marginal coverage!
@@ -175,10 +210,10 @@ If :math:`K = n`, we obtain the *Jackknife+*, **leave-one-out** version of the a
 
 The lower and upper bounds of the prediction interval are given by:
 
-    1. Compute :math:`\bar{R}_{L} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
-    2. :math:`\widehat{L}_{\alpha}(X_{new}) = \lfloor \alpha (n+1) \rfloor`-th smallest value in :math:`\bar{R}_{L}` (lower bound)
-    3. Compute :math:`\bar{R}_{U} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
-    4. :math:`\widehat{U}_{\alpha}(X_{new}) = \lceil (1-\alpha) (n+1) \rceil`-th smallest value in :math:`\bar{R}_{U}` (upper bound)
+    #. Compute :math:`\bar{R}_{L} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) - R_i^{CV} \}_{i=1}^{n}`
+    #. :math:`\widehat{L}_{\alpha}(X_{new}) = \lfloor \alpha (n+1) \rfloor`-th smallest value in :math:`\bar{R}_{L}` (lower bound)
+    #. Compute :math:`\bar{R}_{U} = \{ \widehat{f}_{-S_{k(i)}}(X_{new}) + R_i^{CV} \}_{i=1}^{n}`
+    #. :math:`\widehat{U}_{\alpha}(X_{new}) = \lceil (1-\alpha) (n+1) \rceil`-th smallest value in :math:`\bar{R}_{U}` (upper bound)
 
 
 .. math::
@@ -190,9 +225,63 @@ Ensemble Batch Prediction Intervals (EnbPI)
 *******************************************
 .. _theory enbpi:
 
-Source: [Xu2021]_
 
-TBC
+Introduced in [Xu2021]_, 
+the EnbPI algorithm builds prediction intervals 
+for time series data of the form 
+:math:`Y_t = f(X_t) + \epsilon_t`, 
+where :math:`\epsilon_t` are identically distributed, 
+but not necessarily independent. 
+Given a training data set :math:`D=\lbrace (X_i, Y_i) \rbrace_{i=1}^n` 
+and a test set :math:`D_{test} = \lbrace (X_t,Y_t) \rbrace_{t=n+1}^{n_{test}}`, 
+the EnbPI algorithm aims at constructing prediction sets 
+for each test point :math:`X_t`. 
+As with the CV+ or Jackknife+ methods, 
+the EnbPI algorithm does not require a held-out calibration set, 
+as it uses a bootstrap algorithm instead. 
+Let :math:`\mathcal{A}` be a training algorithm 
+(i.e. an algorithm that maps a dataset to a predictor), 
+and :math:`\phi` an aggregation function 
+that aggregates different individual models together, 
+e.g. via a simple average, a bagging or an ensembling method. 
+The algorithm EnbPI is performed in three stages:
+
+**Training**
+    #. Sample :math:`B` bootstrap data sets :math:`S_b`, for :math:`b=1,\dots, B` with replacement from :math:`D`.
+    #. Train :math:`B` bootstrap models :math:`\widehat{f}^b = \mathcal{A}(S_b)`.
+
+**Calibration**
+    #. Compute the predictions on each training sample :math:`X_i\in D`. Only the models :math:`\widehat{f}^b` where :math:`X_i\not\in S_b` are used in the aggregation: :math:`\widehat{f}_{-i}(X_i):=\phi\big( \lbrace \widehat{f}^b(X_i) | X_i\not\in S_b\rbrace\big)`.
+    #. Compute the errors :math:`R_i=|Y_i-\widehat{f}_{-i}(X_i)|`, and stock them as :math:`\mathcal{R}_1:=\lbrace R_i,i=1,\dots, n\rbrace`.
+
+**Inference**
+    #. Compute the predictions on each test sample :math:`X_t\in D_{test}` by setting :math:`\widehat{f}_{-t}(X_t):=  \frac{1}{T}\sum_{i=1}^T \widehat{f}_{-i}(X_t)`.
+    #. Update the error set: :math:`\mathcal R_t` (see below).
+    #. Compute the width of the prediction intervals :math:`\delta_{\alpha, t}` as the :math:`(1-\alpha)`-th empirical quantile of :math:`\mathcal{R}_t`.
+
+
+The prediction interval for :math:`X_t` is then given by 
+
+.. math::
+    
+    \widehat{C}_{\alpha} = \big[ \widehat{f}_{-t}(X_t)-\delta_{\alpha, t}, \widehat{f}_{-t}(X_t)+\delta_{\alpha, t}].
+
+In order to update the error set :math:`\mathcal{R}_t`, 
+a *memory* parameter :math:`s` is employed. 
+Every :math:`s` test examples, the first :math:`s` errors in the set 
+:math:`\mathcal{R}` are dropped and the errors over the last :math:`s` 
+test examples are added to the error set :math:`\mathcal{R}`. 
+I.e. if :math:`t-n = 0\ mod\ s` then :math:`\mathcal{R}_t = \lbrace R_i, i=t-n,\dots,t-1\rbrace` 
+and if :math:`t-n \neq 0\ mod\ s` then :math:`\mathcal{R}_t=\mathcal{R}_{t-1}`. 
+
+
+.. note::
+
+    The EnbPI algorithm does not provide an exact probabilistic guarantee as the previous CP methods do. 
+    The guarantee provided by the EnbPI algorithm is only approximate, 
+    and holds under additional assumptions on the error process 
+    :math:`\epsilon_t`. However, it does not require the data to be exchangeable.
+
 
 .. Introduced in [Xu2021]_, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
 .. Unlike the proper conformal algorithms seen above, EnbPI requires some additional hypothesis to attain the coverage guarantee.
@@ -226,9 +315,41 @@ Adaptive Prediction Sets (APS)
 *******************************************
 .. _theory aps:
 
-Source: [Romano2020]_
+As for the Split Conformal Regression algorithm, 
+the APS algorithm introduced in [Romano2020]_ 
+requires us to split the data set :math:`D` into a proper training set :math:`D_{train}` 
+and an independent calibration set :math:`D_{calib}`. 
+A classifier :math:`\widehat{\pi}` is trained 
+using the proper training set :math:`D_{train}` only. 
+We assume that the output of the classifier is given by the softmax scores for the different classes. 
+I.e. for each input :math:`x`, 
+the output :math:`\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))` 
+is a probability vector and :math:`k=1,\dots, K` 
+represent the possible different classes in the classification task.
+ We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
+ the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
+ i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
 
-TBC
+In order to construct the prediction sets :math:`\widehat{C}_\alpha`, 
+the APS algorithm works in two stages:
+
+**Calibration**
+    #. For each example :math:`X_i` in the calibration data set, we compute the error :math:`R_i` as the probability mass needed for reaching the true label :math:`Y_i`, i.e. :math:`R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)}`, wehere :math:`(k)=Y_i`.
+    #. Stock all errors in a vector :math:`\mathcal{R}`.
+
+**Inference**
+    #. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. The prediction set for a test point :math:`X_{new}` is defined as
+    
+    .. math::
+        \widehat{C}_{\alpha}(X_{new})=\big\lbrace
+        (1),\dots,(k)
+        \big\rbrace\quad \text{where}\quad 
+        k = \min\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)}\geq \delta_\alpha\big\rbrace.
+
+
+
+
 
 Regularized Adaptive Prediction Sets (RAPS)
 *******************************************
