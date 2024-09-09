@@ -326,9 +326,9 @@ I.e. for each input :math:`x`,
 the output :math:`\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))` 
 is a probability vector and :math:`k=1,\dots, K` 
 represent the possible different classes in the classification task.
- We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
- the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
- i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
+We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
+the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
+i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
 
 In order to construct the prediction sets :math:`\widehat{C}_\alpha`, 
 the APS algorithm works in two stages:
@@ -355,9 +355,30 @@ Regularized Adaptive Prediction Sets (RAPS)
 *******************************************
 .. _theory raps:
 
-Source: [Angelopoulos2021]_
+The RAPS algorithm introduced in [Angelopoulos2021]_ is a modification of the APS algorithm 
+that uses a regularization term in order to produce smaller and more stable prediction sets.
+Employing the same notations as for the APS algorithm above,
+the RAPS algorithm works in two stages:
 
-TBC
+**Calibration**
+    #. For each example :math:`X_i` in the calibration data set, we compute the error :math:`R_i` as the probability mass needed for reaching the true label :math:`Y_i`, i.e. 
+    
+        .. math::
+        
+            R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)} + \lambda(k-k_{reg}+1), 
+    
+        where :math:`(k)=Y_i`. The regularization term :math:`\lambda(k-k_{reg}+1)` is added to the APS error, where :math:`\lambda` and :math:`k_{reg}` are hyperparameters.
+    
+    #. Stock all errors in a vector :math:`\mathcal{R}`.
+
+**Inference**
+    #. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. The prediction set for a test point :math:`X_{new}` is defined as :math:`\widehat{C}_{\alpha}(X_{new})=\big\lbrace (1),\dots,(k)\big\rbrace`, where
+    
+        .. math::
+            k = \max\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)} + \lambda(i-k_{reg}+1) \leq \delta_\alpha\big\rbrace + 1.
+
+
 
 Conformal Anomaly Detection
 ---------------------------
