@@ -24,7 +24,7 @@
 This module provides nonconformity scores for conformal prediction. To be used
 when building a :ref:`calibrator <calibration>`.
 """
-import pkgutil
+import importlib
 from typing import Callable
 from typing import Iterable
 
@@ -33,13 +33,13 @@ import numpy as np
 from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
 
-if pkgutil.find_loader("pandas") is not None:
+if importlib.util.find_spec("pandas") is not None:
     import pandas as pd
 
-if pkgutil.find_loader("tensorflow") is not None:
+if importlib.util.find_spec("tensorflow") is not None:
     import tensorflow as tf
 
-if pkgutil.find_loader("torch") is not None:
+if importlib.util.find_spec("torch") is not None:
     import torch
 
 
@@ -176,7 +176,7 @@ def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     """
     supported_types_check(y_pred, y_true)
 
-    if pkgutil.find_loader("torch") is not None and isinstance(
+    if importlib.util.find_spec("torch") is not None and isinstance(
         y_pred, torch.Tensor
     ):
         y_pred = y_pred.cpu().detach().numpy()
@@ -205,7 +205,9 @@ def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     return abs(difference(y_pred, y_true))
 
 
-def scaled_ad(Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12) -> Iterable:
+def scaled_ad(
+    Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12
+) -> Iterable:
     """Scaled Absolute Deviation, normalized by an estimation of the conditional
     mean absolute deviation (conditional MAD). Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
@@ -235,7 +237,7 @@ def scaled_ad(Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12) -> Iterabl
     if len(y_true.shape) != 1:
         raise RuntimeError("Each y_true must contain a point observation.")
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
+    if importlib.util.find_spec("pandas") is not None and isinstance(
         Y_pred, pd.DataFrame
     ):
         y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
@@ -245,8 +247,10 @@ def scaled_ad(Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12) -> Iterabl
     # MAD then Scaled MAD and computed
     mean_absolute_deviation = absolute_difference(y_pred, y_true)
     if np.any(sigma_pred + eps <= 0):
-        print("Warning: calibration points with MAD predictions"
-              " below -eps won't be used for calibration.")
+        print(
+            "Warning: calibration points with MAD predictions"
+            " below -eps won't be used for calibration."
+        )
 
     nonneg = sigma_pred + eps > 0
     return mean_absolute_deviation[nonneg] / (sigma_pred[nonneg] + eps)
@@ -282,7 +286,7 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     if len(y_true.shape) != 1:
         raise RuntimeError("Each y_pred must contain a point observation.")
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
+    if importlib.util.find_spec("pandas") is not None and isinstance(
         Y_pred, pd.DataFrame
     ):
         q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
@@ -295,7 +299,7 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     if isinstance(diff_lo, np.ndarray):
         return np.maximum(diff_lo, diff_hi)
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
+    if importlib.util.find_spec("pandas") is not None and isinstance(
         diff_lo, (pd.DataFrame, pd.Series)
     ):
         return (pd.concat([diff_lo, diff_hi]).groupby(level=0)).max()
@@ -303,12 +307,12 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         #     "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
         # )
 
-    if pkgutil.find_loader("tensorflow") is not None and isinstance(
+    if importlib.util.find_spec("tensorflow") is not None and isinstance(
         diff_lo, tf.Tensor
     ):
         return tf.math.maximum(diff_lo, diff_hi)
 
-    # if pkgutil.find_loader("torch") is not None and isinstance(
+    # if importlib.util.find_spec("torch") is not None and isinstance(
     #     diff_lo, torch.Tensor
     # ):
     #     return torch.maximum(diff_lo, diff_hi)

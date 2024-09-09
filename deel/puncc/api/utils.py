@@ -24,7 +24,7 @@
 This module implements utility functions.
 """
 import logging
-import pkgutil
+import importlib
 import sys
 from typing import Any
 from typing import Iterable
@@ -34,13 +34,13 @@ from typing import Union
 
 import numpy as np
 
-if pkgutil.find_loader("pandas") is not None:
+if importlib.util.find_spec("pandas") is not None:
     import pandas as pd
 
-if pkgutil.find_loader("tensorflow") is not None:
+if importlib.util.find_spec("tensorflow") is not None:
     import tensorflow as tf
 
-if pkgutil.find_loader("torch") is not None:
+if importlib.util.find_spec("torch") is not None:
     import torch
 
 logger = logging.getLogger(__name__)
@@ -126,15 +126,15 @@ def supported_types_check(*data: Iterable):
         if isinstance(a, np.ndarray):
             pass
 
-        elif pkgutil.find_loader("pandas") is not None and isinstance(
+        elif importlib.util.find_spec("pandas") is not None and isinstance(
             a, (pd.DataFrame, pd.Series)
         ):
             pass
-        elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+        elif importlib.util.find_spec("tensorflow") is not None and isinstance(
             a, tf.Tensor
         ):
             pass
-        elif pkgutil.find_loader("torch") is not None and isinstance(
+        elif importlib.util.find_spec("torch") is not None and isinstance(
             a, torch.Tensor
         ):
             pass
@@ -277,15 +277,15 @@ def quantile(
 
     if isinstance(a, np.ndarray):
         pass
-    elif pkgutil.find_loader("pandas") is not None and isinstance(
+    elif importlib.util.find_spec("pandas") is not None and isinstance(
         a, pd.DataFrame
     ):
         a = a.to_numpy()
-    elif pkgutil.find_loader("tensorflow") is not None and isinstance(
+    elif importlib.util.find_spec("tensorflow") is not None and isinstance(
         a, tf.Tensor
     ):
         a = a.numpy()
-    # elif pkgutil.find_loader("torch") is not None:
+    # elif importlib.util.find_spec("torch") is not None:
     #     if isinstance(a, torch.Tensor):
     #         a = a.cpu().detach().numpy()
     else:

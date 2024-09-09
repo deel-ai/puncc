@@ -155,6 +155,9 @@ def plot_prediction_intervals(
 
     """
 
+    # Initialisation
+    current_rcparams = None
+
     # Figure size configuration
     if "figsize" in fig_kw.keys():
         figsize = fig_kw["figsize"]
@@ -256,7 +259,7 @@ def plot_prediction_intervals(
     ax.set_xlim(X[0] - int_size * 0.01, X[-1] + int_size * 0.01)
 
     # restablish rcparams
-    if restablish_rcparams:
+    if current_rcparams is not None and restablish_rcparams:
         matplotlib.rcParams.update(current_rcparams)
 
     return ax
