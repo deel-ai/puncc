@@ -25,9 +25,9 @@ by constructing by constructing **valid** *prediction sets*,
 i.e. prediction sets with a probabilistic guarantee
 of marginal coverage.
 The following three features make CP methods particularly attractive:
-    - *Distribution-free*. CP methods can be applied regardless of the underlying data-generating distribution.
-    - *Model-agnostic*. CP works with any ML model, even with black-box models where we only have access to the outputs of the model.
-    - *Non-asymptotic*. CP methods provide finite-sample probabilistic guarantees, that is, the guarantees hold without the need to assume that the number of available data grows to infinity.
+- *Distribution-free*. CP methods can be applied regardless of the underlying data-generating distribution.
+- *Model-agnostic*. CP works with any ML model, even with black-box models where we only have access to the outputs of the model.
+- *Non-asymptotic*. CP methods provide finite-sample probabilistic guarantees, that is, the guarantees hold without the need to assume that the number of available data grows to infinity.
 
 Given an error rate (or significance level) :math:`\alpha \in (0,1)`, set by the user, a set of exchangeable (or more simply i.i.d.)
 train data :math:`\{ (X_i, Y_i) \}_{i=1}^{n}` and a test point
@@ -54,8 +54,8 @@ via a calibration procedure.
 Within the conformal prediction framework, 
 the inequality above holds for any model,
 any data distribution :math:`\mathbb{P}_{XY}` and any training set sample size, under the following minimal assumptions:
-    - *Exchangeability*. The data :math:`(X_1,Y_i),\dots, (X_n, Y_n), (X_{new}, Y_{new})` form an exchangeable sequence (this is a milder assumption than the data being i.i.d.).
-    - *Independence of train and calibration data.* The data for the model training is independent from the data for the model calibration.
+- *Exchangeability*. The data :math:`(X_1,Y_i),\dots, (X_n, Y_n), (X_{new}, Y_{new})` form an exchangeable sequence (this is a milder assumption than the data being i.i.d.).
+- *Independence of train and calibration data.* The data for the model training is independent from the data for the model calibration.
 
 It is noteworthy that the coverage probability is marginalized over :math:`X`.
 Therefore, the CP algorithm is likely to achieve the coverage rate of :math:`1-\alpha` 
@@ -326,9 +326,9 @@ I.e. for each input :math:`x`,
 the output :math:`\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))` 
 is a probability vector and :math:`k=1,\dots, K` 
 represent the possible different classes in the classification task.
- We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
- the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
- i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
+We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
+the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
+i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
 
 In order to construct the prediction sets :math:`\widehat{C}_\alpha`, 
 the APS algorithm works in two stages:

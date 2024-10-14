@@ -58,15 +58,19 @@ def raps_set(
     :param Iterable Y_pred:
         :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
         where :math:`P_{\\text{C}_i}` is logit associated to class i.
+        
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`
+        
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
+        
     :param float k_reg: class rank (ordered by descending probability) starting
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
         extra penalty of size :math:`\\lambda`.
+        
     : param bool rand: turn on or off the randomization term that smoothes the
         discrete probability mass jump when including a new class.
 
@@ -152,10 +156,12 @@ def raps_set_builder(
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
+        
     :param float k_reg: class rank (ordered by descending probability) starting
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
         extra penalty of size :math:`\\lambda`.
+        
     : param bool rand: turn on or off the randomization term that smoothes the
         discrete probability mass jump when including a new class.
 
@@ -165,6 +171,7 @@ def raps_set_builder(
 
     :raises ValueError: incorrect value of lambd or k_reg.
     :raises TypeError: unsupported data types.
+    
     """
     if lambd < 0:
         raise ValueError(
@@ -199,6 +206,7 @@ def constant_interval(
         \gamma_{\\alpha}]
 
     :param Iterable y_pred: predictions.
+    
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`.
 
