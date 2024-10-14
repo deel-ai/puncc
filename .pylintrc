@@ -14,6 +14,7 @@ disable=
 
     R0801, # allow similar lines in 2 files
     R0915, # allow too many statements
+    R0917, # allow too many positional arguments
 
     W0105, # allow no effect string statement
     W0102, # allow dangerous default value []
