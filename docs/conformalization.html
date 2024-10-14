@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conformalization &mdash; PUNCC 0.7.7 documentation</title>
+  <title>Conformalization &mdash; PUNCC 0.7.8 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -203,6 +203,7 @@
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.iou"><code class="docutils literal notranslate"><span class="pre">iou()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.object_detection_mean_area"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_area()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.object_detection_mean_coverage"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_ace"><code class="docutils literal notranslate"><span class="pre">regression_ace()</span></code></a></li>
@@ -459,11 +460,15 @@ Tuple[np.ndarray, np.ndarray, np.ndarray]]</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.save" title="Permalink to this definition"></a></dt>
-<dd><p>Serialize current conformal predictor and write it into file.</p>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.save" title="Permalink to this definition"></a></dt>
+<dd><p>Serialize current conformal predictor and write it to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – file path.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – File path.</p></li>
+<li><p><strong>save_data</strong> (<em>bool</em>) – If True, save the custom data used to
+fit/calibrate the model.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>

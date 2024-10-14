@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📈 Theory overview &mdash; PUNCC 0.7.7 documentation</title>
+  <title>📈 Theory overview &mdash; PUNCC 0.7.8 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -203,6 +203,7 @@
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.iou"><code class="docutils literal notranslate"><span class="pre">iou()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.object_detection_mean_area"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_area()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.object_detection_mean_coverage"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.regression_ace"><code class="docutils literal notranslate"><span class="pre">regression_ace()</span></code></a></li>
@@ -287,14 +288,10 @@ underlying uncertainty that could stem from various sources or causes.</p>
 by constructing by constructing <strong>valid</strong> <em>prediction sets</em>,
 i.e. prediction sets with a probabilistic guarantee
 of marginal coverage.
-The following three features make CP methods particularly attractive:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><em>Distribution-free</em>. CP methods can be applied regardless of the underlying data-generating distribution.</p></li>
-<li><p><em>Model-agnostic</em>. CP works with any ML model, even with black-box models where we only have access to the outputs of the model.</p></li>
-<li><p><em>Non-asymptotic</em>. CP methods provide finite-sample probabilistic guarantees, that is, the guarantees hold without the need to assume that the number of available data grows to infinity.</p></li>
-</ul>
-</div></blockquote>
+The following three features make CP methods particularly attractive:
+- <em>Distribution-free</em>. CP methods can be applied regardless of the underlying data-generating distribution.
+- <em>Model-agnostic</em>. CP works with any ML model, even with black-box models where we only have access to the outputs of the model.
+- <em>Non-asymptotic</em>. CP methods provide finite-sample probabilistic guarantees, that is, the guarantees hold without the need to assume that the number of available data grows to infinity.</p>
 <p>Given an error rate (or significance level) <span class="math notranslate nohighlight">\(\alpha \in (0,1)\)</span>, set by the user, a set of exchangeable (or more simply i.i.d.)
 train data <span class="math notranslate nohighlight">\(\{ (X_i, Y_i) \}_{i=1}^{n}\)</span> and a test point
 <span class="math notranslate nohighlight">\((X_{new}, Y_{new})\)</span>,
@@ -310,13 +307,9 @@ and turns it into the set predictor <span class="math notranslate nohighlight">\
 via a calibration procedure.
 Within the conformal prediction framework,
 the inequality above holds for any model,
-any data distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span> and any training set sample size, under the following minimal assumptions:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><em>Exchangeability</em>. The data <span class="math notranslate nohighlight">\((X_1,Y_i),\dots, (X_n, Y_n), (X_{new}, Y_{new})\)</span> form an exchangeable sequence (this is a milder assumption than the data being i.i.d.).</p></li>
-<li><p><em>Independence of train and calibration data.</em> The data for the model training is independent from the data for the model calibration.</p></li>
-</ul>
-</div></blockquote>
+any data distribution <span class="math notranslate nohighlight">\(\mathbb{P}_{XY}\)</span> and any training set sample size, under the following minimal assumptions:
+- <em>Exchangeability</em>. The data <span class="math notranslate nohighlight">\((X_1,Y_i),\dots, (X_n, Y_n), (X_{new}, Y_{new})\)</span> form an exchangeable sequence (this is a milder assumption than the data being i.i.d.).
+- <em>Independence of train and calibration data.</em> The data for the model training is independent from the data for the model calibration.</p>
 <p>It is noteworthy that the coverage probability is marginalized over <span class="math notranslate nohighlight">\(X\)</span>.
 Therefore, the CP algorithm is likely to achieve the coverage rate of <span class="math notranslate nohighlight">\(1-\alpha\)</span>
 by under-covering conditionally to some specific regions in the space of <span class="math notranslate nohighlight">\(X\)</span> and over-covering in other regions.</p>
@@ -500,12 +493,10 @@ We assume that the output of the classifier is given by the softmax scores for t
 I.e. for each input <span class="math notranslate nohighlight">\(x\)</span>,
 the output <span class="math notranslate nohighlight">\(\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))\)</span>
 is a probability vector and <span class="math notranslate nohighlight">\(k=1,\dots, K\)</span>
-represent the possible different classes in the classification task.</p>
-<blockquote>
-<div><p>We represent by <span class="math notranslate nohighlight">\(\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)\)</span>
+represent the possible different classes in the classification task.
+We represent by <span class="math notranslate nohighlight">\(\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)\)</span>
 the softmax vector <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> arranged in decreasing order,
 i.e. <span class="math notranslate nohighlight">\((k)\)</span> is the index of the class having the <span class="math notranslate nohighlight">\(k\)</span>-th largest probability mass.</p>
-</div></blockquote>
 <p>In order to construct the prediction sets <span class="math notranslate nohighlight">\(\widehat{C}_\alpha\)</span>,
 the APS algorithm works in two stages:</p>
 <dl>

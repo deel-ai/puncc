@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📏 Metrics &mdash; PUNCC 0.7.7 documentation</title>
+  <title>📏 Metrics &mdash; PUNCC 0.7.8 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -204,6 +204,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">📏 Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#metrics.iou"><code class="docutils literal notranslate"><span class="pre">iou()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#metrics.object_detection_mean_area"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_area()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#metrics.object_detection_mean_coverage"><code class="docutils literal notranslate"><span class="pre">object_detection_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#metrics.regression_ace"><code class="docutils literal notranslate"><span class="pre">regression_ace()</span></code></a></li>
@@ -309,6 +310,33 @@ correctly covered.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="metrics.iou">
+<span class="sig-prename descclassname"><span class="pre">metrics.</span></span><span class="sig-name descname"><span class="pre">iou</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bboxes1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bboxes2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#metrics.iou" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the Intersection over Union (IoU) between two sets of
+bounding boxes. The IoU is calculated as the ratio between the area of
+intersection and the area of union between two bounding boxes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bboxes1</strong> (<em>np.ndarray</em>) – array of shape (N, 4) representing the
+coordinates of N bounding boxes in the format
+[x_min, y_min, x_max, y_max].</p></li>
+<li><p><strong>bboxes2</strong> (<em>np.ndarray</em>) – array of shape (N, 4) representing the
+coordinates of N bounding boxes in the format
+[x_min, y_min, x_max, y_max].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>iou (numpy.ndarray): Array of shape (N, ) representing the IoU
+between each pair of bounding boxes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
 </dd>
 </dl>
 </dd></dl>
