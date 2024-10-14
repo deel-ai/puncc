@@ -335,13 +335,29 @@ class ConformalPredictor:
 
         return self._cv_cp_agg.predict(X, alpha, correction_func)
 
-    def save(self, path):
-        """Serialize current conformal predictor and write it into file.
+    def save(self, path, save_data=True):
+        """Serialize current conformal predictor and write it to a file.
 
-        :param str path: file path.
+        :param str path: File path.
+        
+        :param bool save_data: If True, save the custom data used to 
+            fit/calibrate the model.
+        
         """
+        # Remove cached data if needed (case of IdSplitter)
+        is_cached = False
+        if save_data and hasattr(self.splitter, "_split"):
+            cached = self.splitter._split
+            is_cached = True
+            self.splitter._split = None
+            print("\033[33m\033[1mWarning:\033[0m Custom train/calibration data removed from the"
+                " conformal predictor. If you want to keep them,"
+                " please set flag `save_data` to True.")
+
         with open(path, "wb") as output_file:
             pickle.dump(self.__dict__, output_file)
+        if is_cached:
+            self.splitter._split = cached
 
     @staticmethod
     def load(path):

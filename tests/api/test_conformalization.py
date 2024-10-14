@@ -36,6 +36,7 @@ from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.splitting import KFoldSplitter
 from deel.puncc.api.splitting import RandomSplitter
+from deel.puncc.api.splitting import IdSplitter
 
 np.random.seed(0)
 
@@ -78,6 +79,10 @@ class ConformalPredictorCheck(unittest.TestCase):
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
         )
+        
+        # IdSplitter
+        self.id_splitter = IdSplitter(X_fit=self.X_fit, y_fit=self.y_fit, 
+                                      X_calib=self.X_calib, y_calib=self.y_calib)
 
         # Random splitter
         self.random_splitter = RandomSplitter(ratio=0.2)
@@ -277,6 +282,38 @@ class ConformalPredictorCheck(unittest.TestCase):
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=self.kfold_splitter,
+        )
+
+        # Fit model and compute nonconformity scores
+        conformal_predictor.fit(self.X_train, self.y_train)
+
+        # Save copy of the conformal predictor
+        conformal_predictor.save("my_cp.pkl")
+
+        # load conformal predictor from file
+        loaded_conformal_predictor = ConformalPredictor.load("my_cp.pkl")
+
+        # Predict on X_test
+        y_pred, y_pred_lo, y_pred_hi = conformal_predictor.predict(
+            self.X_test, alpha=0.9
+        )
+        l_y_pred, l_y_pred_lo, l_y_pred_hi = loaded_conformal_predictor.predict(
+            self.X_test, alpha=0.9
+        )
+
+        np.testing.assert_array_equal(y_pred, l_y_pred)
+        np.testing.assert_array_equal(y_pred_lo, l_y_pred_lo)
+        np.testing.assert_array_equal(y_pred_hi, l_y_pred_hi)
+
+        os.remove("my_cp.pkl")
+
+    def test_save_load_idsplitter(self):
+        
+        # Conformal predictor
+        conformal_predictor = ConformalPredictor(
+            predictor=self.predictor,
+            calibrator=self.calibrator,
+            splitter=self.id_splitter,
         )
 
         # Fit model and compute nonconformity scores

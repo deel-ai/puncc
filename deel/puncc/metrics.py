@@ -211,5 +211,5 @@ def iou(bboxes1: np.ndarray, bboxes2: np.ndarray) -> np.ndarray:
     box1_area = (x1_max - x1_min + 1) * (y1_max - y1_min + 1)
     box2_area = (x2_max - x2_min + 1) * (y2_max - y2_min + 1)
 
-    iou = inter_area / (box1_area + np.transpose(box2_area) - inter_area)
-    return iou
+    result = inter_area / (box1_area + np.transpose(box2_area) - inter_area)
+    return result
