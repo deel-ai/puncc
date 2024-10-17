@@ -14,9 +14,11 @@ disable=
 
     R0801, # allow similar lines in 2 files
     R0915, # allow too many statements
+    R0917, # allow too many positional arguments
 
     W0105, # allow no effect string statement
     W0102, # allow dangerous default value []
+    W0212, # allow access to protected member 
     W0511, # allow todos
     W0632, # allow unbalanced-tuple-unpacking
     W0221, # allow arguments override
