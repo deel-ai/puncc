@@ -16,6 +16,7 @@ disable=
     R0915, # allow too many statements
     R0917, # allow too many positional arguments
 
+
     W0105, # allow no effect string statement
     W0102, # allow dangerous default value []
     W0212, # allow access to protected member 
