@@ -173,3 +173,43 @@ def object_detection_mean_area(y_pred: np.ndarray):
     """
     x_min, y_min, x_max, y_max = np.hsplit(y_pred, 4)
     return np.mean((x_max - x_min) * (y_max - y_min))
+
+
+# Calculate Intersection over Union (IOU) between two bounding boxes
+def iou(bboxes1: np.ndarray, bboxes2: np.ndarray) -> np.ndarray:
+    """
+    Calculates the Intersection over Union (IoU) between two sets of 
+    bounding boxes. The IoU is calculated as the ratio between the area of 
+    intersection and the area of union between two bounding boxes.
+    
+    :param np.ndarray bboxes1: array of shape (N, 4) representing the 
+        coordinates of N bounding boxes in the format 
+        [x_min, y_min, x_max, y_max].
+    :type y_pred: np.ndarray
+    :param np.ndarray bboxes2: array of shape (N, 4) representing the 
+        coordinates of N bounding boxes in the format 
+        [x_min, y_min, x_max, y_max].
+
+    :return: iou (numpy.ndarray): Array of shape (N, ) representing the IoU 
+        between each pair of bounding boxes.
+    :rtype: np.ndarray
+
+    """
+
+    x1_min, y1_min, x1_max, y1_max = np.split(bboxes1, 4, axis=1)
+    x2_min, y2_min, x2_max, y2_max = np.split(bboxes2, 4, axis=1)
+
+    inter_x_min = np.maximum(x1_min, np.transpose(x2_min))
+    inter_y_min = np.maximum(y1_min, np.transpose(y2_min))
+    inter_x_max = np.minimum(x1_max, np.transpose(x2_max))
+    inter_y_max = np.minimum(y1_max, np.transpose(y2_max))
+
+    inter_width = np.maximum(inter_x_max - inter_x_min + 1, 0)
+    inter_height = np.maximum(inter_y_max - inter_y_min + 1, 0)
+    inter_area = inter_width * inter_height
+
+    box1_area = (x1_max - x1_min + 1) * (y1_max - y1_min + 1)
+    box2_area = (x2_max - x2_min + 1) * (y2_max - y2_min + 1)
+
+    result = inter_area / (box1_area + np.transpose(box2_area) - inter_area)
+    return result

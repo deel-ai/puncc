@@ -17,6 +17,7 @@ disable=
 
     W0105, # allow no effect string statement
     W0102, # allow dangerous default value []
+    W0212, # allow access to protected member 
     W0511, # allow todos
     W0632, # allow unbalanced-tuple-unpacking
     W0221, # allow arguments override
