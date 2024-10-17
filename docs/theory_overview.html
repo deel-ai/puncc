@@ -519,8 +519,33 @@ k = \min\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)}\geq \delt
 </section>
 <section id="regularized-adaptive-prediction-sets-raps">
 <h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Permalink to this heading"></a></h3>
-<p id="theory-raps">Source: <a class="reference internal" href="#angelopoulos2021" id="id10"><span>[Angelopoulos2021]</span></a></p>
-<p>TBC</p>
+<p id="theory-raps">The RAPS algorithm introduced in <a class="reference internal" href="#angelopoulos2021" id="id10"><span>[Angelopoulos2021]</span></a> is a modification of the APS algorithm
+that uses a regularization term in order to produce smaller and more stable prediction sets.
+Employing the same notations as for the APS algorithm above,
+the RAPS algorithm works in two stages:</p>
+<dl>
+<dt><strong>Calibration</strong></dt><dd><ol class="arabic">
+<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration data set, we compute the error <span class="math notranslate nohighlight">\(R_i\)</span> as the probability mass needed for reaching the true label <span class="math notranslate nohighlight">\(Y_i\)</span>, i.e.</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)} + \lambda(k-k_{reg}+1),\]</div>
+<p>where <span class="math notranslate nohighlight">\((k)=Y_i\)</span>. The regularization term <span class="math notranslate nohighlight">\(\lambda(k-k_{reg}+1)\)</span> is added to the APS error, where <span class="math notranslate nohighlight">\(\lambda\)</span> and <span class="math notranslate nohighlight">\(k_{reg}\)</span> are hyperparameters.</p>
+</div></blockquote>
+</li>
+<li><p>Stock all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+</ol>
+</dd>
+<dt><strong>Inference</strong></dt><dd><ol class="arabic">
+<li><p>Compute the error margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>The prediction set for a test point <span class="math notranslate nohighlight">\(X_{new}\)</span> is defined as <span class="math notranslate nohighlight">\(\widehat{C}_{\alpha}(X_{new})=\big\lbrace (1),\dots,(k)\big\rbrace\)</span>, where</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[k = \max\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)} + \lambda(i-k_{reg}+1) \leq \delta_\alpha\big\rbrace + 1.\]</div>
+</div></blockquote>
+</li>
+</ol>
+</dd>
+</dl>
 </section>
 </section>
 <section id="conformal-anomaly-detection">
