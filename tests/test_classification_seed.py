@@ -34,6 +34,7 @@ from deel.puncc import metrics
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
+from deel.puncc.classification import LAC
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -43,6 +44,60 @@ RESULTS = {
     "raps": {"cov": 0.89, "size": 1.9},
     "raps-norand": {"cov": 0.98, "size": 3.51},
 }
+
+
+@pytest.mark.parametrize(
+        "alpha, random_state",
+        [(0.1, 42)],
+)
+def test_lac(mnist_data, alpha, random_state):
+    tf.keras.utils.set_random_seed(random_state)
+
+    # Get data
+    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+
+    # Split fit and calib datasets
+    X_fit, X_calib = X_train[:50000], X_train[50000:]
+    y_fit, y_calib = y_train[:50000], y_train[50000:]
+    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+
+    # One hot encoding of classes
+    y_fit_cat = to_categorical(y_fit)
+    y_calib_cat = to_categorical(y_calib)
+    y_test_cat = to_categorical(y_test)
+
+    # Classification model
+    nn_model = models.Sequential()
+    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
+    nn_model.add(layers.Dense(10, activation="softmax"))
+    compile_kwargs = {
+        "optimizer": "rmsprop",
+        "loss": "categorical_crossentropy",
+        "metrics": [],
+    }
+    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
+    # Predictor wrapper
+    class_predictor = BasePredictor(
+        nn_model, is_trained=False, **compile_kwargs
+    )
+
+    # LAC
+    lac_cp = LAC(class_predictor)
+    lac_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit_cat,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        **fit_kwargs
+    )
+    y_pred, set_pred = lac_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
+
+    # Compute marginal coverage
+    coverage = metrics.classification_mean_coverage(y_test, set_pred)
+    width = metrics.classification_mean_size(set_pred)
+    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
+    assert RESULTS["aps"] == res
 
 
 @pytest.mark.parametrize(
