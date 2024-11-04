@@ -128,17 +128,16 @@ class LAC(SplitCP):
         train: bool = True,
         random_state: float = None,
     ):
-        self.predictor = predictor
+        super().__init__(
+            predictor=predictor,
+            train=train,
+            random_state=random_state,
+        )
         self.calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_scores.lac_score,
             pred_set_func=prediction_sets.lac_set,
             weight_func=None,
         )
-
-        self.train = train
-
-        self.random_state = random_state
-
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
