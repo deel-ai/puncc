@@ -49,7 +49,7 @@ class LAC(SplitCP):
     :param BasePredictor predictor: a predictor implementing fit and predict.
     :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
-    
+
     .. _example lac:
 
     Example::
@@ -110,7 +110,7 @@ class LAC(SplitCP):
         lac_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
 
-        # The predict method infers prediction intervals with respect to
+        # The predict method infers prediction sets with respect to
         # the significance level alpha = 20%
         y_pred, set_pred = lac_cp.predict(X_test, alpha=.2)
 
@@ -146,7 +146,7 @@ class LAC(SplitCP):
         )
 
     def predict(self, X_test: Iterable, alpha: float) -> Tuple:
-        """Conformal interval predictions (w.r.t target miscoverage alpha)
+        """Conformal set predictions (w.r.t target miscoverage alpha)
         for new samples.
 
         :param Iterable X_test: features of new samples.
@@ -255,7 +255,7 @@ class RAPS:
         raps_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
 
-        # The predict method infers prediction intervals with respect to
+        # The predict method infers prediction sets with respect to
         # the significance level alpha = 20%
         y_pred, set_pred = raps_cp.predict(X_test, alpha=.2)
 
@@ -379,7 +379,7 @@ class RAPS:
         self.conformal_predictor.fit(X=X, y=y, **kwargs)
 
     def predict(self, X_test: Iterable, alpha: float) -> Tuple:
-        """Conformal interval predictions (w.r.t target miscoverage alpha)
+        """Conformal set predictions (w.r.t target miscoverage alpha)
         for new samples.
 
         :param Iterable X_test: features of new samples.
@@ -471,7 +471,7 @@ class APS(RAPS):
         # scores on the calibration set
         aps_cp.(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
-        # The predict method infers prediction intervals with respect to
+        # The predict method infers prediction sets with respect to
         # the significance level alpha = 20%
         y_pred, set_pred = aps_cp.predict(X_test, alpha=.2)
 

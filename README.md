@@ -123,7 +123,7 @@ y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=0.1)
 ```
 
 
-The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is higher than $90$% (see [Introduction tutorial](docs/puncc_intro.ipynb)):
+The library provides several metrics (`deel.puncc.metrics`) and plotting capabilities (`deel.puncc.plotting`) to evaluate and visualize the results of a conformal procedure. For a target error rate of $\alpha = 0.1$, the marginal coverage reached in this example on the test set is higher than $90$% (see [**Introduction tutorial**](docs/puncc_intro.ipynb)):
 <div align="center">
 <figure style="text-align:center">
 <img src="docs/assets/results_quickstart_split_cp_pi.png" alt="90% Prediction Interval with the Split Conformal Prediction Method" width="70%"/>
@@ -138,7 +138,31 @@ The library provides several metrics (`deel.puncc.metrics`) and plotting capabil
 - A direct approach to run state-of-the-art conformal prediction procedures. This is what we used in the previous conformal regression example.
 - **Low-level API**: a more flexible approach based of full customization of the prediction model, the choice of nonconformity scores and the split between fit and calibration datasets.
 
-A quick comparison of both approaches is provided in the [API tutorial](docs/api_intro.ipynb) for a regression problem.
+A quick comparison of both approaches is provided in the [**API tutorial**](docs/api_intro.ipynb) for a regression problem.
+
+<figure style="text-align:center">
+    <img src="docs/assets/puncc_architecture.png" width="70%"/>
+</figure>
+
+### 🖥️ Implemented Algorithms
+<details>
+  <summary>Overview of Implemented Methods from the Literature:</summary>
+
+| Procedure Type                          | Procedure Name                                        | Description (more details in [Theory overview](https://deel-ai.github.io/puncc/theory_overview.html))                |
+|-----------------------------------------|------------------------------------------------------|-------------------------------------------------------|
+| Conformal Regression                    | [`deel.puncc.regression.SplitCP`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.SplitCP)                      | Split Conformal Regression                            |
+| Conformal Regression                    | [`deel.puncc.regression.LocallyAdaptiveCP`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.LocallyAdaptiveCP)            | Locally Adaptive Conformal Regression                 |
+| Conformal Regression                    | [`deel.puncc.regression.CQR`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.CQR)                         | Conformalized Quantile Regression                     |
+| Conformal Regression                    | [`deel.puncc.regression.CvPlus`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.CVPlus)                       | CV + (cross-validation)                               |
+| Conformal Regression                    | [`deel.puncc.regression.EnbPI`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.EnbPI)                        | Ensemble Batch Prediction Intervals method            |
+| Conformal Regression                    | [`deel.puncc.regression.aEnbPI`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.AdaptiveEnbPI)                       | Locally adaptive Ensemble Batch Prediction Intervals method |
+| Conformal Classification                | [`deel.puncc.classification.LAC`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.LAC)                      | Least Ambiguous Set-Valued Classifiers                |
+| Conformal Classification                | [`deel.puncc.classification.APS`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.APS)                      | Adaptive Prediction Sets                              |
+| Conformal Classification                | [`deel.puncc.classification.RAPS`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.RAPS)                     | Regularized Adaptive Prediction Sets (APS is a special case where $\lambda = 0$) |
+| Conformal Anomaly Detection             | [`deel.puncc.anomaly_detection.SplitCAD`](https://deel-ai.github.io/puncc/anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD)              | Split Conformal Anomaly detection (used to control the maximum false positive rate) |
+| Conformal Object Detection              | [`deel.puncc.object_detection.SplitBoxWise`](https://deel-ai.github.io/puncc/object_detection.html#deel.puncc.object_detection.SplitBoxWise)           | Box-wise split conformal object detection             |
+
+</details>
 
 ## 📚 Citation
 

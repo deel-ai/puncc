@@ -26,7 +26,7 @@ copyright = (
 author = "Mouhcine Mendil, Luca Mossina and Joseba Dalmau"
 
 # The full version, including alpha/beta/rc tags
-release = "0.7.8"
+release = "0.8.0"
 
 
 # -- General configuration ---------------------------------------------------
