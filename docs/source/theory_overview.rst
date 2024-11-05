@@ -311,12 +311,12 @@ Conformal Classification
 .. The set :math:`\tilde{C}(x; \beta) = \{y |  \text{min}_l S(x; l) \geq \beta \}` for :math:`\beta := 1 - \alpha` such that :math:`P\{Y \in C(x; l) \} \geq 1 - \alpha`
 
 
-Adaptive Prediction Sets (APS)
+Least Ambiguous Set-Valued Classifiers (LAC)
 *******************************************
-.. _theory aps:
+.. _theory lac:
 
 As for the Split Conformal Regression algorithm, 
-the APS algorithm introduced in [Romano2020]_ 
+the LAC algorithm introduced in [Sadinle2018]_ 
 requires us to split the data set :math:`D` into a proper training set :math:`D_{train}` 
 and an independent calibration set :math:`D_{calib}`. 
 A classifier :math:`\widehat{\pi}` is trained 
@@ -326,6 +326,30 @@ I.e. for each input :math:`x`,
 the output :math:`\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))` 
 is a probability vector and :math:`k=1,\dots, K` 
 represent the possible different classes in the classification task.
+
+In order to construct the prediction sets :math:`\widehat{C}_\alpha`, 
+the LAC algorithm works in two stages:
+
+**Calibration**
+    #. For each example :math:`X_i` in the calibration data set, compute the error :math:`R_i=1-\widehat{\pi}_{Y_i}(X_i)`, i.e. 1 minus the sofmax output of the ground truth class.
+    #. Stock all errors in a vector :math:`\mathcal{R}`.
+
+**Inference**
+    #. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. The prediction set for a test point :math:`X_{new}` is defined as
+    
+    .. math::
+        \widehat{C}_{\alpha}(X_{new})=\big\lbrace
+        k \, | \, \widehat{\pi}_{k}(X_{new})\geq 1 - \delta_\alpha
+        \big\rbrace\,.
+
+Adaptive Prediction Sets (APS)
+*******************************************
+.. _theory aps:
+
+The LAC algorithm produces prediction sets that have small average size, and is known to be Bayes optimal. 
+However, it tends to undercover in regions where the classifier is uncertain, and overcover in regions where the classifier is confident. 
+The APS algorithm introduced in [Romano2020]_ aims to produce prediction sets that are more stable and have a better coverage rate.
 We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
 the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
 i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
@@ -405,4 +429,5 @@ References
 .. [deGrancey2022] de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.
 .. [Romano2019] Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. https://arxiv.org/abs/1905.03222
 .. [Romano2020] Romano, Y., Sesia, M., & Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. https://arxiv.org/abs/2006.02544
+.. [Sadinle2018] Sandinle, M., Lei, J., Wasserman, L., (2018). Least Ambiguous Set-Valued Classifiers With Bounded Error Levels. Journal of the American Statistical Association, 114(525), 223-234. https://arxiv.org/abs/1609.00451
 .. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. https://proceedings.mlr.press/v139/xu21h.html.
