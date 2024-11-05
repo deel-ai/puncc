@@ -39,7 +39,7 @@ from deel.puncc.classification import LAC
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
-    "lac": {"cov": 0.9, "size": 1.58},
+    "lac": {"cov": 0.89, "size": 1.54},
     "aps": {"cov": 0.89, "size": 1.92},
     "aps-norand": {"cov": 0.98, "size": 3.91},
     "raps": {"cov": 0.89, "size": 1.9},
