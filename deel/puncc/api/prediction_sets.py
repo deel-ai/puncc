@@ -70,7 +70,7 @@ def lac_set(
 
     # Build prediction sets
     prediction_sets = [
-        np.where(Y_pred[i] >= 1 - scores_quantile) for i in range(pred_len)
+        np.where(Y_pred[i] >= 1 - scores_quantile)[0].tolist() for i in range(pred_len)
     ]
     
     return (prediction_sets,)

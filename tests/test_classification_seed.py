@@ -39,6 +39,7 @@ from deel.puncc.classification import LAC
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
+    "lac": {"cov": 0.9, "size": 1.58},
     "aps": {"cov": 0.89, "size": 1.92},
     "aps-norand": {"cov": 0.98, "size": 3.91},
     "raps": {"cov": 0.89, "size": 1.9},
@@ -97,7 +98,7 @@ def test_lac(mnist_data, alpha, random_state):
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
     res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["aps"] == res
+    assert RESULTS["lac"] == res
 
 
 @pytest.mark.parametrize(
