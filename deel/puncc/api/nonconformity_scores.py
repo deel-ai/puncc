@@ -71,7 +71,7 @@ def lac_score(
         raise NotImplementedError(
             "LAC nonconformity score only implemented for ndarrays"
         )
-    
+
     # Compute and return the LAC nonconformity score
     return 1 - Y_pred[np.arange(y_true.shape[0]), y_true]
 
