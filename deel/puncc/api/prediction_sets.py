@@ -44,6 +44,38 @@ logger = logging.getLogger(__name__)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+def lac_set(
+        Y_pred, scores_quantile
+) -> List:
+    """LAC prediction set.
+
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+        
+    :param ndarray scores_quantile: quantile of nonconformity scores computed
+        on a calibration set for a given :math:`\\alpha`
+
+
+    :returns: LAC prediction sets.
+    :rtype: Iterable
+
+    """
+    # Check if logits sum is close to one
+    logit_normalization_check(Y_pred)
+
+    pred_len = len(Y_pred)
+
+    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+
+    # Build prediction sets
+    prediction_sets = [
+        np.where(Y_pred[i] >= 1 - scores_quantile)[0].tolist() for i in range(pred_len)
+    ]
+
+    return (prediction_sets,)
+
+
 def raps_set(
     Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1, rand: bool = True
 ) -> List:

@@ -232,7 +232,7 @@ for time series data of the form
 :math:`Y_t = f(X_t) + \epsilon_t`, 
 where :math:`\epsilon_t` are identically distributed, 
 but not necessarily independent. 
-Given a training data set :math:`D=\lbrace (X_i, Y_i) \rbrace_{i=1}^n` 
+Given a training dataset :math:`D=\lbrace (X_i, Y_i) \rbrace_{i=1}^n` 
 and a test set :math:`D_{test} = \lbrace (X_t,Y_t) \rbrace_{t=n+1}^{n_{test}}`, 
 the EnbPI algorithm aims at constructing prediction sets 
 for each test point :math:`X_t`. 
@@ -247,12 +247,12 @@ e.g. via a simple average, a bagging or an ensembling method.
 The algorithm EnbPI is performed in three stages:
 
 **Training**
-    #. Sample :math:`B` bootstrap data sets :math:`S_b`, for :math:`b=1,\dots, B` with replacement from :math:`D`.
+    #. Sample :math:`B` bootstrap datasets :math:`S_b`, for :math:`b=1,\dots, B` with replacement from :math:`D`.
     #. Train :math:`B` bootstrap models :math:`\widehat{f}^b = \mathcal{A}(S_b)`.
 
 **Calibration**
     #. Compute the predictions on each training sample :math:`X_i\in D`. Only the models :math:`\widehat{f}^b` where :math:`X_i\not\in S_b` are used in the aggregation: :math:`\widehat{f}_{-i}(X_i):=\phi\big( \lbrace \widehat{f}^b(X_i) | X_i\not\in S_b\rbrace\big)`.
-    #. Compute the errors :math:`R_i=|Y_i-\widehat{f}_{-i}(X_i)|`, and stock them as :math:`\mathcal{R}_1:=\lbrace R_i,i=1,\dots, n\rbrace`.
+    #. Compute the errors :math:`R_i=|Y_i-\widehat{f}_{-i}(X_i)|`, and store them as :math:`\mathcal{R}_1:=\lbrace R_i,i=1,\dots, n\rbrace`.
 
 **Inference**
     #. Compute the predictions on each test sample :math:`X_t\in D_{test}` by setting :math:`\widehat{f}_{-t}(X_t):=  \frac{1}{T}\sum_{i=1}^T \widehat{f}_{-i}(X_t)`.
@@ -311,13 +311,13 @@ Conformal Classification
 .. The set :math:`\tilde{C}(x; \beta) = \{y |  \text{min}_l S(x; l) \geq \beta \}` for :math:`\beta := 1 - \alpha` such that :math:`P\{Y \in C(x; l) \} \geq 1 - \alpha`
 
 
-Adaptive Prediction Sets (APS)
-*******************************************
-.. _theory aps:
+Least Ambiguous Set-Valued Classifiers (LAC)
+********************************************
+.. _theory lac:
 
 As for the Split Conformal Regression algorithm, 
-the APS algorithm introduced in [Romano2020]_ 
-requires us to split the data set :math:`D` into a proper training set :math:`D_{train}` 
+the LAC algorithm introduced in [Sadinle2018]_ 
+requires us to split the dataset :math:`D` into a proper training set :math:`D_{train}` 
 and an independent calibration set :math:`D_{calib}`. 
 A classifier :math:`\widehat{\pi}` is trained 
 using the proper training set :math:`D_{train}` only. 
@@ -326,6 +326,30 @@ I.e. for each input :math:`x`,
 the output :math:`\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))` 
 is a probability vector and :math:`k=1,\dots, K` 
 represent the possible different classes in the classification task.
+
+In order to construct the prediction sets :math:`\widehat{C}_\alpha`, 
+the LAC algorithm works in two stages:
+
+**Calibration**
+    #. For each example :math:`X_i` in the calibration dataset, compute the error :math:`R_i=1-\widehat{\pi}_{Y_i}(X_i)`, i.e. 1 minus the sofmax output of the ground truth class.
+    #. store all errors in a vector :math:`\mathcal{R}`.
+
+**Inference**
+    #. Compute the probability threshold :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. The prediction set for a test point :math:`X_{new}` is defined as
+    
+    .. math::
+        \widehat{C}_{\alpha}(X_{new})=\big\lbrace
+        k \, | \, \widehat{\pi}_{k}(X_{new})\geq 1 - \delta_\alpha
+        \big\rbrace\,.
+
+Adaptive Prediction Sets (APS)
+*******************************************
+.. _theory aps:
+
+The LAC algorithm produces prediction sets that have small average size, and is known to be Bayes optimal. 
+However, it tends to undercover in regions where the classifier is uncertain, and overcover in regions where the classifier is confident. 
+The APS algorithm introduced in [Romano2020]_ aims to produce prediction sets that are more stable and have a better coverage rate.
 We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
 the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
 i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
@@ -334,11 +358,11 @@ In order to construct the prediction sets :math:`\widehat{C}_\alpha`,
 the APS algorithm works in two stages:
 
 **Calibration**
-    #. For each example :math:`X_i` in the calibration data set, we compute the error :math:`R_i` as the probability mass needed for reaching the true label :math:`Y_i`, i.e. :math:`R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)}`, wehere :math:`(k)=Y_i`.
-    #. Stock all errors in a vector :math:`\mathcal{R}`.
+    #. For each example :math:`X_i` in the calibration dataset, we compute the error :math:`R_i` as the probability mass needed for reaching the true label :math:`Y_i`, i.e. :math:`R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)}`, wehere :math:`(k)=Y_i`.
+    #. Store all errors in a vector :math:`\mathcal{R}`.
 
 **Inference**
-    #. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. Compute the probability threshold :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
     #. The prediction set for a test point :math:`X_{new}` is defined as
     
     .. math::
@@ -361,7 +385,7 @@ Employing the same notations as for the APS algorithm above,
 the RAPS algorithm works in two stages:
 
 **Calibration**
-    #. For each example :math:`X_i` in the calibration data set, we compute the error :math:`R_i` as the probability mass needed for reaching the true label :math:`Y_i`, i.e. 
+    #. For each example :math:`X_i` in the calibration dataset, we compute the error :math:`R_i` as the probability mass needed for reaching the true label :math:`Y_i`, i.e. 
     
         .. math::
         
@@ -369,10 +393,10 @@ the RAPS algorithm works in two stages:
     
         where :math:`(k)=Y_i`. The regularization term :math:`\lambda(k-k_{reg}+1)` is added to the APS error, where :math:`\lambda` and :math:`k_{reg}` are hyperparameters.
     
-    #. Stock all errors in a vector :math:`\mathcal{R}`.
+    #. Store all errors in a vector :math:`\mathcal{R}`.
 
 **Inference**
-    #. Compute the error margin :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. Compute the probability thresholdn :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
     #. The prediction set for a test point :math:`X_{new}` is defined as :math:`\widehat{C}_{\alpha}(X_{new})=\big\lbrace (1),\dots,(k)\big\rbrace`, where
     
         .. math::
@@ -382,8 +406,31 @@ the RAPS algorithm works in two stages:
 
 Conformal Anomaly Detection
 ---------------------------
+.. _theory cad:
 
-TBC
+Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the "normal" (or nominal) distribution of a dataset [Laxhammar2015]_. The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the **false positive rate**.
+
+To detect anomalies, we start with a model that assigns an anomaly score :math:`s(X)` to each data point. Higher scores indicate a higher likelihood of being an outlier.
+
+**Calibration**
+
+    #. For each example :math:`X_i` in the calibration dataset, we compute the nonconformity score as the anomaly score provided by the model, i.e. :math:`R_i = s(X_i)`. 
+    #. Store all nonconformity scores in a vector :math:`\mathcal{R}`.
+
+**Inference**
+
+    #. Compute the anomaly score threshold :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. For a new test point :math:`X_{new}`, the conformalized anomaly detector classifies it as:
+
+        .. math::
+
+            \widehat{C}_{\alpha} = \begin{cases} 
+            \text{Normal} & \text{if } s(X_{new}) \leq \delta_{\alpha} \\
+            \text{Anomaly} & \text{if } s(X_{new}) > \delta_{\alpha}
+            \end{cases}
+    
+Conformal anomaly detection provides an error control guarantee, meaning that under the assumption of exchangeability, the probability of a false positive (labeling a norminal instance as an anomaly) is bounded by :math:`\alpha`.
+
 
 Conformal Object Detection
 --------------------------
@@ -399,10 +446,12 @@ References
 .. [Angelopoulos2021] Angelopoulos, A. N., Bates, S., Jordan, M., & Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. https://openreview.net/forum?id=eNdiU_DbM9
 .. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
 .. [Barber2021] Barber, R. F., Candes, E. J., Ramdas, A., & Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. https://arxiv.org/abs/1905.02928
+.. [Laxhammar2015] Laxhammar, R., & Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94
 .. [Lei2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
 .. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. https://link.springer.com/chapter/10.1007/3-540-36755-1_29
 .. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
 .. [deGrancey2022] de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.
 .. [Romano2019] Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. https://arxiv.org/abs/1905.03222
 .. [Romano2020] Romano, Y., Sesia, M., & Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. https://arxiv.org/abs/2006.02544
+.. [Sadinle2018] Sandinle, M., Lei, J., Wasserman, L., (2018). Least Ambiguous Set-Valued Classifiers With Bounded Error Levels. Journal of the American Statistical Association, 114(525), 223-234. https://arxiv.org/abs/1609.00451
 .. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. https://proceedings.mlr.press/v139/xu21h.html.

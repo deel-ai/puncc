@@ -46,6 +46,36 @@ if importlib.util.find_spec("torch") is not None:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
+def lac_score(
+        Y_pred: Iterable,
+        y_true: Iterable,
+) -> Iterable:
+    """LAC nonconformity score.
+
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable y_true: true labels.
+
+    :returns: RAPS nonconformity scores.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    supported_types_check(Y_pred, y_true)
+
+    # Check if logits sum is close to one
+    logit_normalization_check(Y_pred)
+
+    if not isinstance(Y_pred, np.ndarray):
+        raise NotImplementedError(
+            "LAC nonconformity score only implemented for ndarrays"
+        )
+
+    # Compute and return the LAC nonconformity score
+    return 1 - Y_pred[np.arange(y_true.shape[0]), y_true]
+
+
 def raps_score(
     Y_pred: Iterable,
     y_true: Iterable,
