@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📈 Theory overview &mdash; PUNCC 0.7.8 documentation</title>
+  <title>📈 Theory overview &mdash; PUNCC 0.8.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -104,6 +104,12 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="classification.html">📊 Classification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC"><code class="docutils literal notranslate"><span class="pre">LAC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.fit"><code class="docutils literal notranslate"><span class="pre">LAC.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LAC.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.predict"><code class="docutils literal notranslate"><span class="pre">LAC.predict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
@@ -173,6 +179,7 @@
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.absolute_difference"><code class="docutils literal notranslate"><span class="pre">absolute_difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.difference"><code class="docutils literal notranslate"><span class="pre">difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.lac_score"><code class="docutils literal notranslate"><span class="pre">lac_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score"><code class="docutils literal notranslate"><span class="pre">raps_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_ad"><code class="docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a></li>
@@ -183,6 +190,7 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.lac_set"><code class="docutils literal notranslate"><span class="pre">lac_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
@@ -230,6 +238,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#conformal-classification">Conformal Classification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#least-ambiguous-set-valued-classifiers-lac">Least Ambiguous Set-Valued Classifiers (LAC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#adaptive-prediction-sets-aps">Adaptive Prediction Sets (APS)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
 </ul>
@@ -429,7 +438,7 @@ for time series data of the form
 <span class="math notranslate nohighlight">\(Y_t = f(X_t) + \epsilon_t\)</span>,
 where <span class="math notranslate nohighlight">\(\epsilon_t\)</span> are identically distributed,
 but not necessarily independent.
-Given a training data set <span class="math notranslate nohighlight">\(D=\lbrace (X_i, Y_i) \rbrace_{i=1}^n\)</span>
+Given a training dataset <span class="math notranslate nohighlight">\(D=\lbrace (X_i, Y_i) \rbrace_{i=1}^n\)</span>
 and a test set <span class="math notranslate nohighlight">\(D_{test} = \lbrace (X_t,Y_t) \rbrace_{t=n+1}^{n_{test}}\)</span>,
 the EnbPI algorithm aims at constructing prediction sets
 for each test point <span class="math notranslate nohighlight">\(X_t\)</span>.
@@ -444,13 +453,13 @@ e.g. via a simple average, a bagging or an ensembling method.
 The algorithm EnbPI is performed in three stages:</p>
 <dl class="simple">
 <dt><strong>Training</strong></dt><dd><ol class="arabic simple">
-<li><p>Sample <span class="math notranslate nohighlight">\(B\)</span> bootstrap data sets <span class="math notranslate nohighlight">\(S_b\)</span>, for <span class="math notranslate nohighlight">\(b=1,\dots, B\)</span> with replacement from <span class="math notranslate nohighlight">\(D\)</span>.</p></li>
+<li><p>Sample <span class="math notranslate nohighlight">\(B\)</span> bootstrap datasets <span class="math notranslate nohighlight">\(S_b\)</span>, for <span class="math notranslate nohighlight">\(b=1,\dots, B\)</span> with replacement from <span class="math notranslate nohighlight">\(D\)</span>.</p></li>
 <li><p>Train <span class="math notranslate nohighlight">\(B\)</span> bootstrap models <span class="math notranslate nohighlight">\(\widehat{f}^b = \mathcal{A}(S_b)\)</span>.</p></li>
 </ol>
 </dd>
 <dt><strong>Calibration</strong></dt><dd><ol class="arabic simple">
 <li><p>Compute the predictions on each training sample <span class="math notranslate nohighlight">\(X_i\in D\)</span>. Only the models <span class="math notranslate nohighlight">\(\widehat{f}^b\)</span> where <span class="math notranslate nohighlight">\(X_i\not\in S_b\)</span> are used in the aggregation: <span class="math notranslate nohighlight">\(\widehat{f}_{-i}(X_i):=\phi\big( \lbrace \widehat{f}^b(X_i) | X_i\not\in S_b\rbrace\big)\)</span>.</p></li>
-<li><p>Compute the errors <span class="math notranslate nohighlight">\(R_i=|Y_i-\widehat{f}_{-i}(X_i)|\)</span>, and stock them as <span class="math notranslate nohighlight">\(\mathcal{R}_1:=\lbrace R_i,i=1,\dots, n\rbrace\)</span>.</p></li>
+<li><p>Compute the errors <span class="math notranslate nohighlight">\(R_i=|Y_i-\widehat{f}_{-i}(X_i)|\)</span>, and store them as <span class="math notranslate nohighlight">\(\mathcal{R}_1:=\lbrace R_i,i=1,\dots, n\rbrace\)</span>.</p></li>
 </ol>
 </dd>
 <dt><strong>Inference</strong></dt><dd><ol class="arabic simple">
@@ -481,11 +490,11 @@ and holds under additional assumptions on the error process
 </section>
 <section id="conformal-classification">
 <h2>Conformal Classification<a class="headerlink" href="#conformal-classification" title="Permalink to this heading"></a></h2>
-<section id="adaptive-prediction-sets-aps">
-<h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
-<p id="theory-aps">As for the Split Conformal Regression algorithm,
-the APS algorithm introduced in <a class="reference internal" href="#romano2020" id="id9"><span>[Romano2020]</span></a>
-requires us to split the data set <span class="math notranslate nohighlight">\(D\)</span> into a proper training set <span class="math notranslate nohighlight">\(D_{train}\)</span>
+<section id="least-ambiguous-set-valued-classifiers-lac">
+<h3>Least Ambiguous Set-Valued Classifiers (LAC)<a class="headerlink" href="#least-ambiguous-set-valued-classifiers-lac" title="Permalink to this heading"></a></h3>
+<p id="theory-lac">As for the Split Conformal Regression algorithm,
+the LAC algorithm introduced in <a class="reference internal" href="#sadinle2018" id="id9"><span>[Sadinle2018]</span></a>
+requires us to split the dataset <span class="math notranslate nohighlight">\(D\)</span> into a proper training set <span class="math notranslate nohighlight">\(D_{train}\)</span>
 and an independent calibration set <span class="math notranslate nohighlight">\(D_{calib}\)</span>.
 A classifier <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> is trained
 using the proper training set <span class="math notranslate nohighlight">\(D_{train}\)</span> only.
@@ -493,7 +502,31 @@ We assume that the output of the classifier is given by the softmax scores for t
 I.e. for each input <span class="math notranslate nohighlight">\(x\)</span>,
 the output <span class="math notranslate nohighlight">\(\widehat{\pi}(x)=(\widehat{\pi}_1(x),\dots,\widehat{\pi}_K(x))\)</span>
 is a probability vector and <span class="math notranslate nohighlight">\(k=1,\dots, K\)</span>
-represent the possible different classes in the classification task.
+represent the possible different classes in the classification task.</p>
+<p>In order to construct the prediction sets <span class="math notranslate nohighlight">\(\widehat{C}_\alpha\)</span>,
+the LAC algorithm works in two stages:</p>
+<dl>
+<dt><strong>Calibration</strong></dt><dd><ol class="arabic simple">
+<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration dataset, compute the error <span class="math notranslate nohighlight">\(R_i=1-\widehat{\pi}_{Y_i}(X_i)\)</span>, i.e. 1 minus the sofmax output of the ground truth class.</p></li>
+<li><p>store all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+</ol>
+</dd>
+<dt><strong>Inference</strong></dt><dd><ol class="arabic simple">
+<li><p>Compute the probability threshold <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>The prediction set for a test point <span class="math notranslate nohighlight">\(X_{new}\)</span> is defined as</p></li>
+</ol>
+<div class="math notranslate nohighlight">
+\[\widehat{C}_{\alpha}(X_{new})=\big\lbrace
+k \, | \, \widehat{\pi}_{k}(X_{new})\geq 1 - \delta_\alpha
+\big\rbrace\,.\]</div>
+</dd>
+</dl>
+</section>
+<section id="adaptive-prediction-sets-aps">
+<h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
+<p id="theory-aps">The LAC algorithm produces prediction sets that have small average size, and is known to be Bayes optimal.
+However, it tends to undercover in regions where the classifier is uncertain, and overcover in regions where the classifier is confident.
+The APS algorithm introduced in <a class="reference internal" href="#romano2020" id="id10"><span>[Romano2020]</span></a> aims to produce prediction sets that are more stable and have a better coverage rate.
 We represent by <span class="math notranslate nohighlight">\(\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)\)</span>
 the softmax vector <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> arranged in decreasing order,
 i.e. <span class="math notranslate nohighlight">\((k)\)</span> is the index of the class having the <span class="math notranslate nohighlight">\(k\)</span>-th largest probability mass.</p>
@@ -501,12 +534,12 @@ i.e. <span class="math notranslate nohighlight">\((k)\)</span> is the index of t
 the APS algorithm works in two stages:</p>
 <dl>
 <dt><strong>Calibration</strong></dt><dd><ol class="arabic simple">
-<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration data set, we compute the error <span class="math notranslate nohighlight">\(R_i\)</span> as the probability mass needed for reaching the true label <span class="math notranslate nohighlight">\(Y_i\)</span>, i.e. <span class="math notranslate nohighlight">\(R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)}\)</span>, wehere <span class="math notranslate nohighlight">\((k)=Y_i\)</span>.</p></li>
-<li><p>Stock all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration dataset, we compute the error <span class="math notranslate nohighlight">\(R_i\)</span> as the probability mass needed for reaching the true label <span class="math notranslate nohighlight">\(Y_i\)</span>, i.e. <span class="math notranslate nohighlight">\(R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)}\)</span>, wehere <span class="math notranslate nohighlight">\((k)=Y_i\)</span>.</p></li>
+<li><p>Store all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
 </ol>
 </dd>
 <dt><strong>Inference</strong></dt><dd><ol class="arabic simple">
-<li><p>Compute the error margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>Compute the probability threshold <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
 <li><p>The prediction set for a test point <span class="math notranslate nohighlight">\(X_{new}\)</span> is defined as</p></li>
 </ol>
 <div class="math notranslate nohighlight">
@@ -519,24 +552,24 @@ k = \min\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)}\geq \delt
 </section>
 <section id="regularized-adaptive-prediction-sets-raps">
 <h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Permalink to this heading"></a></h3>
-<p id="theory-raps">The RAPS algorithm introduced in <a class="reference internal" href="#angelopoulos2021" id="id10"><span>[Angelopoulos2021]</span></a> is a modification of the APS algorithm
+<p id="theory-raps">The RAPS algorithm introduced in <a class="reference internal" href="#angelopoulos2021" id="id11"><span>[Angelopoulos2021]</span></a> is a modification of the APS algorithm
 that uses a regularization term in order to produce smaller and more stable prediction sets.
 Employing the same notations as for the APS algorithm above,
 the RAPS algorithm works in two stages:</p>
 <dl>
 <dt><strong>Calibration</strong></dt><dd><ol class="arabic">
-<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration data set, we compute the error <span class="math notranslate nohighlight">\(R_i\)</span> as the probability mass needed for reaching the true label <span class="math notranslate nohighlight">\(Y_i\)</span>, i.e.</p>
+<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration dataset, we compute the error <span class="math notranslate nohighlight">\(R_i\)</span> as the probability mass needed for reaching the true label <span class="math notranslate nohighlight">\(Y_i\)</span>, i.e.</p>
 <blockquote>
 <div><div class="math notranslate nohighlight">
 \[R_i=\widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(k)} + \lambda(k-k_{reg}+1),\]</div>
 <p>where <span class="math notranslate nohighlight">\((k)=Y_i\)</span>. The regularization term <span class="math notranslate nohighlight">\(\lambda(k-k_{reg}+1)\)</span> is added to the APS error, where <span class="math notranslate nohighlight">\(\lambda\)</span> and <span class="math notranslate nohighlight">\(k_{reg}\)</span> are hyperparameters.</p>
 </div></blockquote>
 </li>
-<li><p>Stock all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>Store all errors in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
 </ol>
 </dd>
 <dt><strong>Inference</strong></dt><dd><ol class="arabic">
-<li><p>Compute the error margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>Compute the probability thresholdn <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
 <li><p>The prediction set for a test point <span class="math notranslate nohighlight">\(X_{new}\)</span> is defined as <span class="math notranslate nohighlight">\(\widehat{C}_{\alpha}(X_{new})=\big\lbrace (1),\dots,(k)\big\rbrace\)</span>, where</p>
 <blockquote>
 <div><div class="math notranslate nohighlight">
@@ -550,18 +583,42 @@ the RAPS algorithm works in two stages:</p>
 </section>
 <section id="conformal-anomaly-detection">
 <h2>Conformal Anomaly Detection<a class="headerlink" href="#conformal-anomaly-detection" title="Permalink to this heading"></a></h2>
-<p>TBC</p>
+<p id="theory-cad">Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the “normal” (or nominal) distribution of a dataset <a class="reference internal" href="#laxhammar2015" id="id12"><span>[Laxhammar2015]</span></a>. The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the <strong>false positive rate</strong>.</p>
+<p>To detect anomalies, we start with a model that assigns an anomaly score <span class="math notranslate nohighlight">\(s(X)\)</span> to each data point. Higher scores indicate a higher likelihood of being an outlier.</p>
+<p><strong>Calibration</strong></p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration dataset, we compute the nonconformity score as the anomaly score provided by the model, i.e. <span class="math notranslate nohighlight">\(R_i = s(X_i)\)</span>.</p></li>
+<li><p>Store all nonconformity scores in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+</ol>
+</div></blockquote>
+<p><strong>Inference</strong></p>
+<blockquote>
+<div><ol class="arabic">
+<li><p>Compute the anomaly score threshold <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> as the <span class="math notranslate nohighlight">\((1-\alpha)(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
+<li><p>For a new test point <span class="math notranslate nohighlight">\(X_{new}\)</span>, the conformalized anomaly detector classifies it as:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\begin{split}\widehat{C}_{\alpha} = \begin{cases}
+\text{Normal} &amp; \text{if } s(X_{new}) \leq \delta_{\alpha} \\
+\text{Anomaly} &amp; \text{if } s(X_{new}) &gt; \delta_{\alpha}
+\end{cases}\end{split}\]</div>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+<p>Conformal anomaly detection provides an error control guarantee, meaning that under the assumption of exchangeability, the probability of a false positive (labeling a norminal instance as an anomaly) is bounded by <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
 </section>
 <section id="conformal-object-detection">
 <h2>Conformal Object Detection<a class="headerlink" href="#conformal-object-detection" title="Permalink to this heading"></a></h2>
-<p id="theory-splitboxwise">Source: <a class="reference internal" href="#degrancey2022" id="id11"><span>[deGrancey2022]</span></a></p>
+<p id="theory-splitboxwise">Source: <a class="reference internal" href="#degrancey2022" id="id13"><span>[deGrancey2022]</span></a></p>
 <p>TBC</p>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
 <div role="list" class="citation-list">
 <div class="citation" id="angelopoulos2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">Angelopoulos2021</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">Angelopoulos2021</a><span class="fn-bracket">]</span></span>
 <p>Angelopoulos, A. N., Bates, S., Jordan, M., &amp; Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. <a class="reference external" href="https://openreview.net/forum?id=eNdiU_DbM9">https://openreview.net/forum?id=eNdiU_DbM9</a></p>
 </div>
 <div class="citation" id="angelopoulos2022" role="doc-biblioentry">
@@ -571,6 +628,10 @@ the RAPS algorithm works in two stages:</p>
 <div class="citation" id="barber2021" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">Barber2021</a><span class="fn-bracket">]</span></span>
 <p>Barber, R. F., Candes, E. J., Ramdas, A., &amp; Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. <a class="reference external" href="https://arxiv.org/abs/1905.02928">https://arxiv.org/abs/1905.02928</a></p>
+</div>
+<div class="citation" id="laxhammar2015" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">Laxhammar2015</a><span class="fn-bracket">]</span></span>
+<p>Laxhammar, R., &amp; Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94</p>
 </div>
 <div class="citation" id="lei2018" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">Lei2018</a><span class="fn-bracket">]</span></span>
@@ -585,7 +646,7 @@ the RAPS algorithm works in two stages:</p>
 <p>Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).</p>
 </div>
 <div class="citation" id="degrancey2022" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">deGrancey2022</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id13">deGrancey2022</a><span class="fn-bracket">]</span></span>
 <p>de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.</p>
 </div>
 <div class="citation" id="romano2019" role="doc-biblioentry">
@@ -593,8 +654,12 @@ the RAPS algorithm works in two stages:</p>
 <p>Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. <a class="reference external" href="https://arxiv.org/abs/1905.03222">https://arxiv.org/abs/1905.03222</a></p>
 </div>
 <div class="citation" id="romano2020" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">Romano2020</a><span class="fn-bracket">]</span></span>
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">Romano2020</a><span class="fn-bracket">]</span></span>
 <p>Romano, Y., Sesia, M., &amp; Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. <a class="reference external" href="https://arxiv.org/abs/2006.02544">https://arxiv.org/abs/2006.02544</a></p>
+</div>
+<div class="citation" id="sadinle2018" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">Sadinle2018</a><span class="fn-bracket">]</span></span>
+<p>Sandinle, M., Lei, J., Wasserman, L., (2018). Least Ambiguous Set-Valued Classifiers With Bounded Error Levels. Journal of the American Statistical Association, 114(525), 223-234. <a class="reference external" href="https://arxiv.org/abs/1609.00451">https://arxiv.org/abs/1609.00451</a></p>
 </div>
 <div class="citation" id="xu2021" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">Xu2021</a><span class="fn-bracket">]</span></span>

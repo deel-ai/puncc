@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🖼️ Object Detection &mdash; PUNCC 0.7.8 documentation</title>
+  <title>🖼️ Object Detection &mdash; PUNCC 0.8.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
@@ -104,6 +104,12 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="classification.html">📊 Classification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC"><code class="docutils literal notranslate"><span class="pre">LAC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.fit"><code class="docutils literal notranslate"><span class="pre">LAC.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LAC.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.predict"><code class="docutils literal notranslate"><span class="pre">LAC.predict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
@@ -173,6 +179,7 @@
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.absolute_difference"><code class="docutils literal notranslate"><span class="pre">absolute_difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.difference"><code class="docutils literal notranslate"><span class="pre">difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.lac_score"><code class="docutils literal notranslate"><span class="pre">lac_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score"><code class="docutils literal notranslate"><span class="pre">raps_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_ad"><code class="docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a></li>
@@ -183,6 +190,7 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.lac_set"><code class="docutils literal notranslate"><span class="pre">lac_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set"><code class="docutils literal notranslate"><span class="pre">raps_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
@@ -230,6 +238,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-classification">Conformal Classification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory_overview.html#least-ambiguous-set-valued-classifiers-lac">Least Ambiguous Set-Valued Classifiers (LAC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#adaptive-prediction-sets-aps">Adaptive Prediction Sets (APS)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
 </ul>

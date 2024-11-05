@@ -12,6 +12,8 @@ and :func:`predict` methods.
 :doc:`Prediction module <prediction>` from the :doc:`API <api>` ensures the
 compliance of models from various ML/DL libraries (such as Keras and scikit-learn) to **puncc**.
 
+.. autoclass:: deel.puncc.classification.LAC
+
 .. autoclass:: deel.puncc.classification.RAPS
 
 .. autoclass:: deel.puncc.classification.APS
