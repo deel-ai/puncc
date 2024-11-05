@@ -141,7 +141,7 @@ The library provides several metrics (`deel.puncc.metrics`) and plotting capabil
 A quick comparison of both approaches is provided in the [**API tutorial**](docs/api_intro.ipynb) for a regression problem.
 
 <figure style="text-align:center">
-    <img src="docs/assets/puncc_architecture.png" width="70%"/>
+    <img src="docs/assets/puncc_architecture.png" width="100%"/>
 </figure>
 
 ### 🖥️ Implemented Algorithms
