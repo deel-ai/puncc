@@ -436,9 +436,33 @@ Conformal Object Detection
 --------------------------
 .. _theory splitboxwise:
 
-Source: [deGrancey2022]_
+Conformal prediction can be extended to object detection tasks, where the goal is to predict the bounding boxes of objects in an image with a probabilistic guarantee [deGrancey2022]_. 
+There are many way to formulate Conformal Object Detection, in PUNCC we have implemented the so-called *Split-Boxwise Conformal Object Detection* algorithm.
+Here, we conformalize predicted bounding boxes by adjusting their coordinates with a margin that depends on the nonconformity scores of the calibration dataset.
+A bounding box is charecterized by its lower-left corner and upper-right corner coordinates, i.e. :math:`Y = (Y^{x_\min}, Y^{y_\min}, Y^{x_\max}, Y^{y_\max})`.
+The algorithm computes the nonconformity scores for each coordinate separately, and computes the prediction interval for each coordinate independently.
+By using a Bonferroni-type correction, the algorithm ensures that on average :math:`1-\alpha` of the predicted bounding boxes contain the true bounding box.
+The algorithm is summarized as follows:
 
-TBC
+**Calibration**
+
+    #. For each predicted box :math:`\widehat{Y}_i` in the calibration dataset, we compute the nonconformity score separately for each of the four coordinates, tha is, :math:`R_i^j = \widehat{Y}_i^j - Y_i^j` for :math:`j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace`.
+    #. Store all nonconformity scores in vectors :math:`\mathcal{R^j}` for :math:`j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace`.
+
+**Inference**
+
+    #. Compute the nonconformity scores thresholds :math:`\delta_{\alpha/4}^j` as the :math:`(1-\frac{\alpha}{4})(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R^j}` for :math:`j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace`.
+    #. For a new test predicted box :math:`\widehat{Y}_{new}`, the conformalized object detector predicts the adjusted bounding box with coordinates:
+
+        .. math::
+
+            \widehat{C}_{\alpha} = \big\lbrace
+            \text{box with coordinates} \, \widehat{Y}_{new}^j - \delta_{\alpha/4}^j \, \text{for} \, j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace
+            \big\rbrace.
+
+In order to perform the calibration step, we need to pass to the algorithm a series of predicted bounding boxes and their corresponding ground truth bounding boxes.
+In order to provide the calibration algorithm with a list of pairs of predicted and ground truth bounding boxes,
+we can use a matching algorithm like the Hungarian matching algorithm that will maximize the intersection over union (IoU) between the predicted and ground truth bounding boxes.
 
 References
 ----------

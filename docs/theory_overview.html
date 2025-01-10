@@ -173,6 +173,7 @@
 <li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.hungarian_assignment"><code class="docutils literal notranslate"><span class="pre">hungarian_assignment()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
@@ -611,8 +612,37 @@ the RAPS algorithm works in two stages:</p>
 </section>
 <section id="conformal-object-detection">
 <h2>Conformal Object Detection<a class="headerlink" href="#conformal-object-detection" title="Permalink to this heading"></a></h2>
-<p id="theory-splitboxwise">Source: <a class="reference internal" href="#degrancey2022" id="id13"><span>[deGrancey2022]</span></a></p>
-<p>TBC</p>
+<p id="theory-splitboxwise">Conformal prediction can be extended to object detection tasks, where the goal is to predict the bounding boxes of objects in an image with a probabilistic guarantee <a class="reference internal" href="#degrancey2022" id="id13"><span>[deGrancey2022]</span></a>.
+There are many way to formulate Conformal Object Detection, in PUNCC we have implemented the so-called <em>Split-Boxwise Conformal Object Detection</em> algorithm.
+Here, we conformalize predicted bounding boxes by adjusting their coordinates with a margin that depends on the nonconformity scores of the calibration dataset.
+A bounding box is charecterized by its lower-left corner and upper-right corner coordinates, i.e. <span class="math notranslate nohighlight">\(Y = (Y^{x_\min}, Y^{y_\min}, Y^{x_\max}, Y^{y_\max})\)</span>.
+The algorithm computes the nonconformity scores for each coordinate separately, and computes the prediction interval for each coordinate independently.
+By using a Bonferroni-type correction, the algorithm ensures that on average <span class="math notranslate nohighlight">\(1-\alpha\)</span> of the predicted bounding boxes contain the true bounding box.
+The algorithm is summarized as follows:</p>
+<p><strong>Calibration</strong></p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>For each predicted box <span class="math notranslate nohighlight">\(\widehat{Y}_i\)</span> in the calibration dataset, we compute the nonconformity score separately for each of the four coordinates, tha is, <span class="math notranslate nohighlight">\(R_i^j = \widehat{Y}_i^j - Y_i^j\)</span> for <span class="math notranslate nohighlight">\(j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace\)</span>.</p></li>
+<li><p>Store all nonconformity scores in vectors <span class="math notranslate nohighlight">\(\mathcal{R^j}\)</span> for <span class="math notranslate nohighlight">\(j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace\)</span>.</p></li>
+</ol>
+</div></blockquote>
+<p><strong>Inference</strong></p>
+<blockquote>
+<div><ol class="arabic">
+<li><p>Compute the nonconformity scores thresholds <span class="math notranslate nohighlight">\(\delta_{\alpha/4}^j\)</span> as the <span class="math notranslate nohighlight">\((1-\frac{\alpha}{4})(1 + 1/n_{calib})\)</span>-th empirical quantile of <span class="math notranslate nohighlight">\(\mathcal{R^j}\)</span> for <span class="math notranslate nohighlight">\(j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace\)</span>.</p></li>
+<li><p>For a new test predicted box <span class="math notranslate nohighlight">\(\widehat{Y}_{new}\)</span>, the conformalized object detector predicts the adjusted bounding box with coordinates:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\widehat{C}_{\alpha} = \big\lbrace
+\text{box with coordinates} \, \widehat{Y}_{new}^j - \delta_{\alpha/4}^j \, \text{for} \, j\in\lbrace x_\min, y_\min, x_\max, y_\max\rbrace
+\big\rbrace.\]</div>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+<p>In order to perform the calibration step, we need to pass to the algorithm a series of predicted bounding boxes and their corresponding ground truth bounding boxes.
+In order to provide the calibration algorithm with a list of pairs of predicted and ground truth bounding boxes,
+we can use a matching algorithm like the Hungarian matching algorithm that will maximize the intersection over union (IoU) between the predicted and ground truth bounding boxes.</p>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
