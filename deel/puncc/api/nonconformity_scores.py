@@ -47,8 +47,8 @@ if importlib.util.find_spec("torch") is not None:
 
 
 def lac_score(
-        Y_pred: Iterable,
-        y_true: Iterable,
+    Y_pred: Iterable,
+    y_true: Iterable,
 ) -> Iterable:
     """LAC nonconformity score.
 

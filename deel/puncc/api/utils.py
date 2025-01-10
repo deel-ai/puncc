@@ -484,45 +484,49 @@ def quantile_weighted(
     )
 
 
-def hungarian_assignment(predicted_bboxes: np.ndarray, true_bboxes: np.ndarray, min_iou:float=0.5):
+def hungarian_assignment(
+    predicted_bboxes: np.ndarray, true_bboxes: np.ndarray, min_iou: float = 0.5
+):
     """
     Assign predicted bounding boxes to labeled ones based on maximizing IOU.
-    
-    This function relies on the Hungarian algorithm (also known as the 
+    This function relies on the Hungarian algorithm (also known as the
     Kuhn-Munkres algorithm) to perform the assignment.
 
-
-    :param np.ndarray predicted_bboxes: Array of predicted bounding boxes with 
+    :param predicted_bboxes: Array of predicted bounding boxes with
         shape (N, 4), where N is the number of predictions.
-    :param np.ndarray true_bboxes: Array of true bounding boxes with shape 
+    :type predicted_bboxes: np.ndarray
+    :param true_bboxes: Array of true bounding boxes with shape
         (M, 4), where M is the number of true classes.
-    :param float min_iou: Minimum IoU threshold to consider a prediction as 
+    :type true_bboxes: np.ndarray
+    :param min_iou: Minimum IoU threshold to consider a prediction as
         valid, by default 0.5.
+    :type min_iou: float
 
-    :return: Tuple containing:
-        - Array of aligned predicted bounding boxes that have IoU greater than 
-            the minimum threshold.
-        - Array of true bounding boxes that correspond to the valid predicted 
-            bounding boxes.
-    :rtype: tuple(np.ndarray, np.ndarray)
+    :return: A tuple containing 1) an array of aligned predicted bounding boxes
+        that have IoU greater than the minimum threshold and 2) an array of
+        true bounding boxes that correspond to the valid predicted bounding
+        boxes.
+    :rtype: tuple[np.ndarray, np.ndarray]
 
     .. note::
-        This function pads the predicted bounding boxes to match the number of 
-        true bounding boxes if necessary. It then calculates the IoU matrix 
-        between true and predicted bounding boxes and performs linear sum 
-        assignment to maximize the total IoU. Finally, it filters out the 
+        This function pads the predicted bounding boxes to match the number of
+        true bounding boxes if necessary. It then calculates the IoU matrix
+        between true and predicted bounding boxes and performs linear sum
+        assignment to maximize the total IoU. Finally, it filters out the
         bounding boxes that do not meet the minimum IoU threshold.
 
+    Example
+    -------
     .. code-block:: python
 
-        Examples
-        --------
+        >>> import numpy as np
         >>> predicted_bboxes = np.array([[10, 10, 50, 50], [20, 20, 60, 60]])
         >>> true_bboxes = np.array([[12, 12, 48, 48], [22, 22, 58, 58], [30, 30, 70, 70]])
         >>> hungarian_assignment(predicted_bboxes, true_bboxes, min_iou=0.5)
         (array([[10, 10, 50, 50], [20, 20, 60, 60]]), array([[12, 12, 48, 48], [22, 22, 58, 58]]))
-        
+
     """
+
     # Pad predicted bounding boxes to match the number of labeled ones
     def pad_predictions(predictions, labels):
         num_preds = predictions.shape[0]
@@ -551,4 +555,8 @@ def hungarian_assignment(predicted_bboxes: np.ndarray, true_bboxes: np.ndarray, 
     # Keep only those bounding boxes that have IoU greater than the minimum threshold
     valid_indices = iou(true_bboxes, aligned_predictions).diagonal() > min_iou
 
-    return aligned_predictions[valid_indices], true_bboxes[valid_indices], valid_indices
+    return (
+        aligned_predictions[valid_indices],
+        true_bboxes[valid_indices],
+        valid_indices,
+    )
