@@ -53,6 +53,12 @@ You can directly install the library using pip:
 pip install puncc
 ```
 
+The package is also available on conda-forge:
+
+```bash
+conda install -c conda-forge puncc
+```
+
 <!--
 You can alternatively clone the repo and use the makefile to automatically create a virtual environment
 and install the requirements:
