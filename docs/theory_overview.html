@@ -325,7 +325,7 @@ as it can “conformalize” any existing predictor during or after training (bl
 yielding marginally valid prediction sets.</p>
 <p>In this page, we present the most common conformal prediction methods of the
 literature used on regression and classification models. We also refer to
-Angelopoulos and Bates <span id="id2">[<a class="reference internal" href="#id16" title="Anastasios N Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511, 2021.">2</a>]</span> for a hands-on introduction to conformal prediction
+Angelopoulos and Bates <span id="id2">[<a class="reference internal" href="#id16" title="Anastasios N Angelopoulos, Stephen Bates, and others. Conformal prediction: a gentle introduction. Foundations and trends® in machine learning, 16(4):494–591, 2023.">2</a>]</span> for a hands-on introduction to conformal prediction
 and awesome conformal prediction <a class="reference external" href="https://github.com/valeman/awesome-conformal-prediction">github</a> for additional ressources.</p>
 <p>In the following, let <span class="math notranslate nohighlight">\(D = {(X_i, Y_i)}_{i=1}^n \sim P_{XY}\)</span>
 be the training data and <span class="math notranslate nohighlight">\(\alpha \in (0, 1)\)</span> the significance level (target maximum error rate).</p>
@@ -581,7 +581,7 @@ the RAPS algorithm works in two stages:</p>
 </section>
 <section id="conformal-anomaly-detection">
 <h2>Conformal Anomaly Detection<a class="headerlink" href="#conformal-anomaly-detection" title="Permalink to this heading"></a></h2>
-<p id="theory-cad">Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the “normal” (or nominal) distribution of a dataset (see section 4.4 of <span id="id12">[<a class="reference internal" href="#id16" title="Anastasios N Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511, 2021.">2</a>]</span>). The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the <strong>false positive rate</strong>.</p>
+<p id="theory-cad">Conformal prediction can be extended to handle anomaly detection, allowing us to identify data points that do not conform to the “normal” (or nominal) distribution of a dataset (see section 4.4 of <span id="id12">[<a class="reference internal" href="#id16" title="Anastasios N Angelopoulos, Stephen Bates, and others. Conformal prediction: a gentle introduction. Foundations and trends® in machine learning, 16(4):494–591, 2023.">2</a>]</span>). The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the <strong>false positive rate</strong>.</p>
 <p>To detect anomalies, we start with a model that assigns an anomaly score <span class="math notranslate nohighlight">\(s(X)\)</span> to each data point. Higher scores indicate a higher likelihood of being an outlier.</p>
 <p>Assume we have a calibration dataset <span class="math notranslate nohighlight">\(D_{calib} = \{X_i\}_{i=1}^{n_{calib}}\)</span> consisting of nominal (non-anomalous) examples. The conformal anomaly detection algorithm proceeds as follows:</p>
 <dl class="simple">
@@ -653,7 +653,7 @@ we can use a matching algorithm like the Hungarian matching algorithm that will 
 <div class="citation" id="id16" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
 <span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id12">2</a>)</span>
-<p>Anastasios N Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. <em>arXiv preprint arXiv:2107.07511</em>, 2021.</p>
+<p>Anastasios N Angelopoulos, Stephen Bates, and others. Conformal prediction: a gentle introduction. <em>Foundations and trends® in machine learning</em>, 16(4):494–591, 2023.</p>
 </div>
 <div class="citation" id="id17" role="doc-biblioentry">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">3</a><span class="fn-bracket">]</span></span>

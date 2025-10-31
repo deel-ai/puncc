@@ -67,7 +67,7 @@ yielding marginally valid prediction sets.
 
 In this page, we present the most common conformal prediction methods of the
 literature used on regression and classification models. We also refer to
-Angelopoulos and Bates :cite:`angelopoulos2021` for a hands-on introduction to conformal prediction
+Angelopoulos and Bates :cite:`angelopoulos2023` for a hands-on introduction to conformal prediction
 and awesome conformal prediction `github <https://github.com/valeman/awesome-conformal-prediction>`_ for additional ressources.
 
 In the following, let :math:`D = {(X_i, Y_i)}_{i=1}^n \sim P_{XY}`
@@ -408,7 +408,7 @@ Conformal Anomaly Detection
 ---------------------------
 .. _theory cad:
 
-Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the "normal" (or nominal) distribution of a dataset (see section 4.4 of :cite:`angelopoulos2021`). The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the **false positive rate**.
+Conformal prediction can be extended to handle anomaly detection, allowing us to identify data points that do not conform to the "normal" (or nominal) distribution of a dataset (see section 4.4 of :cite:`angelopoulos2023`). The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the **false positive rate**.
 
 To detect anomalies, we start with a model that assigns an anomaly score :math:`s(X)` to each data point. Higher scores indicate a higher likelihood of being an outlier.
 
