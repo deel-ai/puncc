@@ -67,7 +67,7 @@ yielding marginally valid prediction sets.
 
 In this page, we present the most common conformal prediction methods of the
 literature used on regression and classification models. We also refer to
-Angelopoulos and Bates [Angelopoulos2022]_ for a hands-on introduction to conformal prediction
+Angelopoulos and Bates :cite:`angelopoulos2021` for a hands-on introduction to conformal prediction
 and awesome conformal prediction `github <https://github.com/valeman/awesome-conformal-prediction>`_ for additional ressources.
 
 In the following, let :math:`D = {(X_i, Y_i)}_{i=1}^n \sim P_{XY}`
@@ -80,7 +80,7 @@ Split (inductive) Conformal
 ***************************
 .. _theory splitcp:
 
-The split (also called inductive) conformal prediction [Papadopoulos2002]_ [Lei2018]_ requires a hold-out calibration
+The split (also called inductive) conformal prediction :cite:`papadopoulos2002` :cite:`lei2018` requires a hold-out calibration
 dataset: the dataset :math:`D` is split into a proper training set 
 :math:`D_{train}=\big\lbrace(X_i,Y_i), i=1,\dots,n_{train}\big\rbrace` 
 and an independent calibration dataset :math:`D_{calib}=\big\lbrace(X_i,Y_i),i=1,\dots,n_{calib}\big\rbrace`. 
@@ -108,7 +108,7 @@ Locally Adaptive Conformal Regression
 #####################################
 .. _theory lacp:
 
-The locally adaptive conformal regression [Papadopoulos2008]_ relies on scaled nonconformity scores:
+The locally adaptive conformal regression :cite:`papadopoulos2008` relies on scaled nonconformity scores:
 
 .. math::
 
@@ -156,7 +156,7 @@ For example, if we set :math:`\alpha = 0.1`, we would fit two predictors :math:`
 
     It is common to split evenly :math:`\alpha` as: :math:`\alpha_{lo} = \alpha_{hi}= \frac{\alpha}{2}`, but users are free to do otherwise.
 
-The procedure, named *Conformalized Quantile Regression* [Romano2019]_, yields the following prediction interval:
+The procedure, named *Conformalized Quantile Regression* :cite:`romano2019`, yields the following prediction interval:
 
 .. math::
 
@@ -182,7 +182,7 @@ Cross-validation+ (CV+), Jackknife+
 
 The `leave-one-out (LOO) and the k-fold cross-validation <https://en.wikipedia.org/wiki/Cross-validation_(statistics)>`_ are well known schemes used to estimate regression residuals on out-of-sample data.
 As shown below, one first splits the data into K partitions and then *holds out* a partition at a time to compute errors (nonconformity scores, in our case).
-Following this principle, [Barber2021]_ introduced the LOO *jackknife+* (JP) and the k-fold *Cross-validation+* (CV+).
+Following this principle, :cite:`barber2021` introduced the LOO *jackknife+* (JP) and the k-fold *Cross-validation+* (CV+).
 With these methods, one does *not need* a dedicated calibration set.
 
 .. image:: img/k-fold-scheme.png
@@ -226,7 +226,7 @@ Ensemble Batch Prediction Intervals (EnbPI)
 .. _theory enbpi:
 
 
-Introduced in [Xu2021]_, 
+Introduced in :cite:`xu2021`, 
 the EnbPI algorithm builds prediction intervals 
 for time series data of the form 
 :math:`Y_t = f(X_t) + \epsilon_t`, 
@@ -283,7 +283,7 @@ and if :math:`t-n \neq 0\ mod\ s` then :math:`\mathcal{R}_t=\mathcal{R}_{t-1}`.
     :math:`\epsilon_t`. However, it does not require the data to be exchangeable.
 
 
-.. Introduced in [Xu2021]_, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
+.. Introduced in :cite:`xu2021`, the EnbPI algorithms builds prediction intervals for time series data of the form :math:`Y_t = f(X_t) + \epsilon_t`, where :math:`\epsilon_t` are identically distributed.
 .. Unlike the proper conformal algorithms seen above, EnbPI requires some additional hypothesis to attain the coverage guarantee.
 
 ..
@@ -316,7 +316,7 @@ Least Ambiguous Set-Valued Classifiers (LAC)
 .. _theory lac:
 
 As for the Split Conformal Regression algorithm, 
-the LAC algorithm introduced in [Sadinle2018]_ 
+the LAC algorithm introduced in :cite:`sadinle2019` 
 requires us to split the dataset :math:`D` into a proper training set :math:`D_{train}` 
 and an independent calibration set :math:`D_{calib}`. 
 A classifier :math:`\widehat{\pi}` is trained 
@@ -349,7 +349,7 @@ Adaptive Prediction Sets (APS)
 
 The LAC algorithm produces prediction sets that have small average size, and is known to be Bayes optimal. 
 However, it tends to undercover in regions where the classifier is uncertain, and overcover in regions where the classifier is confident. 
-The APS algorithm introduced in [Romano2020]_ aims to produce prediction sets that are more stable and have a better coverage rate.
+The APS algorithm introduced in :cite:`romano2020` aims to produce prediction sets that are more stable and have a better coverage rate.
 We represent by :math:`\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)` 
 the softmax vector :math:`\widehat{\pi}` arranged in decreasing order, 
 i.e. :math:`(k)` is the index of the class having the :math:`k`-th largest probability mass.
@@ -379,7 +379,7 @@ Regularized Adaptive Prediction Sets (RAPS)
 *******************************************
 .. _theory raps:
 
-The RAPS algorithm introduced in [Angelopoulos2021]_ is a modification of the APS algorithm 
+The RAPS algorithm introduced in :cite:`angelopoulos2020` is a modification of the APS algorithm 
 that uses a regularization term in order to produce smaller and more stable prediction sets.
 Employing the same notations as for the APS algorithm above,
 the RAPS algorithm works in two stages:
@@ -408,12 +408,13 @@ Conformal Anomaly Detection
 ---------------------------
 .. _theory cad:
 
-Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the "normal" (or nominal) distribution of a dataset [Laxhammar2015]_. The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the **false positive rate**.
+Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the "normal" (or nominal) distribution of a dataset (see section 4.4 of :cite:`angelopoulos2021`). The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the **false positive rate**.
 
 To detect anomalies, we start with a model that assigns an anomaly score :math:`s(X)` to each data point. Higher scores indicate a higher likelihood of being an outlier.
 
-**Calibration**
+Assume we have a calibration dataset :math:`D_{calib} = \{X_i\}_{i=1}^{n_{calib}}` consisting of nominal (non-anomalous) examples. The conformal anomaly detection algorithm proceeds as follows:
 
+**Calibration**
     #. For each example :math:`X_i` in the calibration dataset, we compute the nonconformity score as the anomaly score provided by the model, i.e. :math:`R_i = s(X_i)`. 
     #. Store all nonconformity scores in a vector :math:`\mathcal{R}`.
 
@@ -436,7 +437,7 @@ Conformal Object Detection
 --------------------------
 .. _theory splitboxwise:
 
-Conformal prediction can be extended to object detection tasks, where the goal is to predict the bounding boxes of objects in an image with a probabilistic guarantee [deGrancey2022]_. 
+Conformal prediction can be extended to object detection tasks, where the goal is to predict the bounding boxes of objects in an image with a probabilistic guarantee :cite:`degrancey2022`. 
 There are many way to formulate Conformal Object Detection, in PUNCC we have implemented the so-called *Split-Boxwise Conformal Object Detection* algorithm.
 Here, we conformalize predicted bounding boxes by adjusting their coordinates with a margin that depends on the nonconformity scores of the calibration dataset.
 A bounding box is charecterized by its lower-left corner and upper-right corner coordinates, i.e. :math:`Y = (Y^{x_\min}, Y^{y_\min}, Y^{x_\max}, Y^{y_\max})`.
@@ -467,15 +468,5 @@ we can use a matching algorithm like the Hungarian matching algorithm that will 
 References
 ----------
 
-.. [Angelopoulos2021] Angelopoulos, A. N., Bates, S., Jordan, M., & Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. https://openreview.net/forum?id=eNdiU_DbM9
-.. [Angelopoulos2022] Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511
-.. [Barber2021] Barber, R. F., Candes, E. J., Ramdas, A., & Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. https://arxiv.org/abs/1905.02928
-.. [Laxhammar2015] Laxhammar, R., & Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94
-.. [Lei2018] Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. https://arxiv.org/abs/1604.04173
-.. [Papadopoulos2002] Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. https://link.springer.com/chapter/10.1007/3-540-36755-1_29
-.. [Papadopoulos2008] Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).
-.. [deGrancey2022] de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.
-.. [Romano2019] Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. https://arxiv.org/abs/1905.03222
-.. [Romano2020] Romano, Y., Sesia, M., & Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. https://arxiv.org/abs/2006.02544
-.. [Sadinle2018] Sandinle, M., Lei, J., Wasserman, L., (2018). Least Ambiguous Set-Valued Classifiers With Bounded Error Levels. Journal of the American Statistical Association, 114(525), 223-234. https://arxiv.org/abs/1609.00451
-.. [Xu2021] Xu, C. & Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. https://proceedings.mlr.press/v139/xu21h.html.
+.. bibliography::
+   :style: plain

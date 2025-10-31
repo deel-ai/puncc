@@ -41,7 +41,10 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autodoc",
+    "sphinxcontrib.bibtex",
 ]
+
+bibtex_bibfiles = ['refs.bib']
 
 autodoc_default_options = {"members": True, "inherited-members": True}
 
