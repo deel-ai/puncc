@@ -1,22 +1,22 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📈 Regression &mdash; PUNCC 0.8.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
+
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -153,10 +153,7 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -304,15 +301,15 @@ None.</p></li>
 </dd>
 </dl>
 <p id="example-splitcp">Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">SplitCP</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">BasePredictor</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">SplitCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePredictor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
 
 
 <span class="c1"># Generate a random regression problem</span>
@@ -450,15 +447,15 @@ None.</p></li>
 </dd>
 </dl>
 <p id="example-lacp">Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">LocallyAdaptiveCP</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">MeanVarPredictor</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocallyAdaptiveCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanVarPredictor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
 
 
 <span class="c1"># Generate a random regression problem</span>
@@ -596,15 +593,15 @@ None.</p></li>
 </dd>
 </dl>
 <p id="example-cqr">Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">CQR</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">DualPredictor</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">CQR</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">DualPredictor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">GradientBoostingRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">GradientBoostingRegressor</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
 
 
 <span class="c1"># Generate a random regression problem</span>
@@ -743,15 +740,15 @@ the <a class="reference internal" href="theory_overview.html#theory-cvplus"><spa
 </dd>
 </dl>
 <p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">CVPlus</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">BasePredictor</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">CVPlus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePredictor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
 
 
 <span class="c1"># Generate a random regression problem</span>
@@ -871,17 +868,17 @@ for new samples.</p>
 </div></blockquote>
 </div>
 <p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">EnbPI</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">BasePredictor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnbPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePredictor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
 
 
 <span class="c1"># Generate a random regression problem</span>
@@ -993,15 +990,15 @@ residuals sequence.</p></li>
 </div></blockquote>
 </div>
 <p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.regression</span> <span class="kn">import</span> <span class="n">AdaptiveEnbPI</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.api.prediction</span> <span class="kn">import</span> <span class="n">MeanVarPredictor</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdaptiveEnbPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanVarPredictor</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_mean_coverage</span>
-<span class="kn">from</span> <span class="nn">deel.puncc.metrics</span> <span class="kn">import</span> <span class="n">regression_sharpness</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
 
 
 <span class="c1"># Generate a random regression problem</span>

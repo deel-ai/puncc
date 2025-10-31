@@ -1,23 +1,23 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📈 Theory overview &mdash; PUNCC 0.8.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
+
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -153,10 +153,7 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -328,7 +325,7 @@ as it can “conformalize” any existing predictor during or after training (bl
 yielding marginally valid prediction sets.</p>
 <p>In this page, we present the most common conformal prediction methods of the
 literature used on regression and classification models. We also refer to
-Angelopoulos and Bates <a class="reference internal" href="#angelopoulos2022" id="id2"><span>[Angelopoulos2022]</span></a> for a hands-on introduction to conformal prediction
+Angelopoulos and Bates <span id="id2">[<a class="reference internal" href="#id16" title="Anastasios N Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511, 2021.">2</a>]</span> for a hands-on introduction to conformal prediction
 and awesome conformal prediction <a class="reference external" href="https://github.com/valeman/awesome-conformal-prediction">github</a> for additional ressources.</p>
 <p>In the following, let <span class="math notranslate nohighlight">\(D = {(X_i, Y_i)}_{i=1}^n \sim P_{XY}\)</span>
 be the training data and <span class="math notranslate nohighlight">\(\alpha \in (0, 1)\)</span> the significance level (target maximum error rate).</p>
@@ -337,7 +334,7 @@ be the training data and <span class="math notranslate nohighlight">\(\alpha \in
 <h2>Conformal Regression<a class="headerlink" href="#conformal-regression" title="Permalink to this heading"></a></h2>
 <section id="split-inductive-conformal">
 <h3>Split (inductive) Conformal<a class="headerlink" href="#split-inductive-conformal" title="Permalink to this heading"></a></h3>
-<p id="theory-splitcp">The split (also called inductive) conformal prediction <a class="reference internal" href="#papadopoulos2002" id="id3"><span>[Papadopoulos2002]</span></a> <a class="reference internal" href="#lei2018" id="id4"><span>[Lei2018]</span></a> requires a hold-out calibration
+<p id="theory-splitcp">The split (also called inductive) conformal prediction <span id="id3">[<a class="reference internal" href="#id19" title="Harris Papadopoulos, Kostas Proedrou, Volodya Vovk, and Alex Gammerman. Inductive confidence machines for regression. In European conference on machine learning, 345–356. Springer, 2002.">7</a>]</span> <span id="id4">[<a class="reference internal" href="#id18" title="Jing Lei, Max G'Sell, Alessandro Rinaldo, Ryan J Tibshirani, and Larry Wasserman. Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523):1094–1111, 2018.">5</a>]</span> requires a hold-out calibration
 dataset: the dataset <span class="math notranslate nohighlight">\(D\)</span> is split into a proper training set
 <span class="math notranslate nohighlight">\(D_{train}=\big\lbrace(X_i,Y_i), i=1,\dots,n_{train}\big\rbrace\)</span>
 and an independent calibration dataset <span class="math notranslate nohighlight">\(D_{calib}=\big\lbrace(X_i,Y_i),i=1,\dots,n_{calib}\big\rbrace\)</span>.
@@ -357,7 +354,7 @@ to estimate prediction errors and use them to build the prediction interval for 
 which produced several methods. Some of them are presented hereafter.</p>
 <section id="locally-adaptive-conformal-regression">
 <h4>Locally Adaptive Conformal Regression<a class="headerlink" href="#locally-adaptive-conformal-regression" title="Permalink to this heading"></a></h4>
-<p id="theory-lacp">The locally adaptive conformal regression <a class="reference internal" href="#papadopoulos2008" id="id5"><span>[Papadopoulos2008]</span></a> relies on scaled nonconformity scores:</p>
+<p id="theory-lacp">The locally adaptive conformal regression <span id="id5">[<a class="reference internal" href="#id20" title="Harris Papadopoulos, Alex Gammerman, and Volodya Vovk. Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008), 64–69. 2008.">6</a>]</span> relies on scaled nonconformity scores:</p>
 <div class="math notranslate nohighlight">
 \[R_i = \frac{|\widehat{f}(X_i) - Y_i|}{\widehat{\sigma}(X_i)},\]</div>
 <p>where <span class="math notranslate nohighlight">\(\widehat{\sigma}(X_i)\)</span> is a measure of dispersion of the nonconformity scores at <span class="math notranslate nohighlight">\(X_i\)</span>.
@@ -391,7 +388,7 @@ by using the following nonconformity score:</p>
 <p class="admonition-title">Note</p>
 <p>It is common to split evenly <span class="math notranslate nohighlight">\(\alpha\)</span> as: <span class="math notranslate nohighlight">\(\alpha_{lo} = \alpha_{hi}= \frac{\alpha}{2}\)</span>, but users are free to do otherwise.</p>
 </div>
-<p>The procedure, named <em>Conformalized Quantile Regression</em> <a class="reference internal" href="#romano2019" id="id6"><span>[Romano2019]</span></a>, yields the following prediction interval:</p>
+<p>The procedure, named <em>Conformalized Quantile Regression</em> <span id="id6">[<a class="reference internal" href="#id22" title="Yaniv Romano, Evan Patterson, and Emmanuel Candes. Conformalized quantile regression. Advances in neural information processing systems, 2019.">8</a>]</span>, yields the following prediction interval:</p>
 <div class="math notranslate nohighlight">
 \[\widehat{C}_{\alpha}(X_{new}) = \Big[ \widehat{q}_{\alpha_{lo}}(X_{new}) - \delta_{\alpha} \,,\, \widehat{q}_{1 - \alpha_{hi}}(X_{new}) + \delta_{\alpha} \Big].\]</div>
 <p>When data are exchangeable, the correction margin <span class="math notranslate nohighlight">\(\delta_{\alpha}\)</span> guarantees finite-sample marginal coverage for the quantile predictions, and this holds also for misspecified (i.e. “bad”) predictors.</p>
@@ -404,7 +401,7 @@ We could have an asymptotically, conditionally accurate predictor and also have 
 <h3>Cross-validation+ (CV+), Jackknife+<a class="headerlink" href="#cross-validation-cv-jackknife" title="Permalink to this heading"></a></h3>
 <p id="theory-cvplus">The <a class="reference external" href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">leave-one-out (LOO) and the k-fold cross-validation</a> are well known schemes used to estimate regression residuals on out-of-sample data.
 As shown below, one first splits the data into K partitions and then <em>holds out</em> a partition at a time to compute errors (nonconformity scores, in our case).
-Following this principle, <a class="reference internal" href="#barber2021" id="id7"><span>[Barber2021]</span></a> introduced the LOO <em>jackknife+</em> (JP) and the k-fold <em>Cross-validation+</em> (CV+).
+Following this principle, <span id="id7">[<a class="reference internal" href="#id17" title="Rina Foygel Barber, Emmanuel J Candes, Aaditya Ramdas, and Ryan J Tibshirani. Predictive inference with the jackknife+. The Annals of Statistics, 49(1):486–507, 2021.">3</a>]</span> introduced the LOO <em>jackknife+</em> (JP) and the k-fold <em>Cross-validation+</em> (CV+).
 With these methods, one does <em>not need</em> a dedicated calibration set.</p>
 <a class="reference internal image-reference" href="_images/k-fold-scheme.png"><img alt="_images/k-fold-scheme.png" class="align-center" src="_images/k-fold-scheme.png" style="width: 600px;" /></a>
 <div class="line-block">
@@ -433,7 +430,7 @@ Then, the conformalization step boils down to computing, for each <span class="m
 </section>
 <section id="ensemble-batch-prediction-intervals-enbpi">
 <h3>Ensemble Batch Prediction Intervals (EnbPI)<a class="headerlink" href="#ensemble-batch-prediction-intervals-enbpi" title="Permalink to this heading"></a></h3>
-<p id="theory-enbpi">Introduced in <a class="reference internal" href="#xu2021" id="id8"><span>[Xu2021]</span></a>,
+<p id="theory-enbpi">Introduced in <span id="id8">[<a class="reference internal" href="#id25" title="Chen Xu and Yao Xie. Conformal prediction interval for dynamic time-series. In International Conference on Machine Learning, 11559–11569. PMLR, 2021.">11</a>]</span>,
 the EnbPI algorithm builds prediction intervals
 for time series data of the form
 <span class="math notranslate nohighlight">\(Y_t = f(X_t) + \epsilon_t\)</span>,
@@ -494,7 +491,7 @@ and holds under additional assumptions on the error process
 <section id="least-ambiguous-set-valued-classifiers-lac">
 <h3>Least Ambiguous Set-Valued Classifiers (LAC)<a class="headerlink" href="#least-ambiguous-set-valued-classifiers-lac" title="Permalink to this heading"></a></h3>
 <p id="theory-lac">As for the Split Conformal Regression algorithm,
-the LAC algorithm introduced in <a class="reference internal" href="#sadinle2018" id="id9"><span>[Sadinle2018]</span></a>
+the LAC algorithm introduced in <span id="id9">[<a class="reference internal" href="#id24" title="Mauricio Sadinle, Jing Lei, and Larry Wasserman. Least ambiguous set-valued classifiers with bounded error levels. Journal of the American Statistical Association, 114(525):223–234, 2019.">10</a>]</span>
 requires us to split the dataset <span class="math notranslate nohighlight">\(D\)</span> into a proper training set <span class="math notranslate nohighlight">\(D_{train}\)</span>
 and an independent calibration set <span class="math notranslate nohighlight">\(D_{calib}\)</span>.
 A classifier <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> is trained
@@ -527,7 +524,7 @@ k \, | \, \widehat{\pi}_{k}(X_{new})\geq 1 - \delta_\alpha
 <h3>Adaptive Prediction Sets (APS)<a class="headerlink" href="#adaptive-prediction-sets-aps" title="Permalink to this heading"></a></h3>
 <p id="theory-aps">The LAC algorithm produces prediction sets that have small average size, and is known to be Bayes optimal.
 However, it tends to undercover in regions where the classifier is uncertain, and overcover in regions where the classifier is confident.
-The APS algorithm introduced in <a class="reference internal" href="#romano2020" id="id10"><span>[Romano2020]</span></a> aims to produce prediction sets that are more stable and have a better coverage rate.
+The APS algorithm introduced in <span id="id10">[<a class="reference internal" href="#id23" title="Yaniv Romano, Matteo Sesia, and Emmanuel Candes. Classification with valid and adaptive coverage. Advances in neural information processing systems, 33:3581–3591, 2020.">9</a>]</span> aims to produce prediction sets that are more stable and have a better coverage rate.
 We represent by <span class="math notranslate nohighlight">\(\widehat{\pi}_{(1)}(x)\geq \cdots\geq \widehat{\pi}_{(K)}(x)\)</span>
 the softmax vector <span class="math notranslate nohighlight">\(\widehat{\pi}\)</span> arranged in decreasing order,
 i.e. <span class="math notranslate nohighlight">\((k)\)</span> is the index of the class having the <span class="math notranslate nohighlight">\(k\)</span>-th largest probability mass.</p>
@@ -553,7 +550,7 @@ k = \min\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)}\geq \delt
 </section>
 <section id="regularized-adaptive-prediction-sets-raps">
 <h3>Regularized Adaptive Prediction Sets (RAPS)<a class="headerlink" href="#regularized-adaptive-prediction-sets-raps" title="Permalink to this heading"></a></h3>
-<p id="theory-raps">The RAPS algorithm introduced in <a class="reference internal" href="#angelopoulos2021" id="id11"><span>[Angelopoulos2021]</span></a> is a modification of the APS algorithm
+<p id="theory-raps">The RAPS algorithm introduced in <span id="id11">[<a class="reference internal" href="#id15" title="Anastasios Angelopoulos, Stephen Bates, Jitendra Malik, and Michael I Jordan. Uncertainty sets for image classifiers using conformal prediction. arXiv preprint arXiv:2009.14193, 2020.">1</a>]</span> is a modification of the APS algorithm
 that uses a regularization term in order to produce smaller and more stable prediction sets.
 Employing the same notations as for the APS algorithm above,
 the RAPS algorithm works in two stages:</p>
@@ -584,15 +581,16 @@ the RAPS algorithm works in two stages:</p>
 </section>
 <section id="conformal-anomaly-detection">
 <h2>Conformal Anomaly Detection<a class="headerlink" href="#conformal-anomaly-detection" title="Permalink to this heading"></a></h2>
-<p id="theory-cad">Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the “normal” (or nominal) distribution of a dataset <a class="reference internal" href="#laxhammar2015" id="id12"><span>[Laxhammar2015]</span></a>. The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the <strong>false positive rate</strong>.</p>
+<p id="theory-cad">Conformal prediction can be extended to handle unsupervised anomaly detection, allowing us to identify data points that do not conform to the “normal” (or nominal) distribution of a dataset (see section 4.4 of <span id="id12">[<a class="reference internal" href="#id16" title="Anastasios N Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511, 2021.">2</a>]</span>). The goal is to assign a statistical guarantee to the anomaly detector, ensuring that it controls the <strong>false positive rate</strong>.</p>
 <p>To detect anomalies, we start with a model that assigns an anomaly score <span class="math notranslate nohighlight">\(s(X)\)</span> to each data point. Higher scores indicate a higher likelihood of being an outlier.</p>
-<p><strong>Calibration</strong></p>
-<blockquote>
-<div><ol class="arabic simple">
+<p>Assume we have a calibration dataset <span class="math notranslate nohighlight">\(D_{calib} = \{X_i\}_{i=1}^{n_{calib}}\)</span> consisting of nominal (non-anomalous) examples. The conformal anomaly detection algorithm proceeds as follows:</p>
+<dl class="simple">
+<dt><strong>Calibration</strong></dt><dd><ol class="arabic simple">
 <li><p>For each example <span class="math notranslate nohighlight">\(X_i\)</span> in the calibration dataset, we compute the nonconformity score as the anomaly score provided by the model, i.e. <span class="math notranslate nohighlight">\(R_i = s(X_i)\)</span>.</p></li>
 <li><p>Store all nonconformity scores in a vector <span class="math notranslate nohighlight">\(\mathcal{R}\)</span>.</p></li>
 </ol>
-</div></blockquote>
+</dd>
+</dl>
 <p><strong>Inference</strong></p>
 <blockquote>
 <div><ol class="arabic">
@@ -612,7 +610,7 @@ the RAPS algorithm works in two stages:</p>
 </section>
 <section id="conformal-object-detection">
 <h2>Conformal Object Detection<a class="headerlink" href="#conformal-object-detection" title="Permalink to this heading"></a></h2>
-<p id="theory-splitboxwise">Conformal prediction can be extended to object detection tasks, where the goal is to predict the bounding boxes of objects in an image with a probabilistic guarantee <a class="reference internal" href="#degrancey2022" id="id13"><span>[deGrancey2022]</span></a>.
+<p id="theory-splitboxwise">Conformal prediction can be extended to object detection tasks, where the goal is to predict the bounding boxes of objects in an image with a probabilistic guarantee <span id="id13">[<a class="reference internal" href="#id21" title="Florence De Grancey, Jean-Luc Adam, Lucian Alecu, Sébastien Gerchinovitz, Franck Mamalet, and David Vigouroux. Object detection with probabilistic guarantees: a conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security, 316–329. Springer, 2022.">4</a>]</span>.
 There are many way to formulate Conformal Object Detection, in PUNCC we have implemented the so-called <em>Split-Boxwise Conformal Object Detection</em> algorithm.
 Here, we conformalize predicted bounding boxes by adjusting their coordinates with a margin that depends on the nonconformity scores of the calibration dataset.
 A bounding box is charecterized by its lower-left corner and upper-right corner coordinates, i.e. <span class="math notranslate nohighlight">\(Y = (Y^{x_\min}, Y^{y_\min}, Y^{x_\max}, Y^{y_\max})\)</span>.
@@ -646,54 +644,53 @@ we can use a matching algorithm like the Hungarian matching algorithm that will 
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this heading"></a></h2>
+<div class="docutils container" id="id14">
 <div role="list" class="citation-list">
-<div class="citation" id="angelopoulos2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">Angelopoulos2021</a><span class="fn-bracket">]</span></span>
-<p>Angelopoulos, A. N., Bates, S., Jordan, M., &amp; Malik, J (2021). Uncertainty Sets for Image Classifiers using Conformal Prediction. In Proceedings of ICLR 2021. <a class="reference external" href="https://openreview.net/forum?id=eNdiU_DbM9">https://openreview.net/forum?id=eNdiU_DbM9</a></p>
+<div class="citation" id="id15" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">1</a><span class="fn-bracket">]</span></span>
+<p>Anastasios Angelopoulos, Stephen Bates, Jitendra Malik, and Michael I Jordan. Uncertainty sets for image classifiers using conformal prediction. <em>arXiv preprint arXiv:2009.14193</em>, 2020.</p>
 </div>
-<div class="citation" id="angelopoulos2022" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">Angelopoulos2022</a><span class="fn-bracket">]</span></span>
-<p>Angelopoulos, A.N. and Bates, S., (2021). A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv preprint arXiv:2107.07511. https://arxiv.org/abs/2107.07511</p>
+<div class="citation" id="id16" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id12">2</a>)</span>
+<p>Anastasios N Angelopoulos and Stephen Bates. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. <em>arXiv preprint arXiv:2107.07511</em>, 2021.</p>
 </div>
-<div class="citation" id="barber2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">Barber2021</a><span class="fn-bracket">]</span></span>
-<p>Barber, R. F., Candes, E. J., Ramdas, A., &amp; Tibshirani, R. J. (2021). Predictive inference with the jackknife+. Ann. Statist. 49 (1) 486 - 507, February 2021. <a class="reference external" href="https://arxiv.org/abs/1905.02928">https://arxiv.org/abs/1905.02928</a></p>
+<div class="citation" id="id17" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">3</a><span class="fn-bracket">]</span></span>
+<p>Rina Foygel Barber, Emmanuel J Candes, Aaditya Ramdas, and Ryan J Tibshirani. Predictive inference with the jackknife+. <em>The Annals of Statistics</em>, 49(1):486–507, 2021.</p>
 </div>
-<div class="citation" id="laxhammar2015" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">Laxhammar2015</a><span class="fn-bracket">]</span></span>
-<p>Laxhammar, R., &amp; Falkman, G. (2015). Inductive conformal anomaly detection for sequential detection of anomalous sub-trajectories. Annals of Mathematics and Artificial Intelligence, 74, 67-94</p>
+<div class="citation" id="id21" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id13">4</a><span class="fn-bracket">]</span></span>
+<p>Florence De Grancey, Jean-Luc Adam, Lucian Alecu, Sébastien Gerchinovitz, Franck Mamalet, and David Vigouroux. Object detection with probabilistic guarantees: a conformal prediction approach. In <em>International Conference on Computer Safety, Reliability, and Security</em>, 316–329. Springer, 2022.</p>
 </div>
-<div class="citation" id="lei2018" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">Lei2018</a><span class="fn-bracket">]</span></span>
-<p>Lei, J., G’Sell, M., Rinaldo, A., Tibshirani, R.J. and Wasserman, L., (2018). Distribution-free predictive inference for regression. Journal of the American Statistical Association, 113(523), pp.1094-1111. <a class="reference external" href="https://arxiv.org/abs/1604.04173">https://arxiv.org/abs/1604.04173</a></p>
+<div class="citation" id="id18" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">5</a><span class="fn-bracket">]</span></span>
+<p>Jing Lei, Max G'Sell, Alessandro Rinaldo, Ryan J Tibshirani, and Larry Wasserman. Distribution-free predictive inference for regression. <em>Journal of the American Statistical Association</em>, 113(523):1094–1111, 2018.</p>
 </div>
-<div class="citation" id="papadopoulos2002" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">Papadopoulos2002</a><span class="fn-bracket">]</span></span>
-<p>Papadopoulos, H., Proedrou, K., Vovk, V. and Gammerman, A., (2002). Inductive confidence machines for regression. In Proceedings of ECML 2002, Springer. <a class="reference external" href="https://link.springer.com/chapter/10.1007/3-540-36755-1_29">https://link.springer.com/chapter/10.1007/3-540-36755-1_29</a></p>
+<div class="citation" id="id20" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">6</a><span class="fn-bracket">]</span></span>
+<p>Harris Papadopoulos, Alex Gammerman, and Volodya Vovk. Normalized nonconformity measures for regression conformal prediction. In <em>Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008)</em>, 64–69. 2008.</p>
 </div>
-<div class="citation" id="papadopoulos2008" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">Papadopoulos2008</a><span class="fn-bracket">]</span></span>
-<p>Papadopoulos, H., Gammerman, A. and Vovk, V., (2008). Normalized nonconformity measures for regression conformal prediction. In Proceedings of the IASTED International Conference on Artificial Intelligence and Applications (AIA 2008) (pp. 64-69).</p>
+<div class="citation" id="id19" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">7</a><span class="fn-bracket">]</span></span>
+<p>Harris Papadopoulos, Kostas Proedrou, Volodya Vovk, and Alex Gammerman. Inductive confidence machines for regression. In <em>European conference on machine learning</em>, 345–356. Springer, 2002.</p>
 </div>
-<div class="citation" id="degrancey2022" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id13">deGrancey2022</a><span class="fn-bracket">]</span></span>
-<p>de Grancey, F., Adam, J.L., Alecu, L., Gerchinovitz, S., Mamalet, F. and Vigouroux, D., 2022, June. Object detection with probabilistic guarantees: A conformal prediction approach. In International Conference on Computer Safety, Reliability, and Security.</p>
+<div class="citation" id="id22" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">8</a><span class="fn-bracket">]</span></span>
+<p>Yaniv Romano, Evan Patterson, and Emmanuel Candes. Conformalized quantile regression. <em>Advances in neural information processing systems</em>, 2019.</p>
 </div>
-<div class="citation" id="romano2019" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">Romano2019</a><span class="fn-bracket">]</span></span>
-<p>Romano, Y., Patterson, E. and Candes, E., (2019). Conformalized quantile regression. In Proceedings of NeurIPS, 32. <a class="reference external" href="https://arxiv.org/abs/1905.03222">https://arxiv.org/abs/1905.03222</a></p>
+<div class="citation" id="id23" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">9</a><span class="fn-bracket">]</span></span>
+<p>Yaniv Romano, Matteo Sesia, and Emmanuel Candes. Classification with valid and adaptive coverage. <em>Advances in neural information processing systems</em>, 33:3581–3591, 2020.</p>
 </div>
-<div class="citation" id="romano2020" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">Romano2020</a><span class="fn-bracket">]</span></span>
-<p>Romano, Y., Sesia, M., &amp; Candes, E. (2020). Classification with valid and adaptive coverage. In Proceedings of NeurIPS, 33. <a class="reference external" href="https://arxiv.org/abs/2006.02544">https://arxiv.org/abs/2006.02544</a></p>
+<div class="citation" id="id24" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">10</a><span class="fn-bracket">]</span></span>
+<p>Mauricio Sadinle, Jing Lei, and Larry Wasserman. Least ambiguous set-valued classifiers with bounded error levels. <em>Journal of the American Statistical Association</em>, 114(525):223–234, 2019.</p>
 </div>
-<div class="citation" id="sadinle2018" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">Sadinle2018</a><span class="fn-bracket">]</span></span>
-<p>Sandinle, M., Lei, J., Wasserman, L., (2018). Least Ambiguous Set-Valued Classifiers With Bounded Error Levels. Journal of the American Statistical Association, 114(525), 223-234. <a class="reference external" href="https://arxiv.org/abs/1609.00451">https://arxiv.org/abs/1609.00451</a></p>
+<div class="citation" id="id25" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">11</a><span class="fn-bracket">]</span></span>
+<p>Chen Xu and Yao Xie. Conformal prediction interval for dynamic time-series. In <em>International Conference on Machine Learning</em>, 11559–11569. PMLR, 2021.</p>
 </div>
-<div class="citation" id="xu2021" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">Xu2021</a><span class="fn-bracket">]</span></span>
-<p>Xu, C. &amp; Xie, Y.. (2021). Conformal prediction interval for dynamic time-series. Proceedings of ICML 2021. <a class="reference external" href="https://proceedings.mlr.press/v139/xu21h.html">https://proceedings.mlr.press/v139/xu21h.html</a>.</p>
 </div>
 </div>
 </section>

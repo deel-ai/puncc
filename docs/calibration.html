@@ -1,23 +1,23 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calibration &mdash; PUNCC 0.8.0 documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
+
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
-        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -154,10 +154,7 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -319,20 +316,20 @@ implemented from scratch but a collection of ready-to-use nonconformity
 scores and prediction sets are provided in the modules
 <a class="reference internal" href="nonconformity_scores.html#nonconformity-scores"><span class="std std-ref">nonconformity_scores</span></a> and
 <a class="reference internal" href="prediction_sets.html#prediction-sets"><span class="std std-ref">prediction_sets</span></a>, respectively.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">deel.puncc.api.calibration</span> <span class="kn">import</span> <span class="n">BaseCalibrator</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseCalibrator</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="c1"># First, we define a nonconformity score function that takes as argument</span>
 <span class="c1"># the predicted values y_pred = model(X) and the true labels y_true. In</span>
 <span class="c1"># this example, we reimplement the mean absolute deviation that is</span>
 <span class="c1"># already defined in `deel.puncc.api.nonconformity_scores.mad`</span>
-<span class="k">def</span> <span class="nf">nonconformity_function</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_true</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">nonconformity_function</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_true</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_pred</span> <span class="o">-</span> <span class="n">y_true</span><span class="p">)</span>
 
 <span class="c1"># Prediction sets are computed based on points predictions and</span>
 <span class="c1"># the quantiles of nonconformity scores. The function below returns a</span>
 <span class="c1"># fixed size interval around the point predictions.</span>
-<span class="k">def</span> <span class="nf">prediction_set_function</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">scores_quantile</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prediction_set_function</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">scores_quantile</span><span class="p">):</span>
     <span class="n">y_lo</span> <span class="o">=</span> <span class="n">y_pred</span> <span class="o">-</span> <span class="n">scores_quantile</span>
     <span class="n">y_hi</span> <span class="o">=</span> <span class="n">y_pred</span> <span class="o">+</span> <span class="n">scores_quantile</span>
     <span class="k">return</span> <span class="n">y_lo</span><span class="p">,</span> <span class="n">y_hi</span>
@@ -457,7 +454,7 @@ calibration set.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -501,7 +498,7 @@ scores on the calibration set.</p>
 <dd class="field-odd"><p><strong>norm_weights</strong> (<em>ndarray</em>) – normalized weights array</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -554,7 +551,7 @@ on each fold.</p></li>
 the nonconformity scores.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -586,13 +583,13 @@ sample generated following a uniform distribution. The LOF algorithm is
 used to obtain anomaly scores; then a <a class="reference internal" href="#calibration.ScoreCalibrator" title="calibration.ScoreCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a> is
 instantiated to decide which scores are conformal (not anomalies) with
 respect to a significance level <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_moons</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">from</span> <span class="nn">sklearn.neighbors</span> <span class="kn">import</span> <span class="n">LocalOutlierFactor</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_moons</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neighbors</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalOutlierFactor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">deel.puncc.api.calibration</span> <span class="kn">import</span> <span class="n">ScoreCalibrator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreCalibrator</span>
 
 <span class="c1"># First, we generate the two moons dataset</span>
 <span class="n">dataset</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">make_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
