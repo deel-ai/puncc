@@ -25,7 +25,7 @@ import os
 import numpy as np
 import pytest
 import tensorflow as tf
-import tensorflow_addons as tfa
+from tensorflow.keras.utils import register_keras_serializable
 from sklearn.model_selection import train_test_split
 
 from deel.puncc.api.prediction import BasePredictor
@@ -43,6 +43,24 @@ from deel.puncc.regression import SplitCP
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
+
+@register_keras_serializable(package="Custom")  
+class PinballLoss(tf.keras.losses.Loss):
+    def __init__(self, tau, 
+                 reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, 
+                 name="pinball_loss"):
+        super().__init__(reduction=reduction, name=name)
+        self.tau = tau
+
+    def call(self, y_true, y_pred):
+        err = y_true - y_pred
+        loss = tf.maximum(self.tau * err, (self.tau - 1) * err)
+        return tf.reduce_mean(loss, axis=-1)
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"tau": self.tau})
+        return config
 
 @pytest.mark.parametrize(
     "alpha, random_state",
@@ -165,7 +183,6 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     var_model = tf.keras.Sequential()
     var_model.add(tf.keras.layers.Dense(10, activation="relu"))
     var_model.add(tf.keras.layers.Dense(1, activation="relu"))
-    var_model.add(tf.keras.layers.Lambda(lambda x: tf.abs(x)))
     compile_kwargs2 = {"optimizer": "rmsprop", "loss": "mse"}
 
     # Create predictor
@@ -229,7 +246,7 @@ def test_cqr(diabetes_data, alpha, random_state):
     q_lo_model.add(tf.keras.layers.Dense(10, activation="relu"))
     q_lo_model.add(tf.keras.layers.Dense(10, activation="relu"))
     q_lo_model.add(tf.keras.layers.Dense(1, activation="relu"))
-    loss_lo = tfa.losses.PinballLoss(tau=alpha / 2)
+    loss_lo = PinballLoss(tau=alpha / 2)
     compile_kwargs1 = {"optimizer": "sgd", "loss": loss_lo}
 
     # Upper quantile model
@@ -237,7 +254,7 @@ def test_cqr(diabetes_data, alpha, random_state):
     q_hi_model.add(tf.keras.layers.Dense(10, activation="relu"))
     q_hi_model.add(tf.keras.layers.Dense(10, activation="relu"))
     q_hi_model.add(tf.keras.layers.Dense(1, activation="relu"))
-    loss_hi = tfa.losses.PinballLoss(tau=1 - alpha / 2)
+    loss_hi = PinballLoss(tau=1 - alpha / 2)
     compile_kwargs2 = {"optimizer": "sgd", "loss": loss_hi}
 
     # Wrap models in predictor
@@ -360,7 +377,6 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     var_model = tf.keras.Sequential()
     var_model.add(tf.keras.layers.Dense(10, activation="relu"))
     var_model.add(tf.keras.layers.Dense(1, activation="relu"))
-    var_model.add(tf.keras.layers.Lambda(lambda x: tf.abs(x)))
     compile_kwargs2 = {"optimizer": "rmsprop", "loss": "mse"}
 
     # Create predictor
