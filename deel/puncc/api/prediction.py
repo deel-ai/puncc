@@ -206,9 +206,14 @@ class BasePredictor:
         else:
             model = deepcopy(self.model)
 
-        # Shallow-copy the predictor instance to preserve all subclass attributes
-        predictor_copy = _copy.copy(self)
-        predictor_copy.model = model
+        predictor_copy = self.__class__(
+            model=model, is_trained=self.is_trained, **self.compile_kwargs
+        )
+        # copy extra attributes from the original instance
+        for name, value in self.__dict__.items():
+            if name in ["model", "is_trained", "compile_kwargs"]:
+                continue
+            setattr(predictor_copy, name, value)
         return predictor_copy
 
 

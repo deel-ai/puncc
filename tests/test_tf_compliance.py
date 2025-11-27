@@ -25,7 +25,7 @@ import os
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow.keras.saving import register_keras_serializable
+from tensorflow.keras.utils import register_keras_serializable
 from sklearn.model_selection import train_test_split
 
 from deel.puncc.api.prediction import BasePredictor
@@ -55,7 +55,6 @@ class PinballLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         err = y_true - y_pred
         loss = tf.maximum(self.tau * err, (self.tau - 1) * err)
-        # moyenne par échantillon (comme TFA)
         return tf.reduce_mean(loss, axis=-1)
 
     def get_config(self):
