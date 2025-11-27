@@ -25,6 +25,7 @@ This module provides standard wrappings for ML models.
 """
 import importlib
 from copy import deepcopy
+import copy as _copy
 from typing import Any
 from typing import Iterable
 from typing import List
@@ -205,9 +206,9 @@ class BasePredictor:
         else:
             model = deepcopy(self.model)
 
-        predictor_copy = self.__class__(
-            model=model, is_trained=self.is_trained, **self.compile_kwargs
-        )
+        # Shallow-copy the predictor instance to preserve all subclass attributes
+        predictor_copy = _copy.copy(self)
+        predictor_copy.model = model
         return predictor_copy
 
 
