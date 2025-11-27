@@ -507,6 +507,11 @@ class DualPredictor:
             is_trained=self.is_trained,
             compile_args=self.compile_args,
         )
+        # copy extra attributes from the original instance
+        for name, value in self.__dict__.items():
+            if name in ["models", "is_trained", "compile_args"]:
+                continue
+            setattr(predictor_copy, name, value)
         return predictor_copy
 
 
