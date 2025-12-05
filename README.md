@@ -63,6 +63,7 @@ conda install -c conda-forge puncc
 
 For comprehensive documentation, we encourage you to visit the [**official documentation page**](https://deel-ai.github.io/puncc/index.html).
 
+<a id="-tutorials"></a>
 ## 👨‍🎓 Tutorials
 
 We highly recommend following the introductory tutorials to get familiar with the library and its API.
@@ -74,7 +75,7 @@ We highly recommend following the introductory tutorials to get familiar with th
 | **Tutorial on CP with PyTorch** | Learn how to use *puncc* with PyTorch. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_pytorch.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_pytorch.ipynb) |
 | ![new](https://img.shields.io/badge/new-blue) **Conformal Object Detection** | Learn to conformalize an object detector. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_cod.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb) |
 | ![new](https://img.shields.io/badge/new-blue) **Conformal Text Classification** | Learn to conformalize pretrained HuggingFace NLP model. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_nlp.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb) |
-| ![new](https://img.shields.io/badge/new-blue) **Conformal Prediction Time Series Forecasting** | Learn to conformalize time series models. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_timeseries.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb) |
+| ![new](https://img.shields.io/badge/new-blue) **Conformal Time Series Forecasting** | Learn to conformalize time series models. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_timeseries.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb) |
 | **Architecture Overview** | Detailed overview of *puncc*'s architecture. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_architecture.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_architecture.ipynb) |
 
 ## 🚀 Quickstart
