@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,9 +14,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -64,6 +64,10 @@
 <li class="toctree-l3"><a class="reference internal" href="getting_started.html#id3">⚙️ Conformal Anomaly Detection</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">👨‍🎓 Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#how-to-use-these-notebooks">How to use these notebooks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -153,7 +157,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -273,7 +280,7 @@
            <div itemprop="articleBody">
              
   <section id="anomaly-detection">
-<span id="id1"></span><h1>🚩 Anomaly detection<a class="headerlink" href="#anomaly-detection" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>🚩 Anomaly detection<a class="headerlink" href="#anomaly-detection" title="Link to this heading"></a></h1>
 <p>Currently implemented conformal anomaly detectors are listed in this page.</p>
 <p>Each of these wrappers calibrate the decision threshold for anomaly detectors
 that are passed as argument in the object constructor. Such models <strong>need</strong> to
@@ -282,7 +289,7 @@ implement the <code class="xref py py-func docutils literal notranslate"><span c
 compliance of models from various ML/DL libraries (such as Keras and scikit-learn) to <strong>puncc</strong>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="deel.puncc.anomaly_detection.SplitCAD">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.anomaly_detection.</span></span><span class="sig-name descname"><span class="pre">SplitCAD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.anomaly_detection.</span></span><span class="sig-name descname"><span class="pre">SplitCAD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD" title="Link to this definition"></a></dt>
 <dd><p>Split conformal anomaly detection method based on Laxhammar’s algorithm.
 The anomaly detection is based on the calibrated threshold (through
 conformal prediction) of underlying anomaly detection (model’s) scores.
@@ -373,7 +380,7 @@ provide a custom fit/calibration split in <cite>fit</cite> method.</p></li>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="deel.puncc.anomaly_detection.SplitCAD.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD.fit" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD.fit" title="Link to this definition"></a></dt>
 <dd><p>This method fits the models on the fit data
 and computes nonconformity scores on calibration data.
 If z are provided, randomly split data into
@@ -406,7 +413,7 @@ fit method.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="deel.puncc.anomaly_detection.SplitCAD.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD.predict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD.predict" title="Link to this definition"></a></dt>
 <dd><p>Predict whether each example is an anomaly or not. The decision is
 taken based on the calibrated threshold (through conformal prediction)
 of underlying anomaly detection scores.</p>

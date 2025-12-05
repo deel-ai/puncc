@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,9 +14,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -65,6 +65,10 @@
 <li class="toctree-l3"><a class="reference internal" href="getting_started.html#id3">⚙️ Conformal Anomaly Detection</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">👨‍🎓 Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#how-to-use-these-notebooks">How to use these notebooks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -154,7 +158,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -274,7 +281,7 @@
            <div itemprop="articleBody">
              
   <section id="api">
-<span id="id1"></span><h1><a class="toc-backref" href="#id2" role="doc-backlink">💻 API</a><a class="headerlink" href="#api" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1><a class="toc-backref" href="#id2" role="doc-backlink">💻 API</a><a class="headerlink" href="#api" title="Link to this heading"></a></h1>
 <p>The <strong>low-level API</strong> offers more flexibility into defining conformal prediction wrappers.
 Let’s say we want to fit/calibrate a neural-network interval-estimator with a cross-validation plan;
 or that we want to experiment different user-defined nonconformity scores.
@@ -305,7 +312,7 @@ into <code class="xref py py-class docutils literal notranslate"><span class="pr
 </ul>
 </nav>
 <section id="api-s-modules">
-<h2><a class="toc-backref" href="#id3" role="doc-backlink">API’s Modules</a><a class="headerlink" href="#api-s-modules" title="Permalink to this heading"></a></h2>
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">API’s Modules</a><a class="headerlink" href="#api-s-modules" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
@@ -320,7 +327,10 @@ into <code class="xref py py-class docutils literal notranslate"><span class="pr
 <li class="toctree-l2"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -366,9 +376,9 @@ into <code class="xref py py-class docutils literal notranslate"><span class="pr
 </div>
 </section>
 <section id="overview">
-<h2><a class="toc-backref" href="#id4" role="doc-backlink">Overview</a><a class="headerlink" href="#overview" title="Permalink to this heading"></a></h2>
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Overview</a><a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <section id="conformalpredictor">
-<h3><a class="toc-backref" href="#id5" role="doc-backlink">ConformalPredictor</a><a class="headerlink" href="#conformalpredictor" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">ConformalPredictor</a><a class="headerlink" href="#conformalpredictor" title="Link to this heading"></a></h3>
 <p><code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.api.conformalization.ConformalPredictor</span></code> is the canvas of conformal prediction procedures.
 An object instance is constructed by, as we will explain later, a <strong>predictor</strong>, a <strong>calibrator</strong> and a <strong>splitter</strong>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
@@ -511,7 +521,7 @@ An object instance is constructed by, as we will explain later, a <strong>predic
 </div>
 </section>
 <section id="predictor">
-<h3><a class="toc-backref" href="#id6" role="doc-backlink">Predictor</a><a class="headerlink" href="#predictor" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Predictor</a><a class="headerlink" href="#predictor" title="Link to this heading"></a></h3>
 <p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.api.prediction.BasePredictor</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.api.prediction.DualPredictor</span></code> classes are wrappers of ML/DL models
 that aims to expose a standardized interface and guarantee compliance with the <cite>puncc</cite>’s framework.
 The predictors have to implement:</p>
@@ -558,7 +568,7 @@ we need to create a predictor in which we redefine the <code class="xref py py-f
 </div>
 </section>
 <section id="calibrator">
-<h3><a class="toc-backref" href="#id7" role="doc-backlink">Calibrator</a><a class="headerlink" href="#calibrator" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Calibrator</a><a class="headerlink" href="#calibrator" title="Link to this heading"></a></h3>
 <p>The calibrator provides a structure to estimate the nonconformity scores
 on the calibration set and to compute the prediction sets. At the constructor <code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.api.calibration.BaseCalibrator</span></code>,
 one decides which nonconformity score and prediction set functions to use.
@@ -602,7 +612,7 @@ are built as constant intervals. These two functions are already provided in
 </div>
 </section>
 <section id="splitter">
-<h3><a class="toc-backref" href="#id8" role="doc-backlink">Splitter</a><a class="headerlink" href="#splitter" title="Permalink to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Splitter</a><a class="headerlink" href="#splitter" title="Link to this heading"></a></h3>
 <p>In conformal prediction, the assignment of data into fit and calibration sets is motivated by two criteria:
 data availability and computational resources. If quality data is abundant,
 we can split the training samples into disjoint subsets <span class="math notranslate nohighlight">\(D_{fit}\)</span> and <span class="math notranslate nohighlight">\(D_{calib}\)</span>.

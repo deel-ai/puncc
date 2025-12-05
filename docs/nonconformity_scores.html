@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,9 +14,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -65,6 +65,10 @@
 <li class="toctree-l3"><a class="reference internal" href="getting_started.html#id3">⚙️ Conformal Anomaly Detection</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">👨‍🎓 Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#how-to-use-these-notebooks">How to use these notebooks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -154,7 +158,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -275,12 +282,12 @@
            <div itemprop="articleBody">
              
   <section id="module-nonconformity_scores">
-<span id="id1"></span><span id="nonconformity-scores"></span><h1>Nonconformity scores<a class="headerlink" href="#module-nonconformity_scores" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><span id="nonconformity-scores"></span><h1>Nonconformity scores<a class="headerlink" href="#module-nonconformity_scores" title="Link to this heading"></a></h1>
 <p>This module provides nonconformity scores for conformal prediction. To be used
 when building a <a class="reference internal" href="calibration.html#calibration"><span class="std std-ref">calibrator</span></a>.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.absolute_difference">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">absolute_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.absolute_difference" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">absolute_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.absolute_difference" title="Link to this definition"></a></dt>
 <dd><p>Absolute Deviation.</p>
 <div class="math notranslate nohighlight">
 \[R = |y_{\text{true}}-y_{\text{pred}}|\]</div>
@@ -305,7 +312,7 @@ when building a <a class="reference internal" href="calibration.html#calibration
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.cqr_score">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">cqr_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.cqr_score" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">cqr_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.cqr_score" title="Link to this definition"></a></dt>
 <dd><p>CQR nonconformity score. Considering
 <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (q_{\text{lo}}, q_{\text{hi}})\)</span>:</p>
 <div class="math notranslate nohighlight">
@@ -333,7 +340,7 @@ when building a <a class="reference internal" href="calibration.html#calibration
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.difference">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.difference" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.difference" title="Link to this definition"></a></dt>
 <dd><p>Elementwise difference.</p>
 <div class="math notranslate nohighlight">
 \[R = y_{\text{pred}}-y_{\text{true}}\]</div>
@@ -358,7 +365,7 @@ when building a <a class="reference internal" href="calibration.html#calibration
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.lac_score">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">lac_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.lac_score" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">lac_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.lac_score" title="Link to this definition"></a></dt>
 <dd><p>LAC nonconformity score.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -382,7 +389,7 @@ where <span class="math notranslate nohighlight">\(P_{\text{C}_i}\)</span> is lo
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.raps_score">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score" title="Link to this definition"></a></dt>
 <dd><p>RAPS nonconformity score.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -421,7 +428,7 @@ discrete probability mass jump when including a new class.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.raps_score_builder">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score_builder" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score_builder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score_builder" title="Link to this definition"></a></dt>
 <dd><p>RAPS nonconformity score builder. When called, returns a RAPS
 nonconformity score function <a class="reference internal" href="#nonconformity_scores.raps_score" title="nonconformity_scores.raps_score"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_score()</span></code></a> with given initialitation
 of regularization hyperparameters.</p>
@@ -454,7 +461,7 @@ discrete probability mass jump when including a new class.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.scaled_ad">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">scaled_ad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.scaled_ad" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">scaled_ad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.scaled_ad" title="Link to this definition"></a></dt>
 <dd><p>Scaled Absolute Deviation, normalized by an estimation of the conditional
 mean absolute deviation (conditional MAD). Considering
 <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (\mu_{\text{pred}}, \sigma_{\text{pred}})\)</span>:</p>
@@ -483,7 +490,7 @@ mean absolute deviation (conditional MAD). Considering
 
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.scaled_bbox_difference">
-<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">scaled_bbox_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.scaled_bbox_difference" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">scaled_bbox_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.scaled_bbox_difference" title="Link to this definition"></a></dt>
 <dd><p>Object detection scaled nonconformity score. Considering
 <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (\hat{x}_1, \hat{y}_1, \hat{x}_2, \hat{y}_2)\)</span> and
 <span class="math notranslate nohighlight">\(Y_{\text{true}} = (x_1, y_1, x_2, y_2)\)</span>:</p>

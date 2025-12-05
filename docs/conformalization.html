@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,9 +14,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -64,6 +64,10 @@
 <li class="toctree-l3"><a class="reference internal" href="getting_started.html#id3">⚙️ Conformal Anomaly Detection</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">👨‍🎓 Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#how-to-use-these-notebooks">How to use these notebooks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -153,7 +157,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -274,11 +281,11 @@
            <div itemprop="articleBody">
              
   <section id="module-conformalization">
-<span id="conformalization"></span><h1>Conformalization<a class="headerlink" href="#module-conformalization" title="Permalink to this heading"></a></h1>
+<span id="conformalization"></span><h1>Conformalization<a class="headerlink" href="#module-conformalization" title="Link to this heading"></a></h1>
 <p>This module provides the canvas for conformal prediction.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conformalization.</span></span><span class="sig-name descname"><span class="pre">ConformalPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibrator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cv+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conformalization.</span></span><span class="sig-name descname"><span class="pre">ConformalPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calibrator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splitter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cv+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Conformal predictor class.</p>
 <dl class="field-list simple">
@@ -360,7 +367,7 @@ The models have to be trained during the call <a class="reference internal" href
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cached</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.fit" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cached</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.fit" title="Link to this definition"></a></dt>
 <dd><p>Fit the model(s) and estimate the nonconformity scores.</p>
 <p>If the splitter is an instance of
 <code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.splitting.KFoldSplitter</span></code>, the fit operates on each
@@ -390,7 +397,7 @@ model(s) and the <code class="xref py py-data docutils literal notranslate"><spa
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.get_nonconformity_scores">
-<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.get_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.get_nonconformity_scores" title="Link to this definition"></a></dt>
 <dd><p>Getter for computed nonconformity scores on the calibration(s) set(s).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -408,7 +415,7 @@ model(s) and the <code class="xref py py-data docutils literal notranslate"><spa
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.get_weights">
-<span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.get_weights" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.get_weights" title="Link to this definition"></a></dt>
 <dd><p>Getter for weights associated to calibration samples.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -426,7 +433,7 @@ model(s) and the <code class="xref py py-data docutils literal notranslate"><spa
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.load" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.load" title="Link to this definition"></a></dt>
 <dd><p>Load conformal predictor from a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -443,7 +450,7 @@ model(s) and the <code class="xref py py-data docutils literal notranslate"><spa
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction_func=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.predict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction_func=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.predict" title="Link to this definition"></a></dt>
 <dd><p>Predict point, and interval estimates for X data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -467,7 +474,7 @@ Tuple[np.ndarray, np.ndarray, np.ndarray]]</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.ConformalPredictor.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.save" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.ConformalPredictor.save" title="Link to this definition"></a></dt>
 <dd><p>Serialize current conformal predictor and write it to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -484,7 +491,7 @@ fit/calibrate the model.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="conformalization.CrossValCpAggregator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conformalization.</span></span><span class="sig-name descname"><span class="pre">CrossValCpAggregator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cv+'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conformalization.</span></span><span class="sig-name descname"><span class="pre">CrossValCpAggregator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cv+'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class enables to aggregate predictions and calibrations
 from different K-folds.</p>
@@ -501,7 +508,7 @@ calibration, defaults to ‘cv+’.</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.CrossValCpAggregator.append_calibrator">
-<span class="sig-name descname"><span class="pre">append_calibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibrator</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.append_calibrator" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">append_calibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibrator</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.append_calibrator" title="Link to this definition"></a></dt>
 <dd><p>Add calibrator in kfold calibrators dictionnary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -515,7 +522,7 @@ calibration, defaults to ‘cv+’.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.CrossValCpAggregator.append_predictor">
-<span class="sig-name descname"><span class="pre">append_predictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.append_predictor" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">append_predictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.append_predictor" title="Link to this definition"></a></dt>
 <dd><p>Add predictor in kfold predictors dictionnary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -529,7 +536,7 @@ calibration, defaults to ‘cv+’.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.CrossValCpAggregator.get_nonconformity_scores">
-<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.get_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.get_nonconformity_scores" title="Link to this definition"></a></dt>
 <dd><p>Get a dictionnary of residuals computed on the K-folds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -543,7 +550,7 @@ calibration, defaults to ‘cv+’.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.CrossValCpAggregator.get_weights">
-<span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.get_weights" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.get_weights" title="Link to this definition"></a></dt>
 <dd><p>Get a dictionnary of normalized weights computed on the K-folds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -557,7 +564,7 @@ calibration, defaults to ‘cv+’.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="conformalization.CrossValCpAggregator.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction_func=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.predict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction_func=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.CrossValCpAggregator.predict" title="Link to this definition"></a></dt>
 <dd><p>Predict point, interval and variability estimates for X data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>

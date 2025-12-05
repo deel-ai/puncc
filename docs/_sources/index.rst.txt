@@ -14,6 +14,7 @@ true outputs within a user-defined error :math:`\alpha`.
    :caption: Contents
 
    getting_started
+   tutorials
    regression
    classification
    object_detection

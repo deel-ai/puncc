@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,9 +14,10 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -64,6 +65,10 @@
 <li class="toctree-l3"><a class="reference internal" href="getting_started.html#id3">⚙️ Conformal Anomaly Detection</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">👨‍🎓 Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#how-to-use-these-notebooks">How to use these notebooks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -153,7 +158,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Experimental</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -274,8 +282,85 @@
            <div itemprop="articleBody">
              
   <section id="experimental">
-<span id="id1"></span><h1>Experimental<a class="headerlink" href="#experimental" title="Permalink to this heading"></a></h1>
-<span class="target" id="module-experimental"></span><p>This module provides experimental features. Use cautiously.</p>
+<span id="id1"></span><h1>Experimental<a class="headerlink" href="#experimental" title="Link to this heading"></a></h1>
+<p id="module-experimental">This module provides experimental features. Use cautiously.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="experimental.TorchPredictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">experimental.</span></span><span class="sig-name descname"><span class="pre">TorchPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_trained=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">criterion=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**compile_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#experimental.TorchPredictor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper of a torch prediction model <span class="math notranslate nohighlight">\(\hat{f}\)</span>. Enables to
+standardize the interface of torch predictors and to expose generic <a class="reference internal" href="#experimental.TorchPredictor.fit" title="experimental.TorchPredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>,
+<a class="reference internal" href="#experimental.TorchPredictor.predict" title="experimental.TorchPredictor.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> and <a class="reference internal" href="#experimental.TorchPredictor.copy" title="experimental.TorchPredictor.copy"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy()</span></code></a> methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Any</em>) – torch prediction model <span class="math notranslate nohighlight">\(\hat{f}\)</span></p></li>
+<li><p><strong>is_trained</strong> (<em>bool</em>) – boolean flag that informs if the model is
+pre-trained. If True, the call to <a class="reference internal" href="#experimental.TorchPredictor.fit" title="experimental.TorchPredictor.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> will be skipped</p></li>
+<li><p><strong>optimizer</strong> (<em>torch.optim.Optimizer</em>) – torch optimizer.
+Defaults to <cite>torch.optim.Adam</cite>.</p></li>
+<li><p><strong>criterion</strong> (<em>torch.nn.modules.loss</em>) – criterion that measures the distance
+between predictions and outputs. Default to  <cite>torch.nn.MSELoss</cite>.</p></li>
+<li><p><strong>compile_kwargs</strong> – keyword arguments to be used if needed during the
+call <code class="xref py py-func docutils literal notranslate"><span class="pre">model.compile()</span></code> on the underlying model</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <cite>model</cite> constructor has to take as argument both
+<cite>input_feat</cite>:int and <cite>output_feat</cite>:int, corresponding to the number
+of features (or channels) for each input and output, respectively.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="experimental.TorchPredictor.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#experimental.TorchPredictor.copy" title="Link to this definition"></a></dt>
+<dd><p>Returns a copy of the predictor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>copy of the predictor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#experimental.TorchPredictor" title="experimental.TorchPredictor">TorchPredictor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="experimental.TorchPredictor.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#experimental.TorchPredictor.fit" title="Link to this definition"></a></dt>
+<dd><p>Fit model to the training data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>torch.Tensor</em>) – train features.</p></li>
+<li><p><strong>y</strong> (<em>torch.Tensor</em>) – train labels.</p></li>
+<li><p><strong>kwargs</strong> – keyword arguments to configure the training.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="experimental.TorchPredictor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#experimental.TorchPredictor.predict" title="Link to this definition"></a></dt>
+<dd><p>Compute predictions on new examples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>X</strong> (<em>torch.Tensor</em>) – new examples’ features.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>predictions <span class="math notranslate nohighlight">\(\hat{f}(X)\)</span> associated to the new
+examples X.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 

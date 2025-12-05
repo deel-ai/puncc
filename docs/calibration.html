@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,9 +14,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6a14807c"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -65,6 +65,10 @@
 <li class="toctree-l3"><a class="reference internal" href="getting_started.html#id3">⚙️ Conformal Anomaly Detection</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">👨‍🎓 Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#how-to-use-these-notebooks">How to use these notebooks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="regression.html">📈 Regression</a><ul>
@@ -154,7 +158,10 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
@@ -275,13 +282,13 @@
            <div itemprop="articleBody">
              
   <section id="calibration">
-<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this heading"></a></h1>
-<span class="target" id="module-calibration"></span><p>This module implements the core calibrator, providing a structure to estimate
+<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Link to this heading"></a></h1>
+<p id="module-calibration">This module implements the core calibrator, providing a structure to estimate
 the nonconformity scores on the calibration set and to compute the prediction
 sets.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">BaseCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonconf_score_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_set_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">BaseCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonconf_score_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_set_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p><a class="reference internal" href="#calibration.BaseCalibrator" title="calibration.BaseCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a> offers a framework to compute user-defined
 nonconformity scores on calibration dataset(s) (<a class="reference internal" href="#calibration.BaseCalibrator.fit" title="calibration.BaseCalibrator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>) and to use for
@@ -357,7 +364,7 @@ scores and prediction sets are provided in the modules
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.barber_weights">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">barber_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.barber_weights" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">barber_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.barber_weights" title="Link to this definition"></a></dt>
 <dd><p>Compute and normalize inference weights of the nonconformity distribution
 based on <a class="reference external" href="https://arxiv.org/abs/2202.13415">Barber et al.</a>.</p>
 <dl class="field-list simple">
@@ -375,7 +382,7 @@ based on <a class="reference external" href="https://arxiv.org/abs/2202.13415">B
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.calibrate">
-<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.calibrate" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.calibrate" title="Link to this definition"></a></dt>
 <dd><p>Compute calibrated prediction sets for new examples w.r.t a
 significance level <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
 <dl class="field-list simple">
@@ -411,7 +418,7 @@ calibration set.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.compute_quantile">
-<span class="sig-name descname"><span class="pre">compute_quantile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.compute_quantile" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compute_quantile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">correction=&lt;function</span> <span class="pre">bonferroni&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.compute_quantile" title="Link to this definition"></a></dt>
 <dd><p>Compute quantile of scores w.r.t a
 significance level <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
 <dl class="field-list simple">
@@ -444,7 +451,7 @@ calibration set.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.fit" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.fit" title="Link to this definition"></a></dt>
 <dd><p>Compute and store nonconformity scores on the calibration set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -461,7 +468,7 @@ calibration set.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.get_nonconformity_scores">
-<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.get_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.get_nonconformity_scores" title="Link to this definition"></a></dt>
 <dd><p>Getter of computed nonconformity scores on the calibration set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -475,7 +482,7 @@ calibration set.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.get_norm_weights">
-<span class="sig-name descname"><span class="pre">get_norm_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.get_norm_weights" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_norm_weights</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.get_norm_weights" title="Link to this definition"></a></dt>
 <dd><p>Getter of normalized weights associated to the nonconformity
 scores on the calibration set.</p>
 <dl class="field-list simple">
@@ -490,7 +497,7 @@ scores on the calibration set.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.BaseCalibrator.set_norm_weights">
-<span class="sig-name descname"><span class="pre">set_norm_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norm_weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.set_norm_weights" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set_norm_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norm_weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.BaseCalibrator.set_norm_weights" title="Link to this definition"></a></dt>
 <dd><p>Setter of normalized weights associated to the nonconformity
 scores on the calibration set.</p>
 <dl class="field-list simple">
@@ -507,7 +514,7 @@ scores on the calibration set.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="calibration.CvPlusCalibrator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">CvPlusCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kfold_calibrators</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">CvPlusCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kfold_calibrators</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Meta calibrator that combines the estimations of nonconformity
 scores by each K-Fold calibrator and produces associated prediction
@@ -521,7 +528,7 @@ estimate the nonconformity scores w.r.t the associated calibration fold.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.CvPlusCalibrator.calibrate">
-<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kfold_predictors_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator.calibrate" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kfold_predictors_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator.calibrate" title="Link to this definition"></a></dt>
 <dd><p>Compute calibrated prediction intervals for new examples X.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -543,7 +550,7 @@ on each fold.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.CvPlusCalibrator.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator.fit" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.CvPlusCalibrator.fit" title="Link to this definition"></a></dt>
 <dd><p>Check if all calibrators have already been fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
@@ -560,7 +567,7 @@ the nonconformity scores.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="calibration.ScoreCalibrator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">ScoreCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nonconf_score_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">calibration.</span></span><span class="sig-name descname"><span class="pre">ScoreCalibrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nonconf_score_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p><a class="reference internal" href="#calibration.ScoreCalibrator" title="calibration.ScoreCalibrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a> offers a framework to compute user-defined
 scores on a calibration dataset (<a class="reference internal" href="#calibration.ScoreCalibrator.fit" title="calibration.ScoreCalibrator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>) and to test the conformity
@@ -643,7 +650,7 @@ respect to a significance level <span class="math notranslate nohighlight">\(\al
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.ScoreCalibrator.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.fit" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.fit" title="Link to this definition"></a></dt>
 <dd><p>Compute and store nonconformity scores on the calibration set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -654,7 +661,7 @@ respect to a significance level <span class="math notranslate nohighlight">\(\al
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.ScoreCalibrator.get_nonconformity_scores">
-<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.get_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.get_nonconformity_scores" title="Link to this definition"></a></dt>
 <dd><p>Getter of computed nonconformity scores on the calibration set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -668,7 +675,7 @@ respect to a significance level <span class="math notranslate nohighlight">\(\al
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.ScoreCalibrator.is_conformal">
-<span class="sig-name descname"><span class="pre">is_conformal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.is_conformal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">is_conformal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.is_conformal" title="Link to this definition"></a></dt>
 <dd><p>Test if new data points <cite>z</cite> are conformal. The test result is True
 if the new sample is conformal w.r.t a significance level
 <span class="math notranslate nohighlight">\(\alpha\)</span> and False otherwise.</p>
@@ -690,7 +697,7 @@ if the new sample is conformal w.r.t a significance level
 
 <dl class="py method">
 <dt class="sig sig-object py" id="calibration.ScoreCalibrator.set_nonconformity_scores">
-<span class="sig-name descname"><span class="pre">set_nonconformity_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.set_nonconformity_scores" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set_nonconformity_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#calibration.ScoreCalibrator.set_nonconformity_scores" title="Link to this definition"></a></dt>
 <dd><p>Setter of nonconformity scores. Can be used instead of calling
 <a class="reference internal" href="#calibration.ScoreCalibrator.fit" title="calibration.ScoreCalibrator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> if the nonconformity scores are already computed.</p>
 <dl class="field-list simple">
