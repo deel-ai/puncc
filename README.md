@@ -59,29 +59,11 @@ The package is also available on conda-forge:
 conda install -c conda-forge puncc
 ```
 
-<!--
-You can alternatively clone the repo and use the makefile to automatically create a virtual environment
-and install the requirements:
-
-* For users:
-
-```bash
-make install-user
-```
-
-* For developpers:
-
-```bash
-make prepare-dev
-```
--->
-
 ## 📖 Documentation
 
 For comprehensive documentation, we encourage you to visit the [**official documentation page**](https://deel-ai.github.io/puncc/index.html).
 
 ## 👨‍🎓 Tutorials
-
 
 We highly recommend following the introductory tutorials to get familiar with the library and its API.
 
@@ -90,8 +72,9 @@ We highly recommend following the introductory tutorials to get familiar with th
 | **Introduction Tutorial** | Get started with the basics of *puncc*. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_intro.ipynb) |
 | **API Tutorial** | Learn about *puncc*'s API. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/api_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/api_intro.ipynb) |
 | **Tutorial on CP with PyTorch** | Learn how to use *puncc* with PyTorch. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_pytorch.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_pytorch.ipynb) |
-| **Conformal Object Detection** | Learn to conformalize an object detector. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_cod.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb) |
-| **Conformal Text Classification** | Learn to conformalize pretrained HuggingFace NLP model. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_nlp.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb) |
+| ![new](https://img.shields.io/badge/new-blue) **Conformal Object Detection** | Learn to conformalize an object detector. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_cod.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb) |
+| ![new](https://img.shields.io/badge/new-blue) **Conformal Text Classification** | Learn to conformalize pretrained HuggingFace NLP model. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_nlp.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb) |
+| ![new](https://img.shields.io/badge/new-blue) **Conformal Prediction Time Series Forecasting** | Learn to conformalize time series models. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_timeseries.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb) |
 | **Architecture Overview** | Detailed overview of *puncc*'s architecture. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_architecture.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_architecture.ipynb) |
 
 ## 🚀 Quickstart
@@ -152,7 +135,7 @@ A quick comparison of both approaches is provided in the [**API tutorial**](docs
 </figure>
 
 ### 🖥️ Implemented Algorithms
-<details>
+<details open>
   <summary>Overview of Implemented Methods from the Literature:</summary>
 
 | Procedure Type                          | Procedure Name                                        | Description (more details in [Theory overview](https://deel-ai.github.io/puncc/theory_overview.html))                |
