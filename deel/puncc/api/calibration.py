@@ -298,6 +298,75 @@ class BaseCalibrator:
         return w_norm
 
 
+class ClasswiseCalibrator(BaseCalibrator):
+    """Calibrator for classwise conformal prediction.
+
+    This calibrator computes per-class quantiles of nonconformity scores,
+    handling NaN values that indicate scores from other classes.
+
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable pred_set_func: prediction set construction function.
+    :param callable weight_func: function that takes as argument an array of
+        features X and returns associated "conformality" weights,
+        defaults to None.
+    """
+
+    def compute_quantile(
+        self,
+        *,
+        alpha: float,
+        weights: Optional[Iterable] = None,
+        correction: Optional[Callable] = bonferroni,
+    ) -> np.ndarray:
+        """Compute per-class quantiles of scores w.r.t a
+        significance level :math:`\\alpha`.
+
+        :param float alpha: significance level (max miscoverage target).
+        :param Iterable weights: weights to be associated to the nonconformity
+                                 scores. Defaults to None when all the scores
+                                 are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing.
+                                    Defaults to Bonferroni correction.
+
+        :returns: per-class quantiles, shape (n_classes,)
+        :rtype: ndarray
+
+        :raises RuntimeError: :meth:`compute_quantile` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set for a given class.
+        """
+        if self._residuals is None:
+            raise RuntimeError("Run `fit` method before calling `calibrate`.")
+
+        alpha = correction(alpha)
+
+        n_classes = self._residuals.shape[1]
+        quantiles = np.zeros(n_classes)
+
+        for c in range(n_classes):
+            # Get scores for class c (non-NaN values only)
+            class_scores = self._residuals[:, c]
+            class_scores = class_scores[~np.isnan(class_scores)]
+
+            if len(class_scores) == 0:
+                quantiles[c] = np.inf
+                logger.warning(f"No calibration samples for class {c}, setting quantile to inf.")
+                continue
+
+            # Check consistency of alpha w.r.t the size of calibration data for this class
+            if weights is None:
+                alpha_calib_check(alpha=alpha, n=len(class_scores))
+
+            # Add infinity for coverage guarantee (Tibshirani's lemma)
+            class_scores_with_inf = np.concatenate([class_scores, [np.inf]])
+
+            quantiles[c] = np.quantile(
+                class_scores_with_inf, 1 - alpha, method="inverted_cdf"
+            )
+
+        return quantiles
+
+
 class ScoreCalibrator:
     """:class:`ScoreCalibrator` offers a framework to compute user-defined
     scores on a calibration dataset (:func:`fit`) and to test the conformity
