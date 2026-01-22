@@ -99,7 +99,7 @@ def classwise_lac_set(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    n_test, n_classes = Y_pred.shape
+    n_test, _ = Y_pred.shape
 
     logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
 
