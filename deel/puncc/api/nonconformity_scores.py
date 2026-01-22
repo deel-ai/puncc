@@ -76,6 +76,50 @@ def lac_score(
     return 1 - Y_pred[np.arange(y_true.shape[0]), y_true]
 
 
+def classwise_lac_score(
+    Y_pred: Iterable,
+    y_true: Iterable,
+) -> Iterable:
+    """Classwise LAC nonconformity score.
+
+    Computes nonconformity scores for classwise conformal prediction.
+    For each sample, the score is stored only for its true class,
+    with NaN values for other classes. This allows computing
+    per-class quantiles during calibration.
+
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable y_true: true labels.
+
+    :returns: Classwise LAC nonconformity scores of shape (n_samples, n_classes).
+        Entry [i, c] contains `1 - Y_pred[i, c]` if `y_true[i] == c`, else NaN.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    supported_types_check(Y_pred, y_true)
+
+    # Check if logits sum is close to one
+    logit_normalization_check(Y_pred)
+
+    if not isinstance(Y_pred, np.ndarray):
+        raise NotImplementedError(
+            "Classwise LAC nonconformity score only implemented for ndarrays"
+        )
+
+    n_samples, n_classes = Y_pred.shape
+
+    # Initialize with NaN - scores are valid only for the true class of each sample
+    scores = np.full((n_samples, n_classes), np.nan)
+
+    # For each sample, set the score only for its true class
+    sample_indices = np.arange(n_samples)
+    scores[sample_indices, y_true] = 1 - Y_pred[sample_indices, y_true]
+
+    return scores
+
+
 def raps_score(
     Y_pred: Iterable,
     y_true: Iterable,
