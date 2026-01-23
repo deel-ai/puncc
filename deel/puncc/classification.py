@@ -35,14 +35,13 @@ from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import ClasswiseCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.conformalization import ConformalPredictor, SplitConformalPredictor
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import RandomSplitter
-from deel.puncc.regression import SplitCP
 
 
-class LAC(SplitCP):
+class LAC(SplitConformalPredictor):
     """Implementation of the Least Ambiguous Set-Valued Classifier (LAC).
     For more details, we refer the user to the
     :ref:`theory overview page <theory lac>`.
@@ -127,48 +126,16 @@ class LAC(SplitCP):
         self,
         predictor: Union[BasePredictor, Any],
         train: bool = True,
-        random_state: float = None,
+        random_state: Optional[int] = None,
     ):
-        super().__init__(
-            predictor=predictor,
-            train=train,
-            random_state=random_state,
-        )
-        self.calibrator = BaseCalibrator(
+        super().__init__(predictor=predictor,
             nonconf_score_func=nonconformity_scores.lac_score,
             pred_set_func=prediction_sets.lac_set,
-            weight_func=None,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=self.train,
-        )
-
-    def predict(self, X_test: Iterable, alpha: float) -> Tuple:
-        """Conformal set predictions (w.r.t target miscoverage alpha)
-        for new samples.
-
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-
-        :returns: Tuple composed of the model estimate y_pred and the
-            prediction set set_pred
-        :rtype: Tuple
-        """
-
-        if self.conformal_predictor is None:
-            raise RuntimeError("Fit method should be called before predict.")
-
-        (y_pred, set_pred) = self.conformal_predictor.predict(
-            X_test, alpha=alpha
-        )
-
-        return y_pred, set_pred
+            train=train,
+            random_state=random_state)
 
 
-class ClasswiseLAC(SplitCP):
+class ClasswiseLAC(SplitConformalPredictor):
     """Implementation of the Classwise Least Ambiguous Set-Valued Classifier.
 
     Unlike standard LAC which computes a single quantile across all classes,
@@ -255,45 +222,27 @@ class ClasswiseLAC(SplitCP):
         self,
         predictor: Union[BasePredictor, Any],
         train: bool = True,
-        random_state: float = None,
+        random_state: Optional[int] = None,
     ):
-        super().__init__(
-            predictor=predictor,
-            train=train,
-            random_state=random_state,
-        )
+        super().__init__(predictor=predictor,
+                    nonconf_score_func=None,
+                    pred_set_func=None,
+                    train=train,
+                    random_state=random_state)
+
+        # Redefine calibrator as classwise calibrator
         self.calibrator = ClasswiseCalibrator(
             nonconf_score_func=nonconformity_scores.classwise_lac_score,
             pred_set_func=prediction_sets.classwise_lac_set,
             weight_func=None,
         )
+        # Update conformal predictor
         self.conformal_predictor = ConformalPredictor(
             predictor=self.predictor,
             calibrator=self.calibrator,
             splitter=object(),
-            train=self.train,
+            train=train,
         )
-
-    def predict(self, X_test: Iterable, alpha: float) -> Tuple:
-        """Conformal set predictions (w.r.t target miscoverage alpha)
-        for new samples.
-
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-
-        :returns: Tuple composed of the model estimate y_pred and the
-            prediction set set_pred
-        :rtype: Tuple
-        """
-
-        if self.conformal_predictor is None:
-            raise RuntimeError("Fit method should be called before predict.")
-
-        (y_pred, set_pred) = self.conformal_predictor.predict(
-            X_test, alpha=alpha
-        )
-
-        return y_pred, set_pred
 
 
 class RAPS:
