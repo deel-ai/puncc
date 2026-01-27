@@ -41,9 +41,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 RESULTS = {
     "lac": {"cov": 0.89, "size": 1.54},
-    "classwise-lac": {"cov": 0.89, "size": 1.59, 
-                      "classwise_cov": [0.9,0.9,0.88,0.89,0.89,0.89,0.88,0.89,0.87,0.9],
-                      "classwise_size": [1.16,1.36,1.29,1.77,1.83,1.85,1.36,1.45,2.06,1.84]}, 
+    "classwise-lac": {"cov": 0.89, "size": 1.61, 
+                      "classwise_cov": [0.91, 0.9, 0.88, 0.9, 0.9, 0.9, 0.89, 0.89, 0.88, 0.89],
+                      "classwise_size": [1.13, 1.33, 1.3, 1.76, 1.88, 1.79, 1.41, 1.55, 2.03, 1.96]}, 
     "aps": {"cov": 0.89, "size": 1.92},
     "aps-norand": {"cov": 0.98, "size": 3.91},
     "raps": {"cov": 0.89, "size": 1.9},
