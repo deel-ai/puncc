@@ -68,6 +68,74 @@ def classification_mean_size(set_pred: Tuple[np.ndarray]) -> float:
     return np.mean([len(s) for s in set_pred])
 
 
+def classification_classwise_coverage(
+    y_true: np.ndarray, set_pred: Tuple[np.ndarray], n_classes: int
+) -> np.ndarray:
+    """Compute classwise coverage of the prediction sets.
+
+    Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
+
+    * :math:`cov(X_i) = 1` if :math:`y_{true} \in S(X_i)`
+    * :math:`cov(X_i) = 0` otherwise
+
+    With N the number of examples, the classwise coverage for class k is
+    :math:`1/N_k \sum_{i:y_i=k}^{N} cov(X_i)`, where :math:`N_k` is the number
+    of examples of class k.
+
+    :param np.ndarray y_true: Observed label
+    :param Tuple[np.ndarray] set_pred: label prediction set
+    :param int n_classes: number of classes
+
+    :returns: classwise coverage, indicating the proportion of instances that
+        are correctly covered for each class.
+    :rtype: np.ndarray
+    """
+    coverage = np.zeros(n_classes)
+    counts = np.zeros(n_classes)
+
+    for y, S in zip(y_true, set_pred):
+        counts[y] += 1
+        if (S != []) and (y in S):
+            coverage[y] += 1
+
+    # Avoid division by zero
+    for k in range(n_classes):
+        if counts[k] > 0:
+            coverage[k] /= counts[k]
+        else:
+            raise ValueError(f"No instances found for class {k}.")
+
+    return coverage
+
+
+def classification_classwise_size(
+    y_true: np.ndarray, set_pred: Tuple[np.ndarray], n_classes: int
+) -> np.ndarray:
+    """Compute classwise average size of the prediction sets.
+
+    :param Tuple[np.ndarray] set_pred: label prediction set
+    :param int n_classes: number of classes
+
+    :returns: classwise average size of the prediction sets.
+    :rtype: np.ndarray
+    """
+    size = np.zeros(n_classes)
+    counts = np.zeros(n_classes)
+
+    for y, S in zip(y_true, set_pred):
+        counts[y] += 1
+        size[y] += len(S)
+
+    # Avoid division by zero
+    for k in range(n_classes):
+        if counts[k] > 0:
+            size[k] /= counts[k]
+        else:
+            raise ValueError(f"No instances found for class {k}.")
+
+    return size
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
