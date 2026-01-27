@@ -44,6 +44,7 @@ RESULTS = {
     "classwise-lac": {"cov": 0.89, "size": 1.59, 
                       "classwise_cov": [0.9,0.9,0.88,0.89,0.89,0.89,0.88,0.89,0.87,0.9],
                       "classwise_size": [1.16,1.36,1.29,1.77,1.83,1.85,1.36,1.45,2.06,1.84]}, 
+    "aps": {"cov": 0.89, "size": 1.92},
     "aps-norand": {"cov": 0.98, "size": 3.91},
     "raps": {"cov": 0.89, "size": 1.9},
     "raps-norand": {"cov": 0.98, "size": 3.51},
