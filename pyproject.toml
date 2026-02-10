@@ -1,2 +1,12 @@
 [tool.black]
 line-length = 80
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.2",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.0",
+    "tensorflow>=2.20.0",
+]
