@@ -22,6 +22,9 @@
   <a href="https://github.com/deel-ai/puncc/actions/workflows/tests.yml">
     <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/tests.yml/badge.svg">
   </a>
+  <a href="https://github.com/deel-ai/puncc/actions/workflows/tests-coverage.yml">
+    <img alt="Coverage" src=".github/badges/coverage.svg">
+  </a>
 </div>
 <br>
 
