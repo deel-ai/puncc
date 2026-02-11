@@ -9,5 +9,6 @@ sphinx
 sphinx-rtd-theme
 sphinx-autodoc-typehints
 tensorflow == 2.11.0
+scikit-learn == 1.3.2
 torch
 tox

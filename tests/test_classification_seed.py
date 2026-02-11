@@ -97,8 +97,12 @@ def test_lac(mnist_data, alpha, random_state):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["lac"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["lac"]["cov"], RESULTS["lac"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -151,8 +155,12 @@ def test_aps(mnist_data, alpha, random_state, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["aps"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["aps"]["cov"], RESULTS["aps"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -205,8 +213,12 @@ def test_aps_norand(mnist_data, alpha, random_state, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["aps-norand"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["aps-norand"]["cov"], RESULTS["aps-norand"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -259,8 +271,12 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["raps"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["raps"]["cov"], RESULTS["raps"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -313,5 +329,9 @@ def test_raps_norand(mnist_data, alpha, random_state, lambd, k_reg, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["raps-norand"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["raps-norand"]["cov"], RESULTS["raps-norand"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )

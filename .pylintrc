@@ -43,3 +43,6 @@ ignore-imports=no
 
 [TYPECHECK]
 ignored-modules = numpy
+
+[DESIGN]
+max-public-methods=30

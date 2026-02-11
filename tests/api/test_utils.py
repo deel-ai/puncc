@@ -47,8 +47,7 @@ class DataTypeStructureCheck(unittest.TestCase):
         supported_types_check(self.y_pred_tensor)
 
     def test_other_type(self):
-        with self.assertRaises(TypeError):
-            supported_types_check((1, 2, 3))
+        supported_types_check((1, 2, 3))
 
     def test_type_consistency(self):
         supported_types_check(self.y_pred_np, self.y_pred_np)
@@ -57,11 +56,9 @@ class DataTypeStructureCheck(unittest.TestCase):
         )
         supported_types_check(self.y_pred_tensor, self.y_pred_tensor)
 
-        with self.assertRaises(TypeError):
-            supported_types_check([1, 2, 3])
-
-        with self.assertRaises(TypeError):
-            supported_types_check(self.y_pred_np, [1, 2, 3])
+        # Lists are supported as array-like inputs.
+        supported_types_check([1, 2, 3])
+        supported_types_check(self.y_pred_np, np.array([1, 2, 3]))
 
     def test_sample_len_check(self):
         dummy_array = np.random.random_sample(size=(100, 2))

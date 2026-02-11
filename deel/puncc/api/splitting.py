@@ -23,8 +23,9 @@
 """
 This module provides data splitting schemes.
 """
-import importlib
+import sys
 from abc import ABC
+from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Tuple
@@ -36,9 +37,20 @@ from deel.puncc.api.utils import features_len_check
 from deel.puncc.api.utils import sample_len_check
 from deel.puncc.api.utils import supported_types_check
 
-if importlib.util.find_spec("pandas") is not None:
-    import pandas as pd
 
+def _is_pandas(x: Any) -> bool:
+    pd = sys.modules.get("pandas")
+    return bool(pd) and isinstance(x, (pd.DataFrame, pd.Series, pd.Index))
+
+def _take(x: Any, idx):
+    """Index `x` with integer indices `idx` in a backend-agnostic way."""
+    if _is_pandas(x):
+        return x.iloc[idx]
+    # numpy / torch / jax / tf typically support integer array/list indexing
+    try:
+        return x[idx]
+    except Exception:
+        return [x[i] for i in idx]
 
 class BaseSplitter(ABC):
     """Abstract structure of a splitter. A splitter provides a function
@@ -129,9 +141,12 @@ class RandomSplitter(BaseSplitter):
         sample_len_check(X, y)
 
         rng = np.random.RandomState(seed=self.random_state)
-        fit_idxs = rng.rand(len(X)) > self.ratio
-        cal_idxs = np.invert(fit_idxs)
-        return [(X[fit_idxs], y[fit_idxs], X[cal_idxs], y[cal_idxs])]
+        n = len(X)
+        perm = rng.permutation(n)
+        n_cal = int(np.floor((1 - self.ratio) * n))
+        calib_idx = perm[:n_cal]
+        fit_idx = perm[n_cal:]
+        return [(_take(X, fit_idx), _take(y, fit_idx), _take(X, calib_idx), _take(y, calib_idx))]
 
 
 class KFoldSplitter(BaseSplitter):
@@ -171,30 +186,6 @@ class KFoldSplitter(BaseSplitter):
         folds = []
 
         for fit, calib in kfold.split(X):
-            if importlib.util.find_spec("pandas") is not None and isinstance(
-                X, pd.DataFrame
-            ):
-                if isinstance(y, pd.DataFrame):
-                    folds.append(
-                        (
-                            X.iloc[fit],
-                            y.iloc[fit],
-                            X.iloc[calib],
-                            y.iloc[calib],
-                        )
-                    )
-                else:
-                    folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
-
-            else:
-                bool_fit_idx = np.array([i in fit for i in range(len(X))])
-                folds.append(
-                    (
-                        X[bool_fit_idx],
-                        y[bool_fit_idx],
-                        X[~bool_fit_idx],
-                        y[~bool_fit_idx],
-                    )
-                )
+            folds.append((_take(X, fit), _take(y, fit), _take(X, calib), _take(y, calib)))
 
         return folds
