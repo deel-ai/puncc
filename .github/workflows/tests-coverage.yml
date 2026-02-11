@@ -1,0 +1,61 @@
+name: coverage
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+          pip install coverage-badge
+
+      - name: Run tests and generate coverage report
+        run: pytest --cov=deel/puncc --cov-report=xml
+
+      - name: Generate coverage badge
+        run: coverage-badge -f -o /tmp/coverage.svg
+
+      - name: Validate badge directories
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'dev')
+        run: |
+          test -d .github/badges
+          test -d ".github/badges/${GITHUB_REF_NAME}"
+
+      - name: Place badge for current branch
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'dev')
+        run: |
+          cp /tmp/coverage.svg ".github/badges/${GITHUB_REF_NAME}/coverage.svg"
+          cp /tmp/coverage.svg .github/badges/coverage.svg
+
+      - name: Commit coverage badge
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'dev')
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update coverage badge"
+          file_pattern: .github/badges/${{ github.ref_name }}/coverage.svg .github/badges/coverage.svg
