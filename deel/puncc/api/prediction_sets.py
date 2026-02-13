@@ -103,16 +103,22 @@ def classwise_lac_set(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    n_test, _ = Y_pred.shape
+    b = get_backend(Y_pred, scores_quantile)
+    yp = b.asarray(Y_pred)
+    sq = b.asarray(scores_quantile)
+    _, shape = shape2(yp)
+    n_test = shape[0]
 
-    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+    logger.debug(f"Shape of Y_pred: {shape}")
 
     # Threshold per class: 1 - quantile[c]
-    thresholds = 1 - scores_quantile  # shape: (n_classes,)
+    thresholds = 1 - b.squeeze(sq)  # shape: (n_classes,)
 
-    # Build prediction sets: include class c if Y_pred[i, c] >= threshold[c]
+    # Build prediction sets: include class c if Y_pred[i, c] >= threshold[c].
+    cond_np = b.to_numpy(yp >= thresholds)
     prediction_sets = [
-        np.where(Y_pred[i] >= thresholds)[0].tolist() for i in range(n_test)
+        [j for j, is_in in enumerate(cond_np[i]) if is_in]
+        for i in range(n_test)
     ]
 
     return (prediction_sets,)

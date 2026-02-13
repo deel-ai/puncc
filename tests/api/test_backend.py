@@ -144,6 +144,20 @@ def test_backend_shape_dtype_and_indexing_ops(name):
     rng = b.arange(1, 6)
     np.testing.assert_allclose(_to_numpy(rng), np.array([1, 2, 3, 4, 5]))
 
+    full_1d = b.full((4,), 7)
+    np.testing.assert_allclose(_to_numpy(full_1d), np.array([7, 7, 7, 7]))
+
+    full_2d = b.full((2, 3), -1.5)
+    np.testing.assert_allclose(_to_numpy(full_2d), np.array([[-1.5, -1.5, -1.5], [-1.5, -1.5, -1.5]]))
+
+    full_dtype = b.full((3,), 2, dtype="int64")
+    full_dtype_np = _to_numpy(full_dtype)
+    np.testing.assert_allclose(full_dtype_np, np.array([2, 2, 2], dtype=np.int64))
+    if name == "jax":
+        assert full_dtype_np.dtype in (np.int32, np.int64)
+    else:
+        assert full_dtype_np.dtype == np.int64
+
     eq = b.equal(b.asarray(_make_backend_array(name, [1, 2, 3])), b.asarray(_make_backend_array(name, [1, 0, 3])))
     np.testing.assert_allclose(_to_numpy(eq), np.array([True, False, True]))
 

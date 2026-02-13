@@ -137,6 +137,9 @@ class BackendOps(Protocol):
 
     # creation / typing / comparisons
     def arange(self, start: int, stop: Any = None, step: int = 1) -> Any: ...
+    def full(
+        self, shape: Tuple[int, ...], fill_value: Any, dtype: Any = None
+    ) -> Any: ...
     def equal(self, a: Any, b: Any) -> Any: ...
     def astype(self, x: Any, dtype: Any) -> Any: ...
     def random_uniform(self, shape: Tuple[int, ...]) -> Any: ...
@@ -187,6 +190,7 @@ class _NumpyOps:
     def reshape(self, x, shape): return _np.reshape(x, shape)
     def squeeze(self, x, axis=None): return _np.squeeze(x, axis=axis)
     def arange(self, start, stop=None, step=1): return _np.arange(start, stop, step)
+    def full(self, shape, fill_value, dtype=None): return _np.full(shape, fill_value, dtype=dtype)
     def equal(self, a, b): return _np.equal(a, b)
     def astype(self, x, dtype): return _np.asarray(x).astype(dtype)
     def random_uniform(self, shape): return _np.random.uniform(size=shape)
@@ -330,6 +334,14 @@ class _PandasOps:
         out = _np.squeeze(self.to_numpy(x), axis=axis)
         return self._wrap_like(x, out)
     def arange(self, start, stop=None, step=1): return _np.arange(start, stop, step)
+    def full(self, shape, fill_value, dtype=None):
+        out = _np.full(shape, fill_value, dtype=dtype)
+        import pandas as pd
+        if len(shape) == 1:
+            return pd.Series(out)
+        if len(shape) == 2:
+            return pd.DataFrame(out)
+        return out
     def equal(self, a, b):
         a = self.asarray(a)
         b = self.asarray(b)
@@ -474,6 +486,16 @@ class _TorchOps:
         if stop is None:
             return self._torch.arange(start)
         return self._torch.arange(start, stop, step)
+    def full(self, shape, fill_value, dtype=None):
+        kwargs = {}
+        if dtype is not None:
+            torch_dtype = getattr(self._torch, str(dtype), None)
+            if torch_dtype is None:
+                torch_dtype = getattr(self._torch, str(_np.dtype(dtype)), None)
+            if torch_dtype is None:
+                raise TypeError(f"Unsupported torch dtype: {dtype}")
+            kwargs["dtype"] = torch_dtype
+        return self._torch.full(shape, fill_value, **kwargs)
     def equal(self, a, b): return self._torch.eq(a, b)
     def astype(self, x, dtype):
         torch_dtype = getattr(self._torch, str(dtype), None)
@@ -529,6 +551,7 @@ class _JaxOps:
     def reshape(self, x, shape): return self._jnp.reshape(x, shape)
     def squeeze(self, x, axis=None): return self._jnp.squeeze(x, axis=axis)
     def arange(self, start, stop=None, step=1): return self._jnp.arange(start, stop, step)
+    def full(self, shape, fill_value, dtype=None): return self._jnp.full(shape, fill_value, dtype=dtype)
     def equal(self, a, b): return self._jnp.equal(a, b)
     def astype(self, x, dtype): return x.astype(dtype)
     def random_uniform(self, shape): return self._jnp.asarray(_np.random.uniform(size=shape))
@@ -593,6 +616,11 @@ class _TensorflowOps:
         if stop is None:
             return self._tf.range(start)
         return self._tf.range(start, limit=stop, delta=step)
+    def full(self, shape, fill_value, dtype=None):
+        out = self._tf.fill(shape, fill_value)
+        if dtype is not None:
+            out = self._tf.cast(out, self._tf.as_dtype(dtype))
+        return out
     def equal(self, a, b): return self._tf.equal(a, b)
     def astype(self, x, dtype): return self._tf.cast(x, self._tf.as_dtype(dtype))
     def random_uniform(self, shape): return self._tf.random.uniform(shape)

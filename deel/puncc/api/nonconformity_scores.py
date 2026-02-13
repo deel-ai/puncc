@@ -94,21 +94,22 @@ def classwise_lac_score(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    if not isinstance(Y_pred, np.ndarray):
-        raise NotImplementedError(
-            "Classwise LAC nonconformity score only implemented for ndarrays"
-        )
+    b = get_backend(Y_pred, y_true)
+    yp = b.asarray(Y_pred)
+    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    
+    _, shape = shape2(yp)
+    n_samples = shape[0]
+    n_classes = shape[1]
 
-    n_samples, n_classes = Y_pred.shape
+    # Build a boolean mask selecting the true class per sample.
+    yt_col = b.reshape(yt, (-1, 1))
+    class_ids = b.reshape(b.arange(n_classes), (1, n_classes))
+    true_class_mask = b.equal(yt_col, class_ids)
 
-    # Initialize with NaN - scores are valid only for the true class of each sample
-    scores = np.full((n_samples, n_classes), np.nan)
-
-    # For each sample, set the score only for its true class
-    sample_indices = np.arange(n_samples)
-    scores[sample_indices, y_true] = 1 - Y_pred[sample_indices, y_true]
-
-    return scores
+    # Keep 1 - p only on the true class column, NaN elsewhere.
+    nan_matrix = b.full((n_samples, n_classes), float("nan"))
+    return b.where(true_class_mask, 1 - yp, nan_matrix)
 
 
 def raps_score(
