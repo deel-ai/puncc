@@ -97,7 +97,7 @@ def classwise_lac_score(
     b = get_backend(Y_pred, y_true)
     yp = b.asarray(Y_pred)
     yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
-    
+
     _, shape = shape2(yp)
     n_samples = shape[0]
     n_classes = shape[1]
