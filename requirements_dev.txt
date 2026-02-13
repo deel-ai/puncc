@@ -1,5 +1,5 @@
 flake8
-jax==0.6.2
+jax==0.4.30
 pandas
 pylint
 pytest
