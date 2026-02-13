@@ -37,16 +37,14 @@ from sklearn.utils import resample
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.conformalization import ConformalPredictor, SplitConformalPredictor
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.prediction import MeanVarPredictor
-from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
-from deel.puncc.api.splitting import RandomSplitter
 
 
-class SplitCP:
+class SplitCP(SplitConformalPredictor):
     """Split conformal prediction method. For more details, we refer the user to
     the :ref:`theory overview page <theory splitcp>`.
 
@@ -116,160 +114,18 @@ class SplitCP:
         predictor: Union[BasePredictor, Any],
         *,
         train=True,
-        random_state: int = None,
+        random_state: Optional[int] = None,
         weight_func=None,
     ):
-        self.predictor = predictor
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.absolute_difference,
-            pred_set_func=prediction_sets.constant_interval,
-            weight_func=weight_func,
-        )
-
-        self.train = train
-
-        self.random_state = random_state
-
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
-        )
-
-    def fit(
-        self,
-        *,
-        X: Optional[Iterable] = None,
-        y: Optional[Iterable] = None,
-        fit_ratio: float = 0.8,
-        X_fit: Optional[Iterable] = None,
-        y_fit: Optional[Iterable] = None,
-        X_calib: Optional[Iterable] = None,
-        y_calib: Optional[Iterable] = None,
-        use_cached: bool = False,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the models on the fit data
-        and computes nonconformity scores on calibration data.
-        If (X, y) are provided, randomly split data into
-        fit and calib subsets w.r.t to the fit_ratio.
-        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
-        the conformalization is performed on the given user defined
-        fit and calibration sets.
-
-        .. NOTE::
-
-            If X and y are provided, `fit` ignores
-            any user-defined fit/calib split.
+        super().__init__(predictor=predictor,
+                         nonconf_score_func=nonconformity_scores.absolute_difference,
+                         pred_set_func=prediction_sets.constant_interval,
+                         train=train,
+                         random_state=random_state,
+                         weight_func=weight_func)
 
 
-        :param Iterable X: features from the training dataset.
-        :param Iterable y: labels from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
-            fit subset.
-        :param Iterable X_fit: features from the fit dataset.
-        :param Iterable y_fit: labels from the fit dataset.
-        :param Iterable X_calib: features from the calibration dataset.
-        :param Iterable y_calib: labels from the calibration dataset.
-        :param bool use_cached: if set, enables to add the previously computed
-            nonconformity scores (if any) to the pool estimated in the current
-            call to `fit`. The aggregation follows the CV+
-            procedure.
-        :param dict kwargs: predict configuration to be passed to the model's
-            fit method.
-
-        :raises RuntimeError: no dataset provided.
-
-        """
-
-        # Check if predictor is trained. Suppose that it is trained if the
-        # predictor has not "is_trained" attribute
-        is_trained = not hasattr(self.predictor, "is_trained") or (
-            hasattr(self.predictor, "is_trained") and self.predictor.is_trained
-        )
-
-        if X is not None and y is not None:
-            splitter = RandomSplitter(
-                ratio=fit_ratio, random_state=self.random_state
-            )
-
-        elif (
-            X_fit is not None
-            and y_fit is not None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
-
-        elif (
-            is_trained
-            and X_fit is None
-            and y_fit is None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            if self.train is True:
-                raise RuntimeError(
-                    "Argument 'train' is True but no training dataset provided."
-                )
-            splitter = IdSplitter(
-                np.empty_like(X_calib),
-                np.empty_like(y_calib),
-                X_calib,
-                y_calib,
-            )
-
-        else:
-            raise RuntimeError("No dataset provided.")
-
-        # Update splitter
-        self.conformal_predictor.splitter = splitter
-
-        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
-
-    def predict(
-        self, X_test: Iterable, alpha
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Conformal interval predictions (w.r.t target miscoverage alpha) for
-        new samples.
-
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-
-        :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
-
-        """
-
-        (
-            y_pred,
-            y_lo,
-            y_hi,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-
-        return y_pred, y_lo, y_hi
-
-    def get_nonconformity_scores(self) -> np.ndarray:
-        """Get computed nonconformity scores.
-
-        :returns: computed nonconfomity scores.
-        :rtype: ndarray
-
-        """
-
-        # Get all nconf scores on the fitting kfolds
-        kfold_nconf_scores = self.conformal_predictor.get_nonconformity_scores()
-
-        # With split CP, the nconf scores dict has only one element if no
-        # cache was used.
-        if len(kfold_nconf_scores) == 1:
-            return list(kfold_nconf_scores.values())[0]
-
-        return kfold_nconf_scores
-
-
-class LocallyAdaptiveCP(SplitCP):
+class LocallyAdaptiveCP(SplitConformalPredictor):
     """Locally adaptive conformal prediction method. For more details, we refer the user to
     the :ref:`theory overview page <theory lacp>`
 
@@ -345,26 +201,15 @@ class LocallyAdaptiveCP(SplitCP):
         random_state: int = None,
         weight_func: Callable = None,
     ):
-        super().__init__(
-            predictor,
-            train=train,
-            random_state=random_state,
-            weight_func=weight_func,
-        )
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.scaled_ad,
-            pred_set_func=prediction_sets.scaled_interval,
-            weight_func=weight_func,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
-        )
+        super().__init__(predictor=predictor,
+                    nonconf_score_func=nonconformity_scores.scaled_ad,
+                    pred_set_func=prediction_sets.scaled_interval,
+                    train=train,
+                    random_state=random_state,
+                    weight_func=weight_func)
 
 
-class CQR(SplitCP):
+class CQR(SplitConformalPredictor):
     """Conformalized quantile regression method. For more details, we refer the
     user to the :ref:`theory overview page <theory cqr>`.
 
@@ -443,20 +288,15 @@ class CQR(SplitCP):
         predictor: DualPredictor,
         *,
         train: bool = True,
+        random_state= None,
         weight_func: Callable = None,
     ):
-        super().__init__(predictor, train=train, weight_func=weight_func)
-        self.calibrator = BaseCalibrator(
+        super().__init__(predictor=predictor,
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
-            weight_func=weight_func,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
             train=train,
-        )
+            random_state=random_state,
+            weight_func=weight_func)
 
 
 class CVPlus:
