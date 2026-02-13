@@ -403,6 +403,49 @@ the RAPS algorithm works in two stages:
             k = \max\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)} + \lambda(i-k_{reg}+1) \leq \delta_\alpha\big\rbrace + 1.
 
 
+Classwise Conformal Prediction
+******************************
+.. _theory classwise:
+
+Standard conformal methods like LAC provide **marginal coverage** guarantees:
+
+.. math::
+
+    \mathbb{P} \Big\{ Y \in \widehat{C}_{\alpha}(X) \Big\} \geq 1 - \alpha.
+
+This means that, on average across all classes, the true label is contained in the prediction set
+with probability at least :math:`1-\alpha`. However, this marginal guarantee does not ensure
+that each class is covered equally well. Some classes might be over-covered while others are under-covered.
+
+**Classwise conformal prediction** aims to achieve **class-conditional coverage**:
+
+.. math::
+
+    \mathbb{P} \Big\{ Y \in \widehat{C}_{\alpha}(X) \, | \, Y = k \Big\} \geq 1 - \alpha \quad \forall k \in \{1, \dots, K\}.
+
+This is achieved by computing separate quantiles for each class during calibration,
+rather than a single global quantile.
+
+The classwise LAC algorithm works as follows:
+
+**Calibration**
+    #. For each example :math:`X_i` in the calibration dataset with true label :math:`Y_i = k`,
+       compute the LAC score :math:`R_i = 1 - \widehat{\pi}_{Y_i}(X_i)` and assign it to class :math:`k`.
+    #. For each class :math:`k`, store all scores from samples belonging to that class in :math:`\mathcal{R}_k`.
+
+**Inference**
+    #. For each class :math:`k`, compute the class-specific threshold :math:`\delta_{\alpha,k}` as the
+       :math:`(1-\alpha)(1 + 1/n_k)`-th empirical quantile of :math:`\mathcal{R}_k`,
+       where :math:`n_k` is the number of calibration samples in class :math:`k`.
+    #. The prediction set for a test point :math:`X_{new}` is defined as
+
+    .. math::
+        \widehat{C}_{\alpha}(X_{new})=\big\lbrace
+        k \, | \, \widehat{\pi}_{k}(X_{new})\geq 1 - \delta_{\alpha,k}
+        \big\rbrace\,.
+
+For more details on classwise conformal prediction, see :cite:`vovk2012`.
+
 
 Conformal Anomaly Detection
 ---------------------------

@@ -29,6 +29,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Conformal Text Classification**
      - Learn to conformalize a pretrained NLP model.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb>`__
+   * - **Classwise Conformal Classification**
+     - Learn to use classwise CP for class-conditional coverage.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__
    * - **Conformal Time Series Forecasting**
      - Learn to conformalize time series models.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb>`__

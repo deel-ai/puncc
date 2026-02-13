@@ -14,6 +14,8 @@ compliance of models from various ML/DL libraries (such as Keras and scikit-lear
 
 .. autoclass:: deel.puncc.classification.LAC
 
+.. autoclass:: deel.puncc.classification.ClasswiseLAC
+
 .. autoclass:: deel.puncc.classification.RAPS
 
 .. autoclass:: deel.puncc.classification.APS
