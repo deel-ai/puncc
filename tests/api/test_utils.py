@@ -26,11 +26,11 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from deel.puncc.api.utils import alpha_calib_check
-from deel.puncc.api.utils import features_len_check
-from deel.puncc.api.utils import quantile
-from deel.puncc.api.utils import sample_len_check
-from deel.puncc.api.utils import supported_types_check
+from deel.puncc.old_api.utils import alpha_calib_check
+from deel.puncc.old_api.utils import features_len_check
+from deel.puncc.old_api.utils import quantile
+from deel.puncc.old_api.utils import sample_len_check
+from deel.puncc.old_api.utils import supported_types_check
 
 np.random.seed(0)
 

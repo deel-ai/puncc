@@ -21,63 +21,86 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides correction functions for multiple hypothesis testing. To be used
-when building a :ref:`calibrator <calibration>` for multivariate regression or object detection.
+This module provides correction functions for multiple hypothesis testing.
+To be used when building a conformal predictor for multivariate regression or object detection.
 """
-from typing import Union
+from deel.puncc.typing import TensorLike
+from deel.puncc import ops
+from typing import TypeAlias, Callable
 
-import numpy as np
+CorrectionFunction:TypeAlias = Callable[[float|TensorLike], float|TensorLike]
 
-
-def bonferroni(alpha: float, nvars: int = 1) -> Union[float, np.ndarray]:
-    """Bonferroni correction for multiple comparisons.
-
-    :param float alpha: nominal coverage level.
-    :param int nvars: number of output features.
-
-
-    :returns: corrected coverage level.
-    :rtype: float or ndarray.
+def bonferroni(nvars:int=1)->CorrectionFunction:
     """
-    # Sanity checks
-    if np.any(alpha <= 0) or np.any(alpha >= 1):
-        raise ValueError("alpha must be in (0,1)")
+    Bonferroni correction for multiple comparisons.
 
-    if nvars <= 0:
-        raise ValueError("nvars must be a positive integer")
+    Args:
+        nvars (int, optional): Number of output features.. Defaults to 1.
 
-    if nvars == 1:
-        return alpha
-
-    return np.ones(nvars) * alpha / nvars
-
-
-def weighted_bonferroni(alpha: float, weights: np.ndarray) -> np.ndarray:
-    """Weighted Bonferroni correction for multiple comparisons.
-
-    :param float alpha: nominal coverage level.
-    :param np.ndarray weights: weights associated to each output feature.
-
-
-    :returns: array of corrected featurewise coverage levels.
-    :rtype: np.ndarray.
+    Returns:
+        CorrectionFunction: Bonferonni correction function
     """
-    # Sanity checks
-    if alpha <= 0 or alpha >= 1:
-        raise ValueError("alpha must be in (0,1)")
+    def _bonferroni(alpha: float | TensorLike) -> float | TensorLike:
+        """
+        Bonferonni Correction function
 
-    # Positivity check
-    positiveness_condition = np.all(weights > 0)
-    if not positiveness_condition:
-        raise RuntimeError("weights must be positive")
+        Args:
+            alpha (float | TensorLike): nominal coverage level.
 
-    # Normalization check
-    norm_condition = np.isclose(np.sum(weights) - 1, 0, atol=1e-14)
-    if not norm_condition:
-        error = (
-            "weights are not normalized. Sum of weights is"
-            + f"{np.sum(weights)}"
-        )
-        raise RuntimeError(error)
+        Returns:
+            float | TensorLike: corrected coverage level.
+        """
+        if nvars == 1:
+            return alpha
+        return ops.ones(nvars) * alpha / nvars
+    return _bonferroni
 
-    return alpha * weights
+def weighted_bonferroni(weights: TensorLike) -> CorrectionFunction:
+    """
+    Weighted Bonferroni correction for multiple comparisons.
+
+    Args:
+        weights (TensorLike): weights associated to each output feature.
+
+    Returns:
+        CorrectionFunction: Weighted Bonferonni correction function
+    """
+    def _weighted_bonferroni(alpha: float | TensorLike) -> float | TensorLike:
+        """
+        Weighted Bonferonni correction function.
+
+        Args:
+            alpha (float | TensorLike): Nominal coverage level.
+
+        Returns:
+            float | TensorLike: Corrected featurewise coverage levels.
+        """
+        # normalization of weights
+        w = weights / ops.sum(weights)
+        return alpha * w
+    return _weighted_bonferroni
+
+def sidak(nvars:int=1)->CorrectionFunction:
+    """
+    Sidak correction for multiple comparisons.
+
+    Args:
+        nvars (int, optional): Number of output features.. Defaults to 1.
+
+    Returns:
+        CorrectionFunction: Correction function implementing the Sidak correction.
+    """
+    def _sidak(alpha: float | TensorLike) -> float | TensorLike:
+        """
+        Sidak correction function.
+
+        Args:
+            alpha (float | TensorLike): Nominal coverage level.
+
+        Returns:
+            float | TensorLike: Corrected coverage level.
+        """
+        if nvars == 1:
+            return alpha
+        return ops.ones(nvars) * (1 - (1 - alpha) ** (1 / nvars))
+    return _sidak

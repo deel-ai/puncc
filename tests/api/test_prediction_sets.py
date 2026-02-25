@@ -25,7 +25,7 @@ import unittest
 import numpy as np
 import pytest
 
-from deel.puncc.api.prediction_sets import scaled_bbox
+from deel.puncc.old_api.prediction_sets import scaled_bbox
 
 
 class prediction_sets_check(unittest.TestCase):

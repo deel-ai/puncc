@@ -20,35 +20,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import unittest
+"""
+This module implements Risk Controlling Prediction Sets method as described in [paper]
+"""
 
-import numpy as np
-import pytest
+from __future__ import annotations
 
-from deel.puncc.old_api.nonconformity_scores import scaled_bbox_difference
+from deel.puncc.api.conformalization import ConformalMethod
 
 
-class nonconformity_scores_check(unittest.TestCase):
-    def setUp(self):
-        n = 10
-
-        self.bbox_pred = np.array([[1, 2, 3, 4]])
-        self.bbox_true = np.array([[2, 3, 4, 5]])
-        self.expected = np.array([[-0.5, -0.5, -0.5, -0.5]])
-
-        self.bbox_pred_n = np.repeat(self.bbox_pred, n, axis=0)
-        self.bbox_true_n = np.repeat(self.bbox_true, n, axis=0)
-        self.expected_n = np.repeat(self.expected, n, axis=0)
-
-    def test_scaled_bbox_difference(self):
-        result = scaled_bbox_difference(self.bbox_pred, self.bbox_true)
-        assert np.array_equal(result, self.expected)
-
-        result_n = scaled_bbox_difference(self.bbox_pred_n, self.bbox_true_n)
-        assert np.array_equal(result_n, self.expected_n)
-
-        with pytest.raises(TypeError):
-            scaled_bbox_difference("Not an ndarray", self.bbox_true_n)
-
-        with pytest.raises(RuntimeError):
-            scaled_bbox_difference(np.array([[1, 2, 3]]), self.bbox_true_n)
+class RCPS(ConformalMethod):
+    ...

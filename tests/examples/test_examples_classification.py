@@ -26,7 +26,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 
-from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.old_api.prediction import BasePredictor
 from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
 from deel.puncc.metrics import classification_mean_coverage

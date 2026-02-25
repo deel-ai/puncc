@@ -31,7 +31,7 @@ from tensorflow.keras import models
 from tensorflow.keras.utils import to_categorical
 
 from deel.puncc import metrics
-from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.old_api.prediction import BasePredictor
 from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
 from deel.puncc.classification import LAC

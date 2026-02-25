@@ -27,9 +27,9 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from deel.puncc.api.splitting import IdSplitter
-from deel.puncc.api.splitting import KFoldSplitter
-from deel.puncc.api.splitting import RandomSplitter
+from deel.puncc.old_api.splitting import IdSplitter
+from deel.puncc.old_api.splitting import KFoldSplitter
+from deel.puncc.old_api.splitting import RandomSplitter
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 

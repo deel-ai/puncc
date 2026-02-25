@@ -98,7 +98,7 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
 
     :param ndarray y_true: label true values.
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    :param ndarray y_pred_upper: lower bounds of the prediction intervals.
     :param float alpha: significance level (max miscoverage target).
 
     .. NOTE::
@@ -119,7 +119,8 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
 
 
 def regression_sharpness(y_pred_lower, y_pred_upper) -> float:
-    """Compute the average absolute width of the prediction intervals.
+    """
+    Compute the average absolute width of the prediction intervals.
 
     :param ndarray y_pred_lower: lower bounds of the prediction intervals.
     :param ndarray y_pred_upper: upper bounds of the prediction intervals.

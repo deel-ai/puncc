@@ -21,180 +21,224 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides data splitting schemes.
+Data splitting schemes.
+
+This module defines splitters that partition a dataset into:
+- a training subset used to fit the base model
+- a calibration subset used for calibration phase.
 """
-import importlib
-from abc import ABC
-from typing import Iterable
-from typing import List
-from typing import Tuple
+from __future__ import annotations
 
-import numpy as np
-from sklearn import model_selection
+from abc import ABC, abstractmethod
+from typing import TypeAlias
 
-from deel.puncc.api.utils import features_len_check
-from deel.puncc.api.utils import sample_len_check
-from deel.puncc.api.utils import supported_types_check
+from deel.puncc import ops
+from deel.puncc._keras import random
 
-if importlib.util.find_spec("pandas") is not None:
-    import pandas as pd
+from deel.puncc.old_api.utils import features_len_check
+from deel.puncc.old_api.utils import sample_len_check
+from deel.puncc.typing import TensorLike
+
+
+### TODO : deal with pandas series
+# if importlib.util.find_spec("pandas") is not None:
+#     import pandas as pd
+
+Split: TypeAlias = list[tuple[TensorLike, TensorLike, TensorLike, TensorLike]]
+IndexTensor: TypeAlias = TensorLike
+
+def _take(X:TensorLike, y:TensorLike, fit_idxs:IndexTensor, cal_idxs:IndexTensor)->tuple[TensorLike, TensorLike, TensorLike, TensorLike]:
+    """
+    Materialize one split from index tensors.
+
+    Args:
+        X (TensorLike), : Input features
+        y (TensorLike): Labels
+        fit_idxs (IndexTensor): 1D integer index tensors specifying rows/items to pick for train dataset
+        cal_idxs (IndexTensor): 1D integer index tensors specifying rows/items to pick for calibration dataset
+
+    Returns:
+        tuple[TensorLike, TensorLike, TensorLike, TensorLike]: subsets for train and calibration : X_train, y_train, X_calib, y_calib
+    """
+    return (ops.take(X, fit_idxs, axis=0),
+                ops.take(y, fit_idxs, axis=0),
+                ops.take(X, cal_idxs, axis=0),
+                ops.take(y, cal_idxs, axis=0))
 
 
 class BaseSplitter(ABC):
-    """Abstract structure of a splitter. A splitter provides a function
-    that assignes data points to fit and calibration sets.
-
-    :param int random_state: seed to control random generation.
     """
+    Base class for data splitters.
 
-    def __init__(self, random_state=None) -> None:
+    A splitter partitions a dataset (X, y) into one or more folds.
+    Each fold is represented as a tuple:
+        (X_train, y_train, X_calib, y_calib)
+
+    Args:
+        random_state (int | None, optional): Optional seed controlling random operations.
+            Defaults to None.
+    """
+    def __init__(self, random_state:int|None=None) -> None:
         self.random_state = random_state
 
-    def __call__(self, *args, **kwargs) -> Tuple[np.ndarray]:
-        raise NotImplementedError("Use a subclass of Splitter.")
+    @abstractmethod
+    def split(self, X:TensorLike, y:TensorLike)->Split:
+        ...
+
+    def __call__(self, *args, **kwargs) -> Split:
+        return self.split(*args, **kwargs)
 
 
 class IdSplitter(BaseSplitter):
-    """Identity splitter that wraps an already existing data assignment.
-
-    :param Iterable X_fit: Fit features.
-    :param Iterable y_fit: Fit labels.
-    :param Iterable X_calib: calibration features.
-    :param Iterable y_calib: calibration labels.
     """
+    Identity splitter.
 
+    This splitter does not compute a split. It simply wraps already-defined
+    training and calibration subsets.
+
+    Args:
+        X_fit (TensorLike): Training features.
+        y_fit (TensorLike): Training labels.
+        X_calib (TensorLike): Calibration features.
+        y_calib (TensorLike): Calibration labels.
+    """
     def __init__(
         self,
-        X_fit: Iterable,
-        y_fit: Iterable,
-        X_calib: Iterable,
-        y_calib: Iterable,
+        X_fit: TensorLike,
+        y_fit: TensorLike,
+        X_calib: TensorLike,
+        y_calib: TensorLike,
     ):
         super().__init__(random_state=None)
 
         # Checks
-        supported_types_check(X_fit, y_fit)
-        supported_types_check(X_calib, y_calib)
         sample_len_check(X_fit, y_fit)
         sample_len_check(X_calib, y_calib)
         features_len_check(X_fit, X_calib)
 
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
-    def __call__(self, X=None, y=None) -> Tuple[Iterable]:
-        """Wraps into a splitter the provided fit and calibration subsets.
+    def split(self, X:TensorLike|None=None, y:TensorLike|None=None) -> Split:
+        """
+        Return the stored training and calibration subsets.
 
-        :param Iterable X: features array. Not needed here, just a placeholder
-            for interoperability.
-        :param Iterable y: labels array. Not needed here, just a placeholder
-            for interoperability.
+        Args:
+            X (TensorLike | None): Unused. Present for API compatibility.
+            y (TensorLike | None): Unused. Present for API compatibility.
 
-        :returns: List of one tuple of deterministic subsets
-            (X_fit, y_fit, X_calib, y_calib).
-        :rtype: List[Tuple[Iterable]]
+        Returns:
+            Split: List of one tuple of deterministic subsets
+                (X_train, y_train, X_calib, y_calib).
         """
         return self._split
 
 
 class RandomSplitter(BaseSplitter):
-    """Random splitter that assign samples given a ratio.
+    """
+    Random train/calibration splitter.
 
-    :param float ratio: ratio of data assigned to the training
-        (1-ratio to calibration).
-    :param int random_state: seed to control random generation.
+    Each sample is independently assigned to:
+    - the training set with probability ratio,
+    - the calibration set with probability 1 - ratio.
+
+    Args:
+        ratio (float): Fraction of samples assigned to the training set.
+            Must be strictly between 0 and 1.
+        random_state (int | None): Optional seed controlling random operations.
     """
 
-    def __init__(self, ratio, random_state=None):
+    def __init__(self, ratio: float, random_state: int | None = None):
         if (ratio <= 0) or (ratio >= 1):
-            raise ValueError(f"Ratio must be in (0,1). Provided value: {ratio}")
-        self.ratio = ratio
+            raise ValueError(f"Ratio must be in ]0,1[. Provided value: {ratio}")
         super().__init__(random_state=random_state)
+        self.ratio = ratio
 
-    def __call__(
+    def split(
         self,
-        X: Iterable,
-        y: Iterable,
-    ) -> Tuple[Iterable]:
-        """Implements a random split strategy.
+        X: TensorLike,
+        y: TensorLike,
+    ) -> Split:
+        """
+        Split the dataset randomly into training and calibration subsets.
 
-        :param Iterable X: features array.
-        :param Iterable y: labels array.
+        Args:
+            X (TensorLike): Input features.
+            y (TensorLike): Labels.
 
-        :returns: List of one tuple of random subsets
-            (X_fit, y_fit, X_calib, y_calib).
-        :rtype: List[Tuple[Iterable]]
+        Returns:
+            Split: A single-element list containing
+                (X_train, y_train, X_calib, y_calib).
         """
         # Checks
-        supported_types_check(X, y)
         sample_len_check(X, y)
 
-        rng = np.random.RandomState(seed=self.random_state)
-        fit_idxs = rng.rand(len(X)) > self.ratio
-        cal_idxs = np.invert(fit_idxs)
-        return [(X[fit_idxs], y[fit_idxs], X[cal_idxs], y[cal_idxs])]
+        u = random.uniform((len(X),), seed=self.random_state)
+        fit_mask = ops.less(u, self.ratio)
+        cal_mask = ops.logical_not(fit_mask)
+
+        fit_idxs = ops.squeeze(ops.where(fit_mask), axis=-1)
+        cal_idxs = ops.squeeze(ops.where(cal_mask), axis=-1)
+
+        return [_take(X, y, fit_idxs, cal_idxs)]
 
 
 class KFoldSplitter(BaseSplitter):
-    """KFold data splitter.
+    """
+    K-fold splitter.
 
-    :param int K: number of folds to generate.
-    :param int random_state: seed to control random generation.
+    The dataset is partitioned into K folds. For each fold:
+        - the calibration subset is one fold,
+        - the training subset is the union of the remaining K-1 folds.
+
+    Args:
+        K (int): Number of folds (must be >= 2).
+        shuffle (bool): Whether to shuffle samples before creating folds.
+        random_state (int | None): Optional seed controlling random operations.
     """
 
-    def __init__(self, K: int, random_state=None) -> None:
+    def __init__(self, K: int,
+                 shuffle:bool=True,
+                 random_state:int|None=None) -> None:
         if K < 2:
             raise ValueError(f"K must be >= 2. Provided value: {K}.")
-        self.K = K
         super().__init__(random_state=random_state)
+        self.K = K
+        self.shuffle = shuffle
 
-    def __call__(
+    def split(
         self,
-        X: Iterable,
-        y: Iterable,
-    ) -> List[Tuple[Iterable]]:
-        """Implements a K-fold split strategy.
+        X: TensorLike,
+        y: TensorLike,
+    ) -> Split:
+        """
+        Split the dataset into K training/calibration folds.
 
-        :param Iterabler X: features array.
-        :param Iterable y: labels array.
+        Args:
+            X (TensorLike): Input features.
+            y (TensorLike): Labels.
 
-        :returns: list of K split folds. Each fold is a tuple
-            (X_fit, y_fit, X_calib, y_calib).
-        :rtype: List[Tuple[Iterable]]
+        Returns:
+            Split: A list of K tuples, each tuple being
+                (X_train, y_train, X_calib, y_calib).
         """
         # Checks
-        supported_types_check(X, y)
         sample_len_check(X, y)
 
-        kfold = model_selection.KFold(
-            self.K, shuffle=True, random_state=self.random_state
-        )
-        folds = []
+        n_samples = len(X)
+        idxs = ops.arange(n_samples)
 
-        for fit, calib in kfold.split(X):
-            if importlib.util.find_spec("pandas") is not None and isinstance(
-                X, pd.DataFrame
-            ):
-                if isinstance(y, pd.DataFrame):
-                    folds.append(
-                        (
-                            X.iloc[fit],
-                            y.iloc[fit],
-                            X.iloc[calib],
-                            y.iloc[calib],
-                        )
-                    )
-                else:
-                    folds.append((X.iloc[fit], y[fit], X.iloc[calib], y[calib]))
+        if self.shuffle:
+            idxs = random.shuffle(idxs, axis=0, seed=self.random_state)
 
-            else:
-                bool_fit_idx = np.array([i in fit for i in range(len(X))])
-                folds.append(
-                    (
-                        X[bool_fit_idx],
-                        y[bool_fit_idx],
-                        X[~bool_fit_idx],
-                        y[~bool_fit_idx],
-                    )
-                )
+        n_min = n_samples // self.K
+        r = n_samples % self.K
+        fold_sizes = [n_min + 1] * r + [n_min] * (self.K - r)
 
+        folds:Split = []
+        start = 0
+        for size in fold_sizes:
+            calib_idx = idxs[start : start + size]
+            fit_idx = ops.concatenate([idxs[:start], idxs[start + size :]], axis=0)
+            folds.append(_take(X, y, fit_idx, calib_idx))
+            start += size
         return folds

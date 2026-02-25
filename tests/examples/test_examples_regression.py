@@ -26,9 +26,9 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
-from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.api.prediction import DualPredictor
-from deel.puncc.api.prediction import MeanVarPredictor
+from deel.puncc.old_api.prediction import BasePredictor
+from deel.puncc.old_api.prediction import DualPredictor
+from deel.puncc.old_api.prediction import MeanVarPredictor
 from deel.puncc.metrics import regression_mean_coverage
 from deel.puncc.metrics import regression_sharpness
 from deel.puncc.regression import AdaptiveEnbPI

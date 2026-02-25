@@ -30,9 +30,9 @@ from typing import Tuple
 
 import numpy as np
 
-from deel.puncc.api.calibration import ScoreCalibrator
-from deel.puncc.api.splitting import IdSplitter
-from deel.puncc.api.splitting import RandomSplitter
+from deel.puncc.old_api.calibration import ScoreCalibrator
+from deel.puncc.old_api.splitting import IdSplitter
+from deel.puncc.old_api.splitting import RandomSplitter
 
 logger = logging.getLogger(__name__)
 

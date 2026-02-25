@@ -28,15 +28,15 @@ from sklearn import linear_model
 from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
 
-from deel.puncc.api import nonconformity_scores
-from deel.puncc.api import prediction_sets
-from deel.puncc.api.calibration import BaseCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor
-from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.api.prediction import DualPredictor
-from deel.puncc.api.splitting import KFoldSplitter
-from deel.puncc.api.splitting import RandomSplitter
-from deel.puncc.api.splitting import IdSplitter
+from deel.puncc.old_api import nonconformity_scores
+from deel.puncc.old_api import prediction_sets
+from deel.puncc.old_api.calibration import BaseCalibrator
+from deel.puncc.old_api.conformalization import ConformalPredictor
+from deel.puncc.old_api.prediction import BasePredictor
+from deel.puncc.old_api.prediction import DualPredictor
+from deel.puncc.old_api.splitting import KFoldSplitter
+from deel.puncc.old_api.splitting import RandomSplitter
+from deel.puncc.old_api.splitting import IdSplitter
 
 np.random.seed(0)
 

@@ -22,7 +22,7 @@
 # SOFTWARE.
 import numpy as np
 
-from deel.puncc.api.calibration import BaseCalibrator
+from deel.puncc.old_api.calibration import BaseCalibrator
 
 
 def test_basepredictor():
