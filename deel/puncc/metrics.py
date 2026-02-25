@@ -23,17 +23,15 @@
 """
 This module provides conformal prediction metrics.
 """
-from typing import Tuple
-
-import numpy as np
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+from typing import Iterable
+from deel.puncc.typing import TensorLike
+from deel.puncc import ops
 
 def classification_mean_coverage(
-    y_true: np.ndarray, set_pred: Tuple[np.ndarray]
+    y_true: TensorLike, set_pred: Iterable[Iterable]
 ) -> float:
-    """Compute empirical coverage of the prediction sets.
+    """
+    Compute empirical coverage of the prediction sets.
 
     Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
 
@@ -43,36 +41,32 @@ def classification_mean_coverage(
     With N the number of examples, the average coverage is
     :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
 
-    :param np.ndarray y_true: Observed label
-    :param Tuple[np.ndarray] set_pred: label prediction set
 
-    :returns: average coverage, indicating the proportion of instances that are
+    Args:
+        y_true (TensorLike): Observed label
+        set_pred (Iterable[Iterable]): label prediction set
+
+    Returns:
+        float: average coverage, indicating the proportion of instances that are
         correctly covered.
-    :rtype: float
     """
-    counter = 0
-    for y, S in zip(y_true, set_pred):
-        if (S != []) and (y in S):
-            counter += 1
-    return counter / len(y_true)
+    return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
 
-
-def classification_mean_size(set_pred: Tuple[np.ndarray]) -> float:
-    """Compute average size of the prediction sets.
-
-    :param Tuple[np.ndarray] set_pred: label prediction set
-
-    :returns: Average size of the prediction sets
-    :rtype: float
+def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
     """
-    return np.mean([len(s) for s in set_pred])
+    Compute average size of the prediction sets.
 
+    Args:
+        set_pred (Iterable[TensorLike]): label prediction set
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Returns:
+        float: Average size of the prediction sets
+    """
+    return ops.mean(ops.array([len(s) for s in set_pred]))
 
-
-def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
-    """Compute average coverage on several prediction intervals.
+def regression_mean_coverage(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike) -> float:
+    """
+    Compute average coverage on several prediction intervals.
 
     Given the :math:`i`-th prediction interval :math:`C(X_i)`, the coverage is:
 
@@ -82,24 +76,26 @@ def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
     With N the number of examples, the average coverage is
     :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
 
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    Args:
+        y_true (TensorLike): label true values.
+        y_pred_lower (TensorLike): lower bounds of the prediction intervals.
+        y_pred_upper (TensorLike): upper bounds of the prediction intervals.
 
-    :returns: average coverage, indicating the proportion of instances that are
+    Returns:
+        float: average coverage, indicating the proportion of instances that are
         correctly covered.
-    :rtype: float
     """
-    return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
+    return ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper))
 
+def regression_ace(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike, alpha:float) -> float:
+    """
+    Compute the Average Coverage Error (ACE).
 
-def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
-    """Compte the Average Coverage Error (ACE).
-
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: lower bounds of the prediction intervals.
-    :param float alpha: significance level (max miscoverage target).
+    Args:
+        y_true (TensorLike): label true values.
+        y_pred_lower (TensorLike): lower bounds of the prediction intervals.
+        y_pred_upper (TensorLike): lower bounds of the prediction intervals.
+        alpha (float): significance level (max miscoverage target).
 
     .. NOTE::
 
@@ -111,106 +107,99 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
         marginally undercovering. If the ACE is strictly positive, the
         prediction intervals are maginally conservative.
 
-    :returns: the average coverage error (ACE).
-    :rtype: float
+    Returns:
+        float:  the average coverage error (ACE).
     """
     cov = regression_mean_coverage(y_true, y_pred_lower, y_pred_upper)
     return cov - (1 - alpha)
 
-
-def regression_sharpness(y_pred_lower, y_pred_upper) -> float:
+def regression_sharpness(y_pred_lower:TensorLike, y_pred_upper:TensorLike) -> float:
     """
     Compute the average absolute width of the prediction intervals.
 
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    Args:
+        y_pred_lower (TensorLike): lower bounds of the prediction intervals.
+        y_pred_upper (TensorLike): upper bounds of the prediction intervals.
 
-    :returns: average absolute width of the prediction intervals.
-    :rtype: float
+    Returns:
+        float: average absolute width of the prediction intervals.
     """
-    return (np.abs(y_pred_upper - y_pred_lower)).mean()
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+    return ops.mean(ops.abs(y_pred_upper - y_pred_lower))
 
 def object_detection_mean_coverage(
-    y_pred_outer: np.ndarray, y_true: np.ndarray
-):
+    y_pred_outer: TensorLike, y_true: TensorLike
+)->float:
     """
     Calculate the mean coverage of conformal object detection predictions.
     For each instance, coverage is defined as the true bounding box being inside
     the predicted outer bounding box.
 
-    :param np.ndarray y_pred: array of predicted outer bounding boxes with shape (n, 4).
-    :type y_pred: np.ndarray
-    :param np.ndarray y_true: array of true bounding boxes with shape (n, 4).
+    Args:
+        y_pred_outer (TensorLike): array of predicted outer bounding boxes with shape (n, 4).
+        y_true (TensorLike): array of true bounding boxes with shape (n, 4).
 
-    :return: average coverage, indicating the proportion of objects that are
+    Returns:
+        float: average coverage, indicating the proportion of objects that are
         correctly covered.
-    :rtype: float
-
     """
-    x_min_true, y_min_true, x_max_true, y_max_true = np.hsplit(y_true, 4)
-    x_min, y_min, x_max, y_max = np.hsplit(y_pred_outer, 4)
+    x_min_true, y_min_true, x_max_true, y_max_true = ops.split(y_true, 4, axis=1)
+    x_min, y_min, x_max, y_max = ops.split(y_pred_outer, 4, axis=1)
     cov = (
         (x_min <= x_min_true)
         * (y_min <= y_min_true)
         * (x_max >= x_max_true)
         * (y_max >= y_max_true)
     )
-    return np.mean(cov)
+    return ops.mean(cov)
 
 
-def object_detection_mean_area(y_pred: np.ndarray):
+def object_detection_mean_area(y_pred: TensorLike)->float:
     """
     Calculate the mean area of object bounding predictions.
 
-    :param np.ndarray y_pred: array of predicted bounding boxes with shape (n, 4).
+    Args:
+        y_pred (TensorLike): array of predicted bounding boxes with shape (n, 4).
 
-    :return: average area of the bounding boxes
-    :rtype: float
-
+    Returns:
+        float: average area of the bounding boxes
     """
-    x_min, y_min, x_max, y_max = np.hsplit(y_pred, 4)
-    return np.mean((x_max - x_min) * (y_max - y_min))
+    x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
+    return ops.mean((x_max - x_min) * (y_max - y_min))
 
 
-# Calculate Intersection over Union (IOU) between two bounding boxes
-def iou(bboxes1: np.ndarray, bboxes2: np.ndarray) -> np.ndarray:
+def iou(bboxes1: TensorLike, bboxes2: TensorLike) -> TensorLike:
     """
     Calculates the Intersection over Union (IoU) between two sets of 
     bounding boxes. The IoU is calculated as the ratio between the area of 
     intersection and the area of union between two bounding boxes.
-    
-    :param np.ndarray bboxes1: array of shape (N, 4) representing the 
-        coordinates of N bounding boxes in the format 
-        [x_min, y_min, x_max, y_max].
-    :type y_pred: np.ndarray
-    :param np.ndarray bboxes2: array of shape (N, 4) representing the 
+
+    Args:
+        bboxes1 (TensorLike): array of shape (N, 4) representing the 
         coordinates of N bounding boxes in the format 
         [x_min, y_min, x_max, y_max].
 
-    :return: iou (numpy.ndarray): Array of shape (N, ) representing the IoU 
+        bboxes2 (TensorLike): array of shape (N, 4) representing the 
+        coordinates of N bounding boxes in the format 
+        [x_min, y_min, x_max, y_max].
+
+    Returns:
+        TensorLike: Array of shape (N, ) representing the IoU 
         between each pair of bounding boxes.
-    :rtype: np.ndarray
-
     """
+    x1_min, y1_min, x1_max, y1_max = ops.split(bboxes1, 4, axis=1)
+    x2_min, y2_min, x2_max, y2_max = ops.split(bboxes2, 4, axis=1)
 
-    x1_min, y1_min, x1_max, y1_max = np.split(bboxes1, 4, axis=1)
-    x2_min, y2_min, x2_max, y2_max = np.split(bboxes2, 4, axis=1)
+    inter_x_min = ops.maximum(x1_min, ops.transpose(x2_min))
+    inter_y_min = ops.maximum(y1_min, ops.transpose(y2_min))
+    inter_x_max = ops.minimum(x1_max, ops.transpose(x2_max))
+    inter_y_max = ops.minimum(y1_max, ops.transpose(y2_max))
 
-    inter_x_min = np.maximum(x1_min, np.transpose(x2_min))
-    inter_y_min = np.maximum(y1_min, np.transpose(y2_min))
-    inter_x_max = np.minimum(x1_max, np.transpose(x2_max))
-    inter_y_max = np.minimum(y1_max, np.transpose(y2_max))
-
-    inter_width = np.maximum(inter_x_max - inter_x_min + 1, 0)
-    inter_height = np.maximum(inter_y_max - inter_y_min + 1, 0)
+    inter_width = ops.maximum(inter_x_max - inter_x_min + 1, 0)
+    inter_height = ops.maximum(inter_y_max - inter_y_min + 1, 0)
     inter_area = inter_width * inter_height
 
     box1_area = (x1_max - x1_min + 1) * (y1_max - y1_min + 1)
     box2_area = (x2_max - x2_min + 1) * (y2_max - y2_min + 1)
 
-    result = inter_area / (box1_area + np.transpose(box2_area) - inter_area)
+    result = inter_area / (box1_area + ops.transpose(box2_area) - inter_area)
     return result

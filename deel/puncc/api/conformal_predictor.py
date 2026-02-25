@@ -27,7 +27,7 @@ Basic components for split conformal prediction
 from __future__ import annotations
 from pathlib import Path
 from collections.abc import Sequence, Iterable
-from typing import Any, Callable
+from typing import Any, Callable, Self
 import pickle
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike, NCScoreFunction, PredSetFunction
 from deel.puncc import ops
@@ -66,6 +66,7 @@ class ConformalPredictor(ConformalMethod):
         self.fit_function = fit_function
 
         # Utilities for the calibration procedure :
+        self._x_calib = None
         self._nc_scores = None
 
     @property
@@ -86,6 +87,7 @@ class ConformalPredictor(ConformalMethod):
     def calibrate(self, X_calib:Iterable[Any],
                   y_calib:TensorLike):
         predictions = self.model(X_calib)
+        self._x_calib = X_calib
         self._nc_scores = self.nc_score_function(predictions, y_calib)
         return self
 
@@ -96,7 +98,7 @@ class ConformalPredictor(ConformalMethod):
             #y_calib:TensorLike|None=None
             ):
         if self.fit_function is not None:
-            self.fit_function(self.model, X, y)
+            self.model = self.fit_function(self.model, X, y)
         elif callable(getattr(self.model, "fit", None)):
             self.model.fit(X, y) # type: ignore
         else:
@@ -115,7 +117,7 @@ class ConformalPredictor(ConformalMethod):
         if correction is not None:
             alpha = correction(alpha) # TODO : add kwargs and other stuff that may be impacted by the correction?
         if self.weight_function is not None:
-            weights = self.weight_function(X_test)
+            weights = self.weight_function(self._x_calib)
         quantile = ops.weighted_quantile(self.nc_scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
         prediction_sets = self.pred_set_function(prediction, quantile)
         return ConformalPrediction(prediction, prediction_sets)
@@ -152,8 +154,8 @@ class ConformalPredictor(ConformalMethod):
         obj = cls.__new__(cls)
         obj.__setstate__(state)
         return obj
-
-class AutoConformalPredictor(ConformalPredictor):
+    
+class StaticConformalPredictor(ConformalPredictor):
     nc_score_function:NCScoreFunction
     pred_set_function:PredSetFunction
     def __init__(self, model, weight_function=None, fit_function=None):
@@ -165,6 +167,58 @@ class AutoConformalPredictor(ConformalPredictor):
             fit_function=fit_function,
         )
 
+class ClassificationConformalPredictor(StaticConformalPredictor):
+    @classmethod
+    def pred_set_function(cls, y_pred:TensorLike, quantile:float|TensorLike):
+        n, K = y_pred.shape[0], y_pred.shape[1]
+        y_pred_tiled = ops.repeat(y_pred, repeats=K, axis=0)
+        y_true_flat  = ops.tile(ops.arange(K), (n,))
+        scores_flat = cls.nc_score_function(y_pred_tiled, y_true_flat)
+        scores = ops.reshape(scores_flat, (n, K))
+        mask = scores <= quantile
+        return [ops.where(mask[i])[0] for i in range(n)]
+    
+class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
+    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
+        super().calibrate(X_calib, y_calib)
+        self._y_calib = y_calib
+        return self
+
+    def predict(self,
+                X_test:Iterable[Any],
+                alpha:TensorLike|float,
+                correction:Callable|None = None)->ConformalPrediction:
+        prediction = self.model(X_test)
+
+        if correction is not None:
+            alpha = correction(alpha)
+        
+        weights = None
+        if self.weight_function is not None:
+            weights = self.weight_function(self._x_calib)
+
+        scores = self.nc_scores
+        y_calib = self._y_calib
+
+        nb_classes = int(ops.shape(prediction)[-1])
+        n = self.len_calibr
+        q_global = None#ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
+        qs = []
+        for k in range(nb_classes):
+            mask = ops.equal(y_calib, k)
+            s_k = scores[mask]
+            n_k = len(s_k)
+            if n_k == 0:
+                if q_global is None:
+                    q_global = ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
+                qs.append(q_global)
+            else:
+                qs.append(ops.weighted_quantile(s_k, (1 - alpha) * (n + 1) / n, axis=0, weights=weights))
+        q = ops.stack(qs, axis=0)
+        y_set = self.pred_set_function(prediction, q)
+        return ConformalPrediction(prediction, y_set)
+
+
 class ScoreCalibrator():
     def __init__(self,
                  nc_score_function:Callable[[Iterable[Any]], Sequence[float]],
@@ -174,6 +228,7 @@ class ScoreCalibrator():
         self.weight_function = weight_function
 
         # Utilities for the calibration procedure :
+        self._z_calib = None
         self._nc_scores = None
 
     @property
@@ -189,6 +244,7 @@ class ScoreCalibrator():
         return self._nc_scores
 
     def calibrate(self, z_calib:Iterable[Any]):
+        self._z_calib = z_calib
         self._nc_scores = self.nc_score_function(z_calib)
         return self
 
@@ -196,7 +252,7 @@ class ScoreCalibrator():
         n = self.len_calibr
         weights = None
         if self.weight_function is not None:
-            weights = self.weight_function(z)
+            weights = self.weight_function(self._z_calib)
         quantile = ops.weighted_quantile(self.nc_scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
         test_nonconf_scores = self.nc_score_function(z)
         return test_nonconf_scores <= quantile

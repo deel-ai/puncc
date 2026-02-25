@@ -24,570 +24,36 @@
 This module implements usual conformal regression wrappers.
 """
 from copy import deepcopy
-from typing import Any
-from typing import Callable
-from typing import Iterable
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 import numpy as np
 from sklearn.utils import resample
 
-from deel.puncc.old_api import nonconformity_scores
-from deel.puncc.old_api import prediction_sets
-from deel.puncc.old_api.calibration import BaseCalibrator
-from deel.puncc.old_api.conformalization import ConformalPredictor
-from deel.puncc.old_api.prediction import BasePredictor
-from deel.puncc.old_api.prediction import DualPredictor
-from deel.puncc.old_api.prediction import MeanVarPredictor
-from deel.puncc.old_api.splitting import IdSplitter
-from deel.puncc.old_api.splitting import KFoldSplitter
-from deel.puncc.old_api.splitting import RandomSplitter
-
-
-class SplitCP:
-    """Split conformal prediction method. For more details, we refer the user to
-    the :ref:`theory overview page <theory splitcp>`.
-
-    :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
-        Defaults to True.
-    :param int random_state: random seed used when the user does not
-        provide a custom fit/calibration split in `fit` method.
-    :param callable weight_func: function that takes as argument an array of
-        features X and returns associated "conformality" weights, defaults to
-        None.
-
-    .. _example splitcp:
-
-    Example::
-
-        from deel.puncc.regression import SplitCP
-        from deel.puncc.api.prediction import BasePredictor
-
-        from sklearn.datasets import make_regression
-        from sklearn.model_selection import train_test_split
-        from sklearn.ensemble import RandomForestRegressor
-
-        from deel.puncc.metrics import regression_mean_coverage
-        from deel.puncc.metrics import regression_sharpness
-
-
-        # Generate a random regression problem
-        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
-                                random_state=0, shuffle=False)
-
-        # Split data into train and test
-        X, X_test, y, y_test = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Split train data into fit and calibration
-        X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Create a random forest model and wrap it in a predictor
-        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
-        rf_predictor = BasePredictor(rf_model, is_trained=False)
-
-        # CP method initialization
-        split_cp = SplitCP(rf_predictor)
-
-        # The call to `fit` trains the model and computes the nonconformity
-        # scores on the calibration set
-        split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-
-        # The predict method infers prediction intervals with respect to
-        # the significance level alpha = 20%
-        y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=.2)
-
-        # Compute marginal coverage and average width of the prediction intervals
-        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-        width = regression_sharpness(y_pred_lower=y_pred_lower,
-                                     y_pred_upper=y_pred_upper)
-        print(f"Marginal coverage: {np.round(coverage, 2)}")
-        print(f"Average width: {np.round(width, 2)}")
-    """
-
-    def __init__(
-        self,
-        predictor: Union[BasePredictor, Any],
-        *,
-        train=True,
-        random_state: int = None,
-        weight_func=None,
-    ):
-        self.predictor = predictor
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.absolute_difference,
-            pred_set_func=prediction_sets.constant_interval,
-            weight_func=weight_func,
-        )
-
-        self.train = train
-
-        self.random_state = random_state
-
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
-        )
-
-    def fit(
-        self,
-        *,
-        X: Optional[Iterable] = None,
-        y: Optional[Iterable] = None,
-        fit_ratio: float = 0.8,
-        X_fit: Optional[Iterable] = None,
-        y_fit: Optional[Iterable] = None,
-        X_calib: Optional[Iterable] = None,
-        y_calib: Optional[Iterable] = None,
-        use_cached: bool = False,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the models on the fit data
-        and computes nonconformity scores on calibration data.
-        If (X, y) are provided, randomly split data into
-        fit and calib subsets w.r.t to the fit_ratio.
-        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
-        the conformalization is performed on the given user defined
-        fit and calibration sets.
-
-        .. NOTE::
-
-            If X and y are provided, `fit` ignores
-            any user-defined fit/calib split.
-
-
-        :param Iterable X: features from the training dataset.
-        :param Iterable y: labels from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
-            fit subset.
-        :param Iterable X_fit: features from the fit dataset.
-        :param Iterable y_fit: labels from the fit dataset.
-        :param Iterable X_calib: features from the calibration dataset.
-        :param Iterable y_calib: labels from the calibration dataset.
-        :param bool use_cached: if set, enables to add the previously computed
-            nonconformity scores (if any) to the pool estimated in the current
-            call to `fit`. The aggregation follows the CV+
-            procedure.
-        :param dict kwargs: predict configuration to be passed to the model's
-            fit method.
-
-        :raises RuntimeError: no dataset provided.
-
-        """
-
-        # Check if predictor is trained. Suppose that it is trained if the
-        # predictor has not "is_trained" attribute
-        is_trained = not hasattr(self.predictor, "is_trained") or (
-            hasattr(self.predictor, "is_trained") and self.predictor.is_trained
-        )
-
-        if X is not None and y is not None:
-            splitter = RandomSplitter(
-                ratio=fit_ratio, random_state=self.random_state
-            )
-
-        elif (
-            X_fit is not None
-            and y_fit is not None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
-
-        elif (
-            is_trained
-            and X_fit is None
-            and y_fit is None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            if self.train is True:
-                raise RuntimeError(
-                    "Argument 'train' is True but no training dataset provided."
-                )
-            splitter = IdSplitter(
-                np.empty_like(X_calib),
-                np.empty_like(y_calib),
-                X_calib,
-                y_calib,
-            )
-
-        else:
-            raise RuntimeError("No dataset provided.")
-
-        # Update splitter
-        self.conformal_predictor.splitter = splitter
-
-        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
-
-    def predict(
-        self, X_test: Iterable, alpha
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Conformal interval predictions (w.r.t target miscoverage alpha) for
-        new samples.
-
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-
-        :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
-
-        """
-
-        (
-            y_pred,
-            y_lo,
-            y_hi,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-
-        return y_pred, y_lo, y_hi
-
-    def get_nonconformity_scores(self) -> np.ndarray:
-        """Get computed nonconformity scores.
-
-        :returns: computed nonconfomity scores.
-        :rtype: ndarray
-
-        """
-
-        # Get all nconf scores on the fitting kfolds
-        kfold_nconf_scores = self.conformal_predictor.get_nonconformity_scores()
-
-        # With split CP, the nconf scores dict has only one element if no
-        # cache was used.
-        if len(kfold_nconf_scores) == 1:
-            return list(kfold_nconf_scores.values())[0]
-
-        return kfold_nconf_scores
-
-
-class LocallyAdaptiveCP(SplitCP):
-    """Locally adaptive conformal prediction method. For more details, we refer the user to
-    the :ref:`theory overview page <theory lacp>`
-
-    :param MeanVarPredictor predictor: a predictor implementing fit and predict.
-        Must embed two models for point and dispersion estimations respectively.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
-        Defaults to True.
-    :param float random_state: random seed used when the user does not
-        provide a custom fit/calibration split in `fit` method.
-    :param callable weight_func: function that takes as argument an array of
-        features X and returns associated "conformality" weights, defaults to
-        None.
-
-    .. _example lacp:
-
-    Example::
-
-        from deel.puncc.regression import LocallyAdaptiveCP
-        from deel.puncc.api.prediction import MeanVarPredictor
-
-        from sklearn.datasets import make_regression
-        from sklearn.model_selection import train_test_split
-        from sklearn.ensemble import RandomForestRegressor
-
-        from deel.puncc.metrics import regression_mean_coverage
-        from deel.puncc.metrics import regression_sharpness
-
-
-        # Generate a random regression problem
-        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
-                                random_state=0, shuffle=False)
-
-        # Split data into train and test
-        X, X_test, y, y_test = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Split train data into fit and calibration
-        X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Create two models mu (mean) and sigma (dispersion)
-        mu_model = RandomForestRegressor(n_estimators=100, random_state=0)
-        sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
-        # Wrap models in a mean/variance predictor
-        mean_var_predictor = MeanVarPredictor(models=[mu_model, sigma_model])
-
-        # CP method initialization
-        lacp = LocallyAdaptiveCP(mean_var_predictor)
-
-        # The call to `fit` trains the model and computes the nonconformity
-        # scores on the calibration set
-        lacp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-
-        # The predict method infers prediction intervals with respect to
-        # the significance level alpha = 20%
-        y_pred, y_pred_lower, y_pred_upper = lacp.predict(X_test, alpha=.2)
-
-        # Compute marginal coverage and average width of the prediction intervals
-        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-        width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
-        print(f"Marginal coverage: {np.round(coverage, 2)}")
-        print(f"Average width: {np.round(width, 2)}")
-
-    """
-
-    def __init__(
-        self,
-        predictor: MeanVarPredictor,
-        *,
-        train: bool = True,
-        random_state: int = None,
-        weight_func: Callable = None,
-    ):
+from deel.puncc.api import prediction_sets
+from deel.puncc.api import nonconformity_scores
+from deel.puncc.api.nonconformity_scores import absolute_difference, scaled_ad, cqr_score
+from deel.puncc.api.prediction_sets import constant_interval, scaled_interval, cqr_interval
+from deel.puncc.api.conformal_predictor import ConformalPredictor, StaticConformalPredictor
+
+
+class SplitCP(StaticConformalPredictor):
+    nc_score_function=absolute_difference()
+    pred_set_function=constant_interval()
+
+class CQR(StaticConformalPredictor):
+    nc_score_function=cqr_score()
+    pred_set_function=cqr_interval()
+
+# TODO : put the eps somewhere else
+class LocallyAdaptiveCP(ConformalPredictor):
+    def __init__(self, model,
+                 weight_function=None,
+                 eps:float=1e-12):
         super().__init__(
-            predictor,
-            train=train,
-            random_state=random_state,
-            weight_func=weight_func,
+            model=model,
+            nc_score_function=scaled_ad(eps=eps),
+            pred_set_function=scaled_interval(eps=eps),
+            weight_function=weight_function,
         )
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.scaled_ad,
-            pred_set_func=prediction_sets.scaled_interval,
-            weight_func=weight_func,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
-        )
-
-
-class CQR(SplitCP):
-    """Conformalized quantile regression method. For more details, we refer the
-    user to the :ref:`theory overview page <theory cqr>`.
-
-    :param DualPredictor predictor: a predictor implementing fit and predict.
-        Must embed two models for lower and upper quantiles estimations
-        respectively.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
-        Defaults to True.
-    :param callable weight_func: function that takes as argument an array of
-        features X and returns associated "conformality" weights, defaults to
-        None.
-
-
-    .. _example cqr:
-
-    Example::
-
-        from deel.puncc.regression import CQR
-        from deel.puncc.api.prediction import DualPredictor
-
-        from sklearn.datasets import make_regression
-        from sklearn.model_selection import train_test_split
-        from sklearn.ensemble import GradientBoostingRegressor
-
-        from deel.puncc.metrics import regression_mean_coverage
-        from deel.puncc.metrics import regression_sharpness
-
-
-        # Generate a random regression problem
-        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
-                    random_state=0, shuffle=False)
-
-        # Split data into train and test
-        X, X_test, y, y_test = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Split train data into fit and calibration
-        X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Lower quantile regressor
-        regressor_q_low = GradientBoostingRegressor(
-            loss="quantile", alpha=.2/2, n_estimators=250
-        )
-        # Upper quantile regressor
-        regressor_q_hi = GradientBoostingRegressor(
-            loss="quantile", alpha=1 - .2/2, n_estimators=250
-        )
-        # Wrap models in predictor
-        predictor = DualPredictor(models=[regressor_q_low, regressor_q_hi])
-
-        # CP method initialization
-        crq = CQR(predictor)
-
-        # The call to `fit` trains the model and computes the nonconformity
-        # scores on the calibration set
-        crq.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-
-        # The predict method infers prediction intervals with respect to
-        # the significance level alpha = 20%
-        y_pred, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=.2)
-
-        # Compute marginal coverage and average width of the prediction intervals
-        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-        width = regression_sharpness(y_pred_lower=y_pred_lower,
-                                     y_pred_upper=y_pred_upper)
-        print(f"Marginal coverage: {np.round(coverage, 2)}")
-        print(f"Average width: {np.round(width, 2)}")
-
-    """
-
-    def __init__(
-        self,
-        predictor: DualPredictor,
-        *,
-        train: bool = True,
-        weight_func: Callable = None,
-    ):
-        super().__init__(predictor, train=train, weight_func=weight_func)
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.cqr_score,
-            pred_set_func=prediction_sets.cqr_interval,
-            weight_func=weight_func,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
-        )
-
-
-class CVPlus:
-    """Cross-validation plus method. For more details, we refer the user to
-    the :ref:`theory overview page <theory cvplus>`.
-
-    :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param int K: number of training/calibration folds.
-    :param int random_state: seed to control random folds.
-
-
-    Example::
-
-        from deel.puncc.regression import CVPlus
-        from deel.puncc.api.prediction import BasePredictor
-
-        from sklearn.datasets import make_regression
-        from sklearn.model_selection import train_test_split
-        from sklearn.ensemble import RandomForestRegressor
-
-        from deel.puncc.metrics import regression_mean_coverage
-        from deel.puncc.metrics import regression_sharpness
-
-
-        # Generate a random regression problem
-        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
-                                random_state=0, shuffle=False)
-
-        # Split data into train and test
-        X, X_test, y, y_test = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
-
-        # Create a random forest model and wrap it in a predictor
-        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
-        rf_predictor = BasePredictor(rf_model, is_trained=False)
-
-        # CP method initialization
-        cv_cp = CVPlus(rf_predictor, K=20, random_state=0)
-
-        # The call to `fit` trains the model and computes the nonconformity
-        # scores on the K-fold calibration sets
-        cv_cp.fit(X, y)
-
-        # The predict method infers prediction intervals with respect to
-        # the significance level alpha = 20%
-        y_pred, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=.2)
-
-        # Compute marginal coverage and average width of the prediction intervals
-        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-        width = regression_sharpness(y_pred_lower=y_pred_lower,
-                                        y_pred_upper=y_pred_upper)
-        print(f"Marginal coverage: {np.round(coverage, 2)}")
-        print(f"Average width: {np.round(width, 2)}")
-
-    """
-
-    def __init__(self, predictor: BasePredictor, *, K: int, random_state=None):
-        self.predictor = predictor
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.absolute_difference,
-            pred_set_func=prediction_sets.constant_interval,
-            weight_func=None,
-        )
-        self.splitter = KFoldSplitter(K=K, random_state=random_state)
-
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=self.splitter,
-            method="cv+",
-        )
-
-    def fit(
-        self,
-        X: Iterable,
-        y: Iterable,
-        use_cached: bool = False,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the ensemble models based on the K-fold scheme.
-        The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
-
-        :param Iterable X: features from the train dataset.
-        :param Iterable y: labels from the train dataset.
-        :param bool use_cached: if set, enables to add the previously computed
-            nonconformity scores (if any) to the pool estimated in the current
-            call to `fit`. The aggregation follows the CV+
-            procedure.
-        :param dict kwargs: predict configuration to be passed to the model's
-            predict method.
-
-        """
-        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
-
-    def predict(self, X_test: Iterable, alpha) -> Tuple[np.ndarray]:
-        """Conformal interval predictions (w.r.t target miscoverage alpha)
-        for new samples.
-
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-
-        :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray]
-
-        """
-
-        if not hasattr(self, "conformal_predictor"):
-            raise RuntimeError("Fit method should be called before predict.")
-
-        (
-            y_pred,
-            y_lo,
-            y_hi,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-
-        return y_pred, y_lo, y_hi
-
-    def get_nonconformity_scores(self) -> dict:
-        """Get computed nonconformity scores per kfold.
-
-        :returns: computed nonconfomity scores per kfold.
-        :rtype: dict
-
-        """
-
-        # Get all nconf scores on the fitting kfolds
-        kfold_nconf_scores = self.conformal_predictor.get_nonconformity_scores()
-
-        return kfold_nconf_scores
-
 
 """
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -704,7 +170,7 @@ class EnbPI:
         :param ndarray w: residuals' quantiles.
 
         :returns: prediction intervals.
-        :rtype: Tuple[ndarray]
+        :rtype: tuple[ndarray]
 
         """
 
@@ -836,7 +302,7 @@ class EnbPI:
 
     def predict(
         self, X_test, alpha=0.1, y_true=None, s=None
-    ) -> Tuple[np.ndarray]:
+    ) -> tuple[np.ndarray]:
         """Estimate conditional mean and interval prediction.
 
         :param ndarray X_test: features of new samples.
@@ -848,7 +314,7 @@ class EnbPI:
 
         :returns: A tuple composed of y_pred (conditional mean), y_pred_lower
             (lower PI bound) and y_pred_upper (upper PI bound).
-        :rtype: Tuple[ndarray]
+        :rtype: tuple[ndarray]
 
         """
         y_pred_upper_list = []
@@ -997,14 +463,14 @@ class AdaptiveEnbPI(EnbPI):
 
     """
 
-    def _compute_pi(self, y_pred, w) -> Tuple[np.ndarray]:
+    def _compute_pi(self, y_pred, w) -> tuple[np.ndarray]:
         """Compute prediction intervals.
 
         :param ndarray y_pred: predicted values and variabilities.
         :param ndarray w: residuals' quantiles.
 
         :returns: prediction intervals.
-        :rtype: Tuple[ndarray]
+        :rtype: tuple[ndarray]
 
         """
 

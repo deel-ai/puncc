@@ -25,6 +25,7 @@ This module provides prediction sets for conformal prediction. To be used when
 building a ConformalPredictor.
 """
 from typing import Any
+from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.typing import TensorLike, PredSetFunction
 from deel.puncc import ops
 from deel.puncc._keras import random
@@ -163,3 +164,42 @@ def _scaled_bbox(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
 
 def scaled_bbox():
     return _scaled_bbox
+
+
+def _classwise_lac_set(
+    Y_pred, scores_quantile
+):
+    """Classwise LAC prediction set.
+
+    For each sample i and class c, include c in the prediction set if:
+        Y_pred[i, c] >= 1 - scores_quantile[c]
+
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+
+    :param ndarray scores_quantile: per-class quantiles of nonconformity scores
+        computed on a calibration set for a given :math:`\\alpha`.
+        Shape: (n_classes,)
+
+    :returns: Classwise LAC prediction sets.
+    :rtype: List
+
+    """
+    # Check if logits sum is close to one
+    logit_normalization_check(Y_pred)
+
+    #logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+
+    # Threshold per class: 1 - quantile[c]
+    thresholds = 1 - scores_quantile  # shape: (n_classes,)
+
+    # Build prediction sets: include class c if Y_pred[i, c] >= threshold[c]
+    prediction_sets = [
+        ops.where(Y_pred[i] >= thresholds)[0].tolist() for i in range(Y_pred.shape[0])
+    ]
+
+    return (prediction_sets,)
+
+def classwise_lac_set()->PredSetFunction:
+    return _classwise_lac_set
