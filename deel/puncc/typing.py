@@ -19,7 +19,7 @@ class Predictor(Protocol):
         ...
 
 @runtime_checkable
-class LambdaPredictor(Predictor):
+class LambdaPredictor(Predictor, Protocol):
     def __call__(self, X:Iterable[Any], lambd:float, *args, **kwargs) -> Any:
         ...
 
