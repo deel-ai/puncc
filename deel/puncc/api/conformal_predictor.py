@@ -96,11 +96,13 @@ class ConformalPredictor(ConformalMethod):
             y:TensorLike,
             #X_calib:Iterable[Any]|None=None,
             #y_calib:TensorLike|None=None
+            *args, 
+            **kwargs
             ):
         if self.fit_function is not None:
-            self.model = self.fit_function(self.model, X, y)
+            self.model = self.fit_function(self.model, X, y, *args, **kwargs)
         elif callable(getattr(self.model, "fit", None)):
-            self.model.fit(X, y) # type: ignore
+            self.model.fit(X, y, *args, **kwargs) # type: ignore
         else:
             raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
         #if X_calib is not None and y_calib is not None:

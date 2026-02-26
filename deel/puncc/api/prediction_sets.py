@@ -86,7 +86,7 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=False)->PredSetFunction:
 
         # FIXME : lol, i completely forgot to add the regularization term here
         K = ops.shape(y_pred)[-1]
-        ranks = ops.arange(1, K + 1)
+        ranks = ops.arange(1, K + 1, dtype=cs.dtype)
         penalty = lambd * ops.maximum(ranks - k_reg, 0)
         penal_cs = cs + penalty
 

@@ -124,11 +124,12 @@ def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
         condition = y_pred>=ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
         s = ops.sum(ops.where(condition, y_pred, 0), axis=-1)
         nb_cum_elems = ops.sum(condition, axis=-1)
-        regul = lambd * ops.maximum(nb_cum_elems - k_reg, ops.zeros_like(nb_cum_elems))
+        regul = lambd * ops.maximum(nb_cum_elems - k_reg, ops.zeros_like(nb_cum_elems, dtype=s.dtype))
         rand_correction = 0
         if rand:
             u = random.uniform(ops.shape(s))
-            rand_correction = u * ops.take_along_axis(y_pred, y_true[..., None], axis=-1).squeeze(-1)
+            rand_correction = u * ops.squeeze(ops.take_along_axis(y_pred, y_true[..., None], axis=-1), axis=-1)
+        regul = ops.cast(regul, dtype=s.dtype)
         return s + regul - rand_correction
     return _raps_score
 
