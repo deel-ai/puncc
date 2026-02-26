@@ -58,12 +58,11 @@ class ConformalPredictor(ConformalMethod):
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         # Definition of conformal predictor components :
-        super().__init__(model=model)
+        super().__init__(model=model, fit_function = fit_function)
         self.nc_score_function = nc_score_function
         self.pred_set_function = pred_set_function
 
         self.weight_function = weight_function
-        self.fit_function = fit_function
 
         # Utilities for the calibration procedure :
         self._x_calib = None
@@ -89,24 +88,6 @@ class ConformalPredictor(ConformalMethod):
         predictions = self.model(X_calib)
         self._x_calib = X_calib
         self._nc_scores = self.nc_score_function(predictions, y_calib)
-        return self
-
-    def fit(self,
-            X:Iterable[Any],
-            y:TensorLike,
-            #X_calib:Iterable[Any]|None=None,
-            #y_calib:TensorLike|None=None
-            *args, 
-            **kwargs
-            ):
-        if self.fit_function is not None:
-            self.model = self.fit_function(self.model, X, y, *args, **kwargs)
-        elif callable(getattr(self.model, "fit", None)):
-            self.model.fit(X, y, *args, **kwargs) # type: ignore
-        else:
-            raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
-        #if X_calib is not None and y_calib is not None:
-        #    self.calibrate(X_calib, y_calib)
         return self
 
     def predict(self,
@@ -178,7 +159,7 @@ class ClassificationConformalPredictor(StaticConformalPredictor):
         scores_flat = cls.nc_score_function(y_pred_tiled, y_true_flat)
         scores = ops.reshape(scores_flat, (n, K))
         mask = scores <= quantile
-        return [ops.where(mask[i])[0] for i in range(n)]
+        return [ops.where_1d(mask[i]) for i in range(n)]
     
 class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
     def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
@@ -221,7 +202,7 @@ class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
         return ConformalPrediction(prediction, y_set)
 
 
-class ScoreCalibrator():
+class ScoreCalibrator:
     def __init__(self,
                  nc_score_function:Callable[[Iterable[Any]], Sequence[float]],
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None):

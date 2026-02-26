@@ -4,7 +4,7 @@ _VALID = {"torch", "tensorflow", "jax", "numpy"}
 _FROZEN = False
 
 def set_backend(name: str) -> None:
-    if _FROZEN:
+    if _FROZEN and name!=get_backend():
         raise RuntimeError(
             "Backend already initialized. Call set_backend() before importing submodules that use Puncc."
         )

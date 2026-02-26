@@ -26,7 +26,7 @@ Abstract base classes for conformal prediction methods
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any, Generic, Iterator, TypeVar, overload
+from typing import Any, Callable, Generic, Iterator, TypeVar, overload
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
@@ -81,8 +81,10 @@ class ConformalMethod(ABC):
 
     # Any conformal method should have a model attribute.
     __slots__ = ("model",)
-    def __init__(self, model:Predictor|PredictorLike):
+    def __init__(self, model:Predictor|PredictorLike,
+                 fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         self.model = make_predictor(model)
+        self.fit_function = fit_function
 
     @abstractmethod
     def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
@@ -109,3 +111,16 @@ class ConformalMethod(ABC):
         """
         ...
 
+    def fit(self,
+            X:Iterable[Any],
+            y:TensorLike,
+            *args, 
+            **kwargs
+            ):
+        if self.fit_function is not None:
+            self.model = self.fit_function(self.model, X, y, *args, **kwargs)
+        elif callable(getattr(self.model, "fit", None)):
+            self.model.fit(X, y, *args, **kwargs) # type: ignore
+        else:
+            raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
+        return self

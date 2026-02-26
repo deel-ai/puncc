@@ -31,45 +31,6 @@ from deel.puncc.typing import TensorLike, NCScoreFunction
 from deel.puncc import ops
 from deel.puncc._keras import random
 
-def _classwise_lac_score(
-    Y_pred: TensorLike,
-    y_true: TensorLike,
-) -> Sequence[float]:
-    """Classwise LAC nonconformity score.
-
-    Computes nonconformity scores for classwise conformal prediction.
-    For each sample, the score is stored only for its true class,
-    with NaN values for other classes. This allows computing
-    per-class quantiles during calibration.
-
-    :param Iterable Y_pred:
-        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
-        where :math:`P_{\\text{C}_i}` is logit associated to class i.
-    :param Iterable y_true: true labels.
-
-    :returns: Classwise LAC nonconformity scores of shape (n_samples, n_classes).
-        Entry [i, c] contains `1 - Y_pred[i, c]` if `y_true[i] == c`, else NaN.
-    :rtype: Iterable
-
-    :raises TypeError: unsupported data types.
-    """
-    supported_types_check(Y_pred, y_true)
-
-    # Check if logits sum is close to one
-    logit_normalization_check(Y_pred)
-
-    # Initialize with NaN - scores are valid only for the true class of each sample
-    scores = ops.full_like(Y_pred, ops.nan)
-
-    # For each sample, set the score only for its true class
-    sample_indices = ops.arange(Y_pred.shape[0])
-    scores[sample_indices, y_true] = 1 - Y_pred[sample_indices, y_true]
-
-    return scores
-
-def classwise_lac_score()->NCScoreFunction:
-    return _classwise_lac_score
-
 def _difference(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
     return y_pred - y_true
 

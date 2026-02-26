@@ -30,9 +30,9 @@ from typing import Tuple
 
 import numpy as np
 
-from deel.puncc.old_api.calibration import ScoreCalibrator
-from deel.puncc.old_api.splitting import IdSplitter
-from deel.puncc.old_api.splitting import RandomSplitter
+from deel.puncc.api.conformal_predictor import ScoreCalibrator
+from deel.puncc.api.splitting import IdSplitter
+from deel.puncc.api.splitting import RandomSplitter
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class SplitCAD:
 
     def __init__(self, predictor, *, train=True, random_state: float = None):
         self.predictor = predictor
-        self.calibrator = ScoreCalibrator(nonconf_score_func=predictor.predict)
+        self.calibrator = ScoreCalibrator(nc_score_function=predictor.predict)
 
         self.train = train
 
@@ -189,6 +189,7 @@ class SplitCAD:
         # Apply splitter
         z_fit, _, z_calib, _ = splitter(z, z)[0]
 
+
         # Fit underlying model and calibrator
         if self.train:
             logger.info("Fitting model")
@@ -204,7 +205,7 @@ class SplitCAD:
             logger.info("Skipping training.")
 
         # Fitting calibrator
-        self.calibrator.fit(z_calib)
+        self.calibrator.calibrate(z_calib)
 
         self.__is_fit = True
 

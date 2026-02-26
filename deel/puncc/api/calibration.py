@@ -21,9 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the core calibrator, providing a structure to estimate
-the nonconformity scores on the calibration set and to compute the prediction
-sets.
+This module will be removed soon, just kept for testing and assess compatibility.
 """
 import logging
 import warnings
@@ -296,7 +294,6 @@ class BaseCalibrator:
         w_norm[weights_len] = 1 / (sum_weights + 1)
 
         return w_norm
-
 
 class ClasswiseCalibrator(BaseCalibrator):
     """Calibrator for classwise conformal prediction.

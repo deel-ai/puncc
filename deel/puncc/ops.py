@@ -59,6 +59,26 @@ def _unique_sorted(x):
     x = ops.sort(x)
     return ops.concatenate([x[:1], x[1:][ops.not_equal(x[1:], x[:-1])]])
 
+def where_1d(mask):
+    """Backend-agnostic: return 1D indices where mask is True (mask must be rank-1)."""
+    idx = ops.where(mask)
+
+    # numpy/jax/torch: tuple of arrays
+    if isinstance(idx, tuple):
+        idx = idx[0]
+
+    # tensorflow: (n, 1) for 1D mask
+    if hasattr(idx, "shape") and len(idx.shape) == 2:
+        idx = ops.squeeze(idx, axis=-1)
+    return ops.reshape(idx, (-1,))
+
+def where_nd(mask):
+    """Backend-agnostic: return indices as a 2D tensor of shape (n_true, rank(mask))."""
+    idx = ops.where(mask)
+    if isinstance(idx, tuple):
+        return ops.transpose(ops.stack(idx, axis=0))
+    return idx
+
 def setdiff1d(a, b, assume_unique=False):
     """
     Find the set difference of two tensors.
@@ -90,7 +110,7 @@ def setdiff1d(a, b, assume_unique=False):
     mask = ops.logical_not(isin)
 
     # Gather the elements where mask == True
-    idx = flatten(ops.where(mask))
+    idx = where_1d(mask)
     return ops.take(a, idx)
 
 def weighted_quantile(x, q, weights=None, axis=None, keepdims=False):
@@ -113,5 +133,5 @@ def weighted_quantile(x, q, weights=None, axis=None, keepdims=False):
     res = ops.take_along_axis(sorted_a, ops.expand_dims(idx, axis=axis), axis=axis)
     return ops.squeeze(res, axis=axis)
 
-patchs = ["inf", "ninf", "flatten", "setdiff1d", "weighted_quantile"]
+patchs = ["inf", "ninf", "flatten", "where_1d", "where_nd", "setdiff1d", "weighted_quantile"]
 __all__ = [*dir(ops), *patchs]

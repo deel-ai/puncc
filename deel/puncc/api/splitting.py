@@ -35,8 +35,8 @@ from typing import TypeAlias
 from deel.puncc import ops
 from deel.puncc._keras import random
 
-from deel.puncc.old_api.utils import features_len_check
-from deel.puncc.old_api.utils import sample_len_check
+from deel.puncc.api.utils import features_len_check
+from deel.puncc.api.utils import sample_len_check
 from deel.puncc.typing import TensorLike
 
 
@@ -172,12 +172,14 @@ class RandomSplitter(BaseSplitter):
         # Checks
         sample_len_check(X, y)
 
+
         u = random.uniform((len(X),), seed=self.random_state)
+
         fit_mask = ops.less(u, self.ratio)
         cal_mask = ops.logical_not(fit_mask)
 
-        fit_idxs = ops.squeeze(ops.where(fit_mask), axis=-1)
-        cal_idxs = ops.squeeze(ops.where(cal_mask), axis=-1)
+        fit_idxs = ops.where_1d(fit_mask)
+        cal_idxs = ops.where_1d(cal_mask)
 
         return [_take(X, y, fit_idxs, cal_idxs)]
 
