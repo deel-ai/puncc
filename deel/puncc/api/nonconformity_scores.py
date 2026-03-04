@@ -24,23 +24,14 @@
 This module provides nonconformity scores for conformal prediction. To be used
 when building a :ref:`calibrator <calibration>`.
 """
-import importlib
 from typing import Callable
 from typing import Iterable
 
-import numpy as np
+from deel.puncc.api.backend import concat_columns, get_backend, shape2, split_columns
 
+from deel.puncc.api.utils import supported_dual_models_shape_check, supported_types_check
+from deel.puncc.api.utils import supported_bbox_shape_check
 from deel.puncc.api.utils import logit_normalization_check
-from deel.puncc.api.utils import supported_types_check
-
-if importlib.util.find_spec("pandas") is not None:
-    import pandas as pd
-
-if importlib.util.find_spec("tensorflow") is not None:
-    import tensorflow as tf
-
-if importlib.util.find_spec("torch") is not None:
-    import torch
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,7 +48,7 @@ def lac_score(
         where :math:`P_{\\text{C}_i}` is logit associated to class i.
     :param Iterable y_true: true labels.
 
-    :returns: RAPS nonconformity scores.
+    :returns: LAC nonconformity scores.
     :rtype: Iterable
 
     :raises TypeError: unsupported data types.
@@ -67,13 +58,13 @@ def lac_score(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    if not isinstance(Y_pred, np.ndarray):
-        raise NotImplementedError(
-            "LAC nonconformity score only implemented for ndarrays"
-        )
+    b = get_backend(Y_pred, y_true)
+    yp = b.asarray(Y_pred)
+    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
 
-    # Compute and return the LAC nonconformity score
-    return 1 - Y_pred[np.arange(y_true.shape[0]), y_true]
+    # Gather predicted probability at true-label index for each sample.
+    p_true = b.take_along_axis(yp, b.reshape(yt, (-1, 1)), axis=1)
+    return 1 - b.squeeze(p_true)
 
 
 def classwise_lac_score(
@@ -103,21 +94,22 @@ def classwise_lac_score(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    if not isinstance(Y_pred, np.ndarray):
-        raise NotImplementedError(
-            "Classwise LAC nonconformity score only implemented for ndarrays"
-        )
+    b = get_backend(Y_pred, y_true)
+    yp = b.asarray(Y_pred)
+    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
 
-    n_samples, n_classes = Y_pred.shape
+    _, shape = shape2(yp)
+    n_samples = shape[0]
+    n_classes = shape[1]
 
-    # Initialize with NaN - scores are valid only for the true class of each sample
-    scores = np.full((n_samples, n_classes), np.nan)
+    # Build a boolean mask selecting the true class per sample.
+    yt_col = b.reshape(yt, (-1, 1))
+    class_ids = b.reshape(b.arange(n_classes), (1, n_classes))
+    true_class_mask = b.equal(yt_col, class_ids)
 
-    # For each sample, set the score only for its true class
-    sample_indices = np.arange(n_samples)
-    scores[sample_indices, y_true] = 1 - Y_pred[sample_indices, y_true]
-
-    return scores
+    # Keep 1 - p only on the true class column, NaN elsewhere.
+    nan_matrix = b.full((n_samples, n_classes), float("nan"))
+    return b.where(true_class_mask, 1 - yp, nan_matrix)
 
 
 def raps_score(
@@ -135,69 +127,49 @@ def raps_score(
         **Use** :func:`raps_score_builder` **to properly initialize**
         :class:`deel.puncc.api.calibration.BaseCalibrator`.
 
-    :param Iterable Y_pred:
-        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
-        where :math:`P_{\\text{C}_i}` is logit associated to class i.
-    :param Iterable y_true: true labels.
-    :param float lambd: positive weight associated to the regularization term
-        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
-        regularization and the implementation identifies with **APS**.
-    :param float k_reg: class rank (ordered by descending probability) starting
-        from which the regularization is applied. For example,
-        if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
-        an extra penalty of size :math:`\\lambda`.
-    :param bool rand: turn on or off the randomization term that smoothes the
-        discrete probability mass jump when including a new class.
+    Backend-agnostic implementation relying on backend abstractions.
 
-
-    :returns: RAPS nonconformity scores.
-    :rtype: Iterable
-
-    :raises TypeError: unsupported data types.
     """
     supported_types_check(Y_pred, y_true)
 
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    if not isinstance(Y_pred, np.ndarray):
-        raise NotImplementedError(
-            "RAPS/APS nonconformity scores only implemented for ndarrays"
-        )
+    b = get_backend(Y_pred, y_true)
+    yp = b.asarray(Y_pred)
+    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
 
-    # Sort classes by descending probability order
-    class_ranking = np.argsort(-Y_pred, axis=1)
-    sorted_proba = -np.sort(-Y_pred, axis=1)
+    # Sort classes by descending probability order.
+    class_ranking = b.argsort(yp, axis=1, descending=True)
+    sorted_proba = b.take_along_axis(yp, class_ranking, axis=1)
 
-    # Cumulative probability mass (given the previous class ranking)
-    sorted_cum_mass = sorted_proba.cumsum(axis=1)
+    # Cumulative probability mass (given the previous class ranking).
+    sorted_cum_mass = b.cumsum(sorted_proba, axis=1)
 
-    # Locate position of true label in the classes
-    # sequence ranked by decreasing probability
-    L = [
-        np.where(class_ranking[i] == y_true[i])[0][0]
-        for i in range(y_true.shape[0])
-    ]
+    # Locate the rank position of the true class for each sample.
+    yt_col = b.reshape(yt, (-1, 1))
+    matches = b.equal(class_ranking, yt_col)
+    L = b.argmax(matches, axis=1)
 
-    # Threshold of cumulative probability mass to include the real class
-    E = [sorted_cum_mass[i, L[i]] for i in range(y_true.shape[0])]
+    # Threshold of cumulative probability mass to include the real class.
+    e_col = b.take_along_axis(sorted_cum_mass, b.reshape(L, (-1, 1)), axis=1)
+    E = b.squeeze(e_col)
+
+    # Regularization term max(L + 1 - k_reg, 0) in backend-native form.
+    reg_rank = L + 1 - k_reg
+    zero_like = reg_rank - reg_rank
+    reg_term = b.maximum(reg_rank, zero_like)
 
     if rand:
-        # Generate u randomly from a uniform distribution
-        u = np.random.uniform(size=len(y_true))
-        E = [
-            E[i]
-            + lambd * np.maximum((L[i] + 1 - k_reg), 0)
-            - u[i] * sorted_proba[i, L[i]]
-            for i in range(y_true.shape[0])
-        ]
+        n_samples = shape2(yp)[1][0]
+        u = b.random_uniform((n_samples,))
+        p_col = b.take_along_axis(sorted_proba, b.reshape(L, (-1, 1)), axis=1)
+        p_at_l = b.squeeze(p_col)
+        E = E + lambd * reg_term - u * p_at_l
     else:
-        E = [
-            E[i] + lambd * np.maximum((L[i] + 1 - k_reg), 0)
-            for i in range(y_true.shape[0])
-        ]
+        E = E + lambd * reg_term
 
-    return np.array(E)
+    return E
 
 
 def raps_score_builder(
@@ -224,7 +196,7 @@ def raps_score_builder(
     :raises TypeError: unsupported data types.
     """
 
-    def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> np.ndarray:
+    def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         return raps_score(Y_pred, y_true, lambd, k_reg, rand)
 
     return _raps_score_function
@@ -249,15 +221,10 @@ def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred, y_true)
-
-    if importlib.util.find_spec("torch") is not None and isinstance(
-        y_pred, torch.Tensor
-    ):
-        y_pred = y_pred.cpu().detach().numpy()
-        y_true = y_true.cpu().detach().numpy()
-        return np.squeeze(y_pred) - np.squeeze(y_true)
-
-    return y_pred - y_true
+    b = get_backend(y_pred, y_true)
+    yp = b.asarray(y_pred)
+    yt = b.asarray(y_true)
+    return b.squeeze(yp) - b.squeeze(yt)
 
 
 def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
@@ -275,8 +242,8 @@ def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :raises TypeError: unsupported data types.
     """
-
-    return abs(difference(y_pred, y_true))
+    b = get_backend(y_pred, y_true)
+    return b.abs(difference(y_pred, y_true))
 
 
 def scaled_ad(
@@ -300,34 +267,22 @@ def scaled_ad(
 
     :raises TypeError: unsupported data types.
     """
-    supported_types_check(Y_pred, y_true)
+    supported_dual_models_shape_check(Y_pred, y_true)
 
-    if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
-        raise RuntimeError(
-            "Each Y_pred must contain a point prediction and a dispersion estimation."
-        )
+    b = get_backend(Y_pred, y_true)
+    Yp = b.asarray(Y_pred)
+    yt = b.asarray(y_true)
 
-    # check y_true is a collection of point observations
-    if len(y_true.shape) != 1:
-        raise RuntimeError("Each y_true must contain a point observation.")
-
-    if importlib.util.find_spec("pandas") is not None and isinstance(
-        Y_pred, pd.DataFrame
-    ):
-        y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-    else:
-        y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
-
-    # MAD then Scaled MAD and computed
-    mean_absolute_deviation = absolute_difference(y_pred, y_true)
-    if np.any(sigma_pred + eps <= 0):
+    y_pred, sigma_pred = split_columns(Yp, (0, 1))
+    mad = b.abs(y_pred - yt)
+    if b.any(sigma_pred + eps <= 0):
         print(
-            "Warning: calibration points with MAD predictions"
-            " below -eps won't be used for calibration."
+            "Warning: calibration points with MAD predictions below -eps "
+            " won't be used for calibration."
         )
 
     nonneg = sigma_pred + eps > 0
-    return mean_absolute_deviation[nonneg] / (sigma_pred[nonneg] + eps)
+    return mad[nonneg] / (sigma_pred[nonneg] + eps)
 
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
@@ -349,55 +304,22 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
     :raises TypeError: unsupported data types.
     """
-    supported_types_check(Y_pred, y_true)
+    supported_dual_models_shape_check(Y_pred, y_true)
 
-    if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
-        raise RuntimeError(
-            "Each Y_pred must contain lower and higher quantiles estimations."
-        )
+    b = get_backend(Y_pred, y_true)
+    Yp = b.asarray(Y_pred)
+    yt = b.asarray(y_true)
 
-    # check y_true is a collection of point observations
-    if len(y_true.shape) != 1:
-        raise RuntimeError("Each y_pred must contain a point observation.")
-
-    if importlib.util.find_spec("pandas") is not None and isinstance(
-        Y_pred, pd.DataFrame
-    ):
-        q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-    else:
-        q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
-
-    diff_lo = q_lo - y_true
-    diff_hi = y_true - q_hi
-
-    if isinstance(diff_lo, np.ndarray):
-        return np.maximum(diff_lo, diff_hi)
-
-    if importlib.util.find_spec("pandas") is not None and isinstance(
-        diff_lo, (pd.DataFrame, pd.Series)
-    ):
-        return (pd.concat([diff_lo, diff_hi]).groupby(level=0)).max()
-        # raise NotImplementedError(
-        #     "CQR score not implemented for DataFrames. Please provide ndarray or tensors."
-        # )
-
-    if importlib.util.find_spec("tensorflow") is not None and isinstance(
-        diff_lo, tf.Tensor
-    ):
-        return tf.math.maximum(diff_lo, diff_hi)
-
-    # if importlib.util.find_spec("torch") is not None and isinstance(
-    #     diff_lo, torch.Tensor
-    # ):
-    #     return torch.maximum(diff_lo, diff_hi)
-
-    raise RuntimeError("Fatal Error. Type check failed !")
+    q_lo, q_hi = split_columns(Yp, (0, 1))
+    diff_lo = q_lo - yt
+    diff_hi = yt - q_hi
+    return b.maximum(diff_lo, diff_hi)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def scaled_bbox_difference(Y_pred: np.ndarray, Y_true: np.ndarray):
+def scaled_bbox_difference(Y_pred: Iterable, Y_true: Iterable):
     """Object detection scaled nonconformity score. Considering
     :math:`Y_{\\text{pred}} = (\hat{x}_1, \hat{y}_1, \hat{x}_2, \hat{y}_2)` and
     :math:`Y_{\\text{true}} = (x_1, y_1, x_2, y_2)`:
@@ -418,20 +340,14 @@ def scaled_bbox_difference(Y_pred: np.ndarray, Y_true: np.ndarray):
 
     :raises TypeError: unsupported data types.
     """
-    if not isinstance(Y_pred, np.ndarray):
-        raise TypeError(
-            f"Unsupported data type {type(Y_pred)}."
-            + "Please provide a numpy ndarray"
-        )
+    supported_bbox_shape_check(Y_pred, Y_true)
+    b = get_backend(Y_pred, Y_true)
+    yp = b.asarray(Y_pred)
+    yt = b.asarray(Y_true)
 
-    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
-        raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
+    x_min, y_min, x_max, y_max = split_columns(yp, (0, 1, 2, 3), keepdims=True)
+    dx = b.abs(x_max - x_min)
+    dy = b.abs(y_max - y_min)
+    scale = concat_columns([dx, dy, dx, dy], like=yp)
 
-    # check y_true is formatted as a bbox with 4 coordinates
-    if Y_true.shape[1] != 4:
-        raise RuntimeError("Each Y_true must contain 4 bbox coordinates.")
-
-    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
-    dx = np.abs(x_max - x_min)
-    dy = np.abs(y_max - y_min)
-    return (Y_pred - Y_true) / np.hstack([dx, dy, dx, dy])
+    return (yp - yt) / scale

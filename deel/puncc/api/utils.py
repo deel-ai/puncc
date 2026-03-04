@@ -24,7 +24,6 @@
 This module implements utility functions.
 """
 import logging
-import importlib
 import sys
 from typing import Any
 from typing import Iterable
@@ -32,23 +31,35 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 from scipy.optimize import linear_sum_assignment
-
-from deel.puncc.metrics import iou
-
 import numpy as np
 
-if importlib.util.find_spec("pandas") is not None:
-    import pandas as pd
+from deel.puncc.metrics import iou
+from deel.puncc.api.backend import get_backend, shape2
 
-if importlib.util.find_spec("tensorflow") is not None:
-    import tensorflow as tf
 
-if importlib.util.find_spec("torch") is not None:
-    import torch
 
 logger = logging.getLogger(__name__)
 
 EPSILON = sys.float_info.min  # small value to avoid underflow
+
+
+def _n_samples(x: Any) -> int:
+    """Return number of samples (first dimension) for array-like inputs."""
+    try:
+        return int(getattr(x, "shape")[0])
+    except Exception:
+        return len(x)
+
+
+def _n_features(x: Any) -> int:
+    """Return number of features (last dimension) for array-like inputs."""
+    try:
+        return int(getattr(x, "shape")[-1])
+    except Exception:
+        # last axis length for nested sequences
+        if len(x) == 0:
+            return 0
+        return len(x[0])
 
 
 def dual_predictor_check(l: Any, name: str, ltype: str):
@@ -77,7 +88,9 @@ def logit_normalization_check(y: Iterable):
     :raises ValueError: when logits sum is different than one within a tolerance
         value of 1e-5.
     """
-    logits_sum = np.sum(np.array(list(y)), -1)
+    b = get_backend(y)
+    y_arr = b.to_numpy(b.asarray(y))
+    logits_sum = np.sum(y_arr, -1)
     if np.any(np.abs(logits_sum - 1) > 1e-5):
         raise ValueError(
             f"Logits must some to 1. Provided logit array {logits_sum}"
@@ -94,7 +107,7 @@ def sample_len_check(a: Iterable, b: Iterable):
     :raises ValueError: arguments contain different number of samples.
     """
     supported_types_check(a, b)
-    if a.shape[0] != b.shape[0]:
+    if _n_samples(a) != _n_samples(b):
         raise ValueError("Iterables must contain the same number of samples.")
 
 
@@ -111,7 +124,7 @@ def features_len_check(a: Iterable, b: Iterable):
 
     supported_types_check(a, b)
 
-    if a.shape[-1] != b.shape[-1]:
+    if _n_features(a) != _n_features(b):
         raise ValueError(
             "X_fit and X_calib must contain the same number of features."
         )
@@ -120,33 +133,76 @@ def features_len_check(a: Iterable, b: Iterable):
 def supported_types_check(*data: Iterable):
     """Check if arguments' types are supported.
 
+    Supported inputs are those handled by :func:`deel.puncc.api.backend.get_backend`,
+    i.e. numpy arrays, pandas objects, torch/jax/tensorflow tensors (when already
+    imported by the user), and Python sequences convertible to arrays.
+
     :param Iterable data: iterable(s) to be checked.
 
     :raises TypeError: unsupported data types.
     """
-
     for a in data:
-        if isinstance(a, np.ndarray):
-            pass
-
-        elif importlib.util.find_spec("pandas") is not None and isinstance(
-            a, (pd.DataFrame, pd.Series)
-        ):
-            pass
-        elif importlib.util.find_spec("tensorflow") is not None and isinstance(
-            a, tf.Tensor
-        ):
-            pass
-        elif importlib.util.find_spec("torch") is not None and isinstance(
-            a, torch.Tensor
-        ):
-            pass
-        else:
+        try:
+            # Validation is delegated to backend inference + conversion.
+            b = get_backend(a)
+            _ = b.asarray(a)
+        except Exception as e:
             raise TypeError(
                 f"Unsupported data type {type(a)}. Please provide a numpy ndarray, "
-                "a dataframe or a tensor."
-            )
+                "a pandas object, a tensor, or an array-like convertible input."
+            ) from e
 
+def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
+    """Check if arguments have the correct shape for dual-model methods. 
+    Dual-model methods require Y_pred to have shape (n_samples, 2) including 
+    two point predictions (e.g. mean and variance or lower and upper quantiles) 
+    and y_true to have shape (n_samples,).
+    
+    :param Iterable Y_pred: two point predictions for each sample.
+    :param Iterable y_true: point observations for each sample.
+    
+    :raises TypeError: unsupported data types or elements have inconsistent types.
+    :raises RuntimeError: Y_pred does not have shape (n_samples, 2)
+        or y_true does not have shape (n_samples,).
+    """
+    supported_types_check(Y_pred, y_true)
+    b = get_backend(Y_pred, y_true)
+    Yp = b.to_numpy(Y_pred)
+    yt = b.to_numpy(y_true)
+
+    if Yp.ndim != 2 or Yp.shape[1] != 2:
+        raise RuntimeError(
+            "Each Y_pred must contain two point predictions " 
+            "(e.g. mean and variance or lower and upper quantiles)."
+        )
+    if yt.ndim != 1:
+        raise RuntimeError("Each y_true must contain a point observation.")
+
+def supported_bbox_shape_check(predicted_bboxes: Iterable, true_bboxes: Iterable):
+    """Check if predicted and true bounding boxes have the same shape and the
+    correct number of coordinates.
+
+    :param Iterable predicted_bboxes: predicted bounding boxes.
+    :param Iterable true_bboxes: true bounding boxes.
+
+    :raises TypeError: unsupported data types.
+    :raises RuntimeError: predicted and true bounding boxes have different shapes
+        or do not contain 4 coordinates.
+    """
+    supported_types_check(predicted_bboxes, true_bboxes)
+
+    b = get_backend(predicted_bboxes, true_bboxes)
+    predicted_bboxes = b.asarray(predicted_bboxes)
+    true_bboxes = b.asarray(true_bboxes)
+
+    yp_ndim, yp_shape = shape2(predicted_bboxes)
+    yt_ndim, yt_shape = shape2(true_bboxes)
+
+    if yp_ndim != 2 or yp_shape[1] != 4:
+        raise RuntimeError("Each predicted bounding box must contain "
+                           "4 coordinates.")
+    if yt_ndim != 2 or yt_shape[1] != 4:
+        raise RuntimeError("Each true bounding box must contain 4 coordinates.")
 
 def alpha_calib_check(
     alpha: Union[float, np.ndarray], n: int, complement_check: bool = False
@@ -278,26 +334,14 @@ def quantile(
     # type checks:
     supported_types_check(a)
 
-    if isinstance(a, np.ndarray):
-        pass
-    elif importlib.util.find_spec("pandas") is not None and isinstance(
-        a, pd.DataFrame
-    ):
-        a = a.to_numpy()
-    elif importlib.util.find_spec("tensorflow") is not None and isinstance(
-        a, tf.Tensor
-    ):
-        a = a.numpy()
-    # elif importlib.util.find_spec("torch") is not None:
-    #     if isinstance(a, torch.Tensor):
-    #         a = a.cpu().detach().numpy()
-    else:
-        raise RuntimeError(
-            "Unsupported data type for argument [a].\n"
-            "Please provide a numpy ndarray, a pandas dataframe or a tensorflow tensor."
-        )
+    b = get_backend(a)
+    a = b.to_numpy(b.asarray(a))
 
-    # Sanity checks
+    if w is not None:
+        bw = get_backend(w)
+        w = bw.to_numpy(bw.asarray(w))
+
+# Sanity checks
     if np.any(q <= 0) or np.any(q >= 1):
         raise ValueError(
             "All coordinates of [q] must be in the open interval (0, 1)."
@@ -485,7 +529,7 @@ def quantile_weighted(
 
 
 def hungarian_assignment(
-    predicted_bboxes: np.ndarray, true_bboxes: np.ndarray, min_iou: float = 0.5
+    predicted_bboxes: Any, true_bboxes: Any, min_iou: float = 0.5
 ):
     """
     Assign predicted bounding boxes to labeled ones based on maximizing IOU.
@@ -526,6 +570,10 @@ def hungarian_assignment(
         (array([[10, 10, 50, 50], [20, 20, 60, 60]]), array([[12, 12, 48, 48], [22, 22, 58, 58]]))
 
     """
+
+    b = get_backend(predicted_bboxes, true_bboxes)
+    predicted_bboxes = b.to_numpy(b.asarray(predicted_bboxes))
+    true_bboxes = b.to_numpy(b.asarray(true_bboxes))
 
     # Pad predicted bounding boxes to match the number of labeled ones
     def pad_predictions(predictions, labels):

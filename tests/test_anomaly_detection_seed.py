@@ -77,6 +77,10 @@ def test_anomaly_detection(rand_anomaly_detection_data, alpha, random_state):
     not_anomalies = z_test[np.invert(results)]
 
     assert anomalies is not None
-    assert anomalies.shape == RESULTS["split_cad"]["anomaly_shape"]
+    np.testing.assert_allclose(
+        anomalies.shape, RESULTS["split_cad"]["anomaly_shape"]
+    )
     assert not_anomalies is not None
-    assert not_anomalies.shape == RESULTS["split_cad"]["normal_shape"]
+    np.testing.assert_allclose(
+        not_anomalies.shape, RESULTS["split_cad"]["normal_shape"]
+    )

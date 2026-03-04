@@ -24,22 +24,21 @@
 This module provides prediction sets for conformal prediction. To be used when
 building a :ref:`calibrator <calibration>`.
 """
+
 import logging
-import pkgutil
 from typing import Callable
 from typing import Iterable
 from typing import List
-from typing import Tuple
 
-import numpy as np
-
+from deel.puncc.api.backend import concat_columns
+from deel.puncc.api.backend import get_backend
+from deel.puncc.api.backend import shape2
+from deel.puncc.api.backend import split_columns
 from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
 
-if pkgutil.find_loader("pandas") is not None:
-    import pandas as pd
-
 logger = logging.getLogger(__name__)
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -52,7 +51,7 @@ def lac_set(
     :param Iterable Y_pred:
         :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
         where :math:`P_{\\text{C}_i}` is logit associated to class i.
-        
+
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`
 
@@ -64,13 +63,18 @@ def lac_set(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    pred_len = len(Y_pred)
+    b = get_backend(Y_pred)
+    yp = b.asarray(Y_pred)
 
-    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+    pred_len = len(yp)
+    logger.debug(f"Shape of Y_pred: {shape2(yp)[1]}")
 
-    # Build prediction sets
+    cond = yp >= (1 - scores_quantile)
+    cond_np = b.to_numpy(cond)
+
     prediction_sets = [
-        np.where(Y_pred[i] >= 1 - scores_quantile)[0].tolist() for i in range(pred_len)
+        [j for j, is_in in enumerate(cond_np[i]) if is_in]
+        for i in range(pred_len)
     ]
 
     return (prediction_sets,)
@@ -99,16 +103,22 @@ def classwise_lac_set(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    n_test, _ = Y_pred.shape
+    b = get_backend(Y_pred, scores_quantile)
+    yp = b.asarray(Y_pred)
+    sq = b.asarray(scores_quantile)
+    _, shape = shape2(yp)
+    n_test = shape[0]
 
-    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+    logger.debug(f"Shape of Y_pred: {shape}")
 
     # Threshold per class: 1 - quantile[c]
-    thresholds = 1 - scores_quantile  # shape: (n_classes,)
+    thresholds = 1 - b.squeeze(sq)  # shape: (n_classes,)
 
-    # Build prediction sets: include class c if Y_pred[i, c] >= threshold[c]
+    # Build prediction sets: include class c if Y_pred[i, c] >= threshold[c].
+    cond_np = b.to_numpy(yp >= thresholds)
     prediction_sets = [
-        np.where(Y_pred[i] >= thresholds)[0].tolist() for i in range(n_test)
+        [j for j, is_in in enumerate(cond_np[i]) if is_in]
+        for i in range(n_test)
     ]
 
     return (prediction_sets,)
@@ -116,7 +126,7 @@ def classwise_lac_set(
 
 def raps_set(
     Y_pred, scores_quantile, lambd: float = 0, k_reg: int = 1, rand: bool = True
-) -> List:
+) -> Iterable:
     """RAPS prediction set.
 
     .. warning::
@@ -128,19 +138,19 @@ def raps_set(
     :param Iterable Y_pred:
         :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
         where :math:`P_{\\text{C}_i}` is logit associated to class i.
-        
+
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`
-        
+
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
-        
+
     :param float k_reg: class rank (ordered by descending probability) starting
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
         extra penalty of size :math:`\\lambda`.
-        
+
     : param bool rand: turn on or off the randomization term that smoothes the
         discrete probability mass jump when including a new class.
 
@@ -152,66 +162,72 @@ def raps_set(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    pred_len = len(Y_pred)
+    b = get_backend(Y_pred)
+    yp = b.asarray(Y_pred)
 
-    logger.debug(f"Shape of Y_pred: {Y_pred.shape}")
+    _, shape = shape2(yp)
+    pred_len = shape[0]
+    n_classes = shape[-1]
+
+    logger.debug(f"Shape of Y_pred: {shape}")
 
     if rand:
         # Generate u randomly from a uniform distribution
-        u = np.random.uniform(size=pred_len)
+        u = b.random_uniform((pred_len,))
 
     # 1-alpha th empirical quantile of conformity scores
     tau = scores_quantile
 
     # Rank classes by their probability
-    idx_class_pred_ranking = np.argsort(-Y_pred, axis=-1)
-    sorted_proba = -np.sort(-Y_pred, axis=-1)
-    sorted_cum_mass = sorted_proba.cumsum(axis=-1)
+    idx_class_pred_ranking = b.argsort(yp, axis=-1, descending=True)
+    sorted_proba = b.take_along_axis(yp, idx_class_pred_ranking, axis=-1)
+    sorted_cum_mass = b.cumsum(sorted_proba, axis=-1)
 
     # Cumulative probability mass of (sorted by descending probability) classes
     # penalized by the regularization term
-    penal_cum_proba = sorted_cum_mass + lambd * np.maximum(
-        np.arange(1, sorted_cum_mass.shape[-1] + 1) - k_reg, 0
-    )
+    rank = b.arange(1, n_classes + 1)
+    rank_zero = rank - rank
+    penal_cum_proba = sorted_cum_mass + lambd * b.maximum(rank - k_reg, rank_zero)
 
     # L is the number of classes (+1) for which the cumulative probability mass
     # is below the threshold "tau"
     # The minimum is used in case the Y_pred logits are not well normalized
-    L = np.minimum(np.sum(penal_cum_proba < tau, axis=-1) + 1, pred_len)
+    below_tau = b.astype(penal_cum_proba < tau, "int64")
+    L = b.minimum(b.sum(below_tau, axis=-1) + 1, pred_len)
 
     if not rand:
         # Build prediction set
-        prediction_sets = [
-            list(idx_class_pred_ranking[i, : L[i]]) for i in range(pred_len)
-        ]
+        idx_np = b.to_numpy(idx_class_pred_ranking)
+        l_np = [int(v) for v in b.to_numpy(L).tolist()]
+        prediction_sets = [list(idx_np[i, : l_np[i]]) for i in range(pred_len)]
         return (prediction_sets,)
 
     ## The following code runs only when rand argument is True
     # For indexing, use L-1 to denote the L-th element
+    l_minus_1 = L - 1
+    l_col = b.reshape(l_minus_1, (-1, 1))
+
     # Residual of cumulative probability mass (regularized) and tau
-    proba_excess = (
-        sorted_cum_mass[np.arange(pred_len), L - 1]
-        + lambd * np.maximum(L - k_reg, 0)
-        - tau
-    )
+    cum_at_l = b.squeeze(b.take_along_axis(sorted_cum_mass, l_col, axis=-1))
+    proba_at_l = b.squeeze(b.take_along_axis(sorted_proba, l_col, axis=-1))
+    reg_at_l = b.maximum(L - k_reg, L - L)
+    proba_excess = cum_at_l + lambd * reg_at_l - tau
 
     # Indicator when regularization rank is exceeded
-    indic_L_greater_kreg = np.where(L > k_reg, 1, 0)
+    indic_L_greater_kreg = b.where(L > k_reg, 1, 0)
 
     # Normalized probability mass excess
-    v = proba_excess / (
-        sorted_proba[np.arange(pred_len), L - 1] + lambd * indic_L_greater_kreg
-    )
+    v = proba_excess / (proba_at_l + lambd * indic_L_greater_kreg)
 
     # Least likely class in the prediction set is removed
     # with a probability of norm_proba_excess
-    indic_excess_proba = np.where(u <= v, 1, 0)
+    indic_excess_proba = b.where(u <= v, 1, 0)
     L = L - indic_excess_proba
 
     # Build prediction set
-    prediction_sets = [
-        list(idx_class_pred_ranking[i, : L[i]]) for i in range(pred_len)
-    ]
+    idx_np = b.to_numpy(idx_class_pred_ranking)
+    l_np = [int(v) for v in b.to_numpy(L).tolist()]
+    prediction_sets = [list(idx_np[i, : l_np[i]]) for i in range(pred_len)]
 
     return (prediction_sets,)
 
@@ -226,12 +242,12 @@ def raps_set_builder(
     :param float lambd: positive weight associated to the regularization term
         that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
-        
+
     :param float k_reg: class rank (ordered by descending probability) starting
         from which the regularization is applied. For example, if
         :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
         extra penalty of size :math:`\\lambda`.
-        
+
     : param bool rand: turn on or off the randomization term that smoothes the
         discrete probability mass jump when including a new class.
 
@@ -241,7 +257,7 @@ def raps_set_builder(
 
     :raises ValueError: incorrect value of lambd or k_reg.
     :raises TypeError: unsupported data types.
-    
+
     """
     if lambd < 0:
         raise ValueError(
@@ -251,7 +267,6 @@ def raps_set_builder(
         raise ValueError(
             f"Argument `k_reg` has to be positive, provided: {k_reg} < 0"
         )
-    # @TODO: type checking and co
 
     def _raps_set_function(Y_pred, scores_quantile):
         return raps_set(
@@ -265,8 +280,8 @@ def raps_set_builder(
 
 
 def constant_interval(
-    y_pred: Iterable, scores_quantile: np.ndarray
-) -> Tuple[np.ndarray]:
+    y_pred: Iterable, scores_quantile
+):
     """Constant prediction interval centered on `y_pred`. The size of the
     margin is `scores_quantile` (noted :math:`\gamma_{\\alpha}`).
 
@@ -276,7 +291,7 @@ def constant_interval(
         \gamma_{\\alpha}]
 
     :param Iterable y_pred: predictions.
-    
+
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`.
 
@@ -286,14 +301,17 @@ def constant_interval(
     :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred)
-    y_lo = y_pred - scores_quantile
-    y_hi = y_pred + scores_quantile
+    b = get_backend(y_pred)
+    y_pred = b.asarray(y_pred)
+    q = b.asarray(scores_quantile)
+    y_lo = y_pred - q
+    y_hi = y_pred + q
     return y_lo, y_hi
 
 
 def scaled_interval(
-    Y_pred: Iterable, scores_quantile: np.ndarray, eps: float = 1e-12
-) -> Tuple[np.ndarray]:
+    Y_pred: Iterable, scores_quantile, eps: float = 1e-12
+):
     """Scaled prediction interval centered on `y_pred`. Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
     the size of the margin is proportional to `scores_quantile`
@@ -316,34 +334,33 @@ def scaled_interval(
     """
     supported_types_check(Y_pred)
 
-    if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+    b = get_backend(Y_pred)
+    yp = b.asarray(Y_pred)
+
+    ndim, shape = shape2(yp)
+    if ndim != 2 or shape[1] != 2:
         raise RuntimeError(
             "Each Y_pred must contain a point prediction and a dispersion estimation."
         )
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
-        Y_pred, pd.DataFrame
-    ):
-        y_pred, sigma_pred = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-    else:
-        y_pred, sigma_pred = Y_pred[:, 0], Y_pred[:, 1]
+    y_pred, sigma_pred = split_columns(yp, (0, 1))
 
-    if np.any(sigma_pred + eps <= 0):
-        print("Warning: test points with MAD predictions below -eps"
-              " will have infinite sized prediction intervals.")
+    if b.any(sigma_pred + eps <= 0):
+        print(
+            "Warning: test points with MAD predictions below -eps"
+            " will have infinite sized prediction intervals."
+        )
 
     fints = sigma_pred + eps > 0
-    y_lo, y_hi = np.zeros_like(y_pred), np.zeros_like(y_pred)
-    y_lo[fints] = y_pred[fints] - scores_quantile * (sigma_pred[fints] + eps)
-    y_hi[fints] = y_pred[fints] + scores_quantile * (sigma_pred[fints] + eps)
-    y_lo[~fints] = -np.inf
-    y_hi[~fints] = np.inf
+    q = b.asarray(scores_quantile)
+    y_lo = b.where(fints, y_pred - q * (sigma_pred + eps), -float("inf"))
+    y_hi = b.where(fints, y_pred + q * (sigma_pred + eps), float("inf"))
     return y_lo, y_hi
 
 
 def cqr_interval(
-    Y_pred: Iterable, scores_quantile: np.ndarray
-) -> Tuple[np.ndarray]:
+    Y_pred: Iterable, scores_quantile
+):
     """CQR prediction interval. Considering
     :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction
     interval is built from the upper and lower quantiles predictions and
@@ -365,27 +382,27 @@ def cqr_interval(
     """
     supported_types_check(Y_pred)
 
-    if Y_pred.shape[1] != 2:  # check Y_pred contains two predictions
+    b = get_backend(Y_pred)
+    yp = b.asarray(Y_pred)
+
+    ndim, shape = shape2(yp)
+    if ndim != 2 or shape[1] != 2:
         raise RuntimeError(
             "Each Y_pred must contain lower and higher quantiles predictions, respectively."
         )
 
-    if pkgutil.find_loader("pandas") is not None and isinstance(
-        Y_pred, pd.DataFrame
-    ):
-        q_lo, q_hi = Y_pred.iloc[:, 0], Y_pred.iloc[:, 1]
-    else:
-        q_lo, q_hi = Y_pred[:, 0], Y_pred[:, 1]
+    q_lo, q_hi = split_columns(yp, (0, 1))
+    q = b.asarray(scores_quantile)
 
-    y_lo = q_lo - scores_quantile
-    y_hi = q_hi + scores_quantile
+    y_lo = q_lo - q
+    y_hi = q_hi + q
     return y_lo, y_hi
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def constant_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
+def constant_bbox(Y_pred, scores_quantile):
     """
     Generate the upper and lower bounds of the bounding box coordinates for
     a given prediction.
@@ -399,33 +416,31 @@ def constant_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
 
     :raises TypeError: unsupported data types.
     """
+    b = get_backend(Y_pred)
+    yp = b.asarray(Y_pred)
 
-    if not isinstance(Y_pred, np.ndarray):
-        raise TypeError(
-            f"Unsupported data type {type(Y_pred)}."
-            + "Please provide a numpy ndarray"
-        )
-
-    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
+    ndim, shape = shape2(yp)
+    if ndim != 2 or shape[1] != 4:
         raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
 
-    # Recover each coordinate
-    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
+    x_min, y_min, x_max, y_max = split_columns(yp, (0, 1, 2, 3), keepdims=True)
 
-    # Coordinates of covering bbox (upperbounds)
-    x_min_lo, y_min_lo = x_min - scores_quantile[0], y_min - scores_quantile[1]
-    x_max_hi, y_max_hi = x_max + scores_quantile[2], y_max + scores_quantile[3]
-    Y_pred_hi = np.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
+    q0 = b.scalar_at(scores_quantile, 0)
+    q1 = b.scalar_at(scores_quantile, 1)
+    q2 = b.scalar_at(scores_quantile, 2)
+    q3 = b.scalar_at(scores_quantile, 3)
+    x_min_lo, y_min_lo = x_min - q0, y_min - q1
+    x_max_hi, y_max_hi = x_max + q2, y_max + q3
+    y_pred_hi = concat_columns([x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp)
 
-    # Coordinates of included bbox (lowerbounds)
-    x_min_hi, y_min_hi = x_min + scores_quantile[0], y_min + scores_quantile[1]
-    x_max_lo, y_max_lo = x_max - scores_quantile[2], y_max - scores_quantile[3]
-    Y_pred_lo = np.hstack([x_min_hi, y_min_hi, x_max_lo, y_max_lo])
+    x_min_hi, y_min_hi = x_min + q0, y_min + q1
+    x_max_lo, y_max_lo = x_max - q2, y_max - q3
+    y_pred_lo = concat_columns([x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp)
 
-    return Y_pred_lo, Y_pred_hi
+    return y_pred_lo, y_pred_hi
 
 
-def scaled_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
+def scaled_bbox(Y_pred, scores_quantile):
     """
     Scaled upper and lower bounds of the bounding box coordinates
     for a given prediction coordinates.
@@ -439,39 +454,37 @@ def scaled_bbox(Y_pred: np.ndarray, scores_quantile: np.ndarray):
 
     :raises TypeError: unsupported data types.
     """
-    if not isinstance(Y_pred, np.ndarray):
-        raise TypeError(
-            f"Unsupported data type {type(Y_pred)}."
-            + "Please provide a numpy ndarray"
-        )
+    b = get_backend(Y_pred)
+    yp = b.asarray(Y_pred)
 
-    if Y_pred.shape[1] != 4:  # check Y_pred contains four coordinates
+    ndim, shape = shape2(yp)
+    if ndim != 2 or shape[1] != 4:
         raise RuntimeError("Each Y_pred must contain 4 bbox coordinates.")
 
     # Recover each coordinate
-    x_min, y_min, x_max, y_max = np.hsplit(Y_pred, 4)
+    x_min, y_min, x_max, y_max = split_columns(yp, (0, 1, 2, 3), keepdims=True)
 
     # Compute width and height of predicted bbox
-    dx = np.abs(x_max - x_min)
-    dy = np.abs(y_max - y_min)
+    dx = b.abs(x_max - x_min)
+    dy = b.abs(y_max - y_min)
 
     # Coordinates of covering bbox (upperbounds)
-    x_min_lo = x_min - scores_quantile[0] * dx
-    y_min_lo = y_min - scores_quantile[1] * dy
-    x_max_hi = x_max + scores_quantile[2] * dx
-    y_max_hi = y_max + scores_quantile[3] * dy
+    q0 = b.scalar_at(scores_quantile, 0)
+    q1 = b.scalar_at(scores_quantile, 1)
+    q2 = b.scalar_at(scores_quantile, 2)
+    q3 = b.scalar_at(scores_quantile, 3)
+    x_min_lo = x_min - q0 * dx
+    y_min_lo = y_min - q1 * dy
+    x_max_hi = x_max + q2 * dx
+    y_max_hi = y_max + q3 * dy
 
-    Y_pred_outer = np.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
+    y_pred_outer = concat_columns([x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp)
 
     # Coordinates of included bbox (lowerbounds)
-    x_min_hi, y_min_hi = (
-        x_min + scores_quantile[0] * dx,
-        y_min + scores_quantile[1] * dy,
-    )
-    x_max_lo, y_max_lo = (
-        x_max - scores_quantile[2] * dx,
-        y_max - scores_quantile[3] * dy,
-    )
-    Y_pred_inner = np.hstack([x_min_hi, y_min_hi, x_max_lo, y_max_lo])
+    x_min_hi = x_min + q0 * dx
+    y_min_hi = y_min + q1 * dy
+    x_max_lo = x_max - q2 * dx
+    y_max_lo = y_max - q3 * dy
+    y_pred_inner = concat_columns([x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp)
 
-    return Y_pred_inner, Y_pred_outer
+    return y_pred_inner, y_pred_outer

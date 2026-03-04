@@ -31,37 +31,30 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-requirements = [
-    "joblib",
-    "matplotlib",
-    "numpy",
-    "pandas",
-    "scikit-learn",
-    "tqdm",
-]
+
+def _read_requirements(filename):
+    req_path = path.join(this_directory, filename)
+    requirements = []
+    with open(req_path, encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            requirements.append(line)
+    return requirements
+
+
+requirements = _read_requirements("requirements.txt")
 
 interactive_requirements = [
     "ipykernel",
 ]
 
-dev_requirements = [
-    "flake8",
-    "pylint",
-    "pytest",
-    "pytest-cov",
-    "black",
-    "pre-commit",
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-autodoc-typehints",
-    "tensorflow",
-    "tensorflow-addons",
-    "tox",
-]
+dev_requirements = _read_requirements("requirements_dev.txt")
 
 setuptools.setup(
     name="puncc",
-    version="0.8.1",
+    version="0.9.0",
     author=", ".join(["Mouhcine Mendil", "Luca Mossina", "Joseba Dalmau"]),
     author_email=", ".join(
         [

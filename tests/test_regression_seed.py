@@ -86,8 +86,12 @@ def test_split_cp(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["scp"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["scp"]["cov"], RESULTS["scp"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -125,8 +129,12 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["nescp"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["nescp"]["cov"], RESULTS["nescp"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -162,8 +170,12 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["lacp"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["lacp"]["cov"], RESULTS["lacp"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -209,9 +221,12 @@ def test_cqr(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-
-    assert RESULTS["cqr"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["cqr"]["cov"], RESULTS["cqr"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -239,8 +254,12 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["cv+"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["cv+"]["cov"], RESULTS["cv+"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -269,8 +288,12 @@ def test_enbpi(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["enbpi"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["enbpi"]["cov"], RESULTS["enbpi"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -306,5 +329,9 @@ def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["aenbpi"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["aenbpi"]["cov"], RESULTS["aenbpi"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
