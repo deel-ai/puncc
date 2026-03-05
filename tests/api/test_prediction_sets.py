@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 
 from deel.puncc.api.prediction_sets import scaled_bbox
+from deel.puncc.api.prediction_sets import scaled_interval
 
 
 def _to_numpy(x):
@@ -105,3 +106,50 @@ def test_scaled_bbox_invalid_shapes():
     y_pred = np.array([[0, 0, 2], [1, 3, 3]], dtype=float)
     with pytest.raises(RuntimeError):
         scaled_bbox(y_pred, scores_quantile)
+
+
+def test_scaled_interval_with_weights_meanvar_predictions():
+    # Predictions contain [mu, sigma]
+    y_pred = np.array([[10.0, 2.0], [20.0, 4.0]])
+    q = 3.0
+    # Use 1D per-sample weights (the expected shape used in LWCP calibrate path)
+    weights = np.array([0.5, 2.0])
+    eps = 1e-12
+
+    y_lo, y_hi = scaled_interval(y_pred, q, weights=weights, eps=eps)
+
+    expected_lo = np.array(
+        [10.0 - 3.0 * (2.0 + eps) * 0.5, 20.0 - 3.0 * (4.0 + eps) * 2.0]
+    )
+    expected_hi = np.array(
+        [10.0 + 3.0 * (2.0 + eps) * 0.5, 20.0 + 3.0 * (4.0 + eps) * 2.0]
+    )
+
+    np.testing.assert_allclose(y_lo, expected_lo)
+    np.testing.assert_allclose(y_hi, expected_hi)
+
+
+def test_scaled_interval_with_weights_point_predictions():
+    # Predictions contain only point estimates: sigma defaults to 1.
+    y_pred = np.array([10.0, 20.0])
+    q = 2.0
+    weights = np.array([0.5, 2.0])
+    eps = 1e-12
+
+    y_lo, y_hi = scaled_interval(y_pred, q, weights=weights, eps=eps)
+
+    expected_lo = np.array(
+        [
+            10.0 - 2.0 * (1.0 + eps) * 0.5,
+            20.0 - 2.0 * (1.0 + eps) * 2.0,
+        ]
+    )
+    expected_hi = np.array(
+        [
+            10.0 + 2.0 * (1.0 + eps) * 0.5,
+            20.0 + 2.0 * (1.0 + eps) * 2.0,
+        ]
+    )
+
+    np.testing.assert_allclose(y_lo, expected_lo)
+    np.testing.assert_allclose(y_hi, expected_hi)

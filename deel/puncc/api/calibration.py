@@ -37,6 +37,7 @@ import numpy as np
 from deel.puncc.api.corrections import bonferroni
 from deel.puncc.api.utils import alpha_calib_check
 from deel.puncc.api.utils import quantile
+from deel.puncc.api.backend import get_backend, shape2
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,9 @@ class BaseCalibrator:
         nonconf_score_func: Callable,
         pred_set_func: Callable,
         weight_func: Callable = None,
+        **kwargs
     ):
+        del kwargs
         self.nonconf_score_func = nonconf_score_func
         self.pred_set_func = pred_set_func
         self.weight_func = weight_func
@@ -142,6 +145,7 @@ class BaseCalibrator:
         *,
         y_true: Iterable,
         y_pred: Iterable,
+        **kwargs
     ) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
@@ -149,15 +153,10 @@ class BaseCalibrator:
         :param Iterable y_pred: predicted values.
 
         """
-        # TODO check structure match in supported types
-        logger.info("Computing nonconformity scores ...")
+        del kwargs
+        self._update_feature_axis(y_pred)
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
-        if (
-            y_pred.ndim > 1
-        ):  # TODO make sure that ndim can be applied to all types
-            self._feature_axis = -1
-        logger.debug("Nonconformity scores computed !")
 
     def calibrate(
         self,
@@ -276,6 +275,12 @@ class BaseCalibrator:
 
         return residuals_Q
 
+    def _update_feature_axis(self, y_pred):
+        b = get_backend(y_pred)
+        ndim = shape2(b.asarray(y_pred))[0]
+        if ndim > 1:
+            self._feature_axis = -1
+
     @staticmethod
     def barber_weights(weights: np.ndarray) -> np.ndarray:
         """Compute and normalize inference weights of the nonconformity distribution
@@ -296,7 +301,6 @@ class BaseCalibrator:
         w_norm[weights_len] = 1 / (sum_weights + 1)
 
         return w_norm
-
 
 class ClasswiseCalibrator(BaseCalibrator):
     """Calibrator for classwise conformal prediction.
@@ -366,6 +370,63 @@ class ClasswiseCalibrator(BaseCalibrator):
 
         return quantiles
 
+class LeveragedCalibrator(BaseCalibrator):
+    """Calibrator for leverage-weighted conformal prediction.
+
+    This calibrator computes quantiles of nonconformity scores with weights
+    derived from the leverage function, as proposed in `Fadnavis
+    <https://arxiv.org/abs/2602.12693>`_.
+
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable pred_set_func: prediction set construction function.
+    :param callable weight_func: function that takes as argument an array of
+        features X and returns associated weighted leverage-based "conformality"
+        weights, defaults to identity function.
+    :param Callable leverage_func: function to compute covariates leverage
+            score.
+    """
+
+    def __init__(
+        self,
+        *,
+        nonconf_score_func: Callable,
+        pred_set_func: Callable,
+        weight_func: Callable = lambda x: x,
+        leverage_func: Callable = lambda x: x,
+    ):
+        super().__init__(
+            nonconf_score_func=nonconf_score_func,
+            pred_set_func=pred_set_func,
+        )
+        self.lweight_func = weight_func
+        # No other weighting than leverage-based weighting
+        # is used in this calibrator
+        self.weight_func = None
+        self.leverage_func = leverage_func
+        self.wlf = lambda x: x
+    def fit(self, *, X: Iterable, y_true: Iterable, y_pred: Iterable) -> None:
+        """Compute and store nonconformity scores on the calibration set.
+
+        :param Iterable X: input features.
+        :param Iterable y_true: true labels.
+        :param Iterable y_pred: predicted values.
+        """
+        # Weigthed leverage function to compute the weights
+        # for the nonconformity scores
+        self._update_feature_axis(y_pred)
+        self.wlf = lambda x: self.lweight_func(self.leverage_func(x))
+        self._residuals = self.nonconf_score_func(X, y_pred, y_true,
+                                                  weight_func=self.wlf)
+        self._len_calib = len(self._residuals)
+
+    def calibrate(self, *, alpha: float, X, y_pred: Iterable,
+                  weights: Optional[Iterable] = None,
+                  correction: Callable | None = bonferroni) -> Tuple:
+        residuals_Q = self.compute_quantile(
+            alpha=alpha, weights=weights, correction=correction
+        )
+        return self.pred_set_func(y_pred, scores_quantile=residuals_Q,
+                                  weights=1/self.wlf(X))
 
 class ScoreCalibrator:
     """:class:`ScoreCalibrator` offers a framework to compute user-defined

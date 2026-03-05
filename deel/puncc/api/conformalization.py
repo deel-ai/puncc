@@ -77,6 +77,8 @@ class SplitConformalPredictor:
     :param callable weight_func:
         Optional function mapping input features `X` to conformality weights,
         used for weighted conformal prediction. Defaults to `None`.
+    :param CalibratorClass:
+        Class of the calibrator to be used. Defaults to :class:`BaseCalibrator`.
 
     .. note::
 
@@ -135,9 +137,10 @@ class SplitConformalPredictor:
         train=True,
         random_state: Optional[int] = None,
         weight_func: Optional[Callable] = None,
+        CalibratorClass=BaseCalibrator,
     ):
         self.predictor = predictor
-        self.calibrator = BaseCalibrator(
+        self.calibrator = CalibratorClass(
             nonconf_score_func=nonconf_score_func,
             pred_set_func=pred_set_func,
             weight_func=weight_func,
@@ -529,14 +532,14 @@ class ConformalPredictor:
 
             # Fit calibrator
             logger.info(f"Fitting calibrator on fold {i+cached_len}")
-            calibrator.fit(y_true=y_calib, y_pred=y_pred)
+            calibrator.fit(y_true=y_calib, y_pred=y_pred, X=X_calib, **kwargs)
 
             # Compute normalized weights of the nonconformity scores
             # if a weight function is provided
             if calibrator.weight_func:
                 weights = calibrator.weight_func(X_calib)
                 norm_weights = calibrator.barber_weights(weights=weights)
-                # Store the mornalized weights
+                # Store the normalized weights
                 calibrator.set_norm_weights(norm_weights)
 
             # Add predictor and calibrator to the collection that is used later
@@ -715,6 +718,7 @@ class CrossValCpAggregator:
                 norm_weights = calibrator.get_norm_weights()
                 y_pred = predictor.predict(X=X)
                 set_pred = calibrator.calibrate(
+                    X=X,
                     alpha=alpha,
                     y_pred=y_pred,
                     weights=norm_weights,

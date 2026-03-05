@@ -50,7 +50,7 @@ custom_rc_params = {
 }
 
 
-def plot_prediction_intervals(
+def plot_prediction_intervals(  # pylint: disable=too-many-branches
     y_true: np.ndarray,
     y_pred_lower: np.ndarray,
     y_pred_upper: np.ndarray,
@@ -200,15 +200,21 @@ def plot_prediction_intervals(
     else:  # No interval given, so no miscoverage
         miscoverage = np.array([False for _ in range(len(y_true))])
 
+    # Colors
+    inside_color = "#2e7d32"
+    outside_color = "#c62828"
+    interval_color = "#1565c0"
+    pred_color = "#212121"
+
     # plot observations inside PI
     label = "Observation (inside PI)" if plot_interval else "Observation"
-    ax.plot(
+    ax.scatter(
         X[~miscoverage],
         y_true[~miscoverage],
-        "darkgreen",
+        color=inside_color,
         marker="o",
-        markersize=4,
-        linewidth=0,
+        s=18,
+        alpha=0.8,
         label=label,
         zorder=20,
     )
@@ -217,46 +223,74 @@ def plot_prediction_intervals(
         # Plot observations outside PI
         label = "Observation (outside PI)"
 
-        ax.plot(
+        ax.scatter(
             X[miscoverage],
             y_true[miscoverage],
-            color="red",
+            color=outside_color,
             marker="o",
-            markersize=4,
-            linewidth=0,
+            s=24,
+            alpha=0.9,
             label=label,
             zorder=20,
         )
 
         # plot interval
-        ax.plot(X, y_pred_upper, "--", color="blue", linewidth=1, alpha=0.7)
-        ax.plot(X, y_pred_lower, "--", color="blue", linewidth=1, alpha=0.7)
+        ax.plot(
+            X, y_pred_upper, "--", color=interval_color, linewidth=1.2, alpha=0.85
+        )
+        ax.plot(
+            X, y_pred_lower, "--", color=interval_color, linewidth=1.2, alpha=0.85
+        )
         ax.fill_between(
             x=X,
             y1=y_pred_upper,
             y2=y_pred_lower,
-            alpha=0.2,
-            fc="b",
+            alpha=0.18,
+            fc=interval_color,
             ec="None",
             label="Prediction Interval",
         )
 
     if y_pred is not None:
-        ax.plot(X, y_pred, color="k", label="Prediction")
+        ax.plot(X, y_pred, color=pred_color, label="Prediction", linewidth=1.8)
+
+    # Empirical coverage in title (if interval is available)
+    if plot_interval and len(y_true) > 0:
+        coverage = 1 - np.mean(miscoverage)
+        if "title" in fig_kw.keys():
+            title = f"{fig_kw['title']} | coverage={coverage:.3f}"
+        else:
+            title = f"Prediction Intervals | coverage={coverage:.3f}"
+        ax.set_title(title)
+    elif "title" in fig_kw.keys():
+        ax.set_title(fig_kw["title"])
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
+    ax.grid(True, alpha=0.25, linestyle="--", linewidth=0.6)
 
     if "loc" not in fig_kw.keys():
         loc = "upper left"
     else:
         loc = fig_kw["loc"]
 
-    ax.legend(loc=loc)
+    ax.legend(loc=loc, frameon=True, facecolor="white", framealpha=0.9)
 
     # Set x limits
     int_size = X[-1] - X[0]
     ax.set_xlim(X[0] - int_size * 0.01, X[-1] + int_size * 0.01)
+
+    # Set y limits with margin for better readability
+    y_all = [y_true]
+    if y_pred is not None:
+        y_all.append(y_pred)
+    if plot_interval:
+        y_all.extend([y_pred_lower, y_pred_upper])
+    y_concat = np.concatenate([np.asarray(arr).ravel() for arr in y_all])
+    y_min, y_max = np.min(y_concat), np.max(y_concat)
+    y_span = y_max - y_min
+    y_pad = 0.03 * y_span if y_span > 0 else 1.0
+    ax.set_ylim(y_min - y_pad, y_max + y_pad)
 
     # restablish rcparams
     if current_rcparams is not None and restablish_rcparams:
@@ -266,7 +300,6 @@ def plot_prediction_intervals(
 
 
 # Adapated from https://github.com/christianversloot/machine-learning-articles
-# TODO, add example in docstring
 def draw_bounding_box(
     box: Optional[np.ndarray] = None,
     label: Optional[str] = "",

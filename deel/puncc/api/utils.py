@@ -152,15 +152,47 @@ def supported_types_check(*data: Iterable):
                 "a pandas object, a tensor, or an array-like convertible input."
             ) from e
 
-def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
-    """Check if arguments have the correct shape for dual-model methods. 
-    Dual-model methods require Y_pred to have shape (n_samples, 2) including 
-    two point predictions (e.g. mean and variance or lower and upper quantiles) 
-    and y_true to have shape (n_samples,).
-    
+def supported_meanvar_models_shape_check(Y_pred: Iterable, y_true: Iterable = None):
+    """Check if arguments have the correct shape for mean-dispersion methods.
+    Mean-dispersion methods require Y_pred to have shape (n_samples, 2) including
+    two point predictions (e.g. mean and variance) and y_true to have shape
+    (n_samples,).
+
     :param Iterable Y_pred: two point predictions for each sample.
     :param Iterable y_true: point observations for each sample.
-    
+
+    :raises TypeError: unsupported data types or elements have inconsistent types.
+    :raises RuntimeError: Y_pred does not have shape (n_samples, 2)
+        or y_true does not have shape (n_samples,).
+    """
+    supported_types_check(Y_pred, y_true)
+    b = get_backend(Y_pred, y_true)
+    Yp = b.asarray(Y_pred)
+    yp_ndim, yp_shape = shape2(Yp)
+
+    if yp_ndim != 2 or yp_shape[1] != 2:
+        raise RuntimeError(
+            "Each Y_pred must contain a point prediction and a "
+            "dispersion estimation."
+        )
+
+    if y_true is None:
+        return
+
+    yt = b.asarray(y_true)
+    yt_ndim, _ = shape2(yt)
+    if yt_ndim != 1:
+        raise RuntimeError("Each y_true must contain a point observation.")
+
+def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
+    """Check if arguments have the correct shape for dual-model methods.
+    Dual-model methods require Y_pred to have shape (n_samples, 2) including
+    two point predictions (e.g. mean and variance or lower and upper quantiles)
+    and y_true to have shape (n_samples,).
+
+    :param Iterable Y_pred: two point predictions for each sample.
+    :param Iterable y_true: point observations for each sample.
+
     :raises TypeError: unsupported data types or elements have inconsistent types.
     :raises RuntimeError: Y_pred does not have shape (n_samples, 2)
         or y_true does not have shape (n_samples,).
@@ -172,7 +204,7 @@ def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
 
     if Yp.ndim != 2 or Yp.shape[1] != 2:
         raise RuntimeError(
-            "Each Y_pred must contain two point predictions " 
+            "Each Y_pred must contain two point predictions "
             "(e.g. mean and variance or lower and upper quantiles)."
         )
     if yt.ndim != 1:
@@ -608,3 +640,32 @@ def hungarian_assignment(
         true_bboxes[valid_indices],
         valid_indices,
     )
+
+def generate_leverage_func(X):
+    """
+    Generate a leverage function based on the input data X. The leverage
+    function is used to compute the leverage scores for provided samples.
+
+    :param X: Train data from which to generate the leverage function.
+        X has to be standardized and have more samples than features
+        (n_samples > n_features) for the leverage scores to be well-defined.
+    :type X: array-like
+
+    :return: A function that takes as input a sample and returns its leverage score.
+    :rtype: Callable
+    """
+    b = get_backend(X)
+    X_np = b.to_numpy(b.asarray(X))
+    # SVD decomposition of X
+    _, S, Vt = np.linalg.svd(X_np, full_matrices=False)
+    inv_S = np.linalg.inv(np.diag(S))
+    leverage_matrix = inv_S @ Vt
+
+    # The leverage function as defined from Fadnavis (2026)
+    def leverage_function(x):
+        b_x = get_backend(x)
+        x_np = b_x.to_numpy(b_x.asarray(x))
+        # compute norm L2 of leverage scores
+        return np.linalg.norm(leverage_matrix @ x_np.T, ord=2, axis=0)
+
+    return leverage_function
