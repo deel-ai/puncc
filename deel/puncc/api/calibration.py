@@ -162,6 +162,7 @@ class BaseCalibrator:
         self,
         *,
         alpha: float,
+        X: Optional[Iterable] = None,
         y_pred: Iterable,
         weights: Optional[Iterable] = None,
         correction: Optional[Callable] = bonferroni,
@@ -170,6 +171,8 @@ class BaseCalibrator:
         significance level :math:`\\alpha`.
 
         :param float alpha: significance level (max miscoverage target).
+        :param Iterable X: test features, used to compute the weights if a 
+            weight_func is defined.
         :param Iterable y_pred: predicted values.
         :param Iterable weights: weights to be associated to the nonconformity
                                  scores. Defaults to None when all the scores
@@ -421,7 +424,7 @@ class LeveragedCalibrator(BaseCalibrator):
 
     def calibrate(self, *, alpha: float, X, y_pred: Iterable,
                   weights: Optional[Iterable] = None,
-                  correction: Callable | None = bonferroni) -> Tuple:
+                  correction: Optional[Callable] = bonferroni) -> Tuple:
         residuals_Q = self.compute_quantile(
             alpha=alpha, weights=weights, correction=correction
         )
