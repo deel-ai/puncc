@@ -158,7 +158,7 @@ class BaseCalibrator:
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
 
-    def calibrate(
+    def calibrate( # pylint: disable=unused-argument
         self,
         *,
         alpha: float,
@@ -422,7 +422,7 @@ class LeveragedCalibrator(BaseCalibrator):
                                                   weight_func=self.wlf)
         self._len_calib = len(self._residuals)
 
-    def calibrate(self, *, alpha: float, X, y_pred: Iterable,
+    def calibrate(self, *, alpha: float, X: Iterable, y_pred: Iterable,
                   weights: Optional[Iterable] = None,
                   correction: Optional[Callable] = bonferroni) -> Tuple:
         residuals_Q = self.compute_quantile(
