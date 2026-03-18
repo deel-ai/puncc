@@ -129,6 +129,45 @@ usually improve the conditional coverage. The price is the higher computational 
 :math:`\widehat{f}` and :math:`\widehat{\sigma}`, on the proper training set.
 
 
+Leverage-Weighted Conformal Regression
+######################################
+.. _theory lwcp:
+
+The leverage-weighted conformal regression relies on the geometry of the covariates instead of learning an additional dispersion model :cite:`fadnavis2026`.
+After splitting the data into a proper training set and a calibration set, the features are standardized using the training-set statistics and the same transformation is applied to the calibration and test points.
+The leverage score of a sample :math:`x` is defined as the squared sample Mahalanobis distance from the training centroid, scaled by ::math:`1/|D_{calib}|`:
+
+.. math::
+
+    h(x) = x^\top (X^\top X)^{-1} x,
+
+where :math:`X` denotes the standardized training covariates.
+Equivalently, if :math:`X=U\Sigma V^\top` is the thin singular value decomposition of :math:`X`, then:
+
+.. math::
+
+    h(x) = \left\lVert \Sigma^{-1}V^\top x \right\rVert_2^2.
+
+Given a user-defined weighting function :math:`w`, the calibration nonconformity scores are:
+
+.. math::
+
+    R_i = |\widehat{f}(X_i) - Y_i| \; w\big(h(X_i)\big).
+
+The empirical quantile :math:`\delta_{\alpha}` of these scores is then used to construct the prediction interval:
+
+.. math::
+
+    \widehat{C}_{\alpha}(X_{new})=
+    \Big[ \widehat{f}(X_{new}) - \frac{\delta_{\alpha}}{w(h(X_{new}))} \,,\, \widehat{f}(X_{new}) + \frac{\delta_{\alpha}}{w(h(X_{new}))} \Big].
+
+As with locally adaptive conformal regression, this yields variable-width prediction intervals.
+Here, the adaptation comes from the covariate geometry: calibration residuals are reweighted according to leverage, and the interval width at inference is adjusted through the same leverage-based factor.
+
+In practice, leverage scores are sensitive to preprocessing, so consistent standardization is important.
+The method also requires the number of training samples to exceed the number of features so that :math:`(X^\top X)^{-1}` is well defined.
+
+
 Conformalized Quantile Regression (CQR)
 #######################################
 .. _theory cqr:
