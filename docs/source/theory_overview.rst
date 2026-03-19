@@ -135,7 +135,7 @@ Leverage-Weighted Conformal Regression
 
 The leverage-weighted conformal regression relies on the geometry of the covariates instead of learning an additional dispersion model :cite:`fadnavis2026`.
 After splitting the data into a proper training set and a calibration set, the features are standardized using the training-set statistics and the same transformation is applied to the calibration and test points.
-The leverage score of a sample :math:`x` is defined as the squared sample Mahalanobis distance from the training centroid, scaled by ::math:`1/|D_{calib}|`:
+The leverage score of a sample :math:`x` is defined as the squared sample Mahalanobis distance from the training centroid, scaled by ::math:`1/|D_{train}|`:
 
 .. math::
 
