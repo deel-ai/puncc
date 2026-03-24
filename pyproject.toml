@@ -1,27 +1,103 @@
-[tool.black]
-line-length = 80
-
-[dependency-groups]
-dev = [
-    "ipykernel>=7.1.0",
-    "matplotlib>=3.10.8",
-    "numpy>=2.4.2",
-    "scikit-learn>=1.8.0",
-    "scipy>=1.17.0",
-    "tensorflow>=2.20.0",
-]
-
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "puncc"
 version = "0.8.1"
-description = "Conformal prediction utilities"
-readme = "README.md"
+description = "Predictive UNcertainty Calibration and Conformalization Library"
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Mouhcine Mendil", email = "mouhcine.mendil@irt-saintexupery.com" },
+  { name = "Luca Mossina", email = "luca.mossina@irt-saintexupery.com" },
+  { name = "Joseba Dalmau", email = "joseba.dalmau@irt-saintexupery.com" },
+]
+keywords = ["conformal prediction", "uncertainty quantification", "machine learning"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "joblib",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "tqdm",
+]
+
+[project.optional-dependencies]
+torch = [
+  "torch>=2.0",
+]
+
+tensorflow = [
+  "tensorflow>=2.10",
+  "tensorflow-addons",
+]
+
+interactive = [
+  "ipykernel",
+]
+
+dev = [
+  "black",
+  "flake8",
+  "ipykernel",
+  "pre-commit",
+  "pylint",
+  "pytest",
+  "pytest-cov",
+  "sphinx",
+  "sphinx-autodoc-typehints",
+  "sphinx-rtd-theme",
+  "tox",
+]
+
+all = [
+  "torch>=2.0",
+  "tensorflow>=2.10",
+  "tensorflow-addons",
+  "scikit-learn",
+  "matplotlib",
+  "pandas",
+]
+
+[project.urls]
+Homepage = "https://github.com/deel-ai/puncc"
+Repository = "https://github.com/deel-ai/puncc"
+Documentation = "https://deel-ai.github.io/puncc/"
+Issues = "https://github.com/deel-ai/puncc/issues"
+
+[tool.setuptools]
+include-package-data = true
+license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["deel", "deel.*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "__pycache__/*"]
+
+[tool.black]
+line-length = 80
+
+[dependency-groups]
+dev = [
+  "ipykernel>=7.1.0",
+  "matplotlib>=3.10.8",
+  "numpy>=2.4.2",
+  "scikit-learn>=1.8.0",
+  "scipy>=1.17.0",
+  "tensorflow>=2.20.0",
+]

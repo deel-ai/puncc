@@ -123,7 +123,7 @@ def clone_model(
         return model.clone()
     if hasattr(model, "copy") and callable(getattr(model, "copy")):
         return model.copy()
- 
+
     available_cloners = {
         "sklearn": _clone_sklearn,
         "torch": _clone_torch,
@@ -212,8 +212,6 @@ def _torch_device(model):
     except Exception:
         pass
     return torch.device("cpu")
-import copy
-import warnings
 
 def _reinit_torch_module_(m):
     # Best-effort: reinitialize common modules
@@ -269,29 +267,6 @@ def _clone_torch(model, *, clone_weights: bool = False):
 
     return cloned
 
-# def _clone_torch(model: Any, *, clone_weights:bool=False) -> Any | None:
-#     print("cloning torch")
-#     try:
-#         import torch
-#     except ImportError:
-#         return None
-#     if not isinstance(model, getattr(torch.nn, "Module", ())):
-#         print("not isinstance module")
-#         return None
-    
-#     if not clone_weights:
-#         warnings.warn(
-#             "Torch model cloning without weights is not generally supported. "
-#             "Set clone_weights=True or implement a `.clone()` method on the model.",
-#             RuntimeWarning,
-#         )
-#         return None
-#     with torch.no_grad():
-#         cloned = copy.deepcopy(model)
-#         cloned = cloned.to(_torch_device(model))
-#         cloned.train(model.training)
-#     return cloned
-
 def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
     try:
         import transformers
@@ -330,4 +305,3 @@ def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
 def _clone_jax(model: Any, *, clone_weights:bool = False) -> Any | None:
     return None
     #raise NotImplementedError("JAX model cloning is not yet implemented, please expose a 'clone' method or use non cross conformal methods.")
-

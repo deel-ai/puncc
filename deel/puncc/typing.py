@@ -23,10 +23,11 @@
 """
 Basic definitions of type aliases and protocols used by conformal prediction methods
 """
-from typing import TYPE_CHECKING, Any, Union, TypeAlias, Protocol, runtime_checkable, Callable
+from typing import Any, Union, TypeAlias, Protocol, runtime_checkable, Callable
 from collections.abc import Iterable, Sequence
 from deel.puncc.cloning import clone_model
 
+# from typing import TYPE_CHECKING
 # if TYPE_CHECKING:
 #     import numpy as _np
 #     import torch as _torch
@@ -57,7 +58,7 @@ class Fitable(Protocol):
 class PredictorLike(Protocol):
     def predict(self, X: Iterable[Any], *args, **kwargs) -> TensorLike:
         ...
-    
+
 class _PredictorAdapter:
     """Wraps a .predict(...) provider into a callable."""
     def __init__(self, model: PredictorLike) -> None:
@@ -68,7 +69,7 @@ class _PredictorAdapter:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._model, name)
-    
+
     def __setattr__(self, name, value):
         if name == "_model":
             super().__setattr__(name, value)

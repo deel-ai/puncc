@@ -28,8 +28,6 @@ from copy import deepcopy
 import numpy as np
 from sklearn.utils import resample
 
-from deel.puncc.api import prediction_sets
-from deel.puncc.api import nonconformity_scores
 from deel.puncc.api.nonconformity_scores import absolute_difference, scaled_ad, cqr_score
 from deel.puncc.api.prediction_sets import constant_interval, scaled_interval, cqr_interval
 from deel.puncc.api.conformal_predictor import ConformalPredictor, StaticConformalPredictor
@@ -161,7 +159,7 @@ class EnbPI:
         :returns: residuals.
         :rtype: ndarray
         """
-        return nonconformity_scores.absolute_difference(y_pred, y_true)
+        return absolute_difference()(y_pred, y_true)
 
     def _compute_pi(self, y_pred, w):
         """Compute prediction intervals.
@@ -174,7 +172,7 @@ class EnbPI:
 
         """
 
-        return prediction_sets.constant_interval(y_pred, w)
+        return constant_interval()(y_pred, w)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
         """Compute residuals w.r.t the boostrap aggregation.
@@ -190,7 +188,7 @@ class EnbPI:
         #   For each training sample X_i, the LOO estimate is built from
         #   averaging the predictions of bootstrap models whose OOB include X_i
         loo_pred = (self._oob_matrix * boot_pred.T).sum(-1)
-        residuals = nonconformity_scores.absolute_difference(
+        residuals = absolute_difference()(
             y_pred=loo_pred, y_true=y_true
         )
         return list(residuals)
@@ -474,7 +472,7 @@ class AdaptiveEnbPI(EnbPI):
 
         """
 
-        return prediction_sets.scaled_interval(y_pred, w)
+        return scaled_interval()(y_pred, w)
 
     def _compute_residuals(self, y_pred, y_true):
         """Residual computation formula.
@@ -487,7 +485,7 @@ class AdaptiveEnbPI(EnbPI):
         :rtype: ndarray
 
         """
-        return nonconformity_scores.scaled_ad(y_pred, y_true)
+        return scaled_ad()(y_pred, y_true)
 
     def _compute_boot_residuals(self, boot_pred, y_true):
         loo_pred = (self._oob_matrix * boot_pred[:, :, 0].T).sum(-1)

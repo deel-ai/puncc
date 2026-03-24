@@ -42,7 +42,7 @@ class MultiPredictorStack(ABC):
         self.expand_1d = expand_1d
 
     def clone(self, clone_weights:bool=True)->MultiPredictorStack:
-        return MultiPredictorStack(models=[clone_model(model, clone_weights=clone_weights) for model in self.models])
+        return self.__class__(models=[clone_model(model, clone_weights=clone_weights) for model in self.models])
 
     def __call__(self, X:Iterable[Any])->TensorLike:
         predictions = [model(X) for model in self.models]
@@ -50,7 +50,7 @@ class MultiPredictorStack(ABC):
         if self.expand_1d:
             predictions = [pred if len(ops.shape(pred)) != 1 else ops.expand_dims(pred, axis=-1) for pred in predictions]
 
-        return ops.stack([model(X) for model in self.models], axis=-1)
+        return ops.stack(predictions, axis=-1)
     
     def fit(self,
             X_train:Iterable[Any],
