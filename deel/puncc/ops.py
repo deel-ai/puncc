@@ -114,6 +114,7 @@ def setdiff1d(a, b, assume_unique=False):
     return ops.take(a, idx)
 
 def weighted_quantile(x, q, weights=None, axis=None, keepdims=False):
+    q = ops.cast(q, x.dtype)
     if weights is None or ops.all(weights == 0):
         weights = ops.ones_like(x)
 

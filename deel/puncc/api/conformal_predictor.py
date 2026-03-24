@@ -55,6 +55,7 @@ class ConformalPredictor(ConformalMethod):
                  model:Predictor|PredictorLike,
                  nc_score_function:NCScoreFunction,
                  pred_set_function: PredSetFunction,
+                 *,
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         # Definition of conformal predictor components :
@@ -191,12 +192,13 @@ class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
             mask = ops.equal(y_calib, k)
             s_k = scores[mask]
             n_k = len(s_k)
+            # TODO : check that
             if n_k == 0:
                 if q_global is None:
                     q_global = ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
                 qs.append(q_global)
             else:
-                qs.append(ops.weighted_quantile(s_k, (1 - alpha) * (n + 1) / n, axis=0, weights=weights))
+                qs.append(ops.weighted_quantile(s_k, (1 - alpha) * (n_k + 1) / n, axis=0, weights=weights))
         q = ops.stack(qs, axis=0)
         y_set = self.pred_set_function(prediction, q)
         return ConformalPrediction(prediction, y_set)

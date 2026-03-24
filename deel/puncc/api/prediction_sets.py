@@ -31,6 +31,7 @@ from deel.puncc import ops
 from deel.puncc._keras import random
 
 def _constant_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
+    # TODO : deal with multidim regression
     lower_bounds = y_pred - quantile
     upper_bounds = y_pred + quantile
     return ops.stack([lower_bounds, upper_bounds], axis=-1)
@@ -137,7 +138,6 @@ def constant_bbox()->PredSetFunction:
     return _constant_bbox
 
 def _scaled_bbox(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
-    print("quantile : ", quantile)
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
     dx = ops.abs(x_max - x_min)
     dy = ops.abs(y_max - y_min)

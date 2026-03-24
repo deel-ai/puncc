@@ -141,7 +141,12 @@ def clone_model(
     origin_guess = get_origin_from_model(model)
 
     # most probable cloning strategies
-    order = [a for a in (backend_guess, origin_guess) if a is not None]
+    order = []
+    if backend_guess is not None :
+        order = [backend_guess]
+
+    if origin_guess is not None and origin_guess != backend_guess:
+        order += [origin_guess]
 
     # Possible cloning strategies
     order += [k for k in get_imported_ml_modules() if k not in order]
@@ -207,28 +212,85 @@ def _torch_device(model):
     except Exception:
         pass
     return torch.device("cpu")
+import copy
+import warnings
 
-def _clone_torch(model: Any, *, clone_weights:bool=False) -> Any | None:
+def _reinit_torch_module_(m):
+    # Best-effort: reinitialize common modules
+    reset = getattr(m, "reset_parameters", None)
+    if callable(reset):
+        reset()
+
+    # Handle common buffer-like state (BatchNorm running stats)
+    # Most BN layers handle it in reset_parameters, but not all custom ones.
+    if hasattr(m, "running_mean") and m.running_mean is not None:
+        m.running_mean.zero_()
+    if hasattr(m, "running_var") and m.running_var is not None:
+        m.running_var.fill_(1)
+    if hasattr(m, "num_batches_tracked") and m.num_batches_tracked is not None:
+        m.num_batches_tracked.zero_()
+
+
+def _clone_torch(model, *, clone_weights: bool = False):
     try:
         import torch
     except ImportError:
         return None
+
     if not isinstance(model, getattr(torch.nn, "Module", ())):
-        return None
-    
-    if not clone_weights:
-        warnings.warn(
-            "Torch model cloning without weights is not generally supported. "
-            "Set clone_weights=True or implement a `.clone()` method on the model.",
-            RuntimeWarning,
-        )
         return None
 
     with torch.no_grad():
         cloned = copy.deepcopy(model)
         cloned = cloned.to(_torch_device(model))
         cloned.train(model.training)
+
+        if not clone_weights:
+            # Best-effort reinit
+            missing = []
+            for m in cloned.modules():
+                if callable(getattr(m, "reset_parameters", None)):
+                    _reinit_torch_module_(m)
+                else:
+                    # Not every submodule needs reset_parameters, but if a leaf has params
+                    # and no reset_parameters, we can't safely reinit it.
+                    has_params = any(p is not None for p in m.parameters(recurse=False))
+                    if has_params:
+                        missing.append(type(m).__name__)
+
+            if missing:
+                warnings.warn(
+                    "Torch model cloned then best-effort reinitialized, but some "
+                    f"parameterized modules lack reset_parameters(): {sorted(set(missing))}. "
+                    "Weights for these modules may still be copied. For a correct clone "
+                    "without weights, implement `.clone()`/factory reconstruction.",
+                    RuntimeWarning,
+                )
+
     return cloned
+
+# def _clone_torch(model: Any, *, clone_weights:bool=False) -> Any | None:
+#     print("cloning torch")
+#     try:
+#         import torch
+#     except ImportError:
+#         return None
+#     if not isinstance(model, getattr(torch.nn, "Module", ())):
+#         print("not isinstance module")
+#         return None
+    
+#     if not clone_weights:
+#         warnings.warn(
+#             "Torch model cloning without weights is not generally supported. "
+#             "Set clone_weights=True or implement a `.clone()` method on the model.",
+#             RuntimeWarning,
+#         )
+#         return None
+#     with torch.no_grad():
+#         cloned = copy.deepcopy(model)
+#         cloned = cloned.to(_torch_device(model))
+#         cloned.train(model.training)
+#     return cloned
 
 def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
     try:

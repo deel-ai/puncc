@@ -45,11 +45,9 @@ if _defaulted_to_numpy and keras.backend.backend() == "numpy":
         stacklevel=2,
     )
 
-
-
 # Public handles reused everywhere else
 # ops = keras.ops
-# backend = keras.backend
+backend = keras.backend
 random = keras.random
 BACKEND_NAME = keras.backend.backend()  # "numpy" | "torch" | "jax" | "tensorflow"
 
