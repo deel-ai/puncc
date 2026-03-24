@@ -46,7 +46,7 @@ class CrossConformalPredictor(ConformalPredictor):
                  random_state:int|None=None,
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
-        super().__init__(model, None, None, weight_function, fit_function)
+        super().__init__(model, None, None, weight_function=weight_function, fit_function=fit_function)
         self.splitter = splitter
         self.random_state = random_state
         self._conformal_predictors = []
