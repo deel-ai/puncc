@@ -4,7 +4,7 @@ from typing import Callable, Any, Literal
 from collections.abc import Iterable
 from deel.puncc.api.nonconformity_scores import difference, scaled_bbox_difference
 from deel.puncc.api.prediction_sets import constant_bbox, scaled_bbox
-from deel.puncc.api.correction import bonferroni
+from deel.puncc.api.corrections import bonferroni
 
 class SplitBoxWise(ConformalPredictor):
     """Implementation of box-wise conformal object detection. For more info,
