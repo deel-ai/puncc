@@ -59,7 +59,7 @@ def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
 
 def _cqr_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
     lower_pred = ops.take(y_pred, 0, axis=-1)
-    upper_pred = ops.take(y_pred, 0, axis=-1)
+    upper_pred = ops.take(y_pred, 1, axis=-1)
     return ops.maximum(lower_pred - y_true, y_true - upper_pred)
 
 def cqr_score()->NCScoreFunction:

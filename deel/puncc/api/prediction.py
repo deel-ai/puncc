@@ -48,7 +48,7 @@ class MultiPredictorStack(ABC):
         predictions = [model(X) for model in self.models]
 
         if self.expand_1d:
-            predictions = [pred if len(ops.shape(p)) != 1 else ops.expand_dims(pred, axis=-1) for pred in predictions]
+            predictions = [pred if len(ops.shape(pred)) != 1 else ops.expand_dims(pred, axis=-1) for pred in predictions]
 
         return ops.stack([model(X) for model in self.models], axis=-1)
     
@@ -73,7 +73,7 @@ class MeanVarPredictor(MultiPredictorStack):
     #@abstractmethod
     def dispertion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
         #...
-        return ops.square(mu - y)
+        return ops.abs(mu - y)
 
 
     def fit(self,
