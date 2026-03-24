@@ -203,7 +203,6 @@ class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
         y_set = self.pred_set_function(prediction, q)
         return ConformalPrediction(prediction, y_set)
 
-
 class ScoreCalibrator:
     def __init__(self,
                  nc_score_function:Callable[[Iterable[Any]], Sequence[float]],
