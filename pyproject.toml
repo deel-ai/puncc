@@ -13,6 +13,7 @@ authors = [
   { name = "Mouhcine Mendil", email = "mouhcine.mendil@irt-saintexupery.com" },
   { name = "Luca Mossina", email = "luca.mossina@irt-saintexupery.com" },
   { name = "Joseba Dalmau", email = "joseba.dalmau@irt-saintexupery.com" },
+  { name = "Thomas Mullor", email = "thomas.mullor@irt-saintexupery.com"}
 ]
 keywords = ["conformal prediction", "uncertainty quantification", "machine learning"]
 classifiers = [
