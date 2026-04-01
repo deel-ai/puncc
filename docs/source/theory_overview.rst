@@ -164,7 +164,7 @@ The empirical quantile :math:`\delta_{\alpha}` of these scores is then used to c
 As with locally adaptive conformal regression, this yields variable-width prediction intervals.
 Here, the adaptation comes from the covariate geometry: calibration residuals are reweighted according to leverage, and the interval width at inference is adjusted through the same leverage-based factor.
 
-In practice, leverage scores are sensitive to preprocessing, so consistent standardization is important.
+In practice, leverage scores are sensitive to feature scales, so consistent standardization is important.
 The method also requires the number of training samples to exceed the number of features so that :math:`(X^\top X)^{-1}` is well defined.
 
 
