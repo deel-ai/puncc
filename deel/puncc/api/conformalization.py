@@ -84,6 +84,7 @@ class SplitConformalPredictor:
 
         The data splitting strategy depends on the arguments passed to
         :meth:`fit`:
+
         - If `X` and `y` are provided, the data are randomly split into
           fit and calibration subsets.
         - If `X_fit`, `y_fit`, `X_calib` and `y_calib` are provided,
@@ -127,6 +128,7 @@ class SplitConformalPredictor:
 
         # Conformal prediction
         y_pred, y_lower, y_upper = cp.predict(X_test, alpha=0.2)
+
     """
     def __init__(
         self,
