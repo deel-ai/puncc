@@ -134,12 +134,14 @@ class BackendOps(Protocol):
     # shape utilities
     def reshape(self, x: Any, shape: Tuple[int, ...]) -> Any: ...
     def squeeze(self, x: Any, axis: Any = None) -> Any: ...
+    def concat(self, xs: Sequence[Any], axis: int = 0) -> Any: ...
 
     # creation / typing / comparisons
     def arange(self, start: int, stop: Any = None, step: int = 1) -> Any: ...
     def full(
         self, shape: Tuple[int, ...], fill_value: Any, dtype: Any = None
     ) -> Any: ...
+    def ones_like(self, x: Any) -> Any: ...
     def equal(self, a: Any, b: Any) -> Any: ...
     def astype(self, x: Any, dtype: Any) -> Any: ...
     def random_uniform(self, shape: Tuple[int, ...]) -> Any: ...
@@ -189,8 +191,10 @@ class _NumpyOps:
 
     def reshape(self, x, shape): return _np.reshape(x, shape)
     def squeeze(self, x, axis=None): return _np.squeeze(x, axis=axis)
+    def concat(self, xs, axis=0): return _np.concatenate(xs, axis=axis)
     def arange(self, start, stop=None, step=1): return _np.arange(start, stop, step)
     def full(self, shape, fill_value, dtype=None): return _np.full(shape, fill_value, dtype=dtype)
+    def ones_like(self, x): return _np.ones_like(x)
     def equal(self, a, b): return _np.equal(a, b)
     def astype(self, x, dtype): return _np.asarray(x).astype(dtype)
     def random_uniform(self, shape): return _np.random.uniform(size=shape)
@@ -333,6 +337,16 @@ class _PandasOps:
         x = self.asarray(x)
         out = _np.squeeze(self.to_numpy(x), axis=axis)
         return self._wrap_like(x, out)
+    def concat(self, xs, axis=0):
+        import pandas as pd
+
+        if len(xs) == 0:
+            raise ValueError("concat requires at least one array to concatenate.")
+        if all(isinstance(x, (pd.DataFrame, pd.Series, pd.Index)) for x in xs):
+            return pd.concat(xs, axis=axis)
+
+        out = _np.concatenate([self.to_numpy(self.asarray(x)) for x in xs], axis=axis)
+        return self._wrap_like(self.asarray(xs[0]), out)
     def arange(self, start, stop=None, step=1): return _np.arange(start, stop, step)
     def full(self, shape, fill_value, dtype=None):
         out = _np.full(shape, fill_value, dtype=dtype)
@@ -342,6 +356,10 @@ class _PandasOps:
         if len(shape) == 2:
             return pd.DataFrame(out)
         return out
+    def ones_like(self, x):
+        x = self.asarray(x)
+        out = _np.ones_like(self.to_numpy(x))
+        return self._wrap_like(x, out)
     def equal(self, a, b):
         a = self.asarray(a)
         b = self.asarray(b)
@@ -482,6 +500,7 @@ class _TorchOps:
 
     def reshape(self, x, shape): return x.reshape(shape)
     def squeeze(self, x, axis=None): return x.squeeze(dim=axis) if axis is not None else x.squeeze()
+    def concat(self, xs, axis=0): return self._torch.cat(xs, dim=axis)
     def arange(self, start, stop=None, step=1):
         if stop is None:
             return self._torch.arange(start)
@@ -496,6 +515,7 @@ class _TorchOps:
                 raise TypeError(f"Unsupported torch dtype: {dtype}")
             kwargs["dtype"] = torch_dtype
         return self._torch.full(shape, fill_value, **kwargs)
+    def ones_like(self, x): return self._torch.ones_like(x)
     def equal(self, a, b): return self._torch.eq(a, b)
     def astype(self, x, dtype):
         torch_dtype = getattr(self._torch, str(dtype), None)
@@ -550,8 +570,10 @@ class _JaxOps:
 
     def reshape(self, x, shape): return self._jnp.reshape(x, shape)
     def squeeze(self, x, axis=None): return self._jnp.squeeze(x, axis=axis)
+    def concat(self, xs, axis=0): return self._jnp.concatenate(xs, axis=axis)
     def arange(self, start, stop=None, step=1): return self._jnp.arange(start, stop, step)
     def full(self, shape, fill_value, dtype=None): return self._jnp.full(shape, fill_value, dtype=dtype)
+    def ones_like(self, x): return self._jnp.ones_like(x)
     def equal(self, a, b): return self._jnp.equal(a, b)
     def astype(self, x, dtype): return x.astype(dtype)
     def random_uniform(self, shape): return self._jnp.asarray(_np.random.uniform(size=shape))
@@ -612,6 +634,7 @@ class _TensorflowOps:
 
     def reshape(self, x, shape): return self._tf.reshape(x, shape)
     def squeeze(self, x, axis=None): return self._tf.squeeze(x, axis=axis)
+    def concat(self, xs, axis=0): return self._tf.concat(xs, axis=axis)
     def arange(self, start, stop=None, step=1):
         if stop is None:
             return self._tf.range(start)
@@ -621,6 +644,7 @@ class _TensorflowOps:
         if dtype is not None:
             out = self._tf.cast(out, self._tf.as_dtype(dtype))
         return out
+    def ones_like(self, x): return self._tf.ones_like(x)
     def equal(self, a, b): return self._tf.equal(a, b)
     def astype(self, x, dtype): return self._tf.cast(x, self._tf.as_dtype(dtype))
     def random_uniform(self, shape): return self._tf.random.uniform(shape)

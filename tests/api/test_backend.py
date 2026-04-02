@@ -183,6 +183,28 @@ def test_backend_shape_dtype_and_indexing_ops(name):
 
 
 @pytest.mark.parametrize("name", ["numpy", "pandas", "torch", "tensorflow", "jax"])
+def test_backend_concat_and_ones_like(name):
+    b = get_backend(_make_backend_array(name, [1.0]))
+
+    left = b.asarray(_make_backend_array(name, [[1.0, 2.0], [3.0, 4.0]]))
+    right = b.ones_like(left)
+
+    np.testing.assert_allclose(_to_numpy(right), np.array([[1.0, 1.0], [1.0, 1.0]]))
+
+    merged = b.concat([left, right], axis=1)
+    np.testing.assert_allclose(
+        _to_numpy(merged),
+        np.array([[1.0, 2.0, 1.0, 1.0], [3.0, 4.0, 1.0, 1.0]]),
+    )
+
+    merged_rows = b.concat([left, right], axis=0)
+    np.testing.assert_allclose(
+        _to_numpy(merged_rows),
+        np.array([[1.0, 2.0], [3.0, 4.0], [1.0, 1.0], [1.0, 1.0]]),
+    )
+
+
+@pytest.mark.parametrize("name", ["numpy", "pandas", "torch", "tensorflow", "jax"])
 def test_shape2_split_concat_helpers(name):
     x = _make_backend_array(name, [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
     b = get_backend(x)

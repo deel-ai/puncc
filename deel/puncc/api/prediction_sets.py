@@ -36,6 +36,7 @@ from deel.puncc.api.backend import shape2
 from deel.puncc.api.backend import split_columns
 from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.api.utils import supported_types_check
+from deel.puncc.api.utils import supported_meanvar_models_shape_check
 
 logger = logging.getLogger(__name__)
 
@@ -310,7 +311,7 @@ def constant_interval(
 
 
 def scaled_interval(
-    Y_pred: Iterable, scores_quantile, eps: float = 1e-12
+    Y_pred: Iterable, scores_quantile, weights=1, eps: float = 1e-12
 ):
     """Scaled prediction interval centered on `y_pred`. Considering
     :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
@@ -325,6 +326,7 @@ def scaled_interval(
     :param Iterable y_pred: predictions.
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`.
+    :param ndarray weights: weights to apply to the size of the interval. 
     :param float eps: small positive value to avoid singleton sets.
 
     :returns: scaled prediction intervals :math:`I`.
@@ -332,18 +334,17 @@ def scaled_interval(
 
     :raises TypeError: unsupported data types.
     """
-    supported_types_check(Y_pred)
 
     b = get_backend(Y_pred)
-    yp = b.asarray(Y_pred)
+    Yp = b.asarray(Y_pred)
 
-    ndim, shape = shape2(yp)
-    if ndim != 2 or shape[1] != 2:
-        raise RuntimeError(
-            "Each Y_pred must contain a point prediction and a dispersion estimation."
-        )
+    try:
+        supported_meanvar_models_shape_check(Y_pred)
+        y_pred, sigma_pred = split_columns(Yp, (0, 1))
 
-    y_pred, sigma_pred = split_columns(yp, (0, 1))
+    except Exception:
+        supported_types_check(Y_pred)
+        y_pred, sigma_pred = Yp, b.ones_like(Yp)
 
     if b.any(sigma_pred + eps <= 0):
         print(
@@ -353,10 +354,34 @@ def scaled_interval(
 
     fints = sigma_pred + eps > 0
     q = b.asarray(scores_quantile)
-    y_lo = b.where(fints, y_pred - q * (sigma_pred + eps), -float("inf"))
-    y_hi = b.where(fints, y_pred + q * (sigma_pred + eps), float("inf"))
+    y_lo = b.where(fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf"))
+    y_hi = b.where(fints, y_pred + q * (sigma_pred + eps) * weights, float("inf"))
     return y_lo, y_hi
 
+    # supported_types_check(Y_pred)
+
+    # b = get_backend(Y_pred)
+    # yp = b.asarray(Y_pred)
+
+    # ndim, shape = shape2(yp)
+    # if ndim != 2 or shape[1] != 2:
+    #     raise RuntimeError(
+    #         "Each Y_pred must contain a point prediction and a dispersion estimation."
+    #     )
+
+    # y_pred, sigma_pred = split_columns(yp, (0, 1))
+
+    # if b.any(sigma_pred + eps <= 0):
+    #     print(
+    #         "Warning: test points with MAD predictions below -eps"
+    #         " will have infinite sized prediction intervals."
+    #     )
+
+    # fints = sigma_pred + eps > 0
+    # q = b.asarray(scores_quantile)
+    # y_lo = b.where(fints, y_pred - q * (sigma_pred + eps), -float("inf"))
+    # y_hi = b.where(fints, y_pred + q * (sigma_pred + eps), float("inf"))
+    # return y_lo, y_hi
 
 def cqr_interval(
     Y_pred: Iterable, scores_quantile

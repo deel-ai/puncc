@@ -29,7 +29,10 @@ from typing import Iterable
 
 from deel.puncc.api.backend import concat_columns, get_backend, shape2, split_columns
 
-from deel.puncc.api.utils import supported_dual_models_shape_check, supported_types_check
+from deel.puncc.api.utils import supported_types_check
+from deel.puncc.api.utils import supported_dual_models_shape_check
+from deel.puncc.api.utils import supported_meanvar_models_shape_check
+
 from deel.puncc.api.utils import supported_bbox_shape_check
 from deel.puncc.api.utils import logit_normalization_check
 
@@ -284,6 +287,57 @@ def scaled_ad(
     nonneg = sigma_pred + eps > 0
     return mad[nonneg] / (sigma_pred[nonneg] + eps)
 
+def weighted_scaled_ad(
+    X, Y_pred: Iterable, y_true: Iterable, weight_func: Callable,
+    eps: float = 1e-12
+) -> Iterable:
+    """Weighted Scaled Absolute Deviation. Similar to :func:`scaled_ad`
+    but with an extra weighting of the nonconformity scores by a function of X.
+    This allows to give more importance to calibration points, as measured by
+    weight function.
+    Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
+
+    .. math::
+        R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}} *
+        w(X)
+
+        where :math:`w(X)` is the weight function applied to the inputs.
+
+    :param Iterable Y_pred: point predictions. Optionally with conditional MAD
+        predictions if available.
+    :param Iterable y_true: true labels.
+    :param Callable weight_func: function of X that computes the weighted scores.
+    :param float eps: small positive value to avoid division by negative or zero.
+
+    :returns: weighted scaled absolute deviation.
+    :rtype: Iterable
+
+    :raises TypeError: unsupported data types.
+    """
+    # Models should either predict only the point estimate or both the point
+    # estimate and the conditional MAD.
+
+    b = get_backend(Y_pred, y_true)
+    yt = b.asarray(y_true)
+    Yp = b.asarray(Y_pred)
+
+    try:
+        supported_meanvar_models_shape_check(Y_pred, y_true)
+        y_pred, sigma_pred = split_columns(Yp, (0, 1))
+
+    except Exception:
+        supported_types_check(Y_pred, y_true)
+        y_pred, sigma_pred = Yp, b.ones_like(Yp)
+    mad = b.abs(y_pred - yt)
+    if b.any(sigma_pred + eps <= 0):
+        print(
+            "Warning: calibration points with MAD predictions below -eps "
+            " won't be used for calibration."
+        )
+
+    nonneg = sigma_pred + eps > 0
+    weights = weight_func(X[nonneg]) if weight_func is not None else 1
+    return mad[nonneg] / (sigma_pred[nonneg] + eps) * weights
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     """CQR nonconformity score. Considering

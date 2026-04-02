@@ -26,6 +26,7 @@ import numpy as np
 import pytest
 
 from deel.puncc.api.nonconformity_scores import scaled_bbox_difference
+from deel.puncc.api.nonconformity_scores import weighted_scaled_ad
 
 
 class nonconformity_scores_check(unittest.TestCase):
@@ -52,3 +53,15 @@ class nonconformity_scores_check(unittest.TestCase):
 
         with pytest.raises(RuntimeError):
             scaled_bbox_difference(np.array([[1, 2, 3]]), self.bbox_true_n)
+
+
+def test_weighted_scaled_ad_with_1d_predictions():
+    x = np.array([[0.0], [1.0]])
+    y_pred = np.array([2.0, 4.0])
+    y_true = np.array([1.0, 1.0])
+
+    def weight_fn(x_sub):
+        return np.squeeze(x_sub) + 1.0
+
+    scores = weighted_scaled_ad(x, y_pred, y_true, weight_fn)
+    np.testing.assert_allclose(scores, np.array([1.0, 6.0]))

@@ -29,6 +29,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
@@ -39,6 +40,7 @@ from deel.puncc.regression import AdaptiveEnbPI
 from deel.puncc.regression import CQR
 from deel.puncc.regression import CVPlus
 from deel.puncc.regression import EnbPI
+from deel.puncc.regression import LeverageWeightedCP
 from deel.puncc.regression import LocallyAdaptiveCP
 from deel.puncc.regression import SplitCP
 
@@ -48,6 +50,7 @@ from deel.puncc.regression import SplitCP
 RESULTS = {
     "scp": {"cov": 0.95, "width": 218.98},
     "nescp": {"cov": 0.96, "width": 230.1},
+    "lwcp": {"cov": 0.93, "width": 211.90},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.93, "width": 204.52},
     "cv+": {"cov": 0.9, "width": 232.55},
@@ -176,6 +179,63 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
         rtol=0.0,
         atol=5e-3,
     )
+
+
+@pytest.mark.parametrize(
+    "alpha, random_state",
+    [(0.1, 42)],
+)
+def test_leverage_weighted_cp(diabetes_data, alpha, random_state):
+    # Get data
+    (X_train, X_test, y_train, y_test) = diabetes_data
+    # split train data into fit and calibration
+    X_fit, X_calib, y_fit, y_calib = train_test_split(
+        X_train, y_train, random_state=random_state
+    )
+
+    # Standardize inputs from fit split only (recommended for leverage scores)
+    scaler = StandardScaler()
+    X_fit = scaler.fit_transform(X_fit)
+    X_calib = scaler.transform(X_calib)
+    X_test = scaler.transform(X_test)
+
+    # Create linear regression predictor
+    predictor = BasePredictor(linear_model.LinearRegression())
+    # CP method initialization
+    lw_cp = LeverageWeightedCP(
+        predictor, weight_func=lambda h: np.power(1 + h, -0.5)
+    )
+
+    # Fit and conformalize
+    lw_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+    y_pred, y_pred_lower, y_pred_upper = lw_cp.predict(X_test, alpha=alpha)
+    assert y_pred is not None
+
+    # Compute marginal coverage
+    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+    width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["lwcp"]["cov"], RESULTS["lwcp"]["width"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
+
+
+def test_leverage_weighted_cp_requires_x_fit(diabetes_data):
+    # Get data
+    (X_train, _, y_train, _) = diabetes_data
+    # split train data into fit and calibration
+    _, X_calib, _, y_calib = train_test_split(X_train, y_train, random_state=42)
+
+    # Use train=False and pretrained predictor to isolate X_fit requirement
+    predictor = BasePredictor(linear_model.LinearRegression(), is_trained=True)
+    lw_cp = LeverageWeightedCP(predictor, train=False)
+
+    with pytest.raises(ValueError, match="X_fit should be provided"):
+        lw_cp.fit(X_fit=None, X_calib=X_calib, y_calib=y_calib)
 
 
 @pytest.mark.parametrize(
