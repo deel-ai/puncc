@@ -73,7 +73,7 @@ setuptools.setup(
         "interactive": interactive_requirements,
         "dev": dev_requirements,
     },
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
