@@ -11,7 +11,7 @@
 <!-- Badges -->
 <div align="center">
   <a href="#">
-    <img src="https://img.shields.io/badge/Python-3.8 +-efefef">
+    <img src="https://img.shields.io/badge/Python-3.9 +-efefef">
   </a>
   <a href="#">
     <img src="https://img.shields.io/badge/License-MIT-efefef">
@@ -21,6 +21,9 @@
   </a>
   <a href="https://github.com/deel-ai/puncc/actions/workflows/tests.yml">
     <img alt="Tox" src="https://github.com/deel-ai/puncc/actions/workflows/tests.yml/badge.svg">
+  </a>
+  <a href="https://github.com/deel-ai/puncc/actions/workflows/tests-coverage.yml">
+    <img alt="Coverage" src=".github/badges/coverage.svg">
   </a>
 </div>
 <br>
@@ -73,9 +76,11 @@ We highly recommend following the introductory tutorials to get familiar with th
 | **Introduction Tutorial** | Get started with the basics of *puncc*. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_intro.ipynb) |
 | **API Tutorial** | Learn about *puncc*'s API. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/api_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/api_intro.ipynb) |
 | **Tutorial on CP with PyTorch** | Learn how to use *puncc* with PyTorch. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_pytorch.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_pytorch.ipynb) |
-| ![new](https://img.shields.io/badge/new-blue) **Conformal Object Detection** | Learn to conformalize an object detector. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_cod.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb) |
-| ![new](https://img.shields.io/badge/new-blue) **Conformal Text Classification** | Learn to conformalize pretrained HuggingFace NLP model. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_nlp.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb) |
-| ![new](https://img.shields.io/badge/new-blue) **Conformal Time Series Forecasting** | Learn to conformalize time series models. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_timeseries.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb) |
+| **Adaptive Conformal Regression** | Learn how conformalize regression models to obtain adaptive prediction</br>intervals using methods such as LACP, LWCP and CQR. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_adaptive_methods.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb) |
+| **Conformal Object Detection** | Learn to conformalize an object detector. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_cod.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb) |
+| **Conformal Text Classification** | Learn to conformalize pretrained HuggingFace NLP model. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_nlp.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb) |
+| **Conformal Classwise Classification** | Learn how to conformalize classification models for class-conditional coverage. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_classwise.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb) |
+| **Conformal Time Series Forecasting** | Learn to conformalize time series models. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_timeseries.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb) |
 | **Architecture Overview** | Detailed overview of *puncc*'s architecture. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_architecture.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_architecture.ipynb) |
 
 ## 🚀 Quickstart
@@ -143,11 +148,13 @@ A quick comparison of both approaches is provided in the [**API tutorial**](docs
 |-----------------------------------------|------------------------------------------------------|-------------------------------------------------------|
 | Conformal Regression                    | [`deel.puncc.regression.SplitCP`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.SplitCP)                      | Split Conformal Regression                            |
 | Conformal Regression                    | [`deel.puncc.regression.LocallyAdaptiveCP`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.LocallyAdaptiveCP)            | Locally Adaptive Conformal Regression                 |
+| Conformal Regression                    | [`deel.puncc.regression.LeverageWeightedCP`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.LeverageWeightedCP)            | Leverage-Weighted Conformal Prediction                 |
 | Conformal Regression                    | [`deel.puncc.regression.CQR`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.CQR)                         | Conformalized Quantile Regression                     |
 | Conformal Regression                    | [`deel.puncc.regression.CvPlus`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.CVPlus)                       | CV + (cross-validation)                               |
 | Conformal Regression                    | [`deel.puncc.regression.EnbPI`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.EnbPI)                        | Ensemble Batch Prediction Intervals method            |
 | Conformal Regression                    | [`deel.puncc.regression.aEnbPI`](https://deel-ai.github.io/puncc/regression.html#deel.puncc.regression.AdaptiveEnbPI)                       | Locally adaptive Ensemble Batch Prediction Intervals method |
 | Conformal Classification                | [`deel.puncc.classification.LAC`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.LAC)                      | Least Ambiguous Set-Valued Classifiers                |
+| Conformal Classification                | [`deel.puncc.classification.ClasswiseLAC`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.ClasswiseLAC)                      | Classwise Conformal Classification                    |
 | Conformal Classification                | [`deel.puncc.classification.APS`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.APS)                      | Adaptive Prediction Sets                              |
 | Conformal Classification                | [`deel.puncc.classification.RAPS`](https://deel-ai.github.io/puncc/classification.html#deel.puncc.classification.RAPS)                     | Regularized Adaptive Prediction Sets (APS is a special case where $\lambda = 0$) |
 | Conformal Anomaly Detection             | [`deel.puncc.anomaly_detection.SplitCAD`](https://deel-ai.github.io/puncc/anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD)              | Split Conformal Anomaly detection (used to control the maximum false positive rate) |

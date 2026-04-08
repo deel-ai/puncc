@@ -14,6 +14,7 @@
 puncc-dev-env/
 puncc-user-env/
 .venv/
+uv.lock
 
 # Local demo files
 **demo/

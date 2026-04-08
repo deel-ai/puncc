@@ -25,6 +25,7 @@ from sklearn.datasets import make_regression
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
@@ -35,6 +36,7 @@ from deel.puncc.regression import AdaptiveEnbPI
 from deel.puncc.regression import CQR
 from deel.puncc.regression import CVPlus
 from deel.puncc.regression import EnbPI
+from deel.puncc.regression import LeverageWeightedCP
 from deel.puncc.regression import LocallyAdaptiveCP
 from deel.puncc.regression import SplitCP
 
@@ -120,6 +122,55 @@ def test_lacp():
     # Compute marginal coverage and average width of the prediction intervals
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
+        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
+    assert y_pred is not None
+    assert y_pred_lower is not None
+    assert y_pred_upper is not None
+
+
+def test_lwcp():
+    # Generate a random regression problem
+    X, y = make_regression(
+        n_samples=1000,
+        n_features=4,
+        n_informative=2,
+        random_state=0,
+        shuffle=False,
+    )
+
+    # Split data into train and test
+    X, X_test, y, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+    # Split train data into fit and calibration
+    X_fit, X_calib, y_fit, y_calib = train_test_split(
+        X, y, test_size=0.2, random_state=0
+    )
+
+    # Standardize using fit split only
+    scaler = StandardScaler()
+    X_fit = scaler.fit_transform(X_fit)
+    X_calib = scaler.transform(X_calib)
+    X_test = scaler.transform(X_test)
+
+    # Create base model and wrap it
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+    predictor = BasePredictor(rf_model, is_trained=False)
+
+    # CP method initialization
+    lwcp = LeverageWeightedCP(
+        predictor, weight_func=lambda h: np.power(1 + h, -0.5)
+    )
+
+    # Fit and conformalize
+    lwcp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+
+    # Predict intervals
+    y_pred, y_pred_lower, y_pred_upper = lwcp.predict(X_test, alpha=0.2)
+
+    # Compute metrics
+    _ = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+    _ = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
     assert y_pred is not None

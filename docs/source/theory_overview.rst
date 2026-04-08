@@ -129,6 +129,45 @@ usually improve the conditional coverage. The price is the higher computational 
 :math:`\widehat{f}` and :math:`\widehat{\sigma}`, on the proper training set.
 
 
+Leverage-Weighted Conformal Regression
+######################################
+.. _theory lwcp:
+
+The leverage-weighted conformal regression relies on the geometry of the covariates instead of learning an additional dispersion model :cite:`fadnavis2026`.
+After splitting the data into a proper training set and a calibration set, the features are standardized using the training-set statistics and the same transformation is applied to the calibration and test points.
+The leverage score of a sample :math:`x` is defined as the squared sample Mahalanobis distance from the training centroid, scaled by ::math:`1/|D_{train}|`:
+
+.. math::
+
+    h(x) = x^\top (X^\top X)^{-1} x,
+
+where :math:`X` denotes the standardized training covariates.
+Equivalently, if :math:`X=U\Sigma V^\top` is the thin singular value decomposition of :math:`X`, then:
+
+.. math::
+
+    h(x) = \left\lVert \Sigma^{-1}V^\top x \right\rVert_2^2.
+
+Given a user-defined weighting function :math:`w`, the calibration nonconformity scores are:
+
+.. math::
+
+    R_i = |\widehat{f}(X_i) - Y_i| \; w\big(h(X_i)\big).
+
+The empirical quantile :math:`\delta_{\alpha}` of these scores is then used to construct the prediction interval:
+
+.. math::
+
+    \widehat{C}_{\alpha}(X_{new})=
+    \Big[ \widehat{f}(X_{new}) - \frac{\delta_{\alpha}}{w(h(X_{new}))} \,,\, \widehat{f}(X_{new}) + \frac{\delta_{\alpha}}{w(h(X_{new}))} \Big].
+
+As with locally adaptive conformal regression, this yields variable-width prediction intervals.
+Here, the adaptation comes from the covariate geometry: calibration residuals are reweighted according to leverage, and the interval width at inference is adjusted through the same leverage-based factor.
+
+In practice, leverage scores are sensitive to feature scales, so consistent standardization is important.
+The method also requires the number of training samples to exceed the number of features so that :math:`(X^\top X)^{-1}` is well defined.
+
+
 Conformalized Quantile Regression (CQR)
 #######################################
 .. _theory cqr:
@@ -402,6 +441,49 @@ the RAPS algorithm works in two stages:
         .. math::
             k = \max\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)} + \lambda(i-k_{reg}+1) \leq \delta_\alpha\big\rbrace + 1.
 
+
+Classwise Conformal Prediction
+******************************
+.. _theory classwise:
+
+Standard conformal methods like LAC provide **marginal coverage** guarantees:
+
+.. math::
+
+    \mathbb{P} \Big\{ Y \in \widehat{C}_{\alpha}(X) \Big\} \geq 1 - \alpha.
+
+This means that, on average across all classes, the true label is contained in the prediction set
+with probability at least :math:`1-\alpha`. However, this marginal guarantee does not ensure
+that each class is covered equally well. Some classes might be over-covered while others are under-covered.
+
+**Classwise conformal prediction** aims to achieve **class-conditional coverage**:
+
+.. math::
+
+    \mathbb{P} \Big\{ Y \in \widehat{C}_{\alpha}(X) \, | \, Y = k \Big\} \geq 1 - \alpha \quad \forall k \in \{1, \dots, K\}.
+
+This is achieved by computing separate quantiles for each class during calibration,
+rather than a single global quantile.
+
+The classwise LAC algorithm works as follows:
+
+**Calibration**
+    #. For each example :math:`X_i` in the calibration dataset with true label :math:`Y_i = k`,
+       compute the LAC score :math:`R_i = 1 - \widehat{\pi}_{Y_i}(X_i)` and assign it to class :math:`k`.
+    #. For each class :math:`k`, store all scores from samples belonging to that class in :math:`\mathcal{R}_k`.
+
+**Inference**
+    #. For each class :math:`k`, compute the class-specific threshold :math:`\delta_{\alpha,k}` as the
+       :math:`(1-\alpha)(1 + 1/n_k)`-th empirical quantile of :math:`\mathcal{R}_k`,
+       where :math:`n_k` is the number of calibration samples in class :math:`k`.
+    #. The prediction set for a test point :math:`X_{new}` is defined as
+
+    .. math::
+        \widehat{C}_{\alpha}(X_{new})=\big\lbrace
+        k \, | \, \widehat{\pi}_{k}(X_{new})\geq 1 - \delta_{\alpha,k}
+        \big\rbrace\,.
+
+For more details on classwise conformal prediction, see :cite:`vovk2012`.
 
 
 Conformal Anomaly Detection

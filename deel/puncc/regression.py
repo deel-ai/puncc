@@ -36,17 +36,16 @@ from sklearn.utils import resample
 
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
-from deel.puncc.api.calibration import BaseCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor
+from deel.puncc.api.calibration import BaseCalibrator, LeveragedCalibrator
+from deel.puncc.api.conformalization import ConformalPredictor, SplitConformalPredictor
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.prediction import MeanVarPredictor
-from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
-from deel.puncc.api.splitting import RandomSplitter
+from deel.puncc.api.utils import generate_leverage_func
 
 
-class SplitCP:
+class SplitCP(SplitConformalPredictor):
     """Split conformal prediction method. For more details, we refer the user to
     the :ref:`theory overview page <theory splitcp>`.
 
@@ -116,160 +115,18 @@ class SplitCP:
         predictor: Union[BasePredictor, Any],
         *,
         train=True,
-        random_state: int = None,
+        random_state: Optional[int] = None,
         weight_func=None,
     ):
-        self.predictor = predictor
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.absolute_difference,
-            pred_set_func=prediction_sets.constant_interval,
-            weight_func=weight_func,
-        )
-
-        self.train = train
-
-        self.random_state = random_state
-
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
-        )
-
-    def fit(
-        self,
-        *,
-        X: Optional[Iterable] = None,
-        y: Optional[Iterable] = None,
-        fit_ratio: float = 0.8,
-        X_fit: Optional[Iterable] = None,
-        y_fit: Optional[Iterable] = None,
-        X_calib: Optional[Iterable] = None,
-        y_calib: Optional[Iterable] = None,
-        use_cached: bool = False,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the models on the fit data
-        and computes nonconformity scores on calibration data.
-        If (X, y) are provided, randomly split data into
-        fit and calib subsets w.r.t to the fit_ratio.
-        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
-        the conformalization is performed on the given user defined
-        fit and calibration sets.
-
-        .. NOTE::
-
-            If X and y are provided, `fit` ignores
-            any user-defined fit/calib split.
+        super().__init__(predictor=predictor,
+                         nonconf_score_func=nonconformity_scores.absolute_difference,
+                         pred_set_func=prediction_sets.constant_interval,
+                         train=train,
+                         random_state=random_state,
+                         weight_func=weight_func)
 
 
-        :param Iterable X: features from the training dataset.
-        :param Iterable y: labels from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
-            fit subset.
-        :param Iterable X_fit: features from the fit dataset.
-        :param Iterable y_fit: labels from the fit dataset.
-        :param Iterable X_calib: features from the calibration dataset.
-        :param Iterable y_calib: labels from the calibration dataset.
-        :param bool use_cached: if set, enables to add the previously computed
-            nonconformity scores (if any) to the pool estimated in the current
-            call to `fit`. The aggregation follows the CV+
-            procedure.
-        :param dict kwargs: predict configuration to be passed to the model's
-            fit method.
-
-        :raises RuntimeError: no dataset provided.
-
-        """
-
-        # Check if predictor is trained. Suppose that it is trained if the
-        # predictor has not "is_trained" attribute
-        is_trained = not hasattr(self.predictor, "is_trained") or (
-            hasattr(self.predictor, "is_trained") and self.predictor.is_trained
-        )
-
-        if X is not None and y is not None:
-            splitter = RandomSplitter(
-                ratio=fit_ratio, random_state=self.random_state
-            )
-
-        elif (
-            X_fit is not None
-            and y_fit is not None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
-
-        elif (
-            is_trained
-            and X_fit is None
-            and y_fit is None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            if self.train is True:
-                raise RuntimeError(
-                    "Argument 'train' is True but no training dataset provided."
-                )
-            splitter = IdSplitter(
-                np.empty_like(X_calib),
-                np.empty_like(y_calib),
-                X_calib,
-                y_calib,
-            )
-
-        else:
-            raise RuntimeError("No dataset provided.")
-
-        # Update splitter
-        self.conformal_predictor.splitter = splitter
-
-        self.conformal_predictor.fit(X=X, y=y, use_cached=use_cached, **kwargs)
-
-    def predict(
-        self, X_test: Iterable, alpha
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Conformal interval predictions (w.r.t target miscoverage alpha) for
-        new samples.
-
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-
-        :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[np.ndarray, np.ndarray, np.ndarray]
-
-        """
-
-        (
-            y_pred,
-            y_lo,
-            y_hi,
-        ) = self.conformal_predictor.predict(X_test, alpha=alpha)
-
-        return y_pred, y_lo, y_hi
-
-    def get_nonconformity_scores(self) -> np.ndarray:
-        """Get computed nonconformity scores.
-
-        :returns: computed nonconfomity scores.
-        :rtype: ndarray
-
-        """
-
-        # Get all nconf scores on the fitting kfolds
-        kfold_nconf_scores = self.conformal_predictor.get_nonconformity_scores()
-
-        # With split CP, the nconf scores dict has only one element if no
-        # cache was used.
-        if len(kfold_nconf_scores) == 1:
-            return list(kfold_nconf_scores.values())[0]
-
-        return kfold_nconf_scores
-
-
-class LocallyAdaptiveCP(SplitCP):
+class LocallyAdaptiveCP(SplitConformalPredictor):
     """Locally adaptive conformal prediction method. For more details, we refer the user to
     the :ref:`theory overview page <theory lacp>`
 
@@ -345,26 +202,135 @@ class LocallyAdaptiveCP(SplitCP):
         random_state: int = None,
         weight_func: Callable = None,
     ):
+        super().__init__(predictor=predictor,
+                    nonconf_score_func=nonconformity_scores.scaled_ad,
+                    pred_set_func=prediction_sets.scaled_interval,
+                    train=train,
+                    random_state=random_state,
+                    weight_func=weight_func)
+
+class LeverageWeightedCP(SplitConformalPredictor):
+    """Leverage-weighted conformal prediction method. For more details, we refer the user to
+    the :ref:`theory overview page <theory lwcp>`
+
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
+        Defaults to True.
+    :param float random_state: random seed used when the user does not
+        provide a custom fit/calibration split in `fit` method.
+    :param Callable weight_func: function that weights the leverage scores. 
+        Defaults to None for uniform weighting.
+        
+    .. _example lwcp:
+    Example::
+
+        from deel.puncc.regression import LeverageWeightedCP
+        from deel.puncc.api.prediction import BasePredictor
+        from sklearn.datasets import make_regression
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.ensemble import RandomForestRegressor
+        from deel.puncc.metrics import regression_mean_coverage
+        from deel.puncc.metrics import regression_sharpness
+
+        import numpy as np
+
+        # Generate a random regression problem
+        X, y = make_regression(
+            n_samples=1000, n_features=4, n_informative=2,
+            random_state=0, shuffle=False
+        )
+
+        # Split data into train and test
+        X, X_test, y, y_test = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Split train data into fit and calibration
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X, y, test_size=.2, random_state=0
+        )
+
+        # Standardize using fit split only (recommended for leverage scores)
+        scaler = StandardScaler()
+        X_fit = scaler.fit_transform(X_fit)
+        X_calib = scaler.transform(X_calib)
+        X_test = scaler.transform(X_test)
+
+        # Base predictor
+        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        predictor = BasePredictor(rf_model)
+
+        # Leverage weighting function
+        # (w(h)=(1+h)^(-1/2) is a practical default)
+        weight_func = lambda h: np.power(1 + h, -0.5)
+
+        # CP method initialization
+        lwcp = LeverageWeightedCP(predictor, weight_func=weight_func)
+
+        # Fit on fit/calibration splits
+        lwcp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+
+        # Predict intervals at risk level alpha = 20%
+        y_pred, y_pred_lower, y_pred_upper = lwcp.predict(X_test, alpha=.2)
+
+        # Compute metrics
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
+        width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average width: {np.round(width, 2)}")
+
+    """
+
+    def __init__(
+        self,
+        predictor: BasePredictor,
+        *,
+        train: bool = True,
+        random_state: int = None,
+        weight_func: Callable = lambda x: 1,
+    ):
         super().__init__(
-            predictor,
+            predictor=predictor,
+            nonconf_score_func=nonconformity_scores.weighted_scaled_ad,
+            pred_set_func=prediction_sets.scaled_interval,
             train=train,
             random_state=random_state,
             weight_func=weight_func,
-        )
-        self.calibrator = BaseCalibrator(
-            nonconf_score_func=nonconformity_scores.scaled_ad,
-            pred_set_func=prediction_sets.scaled_interval,
-            weight_func=weight_func,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=train,
+            CalibratorClass=LeveragedCalibrator,
         )
 
+    def fit(
+        self,
+        X_fit: Iterable,
+        y_fit: Iterable = None,
+        X_calib: Iterable = None,
+        y_calib: Iterable = None,
+        **kwargs: Optional[dict],
+    ):
+        """This method fits the underlying model on (X_fit, y_fit) and computes
+        the leverage-weighted nonconformity scores on (X_calib, y_calib).
 
-class CQR(SplitCP):
+        :param Iterable X_fit: features from the fit dataset.
+        :param Iterable y_fit: labels from the fit dataset.
+        :param Iterable X_calib: features from the calibration dataset.
+        :param Iterable y_calib: labels from the calibration dataset.
+        :param dict kwargs: predict configuration to be passed to the model's
+            predict method.
+    """
+        if X_fit is None:
+            raise ValueError("X_fit should be provided for leverage-weighted "
+                             "conformal prediction even when model is trained. "
+                             "This is because the leverage function is derived "
+                             "from the training set.")
+        leverage_func = generate_leverage_func(X_fit)
+        self.conformal_predictor.calibrator.leverage_func = leverage_func
+        super().fit(X_fit=X_fit, y_fit=y_fit,
+                    X_calib=X_calib, y_calib=y_calib,
+                    **kwargs)
+
+
+class CQR(SplitConformalPredictor):
     """Conformalized quantile regression method. For more details, we refer the
     user to the :ref:`theory overview page <theory cqr>`.
 
@@ -443,20 +409,15 @@ class CQR(SplitCP):
         predictor: DualPredictor,
         *,
         train: bool = True,
+        random_state= None,
         weight_func: Callable = None,
     ):
-        super().__init__(predictor, train=train, weight_func=weight_func)
-        self.calibrator = BaseCalibrator(
+        super().__init__(predictor=predictor,
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
-            weight_func=weight_func,
-        )
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
             train=train,
-        )
+            random_state=random_state,
+            weight_func=weight_func)
 
 
 class CVPlus:

@@ -1,2 +1,35 @@
-[tool.black]
-line-length = 80
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "puncc"
+version = "0.9.0"
+description = "Predictive UNcertainty Calibration and Conformalization Library"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Mouhcine Mendil", email = "mouhcine.mendil@irt-saintexupery.com" },
+  { name = "Luca Mossina", email = "luca.mossina@irt-saintexupery.com" },
+  { name = "Joseba Dalmau", email = "joseba.dalmau@irt-saintexupery.com" },
+]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+urls = { Homepage = "https://github.com/deel-ai/puncc" }
+
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools]
+packages = { find = { include = ["deel.*"] } }
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.dynamic.optional-dependencies]
+interactive = { file = ["requirements_interactive.txt"] }
+dev = { file = ["requirements_dev.txt"] }
