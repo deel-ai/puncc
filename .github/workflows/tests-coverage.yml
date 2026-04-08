@@ -66,11 +66,20 @@ jobs:
         run: |
           cp /tmp/coverage.svg ".badges-branch/.github/badges/${GITHUB_REF_NAME}/coverage.svg"
 
-      - name: Commit coverage badge on badges branch
-        if: github.event_name == 'push'
+      - name: Commit coverage badge on badges branch for main
+        if: github.event_name == 'push' && github.ref_name == 'main'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           repository: .badges-branch
           branch: badges
           commit_message: "Update coverage badge"
-          file_pattern: .github/badges/${{ github.ref_name }}/coverage.svg .github/badges/coverage.svg
+          file_pattern: .github/badges/main/coverage.svg .github/badges/coverage.svg
+
+      - name: Commit coverage badge on badges branch for non-main branches
+        if: github.event_name == 'push' && github.ref_name != 'main'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          repository: .badges-branch
+          branch: badges
+          commit_message: "Update coverage badge"
+          file_pattern: .github/badges/${{ github.ref_name }}/coverage.svg
