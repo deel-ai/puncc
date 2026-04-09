@@ -26,3 +26,6 @@ docs/source/modules.rst
 
 # Working drafts
 dirty_nbs/
+
+# Data files
+*.npz
