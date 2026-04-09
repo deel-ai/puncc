@@ -46,9 +46,7 @@ def _read_requirements(filename):
 
 requirements = _read_requirements("requirements.txt")
 
-interactive_requirements = [
-    "ipykernel",
-]
+interactive_requirements = _read_requirements("requirements_interactive.txt")
 
 dev_requirements = _read_requirements("requirements_dev.txt")
 
