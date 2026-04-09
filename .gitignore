@@ -26,3 +26,7 @@ docs/source/modules.rst
 
 # Working drafts
 dirty_nbs/
+
+
+# Notebooks checkpoints
+**-checkpoint.ipynb

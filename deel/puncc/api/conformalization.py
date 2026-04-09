@@ -744,3 +744,39 @@ class CrossValCpAggregator:
                 f"Method {self.method} is not implemented."
                 + "Please choose 'cv+'."
             )
+
+
+
+
+class GroupConformalPredictor(ConformalPredictor):
+    def fit(self, X, y, groups, **kwargs):
+        """Splits X, y, AND groups, then trains and calibrates."""
+        
+        # 1. Use the standard PUNCC splitter to get indices by passing an array of indices
+        indices = np.arange(len(X))
+        splits = list(self.splitter(indices, y))
+        
+        # For simplicity, we assume a single split (e.g., RandomSplitter)
+        idx_fit, _, idx_calib, _ = splits[0]
+        
+        # 2. Split X, y, and groups
+        X_fit, y_fit, groups_fit = X[idx_fit], y[idx_fit], groups[idx_fit]
+        X_calib, y_calib, groups_calib = X[idx_calib], y[idx_calib], groups[idx_calib]
+        
+        # 3. Train predictor
+        self.predictor.fit(X_fit, y_fit, **kwargs)
+        
+        # 4. Predict on calibration set
+        y_pred_calib = self.predictor.predict(X_calib)
+        
+        # 5. Calibrate WITH groups
+        self.calibrator.fit(y_true=y_calib, y_pred=y_pred_calib, groups=groups_calib)
+
+    def predict(self, X, groups, alpha=0.1, **kwargs):
+        """Predicts and applies group-specific thresholds."""
+        y_pred = self.predictor.predict(X, **kwargs)
+        
+        # Pass groups to the calibrator to get the conditional prediction sets
+        pred_sets = self.calibrator.calibrate(y_pred, groups=groups, alpha=alpha)
+        
+        return y_pred, pred_sets
