@@ -4,7 +4,7 @@ This file documents main changes across releases of **PUNCC**.
 
 ---
 
-## [0.9.0] - 2026-04-07
+## [0.9.1] - 2026-04-09
 
 ### Added
 - LeverageWeightedCP (LWCP) for adaptive conformal regression using leverage-based weighting
