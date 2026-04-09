@@ -17,6 +17,8 @@ compliance of models from various ML/DL libraries (such as Keras and scikit-lear
 
 .. autoclass:: deel.puncc.regression.LocallyAdaptiveCP
 
+.. autoclass:: deel.puncc.regression.LeverageWeightedCP
+
 .. autoclass:: deel.puncc.regression.CQR
 
 .. autoclass:: deel.puncc.regression.CVPlus
