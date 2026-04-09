@@ -8,14 +8,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Conformalization &mdash; PUNCC 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=486e5634"></script>
-      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -114,6 +114,12 @@
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.predict"><code class="docutils literal notranslate"><span class="pre">LAC.predict()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.fit"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.predict"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.predict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
@@ -148,6 +154,7 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Conformalization</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#conformalization.SplitConformalPredictor"><code class="docutils literal notranslate"><span class="pre">SplitConformalPredictor</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction.html">Prediction</a><ul>
@@ -163,7 +170,9 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ClasswiseCalibrator"><code class="docutils literal notranslate"><span class="pre">ClasswiseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.LeveragedCalibrator"><code class="docutils literal notranslate"><span class="pre">LeveragedCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
 </ul>
 </li>
@@ -182,6 +191,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.absolute_difference"><code class="docutils literal notranslate"><span class="pre">absolute_difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.classwise_lac_score"><code class="docutils literal notranslate"><span class="pre">classwise_lac_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.difference"><code class="docutils literal notranslate"><span class="pre">difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.lac_score"><code class="docutils literal notranslate"><span class="pre">lac_score()</span></code></a></li>
@@ -189,9 +199,11 @@
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_ad"><code class="docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_bbox_difference"><code class="docutils literal notranslate"><span class="pre">scaled_bbox_difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.weighted_scaled_ad"><code class="docutils literal notranslate"><span class="pre">weighted_scaled_ad()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.classwise_lac_set"><code class="docutils literal notranslate"><span class="pre">classwise_lac_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
@@ -214,6 +226,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_classwise_coverage"><code class="docutils literal notranslate"><span class="pre">classification_classwise_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_classwise_size"><code class="docutils literal notranslate"><span class="pre">classification_classwise_size()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.iou"><code class="docutils literal notranslate"><span class="pre">iou()</span></code></a></li>
@@ -235,6 +249,7 @@
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-regression">Conformal Regression</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#split-inductive-conformal">Split (inductive) Conformal</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="theory_overview.html#locally-adaptive-conformal-regression">Locally Adaptive Conformal Regression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="theory_overview.html#leverage-weighted-conformal-regression">Leverage-Weighted Conformal Regression</a></li>
 <li class="toctree-l4"><a class="reference internal" href="theory_overview.html#conformalized-quantile-regression-cqr">Conformalized Quantile Regression (CQR)</a></li>
 </ul>
 </li>
@@ -246,6 +261,7 @@
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#least-ambiguous-set-valued-classifiers-lac">Least Ambiguous Set-Valued Classifiers (LAC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#adaptive-prediction-sets-aps">Adaptive Prediction Sets (APS)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory_overview.html#classwise-conformal-prediction">Classwise Conformal Prediction</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
@@ -582,6 +598,162 @@ Bonferroni correction.</p></li>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Union[Tuple[np.ndarray, np.ndarray],
 Tuple[np.ndarray, np.ndarray, np.ndarray]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="conformalization.SplitConformalPredictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">conformalization.</span></span><span class="sig-name descname"><span class="pre">SplitConformalPredictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonconf_score_func=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_set_func=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CalibratorClass=&lt;class</span> <span class="pre">'deel.puncc.api.calibration.BaseCalibrator'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.SplitConformalPredictor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for split conformal prediction.</p>
+<p>This class implements the generic split conformal prediction workflow:
+a predictive model is optionally trained on a fit subset, nonconformity
+scores are computed on a calibration subset, and prediction sets are
+produced for new samples with guaranteed marginal coverage.</p>
+<p>For more details on the methodology, see the
+<a class="reference internal" href="theory_overview.html#theory-splitcp"><span class="std std-ref">theory overview page</span></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>predictor</strong> (<a class="reference internal" href="prediction.html#prediction.BasePredictor" title="prediction.BasePredictor"><em>BasePredictor</em></a>) – A predictor implementing <cite>fit</cite> and <cite>predict</cite>. The predictor may be
+already trained or trained during the call to <a class="reference internal" href="#conformalization.SplitConformalPredictor.fit" title="conformalization.SplitConformalPredictor.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
+<li><p><strong>nonconf_score_func</strong> (<em>callable</em>) – Function used to compute nonconformity scores from predictions and
+observed targets.</p></li>
+<li><p><strong>pred_set_func</strong> (<em>callable</em>) – Function used to construct prediction sets from predictions and
+calibrated quantiles.</p></li>
+<li><p><strong>train</strong> (<em>bool</em>) – If <cite>False</cite>, the predictor is assumed to be already trained and will
+not be retrained during <a class="reference internal" href="#conformalization.SplitConformalPredictor.fit" title="conformalization.SplitConformalPredictor.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>. Defaults to <cite>True</cite>.</p></li>
+<li><p><strong>random_state</strong> (<em>int</em>) – Random seed used when automatically splitting the data into fit and
+calibration subsets.</p></li>
+<li><p><strong>weight_func</strong> (<em>callable</em>) – Optional function mapping input features <cite>X</cite> to conformality weights,
+used for weighted conformal prediction. Defaults to <cite>None</cite>.</p></li>
+<li><p><strong>CalibratorClass</strong> – Class of the calibrator to be used. Defaults to <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseCalibrator</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The data splitting strategy depends on the arguments passed to
+<a class="reference internal" href="#conformalization.SplitConformalPredictor.fit" title="conformalization.SplitConformalPredictor.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>:</p>
+<ul class="simple">
+<li><p>If <cite>X</cite> and <cite>y</cite> are provided, the data are randomly split into
+fit and calibration subsets.</p></li>
+<li><p>If <cite>X_fit</cite>, <cite>y_fit</cite>, <cite>X_calib</cite> and <cite>y_calib</cite> are provided,
+these user-defined subsets are used directly.</p></li>
+<li><p>If the predictor is already trained and <cite>train=False</cite>, only a
+calibration set is required.</p></li>
+</ul>
+</div>
+<p id="example-splitcp-base">Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePredictor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.conformalization</span><span class="w"> </span><span class="kn">import</span> <span class="n">SplitConformalPredictor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">nonconformity_scores</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">prediction_sets</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+
+<span class="c1"># Generate a regression problem</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_regression</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Split data</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">X_fit</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_fit</span><span class="p">,</span> <span class="n">y_calib</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+
+<span class="c1"># Base predictor</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">BasePredictor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">is_trained</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Split conformal predictor</span>
+<span class="n">cp</span> <span class="o">=</span> <span class="n">SplitConformalPredictor</span><span class="p">(</span><span class="n">predictor</span><span class="p">,</span>
+                            <span class="n">nonconf_score_func</span><span class="o">=</span><span class="n">nonconformity_scores</span><span class="o">.</span><span class="n">absolute_difference</span><span class="p">,</span>
+                            <span class="n">pred_set_func</span><span class="o">=</span><span class="n">prediction_sets</span><span class="o">.</span><span class="n">constant_interval</span><span class="p">,</span>
+                            <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">cp</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_fit</span><span class="o">=</span><span class="n">X_fit</span><span class="p">,</span> <span class="n">y_fit</span><span class="o">=</span><span class="n">y_fit</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+
+<span class="c1"># Conformal prediction</span>
+<span class="n">y_pred</span><span class="p">,</span> <span class="n">y_lower</span><span class="p">,</span> <span class="n">y_upper</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="conformalization.SplitConformalPredictor.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cached</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.SplitConformalPredictor.fit" title="Link to this definition"></a></dt>
+<dd><p>This method fits the models on the fit data
+and computes nonconformity scores on calibration data.
+If (X, y) are provided, randomly split data into
+fit and calib subsets w.r.t to the fit_ratio.
+In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
+the conformalization is performed on the given user defined
+fit and calibration sets.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If X and y are provided, <cite>fit</cite> ignores
+any user-defined fit/calib split.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>Iterable</em>) – features from the training dataset.</p></li>
+<li><p><strong>y</strong> (<em>Iterable</em>) – labels from the training dataset.</p></li>
+<li><p><strong>fit_ratio</strong> (<em>float</em>) – the proportion of samples assigned to the
+fit subset.</p></li>
+<li><p><strong>X_fit</strong> (<em>Iterable</em>) – features from the fit dataset.</p></li>
+<li><p><strong>y_fit</strong> (<em>Iterable</em>) – labels from the fit dataset.</p></li>
+<li><p><strong>X_calib</strong> (<em>Iterable</em>) – features from the calibration dataset.</p></li>
+<li><p><strong>y_calib</strong> (<em>Iterable</em>) – labels from the calibration dataset.</p></li>
+<li><p><strong>use_cached</strong> (<em>bool</em>) – if set, enables to add the previously computed
+nonconformity scores (if any) to the pool estimated in the current
+call to <cite>fit</cite>. The aggregation follows the CV+
+procedure.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – predict configuration to be passed to the model’s
+fit method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>RuntimeError</strong> – no dataset provided.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="conformalization.SplitConformalPredictor.get_nonconformity_scores">
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.SplitConformalPredictor.get_nonconformity_scores" title="Link to this definition"></a></dt>
+<dd><p>Get computed nonconformity scores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>computed nonconfomity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="conformalization.SplitConformalPredictor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#conformalization.SplitConformalPredictor.predict" title="Link to this definition"></a></dt>
+<dd><p>Conformal interval predictions (w.r.t target miscoverage alpha) for
+new samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X_test</strong> (<em>Iterable</em>) – features of new samples.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – target maximum miscoverage.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple composed of the model estimate y_pred and the
+prediction set</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple</p>
 </dd>
 </dl>
 </dd></dl>

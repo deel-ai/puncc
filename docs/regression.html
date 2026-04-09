@@ -8,14 +8,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📈 Regression &mdash; PUNCC 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=486e5634"></script>
-      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -83,6 +83,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#deel.puncc.regression.LocallyAdaptiveCP.predict"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.predict()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#deel.puncc.regression.LeverageWeightedCP"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.regression.LeverageWeightedCP.fit"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.regression.LeverageWeightedCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.regression.LeverageWeightedCP.predict"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.predict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#deel.puncc.regression.CQR"><code class="docutils literal notranslate"><span class="pre">CQR</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#deel.puncc.regression.CQR.fit"><code class="docutils literal notranslate"><span class="pre">CQR.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#deel.puncc.regression.CQR.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">CQR.get_nonconformity_scores()</span></code></a></li>
@@ -112,6 +118,12 @@
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.fit"><code class="docutils literal notranslate"><span class="pre">LAC.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LAC.get_nonconformity_scores()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.predict"><code class="docutils literal notranslate"><span class="pre">LAC.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.fit"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.predict"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.predict()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
@@ -148,6 +160,7 @@
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.SplitConformalPredictor"><code class="docutils literal notranslate"><span class="pre">SplitConformalPredictor</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction.html">Prediction</a><ul>
@@ -163,7 +176,9 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ClasswiseCalibrator"><code class="docutils literal notranslate"><span class="pre">ClasswiseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.LeveragedCalibrator"><code class="docutils literal notranslate"><span class="pre">LeveragedCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
 </ul>
 </li>
@@ -182,6 +197,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.absolute_difference"><code class="docutils literal notranslate"><span class="pre">absolute_difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.classwise_lac_score"><code class="docutils literal notranslate"><span class="pre">classwise_lac_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.difference"><code class="docutils literal notranslate"><span class="pre">difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.lac_score"><code class="docutils literal notranslate"><span class="pre">lac_score()</span></code></a></li>
@@ -189,9 +205,11 @@
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_ad"><code class="docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.scaled_bbox_difference"><code class="docutils literal notranslate"><span class="pre">scaled_bbox_difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="nonconformity_scores.html#nonconformity_scores.weighted_scaled_ad"><code class="docutils literal notranslate"><span class="pre">weighted_scaled_ad()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.classwise_lac_set"><code class="docutils literal notranslate"><span class="pre">classwise_lac_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
@@ -214,6 +232,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_classwise_coverage"><code class="docutils literal notranslate"><span class="pre">classification_classwise_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_classwise_size"><code class="docutils literal notranslate"><span class="pre">classification_classwise_size()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.iou"><code class="docutils literal notranslate"><span class="pre">iou()</span></code></a></li>
@@ -235,6 +255,7 @@
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-regression">Conformal Regression</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#split-inductive-conformal">Split (inductive) Conformal</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="theory_overview.html#locally-adaptive-conformal-regression">Locally Adaptive Conformal Regression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="theory_overview.html#leverage-weighted-conformal-regression">Leverage-Weighted Conformal Regression</a></li>
 <li class="toctree-l4"><a class="reference internal" href="theory_overview.html#conformalized-quantile-regression-cqr">Conformalized Quantile Regression (CQR)</a></li>
 </ul>
 </li>
@@ -246,6 +267,7 @@
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#least-ambiguous-set-valued-classifiers-lac">Least Ambiguous Set-Valued Classifiers (LAC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#adaptive-prediction-sets-aps">Adaptive Prediction Sets (APS)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory_overview.html#classwise-conformal-prediction">Classwise Conformal Prediction</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
@@ -423,10 +445,11 @@ new samples.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>y_pred, y_lower, y_higher</p>
+<dd class="field-even"><p>Tuple composed of the model estimate y_pred and the
+prediction set</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[np.ndarray, np.ndarray, np.ndarray]</p>
+<dd class="field-odd"><p>Tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -570,10 +593,144 @@ new samples.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>y_pred, y_lower, y_higher</p>
+<dd class="field-even"><p>Tuple composed of the model estimate y_pred and the
+prediction set</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[np.ndarray, np.ndarray, np.ndarray]</p>
+<dd class="field-odd"><p>Tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deel.puncc.regression.LeverageWeightedCP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.regression.</span></span><span class="sig-name descname"><span class="pre">LeverageWeightedCP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func=&lt;function</span> <span class="pre">LeverageWeightedCP.&lt;lambda&gt;&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.regression.LeverageWeightedCP" title="Link to this definition"></a></dt>
+<dd><p>Leverage-weighted conformal prediction method. For more details, we refer the user to
+the <a class="reference internal" href="theory_overview.html#theory-lwcp"><span class="std std-ref">theory overview page</span></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>predictor</strong> (<a class="reference internal" href="prediction.html#prediction.BasePredictor" title="prediction.BasePredictor"><em>BasePredictor</em></a>) – a predictor implementing fit and predict.</p></li>
+<li><p><strong>train</strong> (<em>bool</em>) – if False, prediction model(s) will not be (re)trained.
+Defaults to True.</p></li>
+<li><p><strong>random_state</strong> (<em>float</em>) – random seed used when the user does not
+provide a custom fit/calibration split in <cite>fit</cite> method.</p></li>
+<li><p><strong>weight_func</strong> (<em>Callable</em>) – function that weights the leverage scores.
+Defaults to None for uniform weighting.</p></li>
+</ul>
+</dd>
+</dl>
+<p id="example-lwcp">Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.regression</span><span class="w"> </span><span class="kn">import</span> <span class="n">LeverageWeightedCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePredictor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_mean_coverage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression_sharpness</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Generate a random regression problem</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_regression</span><span class="p">(</span>
+    <span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_informative</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+
+<span class="c1"># Split data into train and test</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+
+<span class="c1"># Split train data into fit and calibration</span>
+<span class="n">X_fit</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_fit</span><span class="p">,</span> <span class="n">y_calib</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+
+<span class="c1"># Standardize using fit split only (recommended for leverage scores)</span>
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
+<span class="n">X_fit</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X_fit</span><span class="p">)</span>
+<span class="n">X_calib</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X_calib</span><span class="p">)</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1"># Base predictor</span>
+<span class="n">rf_model</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">BasePredictor</span><span class="p">(</span><span class="n">rf_model</span><span class="p">)</span>
+
+<span class="c1"># Leverage weighting function</span>
+<span class="c1"># (w(h)=(1+h)^(-1/2) is a practical default)</span>
+<span class="n">weight_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">h</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1"># CP method initialization</span>
+<span class="n">lwcp</span> <span class="o">=</span> <span class="n">LeverageWeightedCP</span><span class="p">(</span><span class="n">predictor</span><span class="p">,</span> <span class="n">weight_func</span><span class="o">=</span><span class="n">weight_func</span><span class="p">)</span>
+
+<span class="c1"># Fit on fit/calibration splits</span>
+<span class="n">lwcp</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_fit</span><span class="o">=</span><span class="n">X_fit</span><span class="p">,</span> <span class="n">y_fit</span><span class="o">=</span><span class="n">y_fit</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+
+<span class="c1"># Predict intervals at risk level alpha = 20%</span>
+<span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span> <span class="o">=</span> <span class="n">lwcp</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">.2</span><span class="p">)</span>
+
+<span class="c1"># Compute metrics</span>
+<span class="n">coverage</span> <span class="o">=</span> <span class="n">regression_mean_coverage</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span><span class="p">)</span>
+<span class="n">width</span> <span class="o">=</span> <span class="n">regression_sharpness</span><span class="p">(</span><span class="n">y_pred_lower</span><span class="o">=</span><span class="n">y_pred_lower</span><span class="p">,</span> <span class="n">y_pred_upper</span><span class="o">=</span><span class="n">y_pred_upper</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Marginal coverage: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Average width: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="deel.puncc.regression.LeverageWeightedCP.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.regression.LeverageWeightedCP.fit" title="Link to this definition"></a></dt>
+<dd><p>This method fits the underlying model on (X_fit, y_fit) and computes
+the leverage-weighted nonconformity scores on (X_calib, y_calib).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X_fit</strong> (<em>Iterable</em>) – features from the fit dataset.</p></li>
+<li><p><strong>y_fit</strong> (<em>Iterable</em>) – labels from the fit dataset.</p></li>
+<li><p><strong>X_calib</strong> (<em>Iterable</em>) – features from the calibration dataset.</p></li>
+<li><p><strong>y_calib</strong> (<em>Iterable</em>) – labels from the calibration dataset.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – predict configuration to be passed to the model’s
+predict method.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deel.puncc.regression.LeverageWeightedCP.get_nonconformity_scores">
+<span class="sig-name descname"><span class="pre">get_nonconformity_scores</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.regression.LeverageWeightedCP.get_nonconformity_scores" title="Link to this definition"></a></dt>
+<dd><p>Get computed nonconformity scores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>computed nonconfomity scores.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deel.puncc.regression.LeverageWeightedCP.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.regression.LeverageWeightedCP.predict" title="Link to this definition"></a></dt>
+<dd><p>Conformal interval predictions (w.r.t target miscoverage alpha) for
+new samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X_test</strong> (<em>Iterable</em>) – features of new samples.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – target maximum miscoverage.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple composed of the model estimate y_pred and the
+prediction set</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -582,7 +739,7 @@ new samples.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="deel.puncc.regression.CQR">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.regression.</span></span><span class="sig-name descname"><span class="pre">CQR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.regression.CQR" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.regression.</span></span><span class="sig-name descname"><span class="pre">CQR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.regression.CQR" title="Link to this definition"></a></dt>
 <dd><p>Conformalized quantile regression method. For more details, we refer the
 user to the <a class="reference internal" href="theory_overview.html#theory-cqr"><span class="std std-ref">theory overview page</span></a>.</p>
 <dl class="field-list simple">
@@ -722,10 +879,11 @@ new samples.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>y_pred, y_lower, y_higher</p>
+<dd class="field-even"><p>Tuple composed of the model estimate y_pred and the
+prediction set</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[np.ndarray, np.ndarray, np.ndarray]</p>
+<dd class="field-odd"><p>Tuple</p>
 </dd>
 </dl>
 </dd></dl>

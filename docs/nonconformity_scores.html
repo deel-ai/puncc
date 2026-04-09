@@ -8,14 +8,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nonconformity scores &mdash; PUNCC 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=486e5634"></script>
-      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
@@ -115,6 +115,12 @@
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.LAC.predict"><code class="docutils literal notranslate"><span class="pre">LAC.predict()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.fit"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.ClasswiseLAC.predict"><code class="docutils literal notranslate"><span class="pre">ClasswiseLAC.predict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
@@ -149,6 +155,7 @@
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.SplitConformalPredictor"><code class="docutils literal notranslate"><span class="pre">SplitConformalPredictor</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction.html">Prediction</a><ul>
@@ -164,7 +171,9 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ClasswiseCalibrator"><code class="docutils literal notranslate"><span class="pre">ClasswiseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.LeveragedCalibrator"><code class="docutils literal notranslate"><span class="pre">LeveragedCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
 </ul>
 </li>
@@ -183,6 +192,7 @@
 </li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Nonconformity scores</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.absolute_difference"><code class="docutils literal notranslate"><span class="pre">absolute_difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.classwise_lac_score"><code class="docutils literal notranslate"><span class="pre">classwise_lac_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.cqr_score"><code class="docutils literal notranslate"><span class="pre">cqr_score()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.difference"><code class="docutils literal notranslate"><span class="pre">difference()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.lac_score"><code class="docutils literal notranslate"><span class="pre">lac_score()</span></code></a></li>
@@ -190,9 +200,11 @@
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.raps_score_builder"><code class="docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.scaled_ad"><code class="docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.scaled_bbox_difference"><code class="docutils literal notranslate"><span class="pre">scaled_bbox_difference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nonconformity_scores.weighted_scaled_ad"><code class="docutils literal notranslate"><span class="pre">weighted_scaled_ad()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="prediction_sets.html">Prediction sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.classwise_lac_set"><code class="docutils literal notranslate"><span class="pre">classwise_lac_set()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_bbox"><code class="docutils literal notranslate"><span class="pre">constant_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.constant_interval"><code class="docutils literal notranslate"><span class="pre">constant_interval()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.cqr_interval"><code class="docutils literal notranslate"><span class="pre">cqr_interval()</span></code></a></li>
@@ -215,6 +227,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">📏 Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_classwise_coverage"><code class="docutils literal notranslate"><span class="pre">classification_classwise_coverage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_classwise_size"><code class="docutils literal notranslate"><span class="pre">classification_classwise_size()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_coverage"><code class="docutils literal notranslate"><span class="pre">classification_mean_coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.classification_mean_size"><code class="docutils literal notranslate"><span class="pre">classification_mean_size()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="metrics.html#metrics.iou"><code class="docutils literal notranslate"><span class="pre">iou()</span></code></a></li>
@@ -236,6 +250,7 @@
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-regression">Conformal Regression</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#split-inductive-conformal">Split (inductive) Conformal</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="theory_overview.html#locally-adaptive-conformal-regression">Locally Adaptive Conformal Regression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="theory_overview.html#leverage-weighted-conformal-regression">Leverage-Weighted Conformal Regression</a></li>
 <li class="toctree-l4"><a class="reference internal" href="theory_overview.html#conformalized-quantile-regression-cqr">Conformalized Quantile Regression (CQR)</a></li>
 </ul>
 </li>
@@ -247,6 +262,7 @@
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#least-ambiguous-set-valued-classifiers-lac">Least Ambiguous Set-Valued Classifiers (LAC)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#adaptive-prediction-sets-aps">Adaptive Prediction Sets (APS)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="theory_overview.html#regularized-adaptive-prediction-sets-raps">Regularized Adaptive Prediction Sets (RAPS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory_overview.html#classwise-conformal-prediction">Classwise Conformal Prediction</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="theory_overview.html#conformal-anomaly-detection">Conformal Anomaly Detection</a></li>
@@ -300,6 +316,35 @@ when building a <a class="reference internal" href="calibration.html#calibration
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>mean absolute deviation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Iterable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nonconformity_scores.classwise_lac_score">
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">classwise_lac_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.classwise_lac_score" title="Link to this definition"></a></dt>
+<dd><p>Classwise LAC nonconformity score.</p>
+<p>Computes nonconformity scores for classwise conformal prediction.
+For each sample, the score is stored only for its true class,
+with NaN values for other classes. This allows computing
+per-class quantiles during calibration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Y_pred</strong> (<em>Iterable</em>) – <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})\)</span>
+where <span class="math notranslate nohighlight">\(P_{\text{C}_i}\)</span> is logit associated to class i.</p></li>
+<li><p><strong>y_true</strong> (<em>Iterable</em>) – true labels.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Classwise LAC nonconformity scores of shape (n_samples, n_classes).
+Entry [i, c] contains <cite>1 - Y_pred[i, c]</cite> if <cite>y_true[i] == c</cite>, else NaN.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Iterable</p>
@@ -376,7 +421,7 @@ where <span class="math notranslate nohighlight">\(P_{\text{C}_i}\)</span> is lo
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>RAPS nonconformity scores.</p>
+<dd class="field-even"><p>LAC nonconformity scores.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Iterable</p>
@@ -390,40 +435,15 @@ where <span class="math notranslate nohighlight">\(P_{\text{C}_i}\)</span> is lo
 <dl class="py function">
 <dt class="sig sig-object py" id="nonconformity_scores.raps_score">
 <span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">raps_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.raps_score" title="Link to this definition"></a></dt>
-<dd><p>RAPS nonconformity score.</p>
+<dd><p>RAPS nonconformity score.
+:rtype: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></span></p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This signature is incompatible with the interface of calibrators.
 <strong>Use</strong> <a class="reference internal" href="#nonconformity_scores.raps_score_builder" title="nonconformity_scores.raps_score_builder"><code class="xref py py-func docutils literal notranslate"><span class="pre">raps_score_builder()</span></code></a> <strong>to properly initialize</strong>
 <code class="xref py py-class docutils literal notranslate"><span class="pre">deel.puncc.api.calibration.BaseCalibrator</span></code>.</p>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>Y_pred</strong> (<em>Iterable</em>) – <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (P_{\text{C}_1}, ..., P_{\text{C}_n})\)</span>
-where <span class="math notranslate nohighlight">\(P_{\text{C}_i}\)</span> is logit associated to class i.</p></li>
-<li><p><strong>y_true</strong> (<em>Iterable</em>) – true labels.</p></li>
-<li><p><strong>lambd</strong> (<em>float</em>) – positive weight associated to the regularization term
-that encourages small set sizes. If <span class="math notranslate nohighlight">\(\lambda = 0\)</span>, there is no
-regularization and the implementation identifies with <strong>APS</strong>.</p></li>
-<li><p><strong>k_reg</strong> (<em>float</em>) – class rank (ordered by descending probability) starting
-from which the regularization is applied. For example,
-if <span class="math notranslate nohighlight">\(k_{reg} = 3\)</span>, then the fourth most likely estimated class has
-an extra penalty of size <span class="math notranslate nohighlight">\(\lambda\)</span>.</p></li>
-<li><p><strong>rand</strong> (<em>bool</em>) – turn on or off the randomization term that smoothes the
-discrete probability mass jump when including a new class.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>RAPS nonconformity scores.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Iterable</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
-</dd>
-</dl>
+<p>Backend-agnostic implementation relying on backend abstractions.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -508,6 +528,39 @@ mean absolute deviation (conditional MAD). Considering
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>scaled object detection nonconformity scores.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Iterable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> – unsupported data types.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="nonconformity_scores.weighted_scaled_ad">
+<span class="sig-prename descclassname"><span class="pre">nonconformity_scores.</span></span><span class="sig-name descname"><span class="pre">weighted_scaled_ad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#nonconformity_scores.weighted_scaled_ad" title="Link to this definition"></a></dt>
+<dd><p>Weighted Scaled Absolute Deviation. Similar to <a class="reference internal" href="#nonconformity_scores.scaled_ad" title="nonconformity_scores.scaled_ad"><code class="xref py py-func docutils literal notranslate"><span class="pre">scaled_ad()</span></code></a>
+but with an extra weighting of the nonconformity scores by a function of X.
+This allows to give more importance to calibration points, as measured by
+weight function.
+Considering <span class="math notranslate nohighlight">\(Y_{\text{pred}} = (\mu_{\text{pred}}, \sigma_{\text{pred}})\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}R = \frac{|y_{\text{true}}-\mu_{\text{pred}}|}{\sigma_{\text{pred}}} *
+w(X)\\where :math:`w(X)` is the weight function applied to the inputs.\end{aligned}\end{align} \]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Y_pred</strong> (<em>Iterable</em>) – point predictions. Optionally with conditional MAD
+predictions if available.</p></li>
+<li><p><strong>y_true</strong> (<em>Iterable</em>) – true labels.</p></li>
+<li><p><strong>weight_func</strong> (<em>Callable</em>) – function of X that computes the weighted scores.</p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – small positive value to avoid division by negative or zero.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>weighted scaled absolute deviation.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Iterable</p>
