@@ -771,6 +771,6 @@ class GroupCalibrator(BaseCalibrator):
         # Create an array of quantiles mapped to each test sample's group
         sample_quantiles = np.array([group_quantiles[g] for g in groups])
         
-        # BEAUTY OF PUNCC: pred_set_func handles arrays perfectly via numpy broadcasting!
+        # pred_set_func handles arrays via numpy broadcasting
         # Instead of passing a single float, we pass the array of specific quantiles.
         return self.pred_set_func(y_pred, sample_quantiles)
