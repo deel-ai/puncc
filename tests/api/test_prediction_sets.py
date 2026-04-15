@@ -24,6 +24,11 @@
 import numpy as np
 import pytest
 
+from deel.puncc.api.prediction_sets import classwise_lac_set
+from deel.puncc.api.prediction_sets import constant_bbox
+from deel.puncc.api.prediction_sets import cqr_interval
+from deel.puncc.api.prediction_sets import raps_set
+from deel.puncc.api.prediction_sets import raps_set_builder
 from deel.puncc.api.prediction_sets import scaled_bbox
 from deel.puncc.api.prediction_sets import scaled_interval
 
@@ -153,3 +158,47 @@ def test_scaled_interval_with_weights_point_predictions():
 
     np.testing.assert_allclose(y_lo, expected_lo)
     np.testing.assert_allclose(y_hi, expected_hi)
+
+
+def test_scaled_interval_negative_sigma_returns_infinite_bounds():
+    y_pred = np.array([[10.0, -1.0], [20.0, 2.0]])
+
+    y_lo, y_hi = scaled_interval(y_pred, 3.0)
+
+    assert np.isneginf(y_lo[0])
+    assert np.isposinf(y_hi[0])
+    assert np.isfinite(y_lo[1])
+    assert np.isfinite(y_hi[1])
+
+
+def test_constant_bbox_and_cqr_interval_guards():
+    bbox = np.array([[1.0, 2.0, 3.0, 4.0]])
+    q_bbox = np.array([0.5, 1.0, 1.5, 2.0])
+    y_lo, y_hi = constant_bbox(bbox, q_bbox)
+
+    np.testing.assert_allclose(y_lo, np.array([[1.5, 3.0, 1.5, 2.0]]))
+    np.testing.assert_allclose(y_hi, np.array([[0.5, 1.0, 4.5, 6.0]]))
+
+    with pytest.raises(RuntimeError):
+        cqr_interval(np.array([1.0, 2.0, 3.0]), 0.5)
+
+    with pytest.raises(RuntimeError):
+        constant_bbox(np.array([[1.0, 2.0, 3.0]]), q_bbox)
+
+
+def test_classwise_lac_and_raps_variants():
+    y_pred = np.array([[0.7, 0.2, 0.1], [0.2, 0.5, 0.3]])
+    classwise_sets = classwise_lac_set(y_pred, np.array([0.2, 0.4, 0.8]))[0]
+    assert classwise_sets == [[], [2]]
+
+    raps_sets = raps_set(y_pred, scores_quantile=0.65, lambd=0.1, k_reg=1, rand=False)[0]
+    assert all(isinstance(pred_set, list) for pred_set in raps_sets)
+    assert len(raps_sets) == len(y_pred)
+
+    with pytest.raises(ValueError):
+        raps_set_builder(lambd=-1)
+    with pytest.raises(ValueError):
+        raps_set_builder(k_reg=-1)
+
+    built = raps_set_builder(lambd=0.1, k_reg=1, rand=False)
+    assert built(y_pred, 0.65)[0] == raps_sets

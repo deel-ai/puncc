@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+from deel.puncc.api.splitting import BaseSplitter
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import KFoldSplitter
 from deel.puncc.api.splitting import RandomSplitter
@@ -112,3 +113,10 @@ class SplitterCheck(unittest.TestCase):
         random_splits_tf = random_splitter(self.X_tf, self.y_tf)
         self.assertEqual(len(random_splits_tf), 1)
         self.assertEqual(len(random_splits_tf[0]), 4)
+
+
+def test_base_splitter_call_raises_not_implemented():
+    splitter = BaseSplitter(random_state=0)
+
+    with unittest.TestCase().assertRaises(NotImplementedError):
+        splitter()

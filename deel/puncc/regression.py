@@ -837,7 +837,7 @@ class EnbPI:
             s = len(X_test)
         elif y_true is not None and s is not None:
             n_batches = len(y_true) // s
-        else:
+        else:  # pragma: no cover
             raise RuntimeError("Cannot determine batch size.")
 
         if self._boot_predictors is None:  # Sanity check

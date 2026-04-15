@@ -84,3 +84,66 @@ def test_anomaly_detection(rand_anomaly_detection_data, alpha, random_state):
     np.testing.assert_allclose(
         not_anomalies.shape, RESULTS["split_cad"]["normal_shape"]
     )
+
+
+class DummyAnomalyPredictor:
+    def __init__(self, trained=False):
+        self.is_trained = trained
+        self.fit_calls = []
+
+    def fit(self, X, **kwargs):
+        self.fit_calls.append((np.asarray(X), kwargs))
+        self.is_trained = True
+
+    def predict(self, X):
+        return np.sum(np.asarray(X), axis=1)
+
+
+def test_splitcad_fit_with_random_split_trains_predictor():
+    z = np.arange(20, dtype=float).reshape(10, 2)
+    predictor = DummyAnomalyPredictor()
+    cad = SplitCAD(predictor, train=True, random_state=0)
+
+    cad.fit(z=z, fit_ratio=0.6)
+    preds = cad.predict(z, alpha=0.5)
+
+    assert predictor.is_trained is True
+    assert len(predictor.fit_calls) == 1
+    assert preds.shape == (10,)
+    assert preds.dtype == np.bool_
+
+
+def test_splitcad_fit_with_pretrained_predictor_skips_training():
+    z_calib = np.array([[0.0, 0.5], [0.5, 0.0], [0.1, 0.2]])
+    predictor = DummyAnomalyPredictor(trained=True)
+    cad = SplitCAD(predictor, train=False)
+
+    cad.fit(z_calib=z_calib)
+
+    assert predictor.fit_calls == []
+
+
+def test_splitcad_fit_raises_with_untrained_predictor_when_train_false():
+    predictor = DummyAnomalyPredictor(trained=False)
+    cad = SplitCAD(predictor, train=False)
+
+    with pytest.raises(RuntimeError):
+        cad.fit(
+            z_fit=np.array([[0.0, 0.0], [1.0, 1.0]]),
+            z_calib=np.array([[0.0, 0.0], [1.0, 1.0]]),
+        )
+
+
+def test_splitcad_fit_raises_without_data():
+    cad = SplitCAD(DummyAnomalyPredictor(), train=True)
+
+    with pytest.raises(RuntimeError):
+        cad.fit()
+
+
+def test_splitcad_predict_raises_when_forced_to_unfit_state():
+    cad = SplitCAD(DummyAnomalyPredictor(), train=True)
+    cad._SplitCAD__is_fit = None
+
+    with pytest.raises(RuntimeError):
+        cad.predict(np.array([[0.0, 1.0]]), alpha=0.1)

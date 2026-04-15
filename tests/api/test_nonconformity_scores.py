@@ -26,6 +26,7 @@ import numpy as np
 import pytest
 
 from deel.puncc.api.nonconformity_scores import scaled_bbox_difference
+from deel.puncc.api.nonconformity_scores import scaled_ad
 from deel.puncc.api.nonconformity_scores import weighted_scaled_ad
 
 
@@ -65,3 +66,19 @@ def test_weighted_scaled_ad_with_1d_predictions():
 
     scores = weighted_scaled_ad(x, y_pred, y_true, weight_fn)
     np.testing.assert_allclose(scores, np.array([1.0, 6.0]))
+
+
+def test_scaled_ad_and_weighted_scaled_ad_warn_on_negative_sigma(capsys):
+    y_pred = np.array([[2.0, -1.0], [4.0, 2.0]])
+    y_true = np.array([1.0, 1.0])
+    x = np.array([[0.0], [1.0]])
+
+    scores = scaled_ad(y_pred, y_true)
+    weighted_scores = weighted_scaled_ad(
+        x, y_pred, y_true, weight_func=lambda x_sub: np.squeeze(x_sub) + 1.0
+    )
+
+    captured = capsys.readouterr()
+    assert "MAD predictions below -eps" in captured.out
+    np.testing.assert_allclose(scores, np.array([1.5]))
+    np.testing.assert_allclose(weighted_scores, np.array([3.0]))

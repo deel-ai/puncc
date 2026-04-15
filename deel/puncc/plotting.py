@@ -337,7 +337,7 @@ def draw_bounding_box(
         im = image
     elif image_path is not None:
         im = Image.open(image_path).copy()
-    else:
+    else:  # pragma: no cover
         raise ValueError("Either image or image_path must be provided.")
 
     # Add legend to the image
