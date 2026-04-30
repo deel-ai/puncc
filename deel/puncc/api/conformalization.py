@@ -749,34 +749,41 @@ class CrossValCpAggregator:
 
 
 class GroupConformalPredictor(ConformalPredictor):
-    def fit(self, X, y, groups, **kwargs):
-        """Splits X, y, AND groups, then trains and calibrates."""
+    def fit(self, X, y, groups, alpha=0.1, **kwargs):
+        """Splits data using indices to ensure 'groups' is split consistently."""
         
-        # 1. Use the standard PUNCC splitter to get indices by passing an array of indices
+        # 1. Create an array of indices [0, 1, ..., N-1]
         indices = np.arange(len(X))
+        
+        # 2. Pass indices to the splitter instead of X
+        # puncc splitters return (X_subset, y_subset, X_calib, y_calib)
+        # Since we passed 'indices' as the first argument, it returns index subsets.
         splits = list(self.splitter(indices, y))
+        idx_fit, y_fit, idx_calib, y_calib = splits[0]
         
-        # For simplicity, we assume a single split (e.g., RandomSplitter)
-        idx_fit, _, idx_calib, _ = splits[0]
+        # 3. Use the returned integer indices to slice the data
+        X_fit = X[idx_fit]
+        X_calib = X[idx_calib]
+        groups_calib = groups[idx_calib]
         
-        # 2. Split X, y, and groups
-        X_fit, y_fit, groups_fit = X[idx_fit], y[idx_fit], groups[idx_fit]
-        X_calib, y_calib, groups_calib = X[idx_calib], y[idx_calib], groups[idx_calib]
-        
-        # 3. Train predictor
+        # 4. Train the underlying model on the fit set
+        # Note: y_fit is already the correct subset returned by the splitter
         self.predictor.fit(X_fit, y_fit, **kwargs)
         
-        # 4. Predict on calibration set
+        # 5. Predict on calibration set
         y_pred_calib = self.predictor.predict(X_calib)
         
-        # 5. Calibrate WITH groups
-        self.calibrator.fit(y_true=y_calib, y_pred=y_pred_calib, groups=groups_calib)
+        # 6. Fit calibrator with groups and target alpha
+        self.calibrator.fit(
+            y_true=y_calib, 
+            y_pred=y_pred_calib, 
+            groups=groups_calib, 
+            alpha=alpha
+        )
 
-    def predict(self, X, groups, alpha=0.1, **kwargs):
+    def predict(self, X, groups, **kwargs):
         """Predicts and applies group-specific thresholds."""
-        y_pred = self.predictor.predict(X, **kwargs)
-        
-        # Pass groups to the calibrator to get the conditional prediction sets
-        pred_sets = self.calibrator.calibrate(y_pred, groups=groups, alpha=alpha)
-        
+        y_pred = self.predictor.predict(X)
+        # The calibrator already has the thresholds from fit()
+        pred_sets = self.calibrator.calibrate(y_pred, groups=groups)
         return y_pred, pred_sets

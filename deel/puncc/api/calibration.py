@@ -735,42 +735,37 @@ class CvPlusCalibrator:
 class GroupCalibrator(BaseCalibrator):
     def __init__(self, nonconf_score_func, pred_set_func):
         super().__init__(nonconf_score_func=nonconf_score_func, pred_set_func=pred_set_func)
-        self.group_scores_ = {} # Will store {group_id: scores}
+        self.group_quantiles_ = {} 
 
-    def fit(self, y_true, y_pred, groups=None, **kwargs):
-        """Computes nonconformity scores and stores them per group."""
+    def fit(self, y_true, y_pred, groups=None, alpha=0.1, **kwargs):
+        """Computes nonconformity scores and stores quantiles per group."""
         if groups is None:
             raise ValueError("GroupCalibrator requires a 'groups' array during fit.")
             
-        # 1. Compute all nonconformity scores
         ncf_scores = self.nonconf_score_func(y_pred, y_true)
-        
-        # 2. Store scores for each unique group
         unique_groups = np.unique(groups)
+        
         for g in unique_groups:
             group_mask = (groups == g)
-            self.group_scores_[g] = ncf_scores[group_mask]
+            group_scores = ncf_scores[group_mask]
+            
+            if len(group_scores) == 0:
+                self.group_quantiles_[g] = np.inf
+                continue
 
-    def calibrate(self, y_pred, groups=None, alpha=0.1, **kwargs):
-        """Constructs prediction sets using the group-specific thresholds."""
+            # Lemma: Add infinity to the scores for the (1-alpha) coverage guarantee
+            scores_with_inf = np.concatenate([group_scores, [np.inf]])
+            
+            # Use 'inverted_cdf' to avoid under-coverage caused by linear interpolation
+            self.group_quantiles_[g] = np.quantile(
+                scores_with_inf, 1 - alpha, method="inverted_cdf"
+            )
+
+    def calibrate(self, y_pred, groups=None, **kwargs):
+        """Constructs prediction sets using group-specific thresholds."""
         if groups is None:
-             raise ValueError("GroupCalibrator requires a 'groups' array during calibration/predict.")
+             raise ValueError("GroupCalibrator requires 'groups' during calibration.")
              
-        # Calculate the quantile for each unique group based on alpha
-        group_quantiles = {}
-        for g, scores in self.group_scores_.items():
-            # Finite sample correction: (1 - alpha) * (1 + 1/n)
-            # We use the lemma trick from BaseCalibrator
-            if scores.ndim > 1:
-                infty_array = np.full((1, scores.shape[-1]), np.inf)
-            else:
-                infty_array = np.array([np.inf])
-            lemma_residuals = np.concatenate((scores, infty_array), axis=0)
-            group_quantiles[g] = quantile(lemma_residuals, 1 - alpha)
-
-        # Create an array of quantiles mapped to each test sample's group
-        sample_quantiles = np.array([group_quantiles[g] for g in groups])
-        
-        # pred_set_func handles arrays via numpy broadcasting
-        # Instead of passing a single float, we pass the array of specific quantiles.
+        # Map thresholds to test samples (default to inf for unknown groups)
+        sample_quantiles = np.array([self.group_quantiles_.get(g, np.inf) for g in groups])
         return self.pred_set_func(y_pred, sample_quantiles)
