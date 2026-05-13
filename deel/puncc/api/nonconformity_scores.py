@@ -130,8 +130,6 @@ def raps_score(
         **Use** :func:`raps_score_builder` **to properly initialize**
         :class:`deel.puncc.api.calibration.BaseCalibrator`.
 
-    Backend-agnostic implementation relying on backend abstractions.
-
     """
     supported_types_check(Y_pred, y_true)
 
@@ -158,7 +156,7 @@ def raps_score(
     e_col = b.take_along_axis(sorted_cum_mass, b.reshape(L, (-1, 1)), axis=1)
     E = b.squeeze(e_col)
 
-    # Regularization term max(L + 1 - k_reg, 0) in backend-native form.
+    # Regularization term max(L + 1 - k_reg, 0).
     reg_rank = L + 1 - k_reg
     zero_like = reg_rank - reg_rank
     reg_term = b.maximum(reg_rank, zero_like)

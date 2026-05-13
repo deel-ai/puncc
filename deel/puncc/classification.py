@@ -82,11 +82,6 @@ class LAC(SplitConformalPredictor):
             X_train, y_train, test_size=.2, random_state=0
         )
 
-        # One hot encoding of classes
-        y_fit_cat = to_categorical(y_fit)
-        y_calib_cat = to_categorical(y_calib)
-        y_test_cat = to_categorical(y_test)
-
         # Create rf classifier
         rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
 
@@ -181,11 +176,6 @@ class ClasswiseLAC(SplitConformalPredictor):
         X_fit, X_calib, y_fit, y_calib = train_test_split(
             X_train, y_train, test_size=.2, random_state=0
         )
-
-        # One hot encoding of classes
-        y_fit_cat = to_categorical(y_fit)
-        y_calib_cat = to_categorical(y_calib)
-        y_test_cat = to_categorical(y_test)
 
         # Create rf classifier
         rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
@@ -304,11 +294,6 @@ class RAPS:
         X_fit, X_calib, y_fit, y_calib = train_test_split(
             X_train, y_train, test_size=.2, random_state=0
         )
-
-        # One hot encoding of classes
-        y_fit_cat = to_categorical(y_fit)
-        y_calib_cat = to_categorical(y_calib)
-        y_test_cat = to_categorical(y_test)
 
         # Create rf classifier
         rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
@@ -521,11 +506,6 @@ class APS(RAPS):
         X_fit, X_calib, y_fit, y_calib = train_test_split(
             X_train, y_train, test_size=.2, random_state=0
         )
-
-        # One hot encoding of classes
-        y_fit_cat = to_categorical(y_fit)
-        y_calib_cat = to_categorical(y_calib)
-        y_test_cat = to_categorical(y_test)
 
         # Create rf classifier
         rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
