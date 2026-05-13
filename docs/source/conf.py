@@ -10,6 +10,7 @@
 #
 import os
 import sys
+from importlib.metadata import version as package_version
 
 sys.path.insert(0, os.path.abspath("../../deel"))
 sys.path.insert(0, os.path.abspath("../../deel/puncc"))
@@ -25,8 +26,8 @@ copyright = (
 )
 author = "Mouhcine Mendil, Luca Mossina and Joseba Dalmau"
 
-# The full version, including alpha/beta/rc tags
-release = "0.8.0"
+release = package_version("puncc")
+version = ".".join(release.split(".")[:2])
 
 
 # -- General configuration ---------------------------------------------------
@@ -44,7 +45,7 @@ extensions = [
     "sphinxcontrib.bibtex",
 ]
 
-bibtex_bibfiles = ['refs.bib']
+bibtex_bibfiles = ["refs.bib"]
 
 autodoc_default_options = {"members": True, "inherited-members": True}
 

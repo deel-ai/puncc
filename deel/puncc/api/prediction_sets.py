@@ -44,9 +44,7 @@ logger = logging.getLogger(__name__)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def lac_set(
-        Y_pred, scores_quantile
-) -> List:
+def lac_set(Y_pred, scores_quantile) -> List:
     """LAC prediction set.
 
     :param Iterable Y_pred:
@@ -81,9 +79,7 @@ def lac_set(
     return (prediction_sets,)
 
 
-def classwise_lac_set(
-    Y_pred, scores_quantile
-) -> List:
+def classwise_lac_set(Y_pred, scores_quantile) -> List:
     """Classwise LAC prediction set.
 
     For each sample i and class c, include c in the prediction set if:
@@ -188,7 +184,9 @@ def raps_set(
     # penalized by the regularization term
     rank = b.arange(1, n_classes + 1)
     rank_zero = rank - rank
-    penal_cum_proba = sorted_cum_mass + lambd * b.maximum(rank - k_reg, rank_zero)
+    penal_cum_proba = sorted_cum_mass + lambd * b.maximum(
+        rank - k_reg, rank_zero
+    )
 
     # L is the number of classes (+1) for which the cumulative probability mass
     # is below the threshold "tau"
@@ -280,9 +278,7 @@ def raps_set_builder(
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Regression ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def constant_interval(
-    y_pred: Iterable, scores_quantile
-):
+def constant_interval(y_pred: Iterable, scores_quantile):
     """Constant prediction interval centered on `y_pred`. The size of the
     margin is `scores_quantile` (noted :math:`\gamma_{\\alpha}`).
 
@@ -326,7 +322,7 @@ def scaled_interval(
     :param Iterable y_pred: predictions.
     :param ndarray scores_quantile: quantile of nonconformity scores computed
         on a calibration set for a given :math:`\\alpha`.
-    :param ndarray weights: weights to apply to the size of the interval. 
+    :param ndarray weights: weights to apply to the size of the interval.
     :param float eps: small positive value to avoid singleton sets.
 
     :returns: scaled prediction intervals :math:`I`.
@@ -354,8 +350,12 @@ def scaled_interval(
 
     fints = sigma_pred + eps > 0
     q = b.asarray(scores_quantile)
-    y_lo = b.where(fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf"))
-    y_hi = b.where(fints, y_pred + q * (sigma_pred + eps) * weights, float("inf"))
+    y_lo = b.where(
+        fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf")
+    )
+    y_hi = b.where(
+        fints, y_pred + q * (sigma_pred + eps) * weights, float("inf")
+    )
     return y_lo, y_hi
 
     # supported_types_check(Y_pred)
@@ -383,9 +383,8 @@ def scaled_interval(
     # y_hi = b.where(fints, y_pred + q * (sigma_pred + eps), float("inf"))
     # return y_lo, y_hi
 
-def cqr_interval(
-    Y_pred: Iterable, scores_quantile
-):
+
+def cqr_interval(Y_pred: Iterable, scores_quantile):
     """CQR prediction interval. Considering
     :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction
     interval is built from the upper and lower quantiles predictions and
@@ -456,11 +455,15 @@ def constant_bbox(Y_pred, scores_quantile):
     q3 = b.scalar_at(scores_quantile, 3)
     x_min_lo, y_min_lo = x_min - q0, y_min - q1
     x_max_hi, y_max_hi = x_max + q2, y_max + q3
-    y_pred_hi = concat_columns([x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp)
+    y_pred_hi = concat_columns(
+        [x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp
+    )
 
     x_min_hi, y_min_hi = x_min + q0, y_min + q1
     x_max_lo, y_max_lo = x_max - q2, y_max - q3
-    y_pred_lo = concat_columns([x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp)
+    y_pred_lo = concat_columns(
+        [x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp
+    )
 
     return y_pred_lo, y_pred_hi
 
@@ -503,13 +506,17 @@ def scaled_bbox(Y_pred, scores_quantile):
     x_max_hi = x_max + q2 * dx
     y_max_hi = y_max + q3 * dy
 
-    y_pred_outer = concat_columns([x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp)
+    y_pred_outer = concat_columns(
+        [x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp
+    )
 
     # Coordinates of included bbox (lowerbounds)
     x_min_hi = x_min + q0 * dx
     y_min_hi = y_min + q1 * dy
     x_max_lo = x_max - q2 * dx
     y_max_lo = y_max - q3 * dy
-    y_pred_inner = concat_columns([x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp)
+    y_pred_inner = concat_columns(
+        [x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp
+    )
 
     return y_pred_inner, y_pred_outer

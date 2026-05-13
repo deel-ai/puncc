@@ -435,7 +435,7 @@ the RAPS algorithm works in two stages:
     #. Store all errors in a vector :math:`\mathcal{R}`.
 
 **Inference**
-    #. Compute the probability thresholdn :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
+    #. Compute the probability threshold :math:`\delta_{\alpha}` as the :math:`(1-\alpha)(1 + 1/n_{calib})`-th empirical quantile of :math:`\mathcal{R}`.
     #. The prediction set for a test point :math:`X_{new}` is defined as :math:`\widehat{C}_{\alpha}(X_{new})=\big\lbrace (1),\dots,(k)\big\rbrace`, where
     
         .. math::

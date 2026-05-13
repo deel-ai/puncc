@@ -59,17 +59,15 @@ def test_lac(mnist_data, alpha, random_state):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -117,17 +115,15 @@ def test_classwise_lac(mnist_data, alpha, random_state):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -180,17 +176,15 @@ def test_aps(mnist_data, alpha, random_state, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -238,17 +232,15 @@ def test_aps_norand(mnist_data, alpha, random_state, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -296,17 +288,15 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -354,17 +344,15 @@ def test_raps_norand(mnist_data, alpha, random_state, lambd, k_reg, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
