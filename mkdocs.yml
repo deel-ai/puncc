@@ -1,0 +1,81 @@
+site_name: PUNCC
+site_description: Predictive uncertainty calibration and conformalization documentation
+site_url: https://deel-ai.github.io/puncc/
+repo_url: https://github.com/deel-ai/puncc
+repo_name: deel-ai/puncc
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: readthedocs
+  collapse_navigation: true
+  titles_only: false
+
+plugins:
+  - search
+  - bibtex:
+      bib_file: docs/refs.bib
+      bib_by_default: false
+      csl_file: docs/styles/harvard-cite-them-right.csl
+      enable_inline_citations: false
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - .
+          options:
+            docstring_style: google
+            docstring_options:
+              warnings: false
+              warn_unknown_params: false
+              warn_missing_types: false
+            merge_init_into_class: true
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: true
+            inherited_members: true
+            filters:
+              - "!^bonferroni$"
+              - "!^weighted_bonferroni$"
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Quickstart: getting_started.md
+  - Tutorials: tutorials.md
+  - Regression: regression.md
+  - Classification: classification.md
+  - Object Detection: object_detection.md
+  - Anomaly Detection: anomaly_detection.md
+  - API:
+      - Overview: api.md
+      - Conformalization: conformalization.md
+      - Prediction: prediction.md
+      - Experimental: experimental.md
+      - Calibration: calibration.md
+      - Splitting: splitting.md
+      - Utils: utils.md
+      - Corrections: corrections.md
+      - Nonconformity Scores: nonconformity_scores.md
+      - Prediction Sets: prediction_sets.md
+  - Metrics: metrics.md
+  - Plotting: plotting.md
+  - Theory Overview: theory_overview.md

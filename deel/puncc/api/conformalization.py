@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides the canvas for conformal prediction.
-"""
+This module provides the canvas for conformal prediction."""
+
 import logging
 import pickle
 from copy import deepcopy
@@ -57,33 +57,28 @@ class SplitConformalPredictor:
     produced for new samples with guaranteed marginal coverage.
 
     For more details on the methodology, see the
-    :ref:`theory overview page <theory splitcp>`.
+    theory overview page.
 
-    :param BasePredictor predictor:
-        A predictor implementing `fit` and `predict`. The predictor may be
-        already trained or trained during the call to :meth:`fit`.
-    :param callable nonconf_score_func:
-        Function used to compute nonconformity scores from predictions and
-        observed targets.
-    :param callable pred_set_func:
-        Function used to construct prediction sets from predictions and
-        calibrated quantiles.
-    :param bool train:
-        If `False`, the predictor is assumed to be already trained and will
-        not be retrained during :meth:`fit`. Defaults to `True`.
-    :param int random_state:
-        Random seed used when automatically splitting the data into fit and
-        calibration subsets.
-    :param callable weight_func:
-        Optional function mapping input features `X` to conformality weights,
-        used for weighted conformal prediction. Defaults to `None`.
-    :param CalibratorClass:
-        Class of the calibrator to be used. Defaults to :class:`BaseCalibrator`.
+    Args:
+        predictor (BasePredictor): A predictor implementing `fit` and `predict`.
+        The predictor may be already trained or trained during the call to `fit`.
+        nonconf_score_func (callable): Function used to compute nonconformity
+        scores from predictions and observed targets.
+        pred_set_func (callable): Function used to construct prediction sets
+        from predictions and calibrated quantiles.
+        train (bool): If `False`, the predictor is assumed to be already trained
+        and will not be retrained during `fit`. Defaults to `True`.
+        random_state (int): Random seed used when automatically splitting the
+        data into fit and calibration subsets.
+        weight_func (callable): Optional function mapping input features `X`
+        to conformality weights, used for weighted conformal prediction.
+        Defaults to `None`.
+        CalibratorClass: Class of the calibrator to be used. Defaults to
+        `BaseCalibrator`.
 
-    .. note::
-
+    !!! note
         The data splitting strategy depends on the arguments passed to
-        :meth:`fit`:
+        `fit`:
 
         - If `X` and `y` are provided, the data are randomly split into
           fit and calibration subsets.
@@ -92,10 +87,10 @@ class SplitConformalPredictor:
         - If the predictor is already trained and `train=False`, only a
           calibration set is required.
 
-    .. _example splitcp_base:
+    Examples:
+        Basic usage:
 
-    Example::
-
+        ```python
         from deel.puncc.api.prediction import BasePredictor
         from deel.puncc.api.conformalization import SplitConformalPredictor
         from deel.puncc.api import nonconformity_scores
@@ -119,7 +114,7 @@ class SplitConformalPredictor:
         predictor = BasePredictor(model, is_trained=False)
 
         # Split conformal predictor
-        cp = SplitConformalPredictor(predictor, 
+        cp = SplitConformalPredictor(predictor,
                                     nonconf_score_func=nonconformity_scores.absolute_difference,
                                     pred_set_func=prediction_sets.constant_interval,
                                     train=True,
@@ -128,8 +123,9 @@ class SplitConformalPredictor:
 
         # Conformal prediction
         y_pred, y_lower, y_upper = cp.predict(X_test, alpha=0.2)
-
+        ```
     """
+
     def __init__(
         self,
         predictor: Union[BasePredictor, Any],
@@ -180,28 +176,29 @@ class SplitConformalPredictor:
         the conformalization is performed on the given user defined
         fit and calibration sets.
 
-        .. NOTE::
-
+        !!! note
             If X and y are provided, `fit` ignores
             any user-defined fit/calib split.
 
 
-        :param Iterable X: features from the training dataset.
-        :param Iterable y: labels from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
+        Args:
+            X (Iterable): features from the training dataset.
+            y (Iterable): labels from the training dataset.
+            fit_ratio (float): the proportion of samples assigned to the
             fit subset.
-        :param Iterable X_fit: features from the fit dataset.
-        :param Iterable y_fit: labels from the fit dataset.
-        :param Iterable X_calib: features from the calibration dataset.
-        :param Iterable y_calib: labels from the calibration dataset.
-        :param bool use_cached: if set, enables to add the previously computed
+            X_fit (Iterable): features from the fit dataset.
+            y_fit (Iterable): labels from the fit dataset.
+            X_calib (Iterable): features from the calibration dataset.
+            y_calib (Iterable): labels from the calibration dataset.
+            use_cached (bool): if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
             call to `fit`. The aggregation follows the CV+
             procedure.
-        :param dict kwargs: predict configuration to be passed to the model's
+            kwargs (dict): predict configuration to be passed to the model's
             fit method.
 
-        :raises RuntimeError: no dataset provided.
+        Raises:
+            RuntimeError: no dataset provided.
 
         """
 
@@ -256,21 +253,23 @@ class SplitConformalPredictor:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
         new samples.
 
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
+        Args:
+            X_test (Iterable): features of new samples.
+            alpha (float): target maximum miscoverage.
 
-        :returns: Tuple composed of the model estimate y_pred and the
+        Returns:
+            Tuple :composed of the model estimate y_pred and the
             prediction set
-        :rtype: Tuple
 
         """
+
         return self.conformal_predictor.predict(X_test, alpha=alpha)
 
     def get_nonconformity_scores(self) -> np.ndarray:
         """Get computed nonconformity scores.
 
-        :returns: computed nonconfomity scores.
-        :rtype: ndarray
+        Returns:
+            np.ndarray: computed nonconfomity scores.
 
         """
 
@@ -284,84 +283,85 @@ class SplitConformalPredictor:
 
         return kfold_nconf_scores
 
+
 class ConformalPredictor:
     """Conformal predictor class.
 
-    :param deel.puncc.api.prediction.BasePredictor | object predictor:
+    Args:
+        predictor (deel.puncc.api.prediction.BasePredictor | object):
         underlying model to be conformalized. The model can directly be
         passed as argument if it already has `fit` and `predict` methods.
-    :param deel.puncc.api.prediction.BaseCalibrator calibrator: nonconformity
+        calibrator (deel.puncc.api.prediction.BaseCalibrator): nonconformity
         computation strategy and set predictor.
-    :param deel.puncc.api.prediction.BaseSplitter splitter: fit/calibration
+        splitter (deel.puncc.api.prediction.BaseSplitter): fit/calibration
         split strategy. The splitter can be set to None if the underlying
         model is pretrained.
-    :param str method: method to handle the ensemble prediction and calibration
+        method (str): method to handle the ensemble prediction and calibration
         in case the splitter is a K-fold-like strategy. Defaults to 'cv+' to
         follow cv+ procedure.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
+        train (bool): if False, prediction model(s) will not be (re)trained.
         Defaults to True.
 
-    .. WARNING::
-        if a K-Fold-like splitter is provided with the :data:`train` attribute
+    !!! warning
+        if a K-Fold-like splitter is provided with the `train` attribute
         set to True, an exception is raised.
-        The models have to be trained during the call :meth:`fit`.
+        The models have to be trained during the call `fit`.
 
+    Examples:
+        Conformal Regression
 
-    **Conformal Regression example:**
+        ```python
+            from sklearn import linear_model
+            from sklearn.datasets import make_regression
+            from sklearn.model_selection import train_test_split
 
-    .. code-block:: python
+            from deel.puncc.api.conformalization import ConformalPredictor
+            from deel.puncc.api.prediction import BasePredictor
+            from deel.puncc.api.calibration import BaseCalibrator
+            from deel.puncc.api.splitting import KFoldSplitter
+            from deel.puncc.api import nonconformity_scores
+            from deel.puncc.api import prediction_sets
 
-        from sklearn import linear_model
-        from sklearn.datasets import make_regression
-        from sklearn.model_selection import train_test_split
+            # Generate a random regression problem
+            X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
+                                    random_state=0, shuffle=False)
 
-        from deel.puncc.api.conformalization import ConformalPredictor
-        from deel.puncc.api.prediction import BasePredictor
-        from deel.puncc.api.calibration import BaseCalibrator
-        from deel.puncc.api.splitting import KFoldSplitter
-        from deel.puncc.api import nonconformity_scores
-        from deel.puncc.api import prediction_sets
+            # Split data into train and test
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=.2, random_state=0
+            )
 
-        # Generate a random regression problem
-        X, y = make_regression(n_samples=1000, n_features=4, n_informative=2,
-                                random_state=0, shuffle=False)
+            # Regression linear model
+            model = linear_model.LinearRegression()
 
-        # Split data into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=.2, random_state=0
-        )
+            # Definition of a predictor. Note that it is not required to wrap
+            # the model here because it already implements fit and predict methods
+            predictor = BasePredictor(model)
 
-        # Regression linear model
-        model = linear_model.LinearRegression()
+            # Definition of a calibrator, built for a given nonconformity scores
+            # and a procedure to build the prediction sets
+            calibrator = BaseCalibrator(nonconf_score_func=nonconformity_scores.mad,
+                                    pred_set_func=prediction_sets.constant_interval)
 
-        # Definition of a predictor. Note that it is not required to wrap
-        # the model here because it already implements fit and predict methods
-        predictor = BasePredictor(model)
+            # Definition of a K-fold splitter that produces
+            # 20 folds of fit/calibration
+            kfold_splitter = KFoldSplitter(K=20, random_state=42)
 
-        # Definition of a calibrator, built for a given nonconformity scores
-        # and a procedure to build the prediction sets
-        calibrator = BaseCalibrator(nonconf_score_func=nonconformity_scores.mad,
-                                pred_set_func=prediction_sets.constant_interval)
+            # Conformal predictor requires the three components instantiated
+            # previously. Our choice of calibrator and splitter yields a cv+ procedure
+            conformal_predictor = ConformalPredictor(predictor=predictor,
+                                                    calibrator=calibrator,
+                                                    splitter=kfold_splitter,
+                                                    train=True)
 
-        # Definition of a K-fold splitter that produces
-        # 20 folds of fit/calibration
-        kfold_splitter = KFoldSplitter(K=20, random_state=42)
+            # Fit model and compute nonconformity scores
+            conformal_predictor.fit(X_train, y_train)
 
-        # Conformal predictor requires the three components instantiated
-        # previously. Our choice of calibrator and splitter yields a cv+ procedure
-        conformal_predictor = ConformalPredictor(predictor=predictor,
-                                                calibrator=calibrator,
-                                                splitter=kfold_splitter,
-                                                train=True)
-
-        # Fit model and compute nonconformity scores
-        conformal_predictor.fit(X_train, y_train)
-
-        # The lower and upper bounds of the prediction interval are predicted
-        # by the call to predict on the new data w.r.t a risk level of 10%.
-        # Besides, there is no aggregate point prediction in cv+ so y_pred is None.
-        y_pred , y_lower, y_upper = conformal_predictor.predict(X_test, alpha=.1)
-
+            # The lower and upper bounds of the prediction interval are predicted
+            # by the call to predict on the new data w.r.t a risk level of 10%.
+            # Besides, there is no aggregate point prediction in cv+ so y_pred is None.
+            y_pred , y_lower, y_upper = conformal_predictor.predict(X_test, alpha=.1)
+        ```
     """
 
     def __init__(
@@ -414,11 +414,12 @@ class ConformalPredictor:
     def get_nonconformity_scores(self) -> dict:
         """Getter for computed nonconformity scores on the calibration(s) set(s).
 
-        :returns: dictionary of nonconformity scores indexed by the fold index.
-        :rtype: dict
+        Returns:
+            : dictionary of nonconformity scores indexed by the fold index.
 
-        :raises RuntimeError: :meth:`fit` needs to be called before
-            :meth:`get_nonconformity_scores`.
+        Raises:
+            RuntimeError: `fit` needs to be called before
+            `get_nonconformity_scores`.
         """
 
         if self._cv_cp_agg is None:
@@ -429,11 +430,12 @@ class ConformalPredictor:
     def get_weights(self) -> dict:
         """Getter for weights associated to calibration samples.
 
-        :returns: dictionary of weights indexed by the fold index.
-        :rtype: dict
+        Returns:
+            dict: dictionary of weights indexed by the fold index.
 
-        :raises RuntimeError: :meth:`fit` needs to be called before
-            :meth:`get_weights`.
+        Raises:
+            RuntimeError: `fit` needs to be called before
+            `get_weights`.
         """
 
         if self._cv_cp_agg is None:
@@ -451,20 +453,22 @@ class ConformalPredictor:
         """Fit the model(s) and estimate the nonconformity scores.
 
         If the splitter is an instance of
-        :class:`deel.puncc.splitting.KFoldSplitter`, the fit operates on each
+        `deel.puncc.splitting.KFoldSplitter`, the fit operates on each
         fold separately. Thereafter, the predictions and nonconformity scores
         are combined accordingly to an aggregation method (cv+ by default).
 
-        :param Iterable X: features.
-        :param Iterable y: labels.
-        :param bool use_cached: if set, enables to add the previously computed
+        Args:
+            X (Iterable): features.
+            y (Iterable): labels.
+            use_cached (bool): if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
             call to `fit`. The aggregation follows the CV+
             procedure.
-        :param dict kwargs: options configuration for the training.
+            kwargs (dict): options configuration for the training.
 
-        :raises RuntimeError: inconsistencies between the train status of the
-            model(s) and the :data:`train` class attribute.
+        Raises:
+            RuntimeError: inconsistencies between the train status of the
+            model(s) and the `train` class attribute.
         """
         # Get split folds. Each fold split is a iterable of a quadruple that
         # contains fit and calibration data.
@@ -559,15 +563,16 @@ class ConformalPredictor:
     ]:
         """Predict point, and interval estimates for X data.
 
-        :param Iterable X: features.
-        :param float alpha: significance level (max miscoverage target).
-        :param Callable correction_func: correction for multiple hypothesis
+        Args:
+            X (Iterable): features.
+            alpha (float): significance level (max miscoverage target).
+            correction_func (Callable): correction for multiple hypothesis
             testing in the case of multivariate regression. Defaults to
             Bonferroni correction.
 
-        :returns: (y_pred, y_lower, y_higher) or (y_pred, pred_set).
-        :rtype: Union[Tuple[np.ndarray, np.ndarray],
-            Tuple[np.ndarray, np.ndarray, np.ndarray]]
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray] or Tuple[np.ndarray, np.ndarray]: (y_pred, y_lower, y_higher) or
+            (y_pred, pred_set).
         """
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
@@ -577,11 +582,12 @@ class ConformalPredictor:
     def save(self, path, save_data=True):
         """Serialize current conformal predictor and write it to a file.
 
-        :param str path: File path.
-        
-        :param bool save_data: If True, save the custom data used to 
+        Args:
+            path (str): File path.
+
+            save_data (bool): If True, save the custom data used to
             fit/calibrate the model.
-        
+
         """
         # Remove cached data if needed (case of IdSplitter)
         is_cached = False
@@ -589,9 +595,11 @@ class ConformalPredictor:
             cached = self.splitter._split
             is_cached = True
             self.splitter._split = None
-            print("\033[33m\033[1mWarning:\033[0m Custom train/calibration data removed from the"
+            print(
+                "\033[33m\033[1mWarning:\033[0m Custom train/calibration data removed from the"
                 " conformal predictor. If you want to keep them,"
-                " please set flag `save_data` to True.")
+                " please set flag `save_data` to True."
+            )
 
         with open(path, "wb") as output_file:
             pickle.dump(self.__dict__, output_file)
@@ -602,10 +610,11 @@ class ConformalPredictor:
     def load(path):
         """Load conformal predictor from a file.
 
-        :param str path: file path.
+        Args:
+            path (str): file path.
 
-        :returns: loaded conformal predictor instance.
-        :rtype: ConformalPredictor
+        Returns:
+            ConformalPredictor: loaded conformal predictor instance.
         """
         with open(path, "rb") as input_file:
             saved_dict = pickle.load(input_file)
@@ -622,10 +631,11 @@ class CrossValCpAggregator:
     from different K-folds.
 
 
-    :param int K: number of folds
-    :param dict _predictors: collection of predictors fitted on the K-folds
-    :param dict _calibrators: collection of calibrators fitted on the K-folds
-    :param str method: method to handle the ensemble prediction and
+    Args:
+        K (int): number of folds
+        _predictors (dict): collection of predictors fitted on the K-folds
+        _calibrators (dict): collection of calibrators fitted on the K-folds
+        method (str): method to handle the ensemble prediction and
         calibration, defaults to 'cv+'.
     """
 
@@ -648,8 +658,9 @@ class CrossValCpAggregator:
     def append_predictor(self, key, predictor):
         """Add predictor in kfold predictors dictionnary.
 
-        :param int key: key of the predictor.
-        :param BasePredictor|DualPredictor predictor: predictor to be appended.
+        Args:
+            key (int): key of the predictor.
+            predictor (BasePredictor|DualPredictor): predictor to be appended.
 
         """
         self._predictors[key] = predictor.copy()
@@ -657,8 +668,9 @@ class CrossValCpAggregator:
     def append_calibrator(self, key, calibrator):
         """Add calibrator in kfold calibrators dictionnary.
 
-        :param int key: key of the calibrator.
-        :param BaseCalibrator predictor: calibrator to be appended.
+        Args:
+            key (int): key of the calibrator.
+            predictor (BaseCalibrator): calibrator to be appended.
 
         """
         self._calibrators[key] = deepcopy(calibrator)
@@ -666,8 +678,8 @@ class CrossValCpAggregator:
     def get_nonconformity_scores(self) -> dict:
         """Get a dictionnary of residuals computed on the K-folds.
 
-        :returns: dictionary of residual indexed by the K-fold number.
-        :rtype: dict
+        Returns:
+            dict: dictionary of residual indexed by the K-fold number.
         """
         return {
             k: calibrator.get_nonconformity_scores()
@@ -677,8 +689,8 @@ class CrossValCpAggregator:
     def get_weights(self) -> dict:
         """Get a dictionnary of normalized weights computed on the K-folds.
 
-        :returns: dictionary of normalized weights indexed by the K-fold number.
-        :rtype: dict
+        Returns:
+            dict: dictionary of normalized weights indexed by the K-fold number.
         """
         return {
             k: calibrator.get_weights()
@@ -692,18 +704,18 @@ class CrossValCpAggregator:
         correction_func: Optional[Callable] = bonferroni,
     ) -> Union[
         Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
-    ]:  #  type: ignore
+    ]:  # type: ignore
         """Predict point, interval and variability estimates for X data.
 
-        :param Iterable X: features.
-        :param float alpha: significance level (max miscoverage target).
-        :param Callable correction_func: correction for multiple hypothesis
+        Args:
+            X (Iterable): features.
+            alpha (float): significance level (max miscoverage target).
+            correction_func (Callable): correction for multiple hypothesis
             testing in the case of multivariate regression. Defaults to
             Bonferroni correction.
 
-        :returns: y_pred, y_lower, y_higher.
-        :rtype: Union[Tuple[np.ndarray, np.ndarray],
-            Tuple[np.ndarray, np.ndarray, np.ndarray]]
+        Returns:
+            Union[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]: y_pred, y_lower, y_higher.
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()

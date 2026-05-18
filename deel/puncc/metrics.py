@@ -20,9 +20,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module provides conformal prediction metrics.
-"""
+"""This module provides conformal prediction metrics."""
+
 from typing import Tuple
 
 import numpy as np
@@ -35,20 +34,20 @@ def classification_mean_coverage(
 ) -> float:
     """Compute empirical coverage of the prediction sets.
 
-    Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
+        Given the $i$-th prediction set $S(X_i)$, the coverage is:
 
-    * :math:`cov(X_i) = 1` if :math:`y_{true} \in S(X_i)`
-    * :math:`cov(X_i) = 0` otherwise
+        * $cov(X_i) = 1$ if $y_{true} \\in S(X_i)$
+        * $cov(X_i) = 0$ otherwise
 
-    With N the number of examples, the average coverage is
-    :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+        With N the number of examples, the average coverage is
+        $1/N \\sum_{i=1}^{N} cov(X_i)$.
 
-    :param np.ndarray y_true: Observed label
-    :param Tuple[np.ndarray] set_pred: label prediction set
+    Args:
+        y_true (np.ndarray): Observed label
+        set_pred (Tuple[np.ndarray]): label prediction set
 
-    :returns: average coverage, indicating the proportion of instances that are
-        correctly covered.
-    :rtype: float
+    Returns:
+        float: average coverage, indicating the proportion of instances that are correctly covered.
     """
     counter = 0
     for y, S in zip(y_true, set_pred):
@@ -60,11 +59,11 @@ def classification_mean_coverage(
 def classification_mean_size(set_pred: Tuple[np.ndarray]) -> float:
     """Compute average size of the prediction sets.
 
-    :param Tuple[np.ndarray] set_pred: label prediction set
+    Args:
+        set_pred (Tuple[np.ndarray]): label prediction set
 
-    :returns: Average size of the prediction sets
-    :rtype: float
-    """
+    Returns:
+        float: Average size of the prediction sets"""
     return np.mean([len(s) for s in set_pred])
 
 
@@ -73,22 +72,22 @@ def classification_classwise_coverage(
 ) -> np.ndarray:
     """Compute classwise coverage of the prediction sets.
 
-    Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
+        Given the $i$-th prediction set $S(X_i)$, the coverage is:
 
-    * :math:`cov(X_i) = 1` if :math:`y_{true} \in S(X_i)`
-    * :math:`cov(X_i) = 0` otherwise
+        * $cov(X_i) = 1$ if $y_{true} \\in S(X_i)$
+        * $cov(X_i) = 0$ otherwise
 
-    With N the number of examples, the classwise coverage for class k is
-    :math:`1/N_k \sum_{i:y_i=k}^{N} cov(X_i)`, where :math:`N_k` is the number
-    of examples of class k.
+        With N the number of examples, the classwise coverage for class k is
+        $1/N_k \\sum_{i:y_i=k}^{N} cov(X_i)$, where $N_k$ is the number
+        of examples of class k.
 
-    :param np.ndarray y_true: Observed label
-    :param Tuple[np.ndarray] set_pred: label prediction set
-    :param int n_classes: number of classes
+    Args:
+        y_true (np.ndarray): Observed label
+        set_pred (Tuple[np.ndarray]): label prediction set
+        n_classes (int): number of classes
 
-    :returns: classwise coverage, indicating the proportion of instances that
-        are correctly covered for each class.
-    :rtype: np.ndarray
+    Returns:
+        np.ndarray: classwise coverage, indicating the proportion of instances that are correctly covered for each class.
     """
     coverage = np.zeros(n_classes)
     counts = np.zeros(n_classes)
@@ -113,12 +112,12 @@ def classification_classwise_size(
 ) -> np.ndarray:
     """Compute classwise average size of the prediction sets.
 
-    :param Tuple[np.ndarray] set_pred: label prediction set
-    :param int n_classes: number of classes
+    Args:
+        set_pred (Tuple[np.ndarray]): label prediction set
+        n_classes (int): number of classes
 
-    :returns: classwise average size of the prediction sets.
-    :rtype: np.ndarray
-    """
+    Returns:
+        np.ndarray: classwise average size of the prediction sets."""
     size = np.zeros(n_classes)
     counts = np.zeros(n_classes)
 
@@ -142,21 +141,21 @@ def classification_classwise_size(
 def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
     """Compute average coverage on several prediction intervals.
 
-    Given the :math:`i`-th prediction interval :math:`C(X_i)`, the coverage is:
+        Given the $i$-th prediction interval $C(X_i)$, the coverage is:
 
-        * :math:`cov(X_i) = 1` if :math:`y_{true} \in C(X_i)`
-        * :math:`cov(X_i) = 0` otherwise
+            * $cov(X_i) = 1$ if $y_{true} \\in C(X_i)$
+            * $cov(X_i) = 0$ otherwise
 
-    With N the number of examples, the average coverage is
-    :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+        With N the number of examples, the average coverage is
+        $1/N \\sum_{i=1}^{N} cov(X_i)$.
 
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    Args:
+        y_true (ndarray): label true values.
+        y_pred_lower (ndarray): lower bounds of the prediction intervals.
+        y_pred_upper (ndarray): upper bounds of the prediction intervals.
 
-    :returns: average coverage, indicating the proportion of instances that are
-        correctly covered.
-    :rtype: float
+    Returns:
+        float: average coverage, indicating the proportion of instances that are correctly covered.
     """
     return ((y_true >= y_pred_lower) & (y_true <= y_pred_upper)).mean()
 
@@ -164,24 +163,23 @@ def regression_mean_coverage(y_true, y_pred_lower, y_pred_upper) -> float:
 def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
     """Compte the Average Coverage Error (ACE).
 
-    :param ndarray y_true: label true values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param float alpha: significance level (max miscoverage target).
+    Args:
+        y_true (ndarray): label true values.
+        y_pred_lower (ndarray): lower bounds of the prediction intervals.
+        y_pred_upper (ndarray): upper bounds of the prediction intervals.
+        alpha (float): significance level (max miscoverage target).
 
-    .. NOTE::
+        !!! note
+            The ACE is the distance between the nominal coverage $1-\\alpha$
+            and the empirical average coverage $AC$ such that
+            $ACE = AC - (1-\\alpha)$.
 
-        The ACE is the distance between the nominal coverage :math:`1-\\alpha`
-        and the empirical average coverage :math:`AC` such that
-        :math:`ACE = AC - (1-\\alpha)`.
+            If the ACE is strictly negative, the prediction intervals are
+            marginally undercovering. If the ACE is strictly positive, the
+            prediction intervals are maginally conservative.
 
-        If the ACE is strictly negative, the prediction intervals are
-        marginally undercovering. If the ACE is strictly positive, the
-        prediction intervals are maginally conservative.
-
-    :returns: the average coverage error (ACE).
-    :rtype: float
-    """
+    Returns:
+        float: the average coverage error (ACE)."""
     cov = regression_mean_coverage(y_true, y_pred_lower, y_pred_upper)
     return cov - (1 - alpha)
 
@@ -189,34 +187,29 @@ def regression_ace(y_true, y_pred_lower, y_pred_upper, alpha) -> float:
 def regression_sharpness(y_pred_lower, y_pred_upper) -> float:
     """Compute the average absolute width of the prediction intervals.
 
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
+    Args:
+        y_pred_lower (ndarray): lower bounds of the prediction intervals.
+        y_pred_upper (ndarray): upper bounds of the prediction intervals.
 
-    :returns: average absolute width of the prediction intervals.
-    :rtype: float
-    """
+    Returns:
+        float: average absolute width of the prediction intervals."""
     return (np.abs(y_pred_upper - y_pred_lower)).mean()
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Object Detection ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def object_detection_mean_coverage(
-    y_pred_outer: np.ndarray, y_true: np.ndarray
-):
-    """
-    Calculate the mean coverage of conformal object detection predictions.
-    For each instance, coverage is defined as the true bounding box being inside
-    the predicted outer bounding box.
+def object_detection_mean_coverage(y_pred_outer: np.ndarray, y_true: np.ndarray):
+    """Calculate the mean coverage of conformal object detection predictions.
+        For each instance, coverage is defined as the true bounding box being inside
+        the predicted outer bounding box.
 
-    :param np.ndarray y_pred: array of predicted outer bounding boxes with shape (n, 4).
-    :type y_pred: np.ndarray
-    :param np.ndarray y_true: array of true bounding boxes with shape (n, 4).
+    Args:
+        y_pred (np.ndarray): array of predicted outer bounding boxes with shape (n, 4).
+        y_true (np.ndarray): array of true bounding boxes with shape (n, 4).
 
-    :return: average coverage, indicating the proportion of objects that are
-        correctly covered.
-    :rtype: float
-
+    Returns:
+        float: average coverage, indicating the proportion of objects that are correctly covered.
     """
     x_min_true, y_min_true, x_max_true, y_max_true = np.hsplit(y_true, 4)
     x_min, y_min, x_max, y_max = np.hsplit(y_pred_outer, 4)
@@ -230,38 +223,29 @@ def object_detection_mean_coverage(
 
 
 def object_detection_mean_area(y_pred: np.ndarray):
-    """
-    Calculate the mean area of object bounding predictions.
+    """Calculate the mean area of object bounding predictions.
 
-    :param np.ndarray y_pred: array of predicted bounding boxes with shape (n, 4).
+    Args:
+        y_pred (np.ndarray): array of predicted bounding boxes with shape (n, 4).
 
-    :return: average area of the bounding boxes
-    :rtype: float
-
-    """
+    Returns:
+        float: average area of the bounding boxes"""
     x_min, y_min, x_max, y_max = np.hsplit(y_pred, 4)
     return np.mean((x_max - x_min) * (y_max - y_min))
 
 
 # Calculate Intersection over Union (IOU) between two bounding boxes
 def iou(bboxes1: np.ndarray, bboxes2: np.ndarray) -> np.ndarray:
-    """
-    Calculates the Intersection over Union (IoU) between two sets of 
-    bounding boxes. The IoU is calculated as the ratio between the area of 
-    intersection and the area of union between two bounding boxes.
-    
-    :param np.ndarray bboxes1: array of shape (N, 4) representing the 
-        coordinates of N bounding boxes in the format 
-        [x_min, y_min, x_max, y_max].
-    :type y_pred: np.ndarray
-    :param np.ndarray bboxes2: array of shape (N, 4) representing the 
-        coordinates of N bounding boxes in the format 
-        [x_min, y_min, x_max, y_max].
+    """Calculates the Intersection over Union (IoU) between two sets of
+        bounding boxes. The IoU is calculated as the ratio between the area of
+        intersection and the area of union between two bounding boxes.
 
-    :return: iou (numpy.ndarray): Array of shape (N, ) representing the IoU 
-        between each pair of bounding boxes.
-    :rtype: np.ndarray
+    Args:
+        bboxes1 (np.ndarray): array of shape (N, 4) representing the  coordinates of N bounding boxes in the format [x_min, y_min, x_max, y_max].
+        bboxes2 (np.ndarray): array of shape (N, 4) representing the  coordinates of N bounding boxes in the format [x_min, y_min, x_max, y_max].
 
+    Returns:
+        np.ndarray: iou (numpy.ndarray): Array of shape (N, ) representing the IoU  between each pair of bounding boxes.
     """
 
     x1_min, y1_min, x1_max, y1_max = np.split(bboxes1, 4, axis=1)

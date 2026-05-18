@@ -6,10 +6,12 @@ pytest
 pytest-cov
 black
 pre-commit
-sphinx
-sphinx-rtd-theme
-sphinx-autodoc-typehints
-sphinxcontrib-bibtex
+mkdocs
+mkdocs-autorefs
+mkdocstrings[python]
+mkdocs-bibtex
+pymdown-extensions
+pypandoc_binary
 tensorflow == 2.11.0
 scikit-learn == 1.3.2
 torch

@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements conformal anomaly detection procedures.
-"""
+This module implements conformal anomaly detection procedures."""
+
 import logging
 from typing import Iterable
 from typing import Optional
@@ -41,17 +41,20 @@ class SplitCAD:
     """Split conformal anomaly detection method based on Laxhammar's algorithm.
     The anomaly detection is based on the calibrated threshold (through
     conformal prediction) of underlying anomaly detection (model's) scores.
-    For more details, we refer the user to the :ref:`theory overview
-    page <theory_overview>`.
+    For more details, we refer the user to the theory overview
+    page .
 
-    :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
+    Args:
+        predictor (BasePredictor): a predictor implementing fit and predict.
+        train (bool): if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-    :param float random_state: random seed used when the user does not
+        random_state (float): random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
 
-    Example::
+    Examples:
+        Basic usage:
 
+        ```python
         import numpy as np
         from sklearn.ensemble import IsolationForest
         from sklearn.datasets import make_moons
@@ -121,7 +124,8 @@ class SplitCAD:
         plt.xticks(())
         plt.yticks(())
         plt.legend()
-    """
+
+        ```"""
 
     def __init__(self, predictor, *, train=True, random_state: float = None):
         self.predictor = predictor
@@ -150,35 +154,32 @@ class SplitCAD:
         the conformalization is performed on the given user defined
         fit and calibration sets.
 
-        .. NOTE::
-
+        !!! note
             If z is provided, `fit` ignores
             any user-defined fit/calib split.
 
 
-        :param Iterable z: data points from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
+        Args:
+            z (Iterable): data points from the training dataset.
+            fit_ratio (float): the proportion of samples assigned to the
             fit subset.
-        :param Iterable z_fit: data points from the fit dataset.
-        :param Iterable z_calib: data points from the calibration dataset.
-        :param dict kwargs: predict configuration to be passed to the model's
+            z_fit (Iterable): data points from the fit dataset.
+            z_calib (Iterable): data points from the calibration dataset.
+            kwargs (dict): predict configuration to be passed to the model's
             fit method.
 
-        :raises RuntimeError: no dataset provided.
+        Raises:
+            RuntimeError: no dataset provided.
 
         """
 
         if z is not None:
-            splitter = RandomSplitter(
-                ratio=fit_ratio, random_state=self.random_state
-            )
+            splitter = RandomSplitter(ratio=fit_ratio, random_state=self.random_state)
 
         elif z_fit is not None and z_calib is not None:
             splitter = IdSplitter(z_fit, z_fit, z_calib, z_calib)
 
-        elif (
-            self.predictor.is_trained and z_fit is None and z_calib is not None
-        ):
+        elif self.predictor.is_trained and z_fit is None and z_calib is not None:
             splitter = IdSplitter(
                 np.empty_like(z_calib), np.empty_like(z_calib), z_calib, z_calib
             )
@@ -213,19 +214,18 @@ class SplitCAD:
         taken based on the calibrated threshold (through conformal prediction)
         of underlying anomaly detection scores.
 
-        :param Iterable z_test: new data points.
-        :param float alpha: target maximum FDR.
+        Args:
+            z_test (Iterable): new data points.
+            alpha (float): target maximum FDR.
 
-        :returns: outlier tag. True if outlier, False otherwise.
-        :rtype: Iterables[bool]
+        Returns:
+            : outlier tag. True if outlier, False otherwise.
 
         """
 
         if self.__is_fit is None:
             raise RuntimeError("Fit method should be called before predict.")
 
-        anomaly_pred = np.invert(
-            self.calibrator.is_conformal(z_test, alpha=alpha)
-        )
+        anomaly_pred = np.invert(self.calibrator.is_conformal(z_test, alpha=alpha))
 
         return anomaly_pred

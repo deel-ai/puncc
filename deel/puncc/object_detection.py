@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements conformal object detection procedures.
-"""
+This module implements conformal object detection procedures."""
+
 from typing import Any
 from typing import Callable
 from typing import Iterable
@@ -41,25 +41,27 @@ from deel.puncc.api.prediction import BasePredictor
 
 class SplitBoxWise(SplitConformalPredictor):
     """Implementation of box-wise conformal object detection. For more info,
-    we refer the user to the :ref:`theory overview page <theory splitboxwise>`
+    we refer the user to the theory overview page
 
-    :param BasePredictor | Any predictor: a predictive model.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
+    Args:
+        predictor (BasePredictor | Any): a predictive model.
+        train (bool): if False, prediction model(s) will not be (re)trained.
         Defaults to False.
-    :param callable weight_func: function that takes as argument an array of
+        weight_func (callable): function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
-    :param str method: chose between "additive" or "multiplicative" box-wise
+        method (str): chose between "additive" or "multiplicative" box-wise
         conformalization.
-    :param int random_state: random seed used when the user does not
+        random_state (int): random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
 
-    :raises ValueError: if method is not 'additive' or 'multiplicative'.
+    Raises:
+        ValueError: if method is not 'additive' or 'multiplicative'.
 
-    .. _example splitboxwise:
+    Examples:
+        Basic usage:
 
-    Example::
-
+        ```python
         from deel.puncc.object_detection import SplitBoxWise
         import numpy as np
 
@@ -115,7 +117,8 @@ class SplitBoxWise(SplitConformalPredictor):
         coverage = object_detection_mean_coverage(box_outer, y_test)
         average_area = object_detection_mean_area(box_outer)
         print(f"Marginal coverage: {np.round(coverage, 2)}")
-    """
+
+        ```"""
 
     def __init__(
         self,
@@ -136,12 +139,14 @@ class SplitBoxWise(SplitConformalPredictor):
         else:
             raise ValueError("method must be 'additive' or 'multiplicative'.")
 
-        super().__init__(predictor=predictor,
-                         nonconf_score_func=nonconf_score_func,
-                         pred_set_func=pred_set_func,
-                         train=train,
-                         random_state=random_state,
-                         weight_func=weight_func)
+        super().__init__(
+            predictor=predictor,
+            nonconf_score_func=nonconf_score_func,
+            pred_set_func=pred_set_func,
+            train=train,
+            random_state=random_state,
+            weight_func=weight_func,
+        )
 
     def predict(
         self,
@@ -152,14 +157,15 @@ class SplitBoxWise(SplitConformalPredictor):
         """Conformal object detection (w.r.t target miscoverage alpha) for
         new samples.
 
-        :param Iterable X_test: features of new samples.
-        :param float alpha: target maximum miscoverage.
-        :param Callable correction_func: correction for multiple hypothesis
+        Args:
+            X_test (Iterable): features of new samples.
+            alpha (float): target maximum miscoverage.
+            correction_func (Callable): correction for multiple hypothesis
             testing in the case of multivariate regression. Defaults to
             Bonferroni correction.
 
-        :returns: y_pred, y_lower, y_higher
-        :rtype: Tuple[ndarray]
+        Returns:
+            : y_pred, y_lower, y_higher
 
         """
 

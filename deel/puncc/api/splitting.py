@@ -20,9 +20,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module provides data splitting schemes.
-"""
+"""This module provides data splitting schemes."""
+
 import sys
 from abc import ABC
 from typing import Any
@@ -42,6 +41,7 @@ def _is_pandas(x: Any) -> bool:
     pd = sys.modules.get("pandas")
     return bool(pd) and isinstance(x, (pd.DataFrame, pd.Series, pd.Index))
 
+
 def _take(x: Any, idx):
     """Index `x` with integer indices `idx` in a backend-agnostic way."""
     if _is_pandas(x):
@@ -52,12 +52,13 @@ def _take(x: Any, idx):
     except Exception:
         return [x[i] for i in idx]
 
+
 class BaseSplitter(ABC):
     """Abstract structure of a splitter. A splitter provides a function
-    that assignes data points to fit and calibration sets.
+        that assignes data points to fit and calibration sets.
 
-    :param int random_state: seed to control random generation.
-    """
+    Args:
+        random_state (int): seed to control random generation."""
 
     def __init__(self, random_state=None) -> None:
         self.random_state = random_state
@@ -69,11 +70,11 @@ class BaseSplitter(ABC):
 class IdSplitter(BaseSplitter):
     """Identity splitter that wraps an already existing data assignment.
 
-    :param Iterable X_fit: Fit features.
-    :param Iterable y_fit: Fit labels.
-    :param Iterable X_calib: calibration features.
-    :param Iterable y_calib: calibration labels.
-    """
+    Args:
+        X_fit (Iterable): Fit features.
+        y_fit (Iterable): Fit labels.
+        X_calib (Iterable): calibration features.
+        y_calib (Iterable): calibration labels."""
 
     def __init__(
         self,
@@ -96,14 +97,12 @@ class IdSplitter(BaseSplitter):
     def __call__(self, X=None, y=None) -> Tuple[Iterable]:
         """Wraps into a splitter the provided fit and calibration subsets.
 
-        :param Iterable X: features array. Not needed here, just a placeholder
-            for interoperability.
-        :param Iterable y: labels array. Not needed here, just a placeholder
-            for interoperability.
+        Args:
+            X (Iterable): features array. Not needed here, just a placeholder for interoperability.
+            y (Iterable): labels array. Not needed here, just a placeholder for interoperability.
 
-        :returns: List of one tuple of deterministic subsets
-            (X_fit, y_fit, X_calib, y_calib).
-        :rtype: List[Tuple[Iterable]]
+        Returns:
+            List[Tuple[Iterable]]: List of one tuple of deterministic subsets (X_fit, y_fit, X_calib, y_calib).
         """
         return self._split
 
@@ -111,10 +110,9 @@ class IdSplitter(BaseSplitter):
 class RandomSplitter(BaseSplitter):
     """Random splitter that assign samples given a ratio.
 
-    :param float ratio: ratio of data assigned to the training
-        (1-ratio to calibration).
-    :param int random_state: seed to control random generation.
-    """
+    Args:
+        ratio (float): ratio of data assigned to the training (1-ratio to calibration).
+        random_state (int): seed to control random generation."""
 
     def __init__(self, ratio, random_state=None):
         if (ratio <= 0) or (ratio >= 1):
@@ -129,12 +127,12 @@ class RandomSplitter(BaseSplitter):
     ) -> Tuple[Iterable]:
         """Implements a random split strategy.
 
-        :param Iterable X: features array.
-        :param Iterable y: labels array.
+        Args:
+            X (Iterable): features array.
+            y (Iterable): labels array.
 
-        :returns: List of one tuple of random subsets
-            (X_fit, y_fit, X_calib, y_calib).
-        :rtype: List[Tuple[Iterable]]
+        Returns:
+            List[Tuple[Iterable]]: List of one tuple of random subsets (X_fit, y_fit, X_calib, y_calib).
         """
         # Checks
         supported_types_check(X, y)
@@ -146,15 +144,22 @@ class RandomSplitter(BaseSplitter):
         n_cal = int(np.floor((1 - self.ratio) * n))
         calib_idx = perm[:n_cal]
         fit_idx = perm[n_cal:]
-        return [(_take(X, fit_idx), _take(y, fit_idx), _take(X, calib_idx), _take(y, calib_idx))]
+        return [
+            (
+                _take(X, fit_idx),
+                _take(y, fit_idx),
+                _take(X, calib_idx),
+                _take(y, calib_idx),
+            )
+        ]
 
 
 class KFoldSplitter(BaseSplitter):
     """KFold data splitter.
 
-    :param int K: number of folds to generate.
-    :param int random_state: seed to control random generation.
-    """
+    Args:
+        K (int): number of folds to generate.
+        random_state (int): seed to control random generation."""
 
     def __init__(self, K: int, random_state=None) -> None:
         if K < 2:
@@ -169,12 +174,12 @@ class KFoldSplitter(BaseSplitter):
     ) -> List[Tuple[Iterable]]:
         """Implements a K-fold split strategy.
 
-        :param Iterabler X: features array.
-        :param Iterable y: labels array.
+        Args:
+            X (Iterabler): features array.
+            y (Iterable): labels array.
 
-        :returns: list of K split folds. Each fold is a tuple
-            (X_fit, y_fit, X_calib, y_calib).
-        :rtype: List[Tuple[Iterable]]
+        Returns:
+            List[Tuple[Iterable]]: list of K split folds. Each fold is a tuple (X_fit, y_fit, X_calib, y_calib).
         """
         # Checks
         supported_types_check(X, y)
@@ -186,6 +191,8 @@ class KFoldSplitter(BaseSplitter):
         folds = []
 
         for fit, calib in kfold.split(X):
-            folds.append((_take(X, fit), _take(y, fit), _take(X, calib), _take(y, calib)))
+            folds.append(
+                (_take(X, fit), _take(y, fit), _take(X, calib), _take(y, calib))
+            )
 
         return folds

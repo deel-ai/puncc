@@ -20,10 +20,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module provides prediction sets for conformal prediction. To be used when
-building a :ref:`calibrator <calibration>`.
-"""
+"""This module provides prediction sets for conformal prediction. To be used when
+building a `calibrator`."""
 
 import logging
 from typing import Callable
@@ -47,18 +45,12 @@ logger = logging.getLogger(__name__)
 def lac_set(Y_pred, scores_quantile) -> List:
     """LAC prediction set.
 
-    :param Iterable Y_pred:
-        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
-        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    Args:
+        Y_pred (Iterable): $Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})$ where $P_{\\text{C}_i}$ is logit associated to class i.
+        scores_quantile (ndarray): quantile of nonconformity scores computed on a calibration set for a given $\\alpha$
 
-    :param ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`
-
-
-    :returns: LAC prediction sets.
-    :rtype: Iterable
-
-    """
+    Returns:
+        Iterable: LAC prediction sets."""
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
@@ -72,8 +64,7 @@ def lac_set(Y_pred, scores_quantile) -> List:
     cond_np = b.to_numpy(cond)
 
     prediction_sets = [
-        [j for j, is_in in enumerate(cond_np[i]) if is_in]
-        for i in range(pred_len)
+        [j for j, is_in in enumerate(cond_np[i]) if is_in] for i in range(pred_len)
     ]
 
     return (prediction_sets,)
@@ -82,21 +73,15 @@ def lac_set(Y_pred, scores_quantile) -> List:
 def classwise_lac_set(Y_pred, scores_quantile) -> List:
     """Classwise LAC prediction set.
 
-    For each sample i and class c, include c in the prediction set if:
-        Y_pred[i, c] >= 1 - scores_quantile[c]
+        For each sample i and class c, include c in the prediction set if:
+            Y_pred[i, c] >= 1 - scores_quantile[c]
 
-    :param Iterable Y_pred:
-        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
-        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    Args:
+        Y_pred (Iterable): $Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})$ where $P_{\\text{C}_i}$ is logit associated to class i.
+        scores_quantile (ndarray): per-class quantiles of nonconformity scores computed on a calibration set for a given $\\alpha$. Shape: (n_classes,)
 
-    :param ndarray scores_quantile: per-class quantiles of nonconformity scores
-        computed on a calibration set for a given :math:`\\alpha`.
-        Shape: (n_classes,)
-
-    :returns: Classwise LAC prediction sets.
-    :rtype: List
-
-    """
+    Returns:
+        List: Classwise LAC prediction sets."""
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
@@ -114,8 +99,7 @@ def classwise_lac_set(Y_pred, scores_quantile) -> List:
     # Build prediction sets: include class c if Y_pred[i, c] >= threshold[c].
     cond_np = b.to_numpy(yp >= thresholds)
     prediction_sets = [
-        [j for j, is_in in enumerate(cond_np[i]) if is_in]
-        for i in range(n_test)
+        [j for j, is_in in enumerate(cond_np[i]) if is_in] for i in range(n_test)
     ]
 
     return (prediction_sets,)
@@ -126,35 +110,29 @@ def raps_set(
 ) -> Iterable:
     """RAPS prediction set.
 
-    .. warning::
-
+    Warning:
         This signature is incompatible with the interface of calibrators.
-        **Use** :func:`raps_set_builder` **to properly initialize**
-        :class:`deel.puncc.api.calibration.BaseCalibrator`.
+        Use `raps_set_builder` to properly initialize
+        `deel.puncc.api.calibration.BaseCalibrator`.
 
-    :param Iterable Y_pred:
-        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
-        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    Args:
+        Y_pred (Iterable): Predicted logits,
+            $Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})$,
+            where $P_{\\text{C}_i}$ is the logit associated with class `i`.
+        scores_quantile (ndarray): Quantile of nonconformity scores computed
+            on a calibration set for a given $\\alpha$.
+        lambd (float): Positive weight associated with the regularization term
+            that encourages small set sizes. If $\\lambda = 0$, there is no
+            regularization and the implementation identifies with APS.
+        k_reg (float): Class rank, ordered by descending probability, starting
+            from which the regularization is applied. For example, if
+            $k_{reg} = 3$, then the fourth most likely estimated class has an
+            extra penalty of size $\\lambda$.
+        rand (bool): Whether to use the randomization term that smoothes the
+            discrete probability mass jump when including a new class.
 
-    :param ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`
-
-    :param float lambd: positive weight associated to the regularization term
-        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
-        regularization and the implementation identifies with **APS**.
-
-    :param float k_reg: class rank (ordered by descending probability) starting
-        from which the regularization is applied. For example, if
-        :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
-        extra penalty of size :math:`\\lambda`.
-
-    : param bool rand: turn on or off the randomization term that smoothes the
-        discrete probability mass jump when including a new class.
-
-
-    :returns: RAPS prediction sets.
-    :rtype: Iterable
-
+    Returns:
+        Iterable: RAPS prediction sets.
     """
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
@@ -184,9 +162,7 @@ def raps_set(
     # penalized by the regularization term
     rank = b.arange(1, n_classes + 1)
     rank_zero = rank - rank
-    penal_cum_proba = sorted_cum_mass + lambd * b.maximum(
-        rank - k_reg, rank_zero
-    )
+    penal_cum_proba = sorted_cum_mass + lambd * b.maximum(rank - k_reg, rank_zero)
 
     # L is the number of classes (+1) for which the cumulative probability mass
     # is below the threshold "tau"
@@ -231,46 +207,29 @@ def raps_set(
     return (prediction_sets,)
 
 
-def raps_set_builder(
-    lambd: float = 0, k_reg: int = 1, rand: bool = True
-) -> Callable:
+def raps_set_builder(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> Callable:
     """RAPS prediction set builder. When called, returns a RAPS prediction set
-    function :func:`raps_set` with given initialitation of regularization
-    hyperparameters.
+        function `raps_set` with given initialitation of regularization
+        hyperparameters.
 
-    :param float lambd: positive weight associated to the regularization term
-        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
-        regularization and the implementation identifies with **APS**.
+    Args:
+        lambd (float): positive weight associated to the regularization term that encourages small set sizes. If $\\lambda = 0$, there is no regularization and the implementation identifies with **APS**.
+        k_reg (float): class rank (ordered by descending probability) starting from which the regularization is applied. For example, if $k_{reg} = 3$, then the fourth most likely estimated class has an extra penalty of size $\\lambda$.
+        rand (bool): turn on or off the randomization term that smoothes the discrete probability mass jump when including a new class.
 
-    :param float k_reg: class rank (ordered by descending probability) starting
-        from which the regularization is applied. For example, if
-        :math:`k_{reg} = 3`, then the fourth most likely estimated class has an
-        extra penalty of size :math:`\\lambda`.
+    Returns:
+        Callable: RAPS prediction set function that takes two parameters: `Y_pred` and `scores_quantile`.
 
-    : param bool rand: turn on or off the randomization term that smoothes the
-        discrete probability mass jump when including a new class.
-
-    :returns: RAPS prediction set function that takes two parameters:
-        `Y_pred` and `scores_quantile`.
-    :rtype: Callable
-
-    :raises ValueError: incorrect value of lambd or k_reg.
-    :raises TypeError: unsupported data types.
-
-    """
+    Raises:
+        ValueError: incorrect value of lambd or k_reg.
+        TypeError: unsupported data types."""
     if lambd < 0:
-        raise ValueError(
-            f"Argument `lambd` has to be positive, provided: {lambd} < 0"
-        )
+        raise ValueError(f"Argument `lambd` has to be positive, provided: {lambd} < 0")
     if k_reg < 0:
-        raise ValueError(
-            f"Argument `k_reg` has to be positive, provided: {k_reg} < 0"
-        )
+        raise ValueError(f"Argument `k_reg` has to be positive, provided: {k_reg} < 0")
 
     def _raps_set_function(Y_pred, scores_quantile):
-        return raps_set(
-            Y_pred, scores_quantile, lambd=lambd, k_reg=k_reg, rand=rand
-        )
+        return raps_set(Y_pred, scores_quantile, lambd=lambd, k_reg=k_reg, rand=rand)
 
     return _raps_set_function
 
@@ -280,23 +239,26 @@ def raps_set_builder(
 
 def constant_interval(y_pred: Iterable, scores_quantile):
     """Constant prediction interval centered on `y_pred`. The size of the
-    margin is `scores_quantile` (noted :math:`\gamma_{\\alpha}`).
+        margin is `scores_quantile` (noted $\\gamma_{\\alpha}$).
 
-    .. math::
+    $$
 
-        I = [y_{\\text{pred}} - \gamma_{\\alpha}, y_{\\text{pred}} +
-        \gamma_{\\alpha}]
+    I = [y_{\\text{pred}} - \\gamma_{\\alpha}, y_{\\text{pred}} +
+    \\gamma_{\\alpha}]
 
-    :param Iterable y_pred: predictions.
+    Args:
+        y_pred (Iterable): predictions.
+        scores_quantile (ndarray): quantile of nonconformity scores computed
 
-    :param ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`.
+    on a calibration set for a given $\\alpha$.
 
-    :returns: prediction intervals :math:`I`.
-    :rtype: Tuple[ndarray]
+    Returns:
+        Tuple[ndarray]: prediction intervals $I$.
 
-    :raises TypeError: unsupported data types.
-    """
+    Raises:
+        TypeError: unsupported data types.
+
+    $$"""
     supported_types_check(y_pred)
     b = get_backend(y_pred)
     y_pred = b.asarray(y_pred)
@@ -306,30 +268,33 @@ def constant_interval(y_pred: Iterable, scores_quantile):
     return y_lo, y_hi
 
 
-def scaled_interval(
-    Y_pred: Iterable, scores_quantile, weights=1, eps: float = 1e-12
-):
+def scaled_interval(Y_pred: Iterable, scores_quantile, weights=1, eps: float = 1e-12):
     """Scaled prediction interval centered on `y_pred`. Considering
-    :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`,
-    the size of the margin is proportional to `scores_quantile`
-    :math:`\gamma_{\\alpha}`.
+        $Y_{\\text{pred}} = (\\mu_{\\text{pred}}, \\sigma_{\\text{pred}})$,
+        the size of the margin is proportional to `scores_quantile`
+        $\\gamma_{\\alpha}$.
 
-    .. math::
+    $$
 
-        I = [\mu_{\\text{pred}} - \gamma_{\\alpha} \cdot \sigma_{\\text{pred}},
-        y_{\\text{pred}} + \gamma_{\\alpha} \cdot \sigma_{\\text{pred}}]
+    I = [\\mu_{\\text{pred}} - \\gamma_{\\alpha} \\cdot \\sigma_{\\text{pred}},
+    y_{\\text{pred}} + \\gamma_{\\alpha} \\cdot \\sigma_{\\text{pred}}]
 
-    :param Iterable y_pred: predictions.
-    :param ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`.
-    :param ndarray weights: weights to apply to the size of the interval.
-    :param float eps: small positive value to avoid singleton sets.
+    Args:
+        y_pred (Iterable): predictions.
+        scores_quantile (ndarray): quantile of nonconformity scores computed
 
-    :returns: scaled prediction intervals :math:`I`.
-    :rtype: Tuple[ndarray]
+    on a calibration set for a given $\\alpha$.
+    Args:
+        weights (ndarray): weights to apply to the size of the interval.
+        eps (float): small positive value to avoid singleton sets.
 
-    :raises TypeError: unsupported data types.
-    """
+    Returns:
+        Tuple[ndarray]: scaled prediction intervals $I$.
+
+    Raises:
+        TypeError: unsupported data types.
+
+    $$"""
 
     b = get_backend(Y_pred)
     Yp = b.asarray(Y_pred)
@@ -350,12 +315,8 @@ def scaled_interval(
 
     fints = sigma_pred + eps > 0
     q = b.asarray(scores_quantile)
-    y_lo = b.where(
-        fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf")
-    )
-    y_hi = b.where(
-        fints, y_pred + q * (sigma_pred + eps) * weights, float("inf")
-    )
+    y_lo = b.where(fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf"))
+    y_hi = b.where(fints, y_pred + q * (sigma_pred + eps) * weights, float("inf"))
     return y_lo, y_hi
 
     # supported_types_check(Y_pred)
@@ -386,24 +347,28 @@ def scaled_interval(
 
 def cqr_interval(Y_pred: Iterable, scores_quantile):
     """CQR prediction interval. Considering
-    :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`, the prediction
-    interval is built from the upper and lower quantiles predictions and
-    `scores_quantile` :math:`\gamma_{\\alpha}`.
+        $Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})$, the prediction
+        interval is built from the upper and lower quantiles predictions and
+        `scores_quantile` $\\gamma_{\\alpha}$.
 
-    .. math::
+    $$
 
-        I = [q_{\\text{lo}} - \gamma_{\\alpha}, q_{\\text{lo}} +
-        \gamma_{\\alpha}]
+    I = [q_{\\text{lo}} - \\gamma_{\\alpha}, q_{\\text{lo}} +
+    \\gamma_{\\alpha}]
 
-    :param Iterable y_pred: predictions.
-    :param ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`.
+    Args:
+        y_pred (Iterable): predictions.
+        scores_quantile (ndarray): quantile of nonconformity scores computed
 
-    :returns: scaled prediction intervals :math:`I`.
-    :rtype: Tuple[ndarray]
+    on a calibration set for a given $\\alpha$.
 
-    :raises TypeError: unsupported data types.
-    """
+    Returns:
+        Tuple[ndarray]: scaled prediction intervals $I$.
+
+    Raises:
+        TypeError: unsupported data types.
+
+    $$"""
     supported_types_check(Y_pred)
 
     b = get_backend(Y_pred)
@@ -427,19 +392,18 @@ def cqr_interval(Y_pred: Iterable, scores_quantile):
 
 
 def constant_bbox(Y_pred, scores_quantile):
-    """
-    Generate the upper and lower bounds of the bounding box coordinates for
-    a given prediction.
+    """Generate the upper and lower bounds of the bounding box coordinates for
+        a given prediction.
 
-    :param np.ndarray Y_pred: the predicted bounding box coordinates.
-    :param np.ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`.
+    Args:
+        Y_pred (np.ndarray): the predicted bounding box coordinates.
+        scores_quantile (np.ndarray): quantile of nonconformity scores computed on a calibration set for a given $\\alpha$.
 
-    :return: the lower bound and upper bound coordinates of the bounding box.
-    :rtype: Tuple[np.ndarray, np.ndarray]
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: the lower bound and upper bound coordinates of the bounding box.
 
-    :raises TypeError: unsupported data types.
-    """
+    Raises:
+        TypeError: unsupported data types."""
     b = get_backend(Y_pred)
     yp = b.asarray(Y_pred)
 
@@ -455,33 +419,28 @@ def constant_bbox(Y_pred, scores_quantile):
     q3 = b.scalar_at(scores_quantile, 3)
     x_min_lo, y_min_lo = x_min - q0, y_min - q1
     x_max_hi, y_max_hi = x_max + q2, y_max + q3
-    y_pred_hi = concat_columns(
-        [x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp
-    )
+    y_pred_hi = concat_columns([x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp)
 
     x_min_hi, y_min_hi = x_min + q0, y_min + q1
     x_max_lo, y_max_lo = x_max - q2, y_max - q3
-    y_pred_lo = concat_columns(
-        [x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp
-    )
+    y_pred_lo = concat_columns([x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp)
 
     return y_pred_lo, y_pred_hi
 
 
 def scaled_bbox(Y_pred, scores_quantile):
-    """
-    Scaled upper and lower bounds of the bounding box coordinates
-    for a given prediction coordinates.
+    """Scaled upper and lower bounds of the bounding box coordinates
+        for a given prediction coordinates.
 
-    :param np.ndarray Y_pred: the predicted bounding box coordinates.
-    :param np.ndarray scores_quantile: quantile of nonconformity scores computed
-        on a calibration set for a given :math:`\\alpha`.
+    Args:
+        Y_pred (np.ndarray): the predicted bounding box coordinates.
+        scores_quantile (np.ndarray): quantile of nonconformity scores computed on a calibration set for a given $\\alpha$.
 
-    :return: The coordinates of the inner and outer bounding boxes.
-    :rtype: Tuple[np.ndarray, np.ndarray]
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: The coordinates of the inner and outer bounding boxes.
 
-    :raises TypeError: unsupported data types.
-    """
+    Raises:
+        TypeError: unsupported data types."""
     b = get_backend(Y_pred)
     yp = b.asarray(Y_pred)
 
@@ -506,17 +465,13 @@ def scaled_bbox(Y_pred, scores_quantile):
     x_max_hi = x_max + q2 * dx
     y_max_hi = y_max + q3 * dy
 
-    y_pred_outer = concat_columns(
-        [x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp
-    )
+    y_pred_outer = concat_columns([x_min_lo, y_min_lo, x_max_hi, y_max_hi], like=yp)
 
     # Coordinates of included bbox (lowerbounds)
     x_min_hi = x_min + q0 * dx
     y_min_hi = y_min + q1 * dy
     x_max_lo = x_max - q2 * dx
     y_max_lo = y_max - q3 * dy
-    y_pred_inner = concat_columns(
-        [x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp
-    )
+    y_pred_inner = concat_columns([x_min_hi, y_min_hi, x_max_lo, y_max_lo], like=yp)
 
     return y_pred_inner, y_pred_outer

@@ -1,26 +1,39 @@
-name: deploy-doc
-on: [workflow_dispatch]
+name: deploy-doc # Build MkDocs and deploy Github pages
+
 permissions:
-    contents: write
+  contents: write  # Required to push to gh-pages branch
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
-  docs:
+
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
       - name: Install dependencies
         run: |
-          pip install sphinx sphinx_rtd_theme sphinx-autodoc-typehints
-      - name: Sphinx build
-        run: |
-          cd docs
-          make html
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          python -m pip install --upgrade pip
+          python -m pip install .[dev]
+
+      - name: Build Mkdocs
+        run: mkdocs build
+
+      - name: Deploy Github Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/build/html/.
-          destination_dir: docs/
-          force_orphan: true
+          folder: site  #  The folder where MkDocs builds the site
+          branch: gh-pages  # The branch to deploy to

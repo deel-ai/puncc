@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module provides plotting functions for conformal prediction.
-"""
+This module provides plotting functions for conformal prediction."""
+
 from typing import Optional
 
 import matplotlib
@@ -63,23 +63,26 @@ def plot_prediction_intervals(  # pylint: disable=too-many-branches
     `y_pred_upper`. True and predicted (if provided) point values are also
     displayed.
 
-    :param ndarray y_true: true output values.
-    :param ndarray y_pred_lower: lower bounds of the prediction intervals.
-    :param ndarray y_pred_upper: upper bounds of the prediction intervals.
-    :param ndarray, optional X: abscisse vector.
-    :param ndarray, optional y_pred: predicted values.
-    :param matplotlib.axes.Axes, optional ax: plot using the provided axis.
+    Args:
+        y_true (ndarray): true output values.
+        y_pred_lower (ndarray): lower bounds of the prediction intervals.
+        y_pred_upper (ndarray): upper bounds of the prediction intervals.
+        X (ndarray, optional): abscisse vector.
+        y_pred (ndarray, optional): predicted values.
+        ax (matplotlib.axes.Axes, optional): plot using the provided axis.
         Otherwise, a new figure is created and the corresponding axis is
         returned as output.
-    :param fig_kw: all additional keyword arguments are passed to the
+        fig_kw: all additional keyword arguments are passed to the
         pyplot.figure call.
 
-    :returns: updated axis if `ax` provided. Otherwise a new figure is created
+    Returns:
+        : updated axis if `ax` provided. Otherwise a new figure is created
         and the corresponding axis is returned as output
-    :rtype: matplotlib.axes.Axes
 
-    Example 1::
+    Examples:
+        Example 1:
 
+        ```python
         import numpy as np
         from sklearn.datasets import make_regression
         from deel.puncc.plotting import plot_prediction_intervals
@@ -108,8 +111,10 @@ def plot_prediction_intervals(  # pylint: disable=too-many-branches
         figsize=(20,10),
         loc="best")
 
-    Example 2::
+        ```
+        Example 2:
 
+        ```python
         import numpy as np
         import matplotlib.pyplot as plt
         from sklearn.datasets import make_regression
@@ -153,7 +158,8 @@ def plot_prediction_intervals(  # pylint: disable=too-many-branches
         y_pred_upper=y_pred_upper2,
         ax=ax[1])
 
-    """
+
+        ```"""
 
     # Initialisation
     current_rcparams = None
@@ -235,12 +241,8 @@ def plot_prediction_intervals(  # pylint: disable=too-many-branches
         )
 
         # plot interval
-        ax.plot(
-            X, y_pred_upper, "--", color=interval_color, linewidth=1.2, alpha=0.85
-        )
-        ax.plot(
-            X, y_pred_lower, "--", color=interval_color, linewidth=1.2, alpha=0.85
-        )
+        ax.plot(X, y_pred_upper, "--", color=interval_color, linewidth=1.2, alpha=0.85)
+        ax.plot(X, y_pred_lower, "--", color=interval_color, linewidth=1.2, alpha=0.85)
         ax.fill_between(
             x=X,
             y1=y_pred_upper,
@@ -312,20 +314,21 @@ def draw_bounding_box(
     """
     Draw a bounding box on a given image.
 
-    :param tuple box: the coordinates of the bounding box in the format
+    Args:
+        box (tuple): the coordinates of the bounding box in the format
         (x_min, y_min, x_max, y_max).
-    :param str label: the label for the bounding box.
-    :param PIL.Image.Image image: the image object to draw on. If provided,
+        label (str): the label for the bounding box.
+        image (PIL.Image.Image): the image object to draw on. If provided,
         image_path is ignored.
-    :param str image_path: the path to the image file. Should be provided if
+        image_path (str): the path to the image file. Should be provided if
         image is not.
-    :param str color: the color of the bounding box outline and label.
-    :param str legend: the legend for the plot.
-    :param bool show: whether to display the image with the bounding box and
+        color (str): the color of the bounding box outline and label.
+        legend (str): the legend for the plot.
+        show (bool): whether to display the image with the bounding box and
         legend.
 
-    :return: the image object with the bounding box and label.
-    :rtype: PIL.Image.Image
+    Returns:
+        : the image object with the bounding box and label.
     """
 
     # Check if either image or image_path is provided
@@ -353,9 +356,7 @@ def draw_bounding_box(
     if box is not None:
         # Draw the actual bounding box
         im_with_rectangle = ImageDraw.Draw(im)
-        im_with_rectangle.rounded_rectangle(
-            box, outline=color, width=2, radius=1
-        )
+        im_with_rectangle.rounded_rectangle(box, outline=color, width=2, radius=1)
         # Draw the label
         im_with_rectangle.text(
             (box[0] + 3, box[1]), label, fill=color, stroke_fill=color

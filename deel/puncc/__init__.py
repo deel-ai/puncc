@@ -21,8 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """Initialization of puncc."""
-import logging.config
 
+import logging.config
 
 # Create the Logger
 logging.basicConfig(

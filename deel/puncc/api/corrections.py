@@ -20,10 +20,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module provides correction functions for multiple hypothesis testing. To be used
-when building a :ref:`calibrator <calibration>` for multivariate regression or object detection.
-"""
+"""This module provides correction functions for multiple hypothesis testing. To be used
+when building a `calibrator` for multivariate regression or object detection."""
+
 from typing import Union
 
 import numpy as np
@@ -32,13 +31,12 @@ import numpy as np
 def bonferroni(alpha: float, nvars: int = 1) -> Union[float, np.ndarray]:
     """Bonferroni correction for multiple comparisons.
 
-    :param float alpha: nominal coverage level.
-    :param int nvars: number of output features.
+    Args:
+        alpha (float): nominal coverage level.
+        nvars (int): number of output features.
 
-
-    :returns: corrected coverage level.
-    :rtype: float or ndarray.
-    """
+    Returns:
+        float or ndarray.: corrected coverage level."""
     # Sanity checks
     if np.any(alpha <= 0) or np.any(alpha >= 1):
         raise ValueError("alpha must be in (0,1)")
@@ -55,13 +53,12 @@ def bonferroni(alpha: float, nvars: int = 1) -> Union[float, np.ndarray]:
 def weighted_bonferroni(alpha: float, weights: np.ndarray) -> np.ndarray:
     """Weighted Bonferroni correction for multiple comparisons.
 
-    :param float alpha: nominal coverage level.
-    :param np.ndarray weights: weights associated to each output feature.
+    Args:
+        alpha (float): nominal coverage level.
+        weights (np.ndarray): weights associated to each output feature.
 
-
-    :returns: array of corrected featurewise coverage levels.
-    :rtype: np.ndarray.
-    """
+    Returns:
+        np.ndarray.: array of corrected featurewise coverage levels."""
     # Sanity checks
     if alpha <= 0 or alpha >= 1:
         raise ValueError("alpha must be in (0,1)")
@@ -74,10 +71,7 @@ def weighted_bonferroni(alpha: float, weights: np.ndarray) -> np.ndarray:
     # Normalization check
     norm_condition = np.isclose(np.sum(weights) - 1, 0, atol=1e-14)
     if not norm_condition:
-        error = (
-            "weights are not normalized. Sum of weights is"
-            + f"{np.sum(weights)}"
-        )
+        error = "weights are not normalized. Sum of weights is" + f"{np.sum(weights)}"
         raise RuntimeError(error)
 
     return alpha * weights

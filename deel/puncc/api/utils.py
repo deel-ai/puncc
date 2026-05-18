@@ -20,9 +20,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module implements utility functions.
-"""
+"""This module implements utility functions."""
+
 import logging
 import sys
 from typing import Any
@@ -35,8 +34,6 @@ import numpy as np
 
 from deel.puncc.metrics import iou
 from deel.puncc.api.backend import get_backend, shape2
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -64,15 +61,15 @@ def _n_features(x: Any) -> int:
 
 def dual_predictor_check(l: Any, name: str, ltype: str):
     """Check if properties of `DualPredictor` come in
-    couples.
+        couples.
 
-    :param Any l: property of `DualPredictor`.
-    :param str name: name of the property.
-    :param str ltype: type of property.
+    Args:
+        l (Any): property of `DualPredictor`.
+        name (str): name of the property.
+        ltype (str): type of property.
 
-    :raises TypeError: when the properties count is not two.
-
-    """
+    Raises:
+        TypeError: when the properties count is not two."""
     if (not isinstance(l, list)) or len(l) != 2:
         raise TypeError(
             f"Argument `{name}` should be a list of two {ltype}. Provided {l}."
@@ -82,30 +79,29 @@ def dual_predictor_check(l: Any, name: str, ltype: str):
 def logit_normalization_check(y: Iterable):
     """Check if provided logits sum is close to one.
 
-    :param Iterable y: logits array. Rows correspond to samples and columns to
-        classes.
+    Args:
+        y (Iterable): logits array. Rows correspond to samples and columns to classes.
 
-    :raises ValueError: when logits sum is different than one within a tolerance
-        value of 1e-5.
+    Raises:
+        ValueError: when logits sum is different than one within a tolerance value of 1e-5.
     """
     b = get_backend(y)
     y_arr = b.to_numpy(b.asarray(y))
     logits_sum = np.sum(y_arr, -1)
     if np.any(np.abs(logits_sum - 1) > 1e-5):
-        raise ValueError(
-            f"Logits must some to 1. Provided logit array {logits_sum}"
-        )
+        raise ValueError(f"Logits must some to 1. Provided logit array {logits_sum}")
 
 
 def sample_len_check(a: Iterable, b: Iterable):
     """Check if arguments type have the same length.
 
-    :param Iterable a: iterable whose type is supported.
-    :param Iterable b: iterable whose type is supported.
+    Args:
+        a (Iterable): iterable whose type is supported.
+        b (Iterable): iterable whose type is supported.
 
-    :raises TypeError: unsupported data types or elements have inconsistent types.
-    :raises ValueError: arguments contain different number of samples.
-    """
+    Raises:
+        TypeError: unsupported data types or elements have inconsistent types.
+        ValueError: arguments contain different number of samples."""
     supported_types_check(a, b)
     if _n_samples(a) != _n_samples(b):
         raise ValueError("Iterables must contain the same number of samples.")
@@ -113,34 +109,34 @@ def sample_len_check(a: Iterable, b: Iterable):
 
 def features_len_check(a: Iterable, b: Iterable):
     """Check if arguments have the same number of features,
-    that is their last axes have the same length.
+        that is their last axes have the same length.
 
-    :param Iterable a: iterable whose type is supported.
-    :param Iterable b: iterable whose type is supported.
+    Args:
+        a (Iterable): iterable whose type is supported.
+        b (Iterable): iterable whose type is supported.
 
-    :raises TypeError: unsupported data types or elements have inconsistent types.
-    :raises ValueError: arguments have different number of features
-    """
+    Raises:
+        TypeError: unsupported data types or elements have inconsistent types.
+        ValueError: arguments have different number of features"""
 
     supported_types_check(a, b)
 
     if _n_features(a) != _n_features(b):
-        raise ValueError(
-            "X_fit and X_calib must contain the same number of features."
-        )
+        raise ValueError("X_fit and X_calib must contain the same number of features.")
 
 
 def supported_types_check(*data: Iterable):
     """Check if arguments' types are supported.
 
-    Supported inputs are those handled by :func:`deel.puncc.api.backend.get_backend`,
-    i.e. numpy arrays, pandas objects, torch/jax/tensorflow tensors (when already
-    imported by the user), and Python sequences convertible to arrays.
+        Supported inputs are those handled by `deel.puncc.api.backend.get_backend`,
+        i.e. numpy arrays, pandas objects, torch/jax/tensorflow tensors (when already
+        imported by the user), and Python sequences convertible to arrays.
 
-    :param Iterable data: iterable(s) to be checked.
+    Args:
+        data (Iterable): iterable(s) to be checked.
 
-    :raises TypeError: unsupported data types.
-    """
+    Raises:
+        TypeError: unsupported data types."""
     for a in data:
         try:
             # Validation is delegated to backend inference + conversion.
@@ -152,18 +148,20 @@ def supported_types_check(*data: Iterable):
                 "a pandas object, a tensor, or an array-like convertible input."
             ) from e
 
+
 def supported_meanvar_models_shape_check(Y_pred: Iterable, y_true: Iterable = None):
     """Check if arguments have the correct shape for mean-dispersion methods.
-    Mean-dispersion methods require Y_pred to have shape (n_samples, 2) including
-    two point predictions (e.g. mean and variance) and y_true to have shape
-    (n_samples,).
+        Mean-dispersion methods require Y_pred to have shape (n_samples, 2) including
+        two point predictions (e.g. mean and variance) and y_true to have shape
+        (n_samples,).
 
-    :param Iterable Y_pred: two point predictions for each sample.
-    :param Iterable y_true: point observations for each sample.
+    Args:
+        Y_pred (Iterable): two point predictions for each sample.
+        y_true (Iterable): point observations for each sample.
 
-    :raises TypeError: unsupported data types or elements have inconsistent types.
-    :raises RuntimeError: Y_pred does not have shape (n_samples, 2)
-        or y_true does not have shape (n_samples,).
+    Raises:
+        TypeError: unsupported data types or elements have inconsistent types.
+        RuntimeError: Y_pred does not have shape (n_samples, 2) or y_true does not have shape (n_samples,).
     """
     supported_types_check(Y_pred, y_true)
     b = get_backend(Y_pred, y_true)
@@ -184,18 +182,20 @@ def supported_meanvar_models_shape_check(Y_pred: Iterable, y_true: Iterable = No
     if yt_ndim != 1:
         raise RuntimeError("Each y_true must contain a point observation.")
 
+
 def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
     """Check if arguments have the correct shape for dual-model methods.
-    Dual-model methods require Y_pred to have shape (n_samples, 2) including
-    two point predictions (e.g. mean and variance or lower and upper quantiles)
-    and y_true to have shape (n_samples,).
+        Dual-model methods require Y_pred to have shape (n_samples, 2) including
+        two point predictions (e.g. mean and variance or lower and upper quantiles)
+        and y_true to have shape (n_samples,).
 
-    :param Iterable Y_pred: two point predictions for each sample.
-    :param Iterable y_true: point observations for each sample.
+    Args:
+        Y_pred (Iterable): two point predictions for each sample.
+        y_true (Iterable): point observations for each sample.
 
-    :raises TypeError: unsupported data types or elements have inconsistent types.
-    :raises RuntimeError: Y_pred does not have shape (n_samples, 2)
-        or y_true does not have shape (n_samples,).
+    Raises:
+        TypeError: unsupported data types or elements have inconsistent types.
+        RuntimeError: Y_pred does not have shape (n_samples, 2) or y_true does not have shape (n_samples,).
     """
     supported_types_check(Y_pred, y_true)
     b = get_backend(Y_pred, y_true)
@@ -210,16 +210,18 @@ def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
     if yt.ndim != 1:
         raise RuntimeError("Each y_true must contain a point observation.")
 
+
 def supported_bbox_shape_check(predicted_bboxes: Iterable, true_bboxes: Iterable):
     """Check if predicted and true bounding boxes have the same shape and the
-    correct number of coordinates.
+        correct number of coordinates.
 
-    :param Iterable predicted_bboxes: predicted bounding boxes.
-    :param Iterable true_bboxes: true bounding boxes.
+    Args:
+        predicted_bboxes (Iterable): predicted bounding boxes.
+        true_bboxes (Iterable): true bounding boxes.
 
-    :raises TypeError: unsupported data types.
-    :raises RuntimeError: predicted and true bounding boxes have different shapes
-        or do not contain 4 coordinates.
+    Raises:
+        TypeError: unsupported data types.
+        RuntimeError: predicted and true bounding boxes have different shapes or do not contain 4 coordinates.
     """
     supported_types_check(predicted_bboxes, true_bboxes)
 
@@ -231,38 +233,40 @@ def supported_bbox_shape_check(predicted_bboxes: Iterable, true_bboxes: Iterable
     yt_ndim, yt_shape = shape2(true_bboxes)
 
     if yp_ndim != 2 or yp_shape[1] != 4:
-        raise RuntimeError("Each predicted bounding box must contain "
-                           "4 coordinates.")
+        raise RuntimeError("Each predicted bounding box must contain " "4 coordinates.")
     if yt_ndim != 2 or yt_shape[1] != 4:
         raise RuntimeError("Each true bounding box must contain 4 coordinates.")
+
 
 def alpha_calib_check(
     alpha: Union[float, np.ndarray], n: int, complement_check: bool = False
 ):
-    """Check if the value of alpha :math:`\\alpha` is consistent with the size
-    of calibration set :math:`n`.
+    """Check whether $\\alpha$ is consistent with the calibration size.
 
-    The quantile order is inflated by a factor :math:`(1+1/n)` and has to be in
-    the interval (0,1). From this, we derive the condition:
+    The quantile order is inflated by a factor $(1 + 1 / n)$ and must be in
+    the interval $(0, 1)$. This gives the condition:
 
-    .. math::
+    $$
+    0 < (1 - \\alpha) \\cdot (1 + 1 / n) < 1
+    \\implies 1 > \\alpha > 1 / (n + 1)
+    $$
 
-        0 < (1-\\alpha)\cdot(1+1/n) < 1 \implies 1 > \\alpha > 1/(n+1)
+    If `complement_check` is set, an additional condition is considered:
 
-    If complement_check is set, we consider an additional condition:
+    $$
+    0 < \\alpha \\cdot (1 + 1 / n) < 1
+    \\implies 0 < \\alpha < n / (n + 1)
+    $$
 
-    .. math::
+    Args:
+        alpha (float or np.ndarray): Target quantile order.
+        n (int): Size of the calibration dataset.
+        complement_check (bool): Whether to check the complementary quantile
+            $\\alpha \\cdot (1 + 1 / n)$, required by some methods such as jk+.
 
-        0 < \\alpha \cdot (1+1/n) < 1 \implies 0 < \\alpha < n/(n+1)
-
-    :param float or np.ndarray alpha: target quantile order.
-    :param int n: size of the calibration dataset.
-    :param bool complement_check: complementary check to compute the
-        :math:`\\alpha \cdot (1+1/n)`-th quantile, required by some methods
-        such as jk+.
-
-    :raises ValueError: when :math:`\\alpha` is inconsistent with the size of
-        calibration set.
+    Raises:
+        ValueError: When $\\alpha$ is inconsistent with the calibration set
+            size.
     """
 
     if np.any(alpha < 1 / (n + 1)):
@@ -296,39 +300,38 @@ def get_min_max_alpha_calib(
     n: int, two_sided_conformalization: bool = False
 ) -> Optional[Tuple[float]]:
     """Get the greatest alpha in (0,1) that is consistent with the size of
-    calibration set. Recall that while true Conformal Prediction
-    (CP, Vovk et al 2005) is defined only on (0,1) (bounds not included), there
-    maybe cases where we must handle alpha=0 or 1 (e.g. Adaptive Conformal
-    Inference, Gibbs & Candès 2021).
+        calibration set. Recall that while true Conformal Prediction
+        (CP, Vovk et al 2005) is defined only on (0,1) (bounds not included), there
+        maybe cases where we must handle alpha=0 or 1 (e.g. Adaptive Conformal
+        Inference, Gibbs & Candès 2021).
 
-    This function computes the admissible range of alpha for split CP
-    (Papadopoulos et al 2002, Lei et al 2018) and the Jackknife-plus
-    (Barber et al 2019). For more CP method, see the literature and update this
-    function.
+        This function computes the admissible range of alpha for split CP
+        (Papadopoulos et al 2002, Lei et al 2018) and the Jackknife-plus
+        (Barber et al 2019). For more CP method, see the literature and update this
+        function.
 
-    In Split Conformal prediction we take the index
-    := ceiling( (1-alpha)(n+1) )-th element from the __sorted__ nonconformity
-    scores as the margin of error. We must have
-    1 <= index <= n ( = len(calibration_set)) which boils down to:
-    1/(n+1) <= alpha < 1.
+        In Split Conformal prediction we take the index
+        := ceiling( (1-alpha)(n+1) )-th element from the __sorted__ nonconformity
+        scores as the margin of error. We must have
+        1 <= index <= n ( = len(calibration_set)) which boils down to:
+        1/(n+1) <= alpha < 1.
 
-    In the case of cv-plus and jackknife-plus (Barber et al 2019), we need:
-        1. ceiling( (1-alpha)(n+1) )-th element of scores
-        2. floor(     (alpha)(n+1) )-th element of scores
+        In the case of cv-plus and jackknife-plus (Barber et al 2019), we need:
+            1. ceiling( (1-alpha)(n+1) )-th element of scores
+            2. floor(     (alpha)(n+1) )-th element of scores
 
-    The argument two_sided_conformalization=True, ensures the indexes are within
-    range for this special case: 1/(n+1) <= alpha <= n/(n+1)
+        The argument two_sided_conformalization=True, ensures the indexes are within
+        range for this special case: 1/(n+1) <= alpha <= n/(n+1)
 
-    :param int n: size of the calibration dataset.
-    :param bool two_sided_conformalization: alpha threshold for two-sided
-        quantile of jackknife+ (Barber et al 2021).
+    Args:
+        n (int): size of the calibration dataset.
+        two_sided_conformalization (bool): alpha threshold for two-sided quantile of jackknife+ (Barber et al 2021).
 
-    :returns: lower and upper bounds for alpha (miscoverage probability)
-    :rtype: Tuple[float]
+    Returns:
+        Tuple[float]: lower and upper bounds for alpha (miscoverage probability)
 
-    :raises ValueError: must have integer n, boolean two_sided_conformalization
-        and n>=1
-    """
+    Raises:
+        ValueError: must have integer n, boolean two_sided_conformalization and n>=1"""
 
     if n < 1:
         raise ValueError(f"Invalid input: you need n>=1 but received n={n}")
@@ -349,20 +352,18 @@ def quantile(
 ) -> Union[float, np.ndarray]:
     """Estimate the columnwise q-th empirical weighted quantiles.
 
-    :param Iterable a: collection of n samples
-    :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
-    :param ndarray w: vector of size n. By default, w is None and equal weights
-        (:math:`1/n`) are associated.
-    :param int axis: axis along which to compute quantiles. If None,
-        quantiles are computed along the flattened array.
-    :param int feature_axis: if multidim quantile, feature_axis is the axis corresponding
-        to the features.
+    Args:
+        a (Iterable): collection of n samples
+        q (Union[float, np.ndarray]): q-th quantiles to compute. All elements must be in (0, 1).
+        w (ndarray): vector of size n. By default, w is None and equal weights ($1/n$) are associated.
+        axis (int): axis along which to compute quantiles. If None, quantiles are computed along the flattened array.
+        feature_axis (int): if multidim quantile, feature_axis is the axis corresponding to the features.
 
-    :raises ValueError: all coordinates of q must be in (0, 1).
+    Returns:
+        Union[float, np.ndarray]: weighted empirical quantiles.
 
-    :returns: weighted empirical quantiles.
-    :rtype: Union[float, np.ndarray]
-    """
+    Raises:
+        ValueError: all coordinates of q must be in (0, 1)."""
     # type checks:
     supported_types_check(a)
 
@@ -373,11 +374,9 @@ def quantile(
         bw = get_backend(w)
         w = bw.to_numpy(bw.asarray(w))
 
-# Sanity checks
+    # Sanity checks
     if np.any(q <= 0) or np.any(q >= 1):
-        raise ValueError(
-            "All coordinates of [q] must be in the open interval (0, 1)."
-        )
+        raise ValueError("All coordinates of [q] must be in the open interval (0, 1).")
 
     # Unweighted case
     if w is None:
@@ -395,19 +394,18 @@ def quantile_unweighted(
 ) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional q-th empirical quantiles.
 
-    :param ndarray a: collection of n samples
-    :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
-    :param int axis: axis along which to compute quantiles. If None,
-        quantiles are computed along all axes except the feature_axis.
-    :param int feature_axis: if multidim quantile, feature_axis is the axis
-        wich corresponds to the features.
+    Args:
+        a (ndarray): collection of n samples
+        q (Union[float, np.ndarray]): q-th quantiles to compute. All elements must be in (0, 1).
+        axis (int): axis along which to compute quantiles. If None, quantiles are computed along all axes except the feature_axis.
+        feature_axis (int): if multidim quantile, feature_axis is the axis wich corresponds to the features.
 
-    :raises ValueError: axis value cannot coincide with features axis.
-    :raises ValueError: a and q must have the same number of features if q is an array.
+    Returns:
+        Union[float, np.ndarray].: empirical quantiles.
 
-    :returns: empirical quantiles.
-    :rtype: Union[float, np.ndarray].
-    """
+    Raises:
+        ValueError: axis value cannot coincide with features axis.
+        ValueError: a and q must have the same number of features if q is an array."""
     if axis is not None and axis == feature_axis:
         raise ValueError("axis value cannot coincide with features axis.")
 
@@ -427,9 +425,7 @@ def quantile_unweighted(
             for i in range(len(q))
         ]
     )
-    return np.squeeze(
-        np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0))
-    )
+    return np.squeeze(np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0)))
 
 
 def quantile_weighted_unidim(
@@ -437,18 +433,18 @@ def quantile_weighted_unidim(
 ) -> Union[float, np.ndarray]:
     """Estimate the one-dimensional weighted q-th empirical quantiles.
 
-    :param ndarray a: collection of n samples
-    :param float: q-th quantiles to compute. All elements must be in (0, 1).
-    :param ndarray w: array of weights.
-    :param int axis: axis along which to compute quantiles. If None,
-        quantiles are computed along the flattened array.
+    Args:
+        a (ndarray): collection of n samples
+        float: q-th quantiles to compute. All elements must be in (0, 1).
+        w (ndarray): array of weights.
+        axis (int): axis along which to compute quantiles. If None, quantiles are computed along the flattened array.
 
-    :raises ValueError: w must be a 1D array.
-    :raises ValueError: a and w must have the same length.
+    Returns:
+        Union[float, np.ndarray].: empirical weighted quantiles.
 
-    :returns: empirical weighted quantiles.
-    :rtype: Union[float, np.ndarray].
-    """
+    Raises:
+        ValueError: w must be a 1D array.
+        ValueError: a and w must have the same length."""
     # Dimension checks
     if w.ndim != 1:
         raise ValueError("w must be a 1D array.")
@@ -471,9 +467,7 @@ def quantile_weighted_unidim(
     logger.debug("Sorted weights cumulative sum: %s", sorted_cumsum_weights)
 
     # Get the smallest index for which the cumulative sum of weights exceeds p
-    min_idx_reaching_q = np.sum(
-        sorted_cumsum_weights < q, axis=axis, keepdims=True
-    )
+    min_idx_reaching_q = np.sum(sorted_cumsum_weights < q, axis=axis, keepdims=True)
     logger.debug(
         "First index per column where cumsum exceeds q: %s", min_idx_reaching_q
     )
@@ -496,22 +490,21 @@ def quantile_weighted(
 ) -> Union[float, np.ndarray]:
     """Estimate the multi-dimensional weighted q-th empirical quantiles.
 
-    :param ndarray a: collection of n samples
-    :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
-    :param ndarray w: array of weights.
-    :param int axis: axis along which to compute quantiles. If None,
-        quantiles are computed along the flattened array.
-    :param int feature_axis: if multidim quantile, feature_axis is the axis
-        wich corresponds to the features.
+    Args:
+        a (ndarray): collection of n samples
+        q (Union[float, np.ndarray]): q-th quantiles to compute. All elements must be in (0, 1).
+        w (ndarray): array of weights.
+        axis (int): axis along which to compute quantiles. If None, quantiles are computed along the flattened array.
+        feature_axis (int): if multidim quantile, feature_axis is the axis wich corresponds to the features.
 
-    :raises ValueError: cannot take quantiles along features axis.
-    :raises ValueError: w must be have the same number of elements as a along axis.
-    :raises ValueError: a and q must have the same number of features if q is an array.
-    :raises ValueError: w and q must have the same number of features if w is a 2D array.
+    Returns:
+        Union[float, np.ndarray].: empirical weighted quantiles.
 
-    :returns: empirical weighted quantiles.
-    :rtype: Union[float, np.ndarray].
-    """
+    Raises:
+        ValueError: cannot take quantiles along features axis.
+        ValueError: w must be have the same number of elements as a along axis.
+        ValueError: a and q must have the same number of features if q is an array.
+        ValueError: w and q must have the same number of features if w is a 2D array."""
     if axis is not None and axis == feature_axis:
         raise ValueError("axis value cannot coincide with features axis.")
 
@@ -544,9 +537,7 @@ def quantile_weighted(
         quantile_res = np.array(
             [
                 quantile_weighted_unidim(
-                    np.expand_dims(
-                        a.take(i, axis=feature_axis), axis=feature_axis
-                    ),
+                    np.expand_dims(a.take(i, axis=feature_axis), axis=feature_axis),
                     q[i],
                     w[..., i],
                     axis=axis,
@@ -555,53 +546,38 @@ def quantile_weighted(
             ]
         )
 
-    return np.squeeze(
-        np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0))
-    )
+    return np.squeeze(np.transpose(quantile_res, (*range(1, quantile_res.ndim), 0)))
 
 
-def hungarian_assignment(
-    predicted_bboxes: Any, true_bboxes: Any, min_iou: float = 0.5
-):
-    """
-    Assign predicted bounding boxes to labeled ones based on maximizing IOU.
-    This function relies on the Hungarian algorithm (also known as the
-    Kuhn-Munkres algorithm) to perform the assignment.
+def hungarian_assignment(predicted_bboxes: Any, true_bboxes: Any, min_iou: float = 0.5):
+    """Assign predicted bounding boxes to labeled ones based on maximizing IOU.
+            This function relies on the Hungarian algorithm (also known as the
+            Kuhn-Munkres algorithm) to perform the assignment.
 
-    :param predicted_bboxes: Array of predicted bounding boxes with
-        shape (N, 4), where N is the number of predictions.
-    :type predicted_bboxes: np.ndarray
-    :param true_bboxes: Array of true bounding boxes with shape
-        (M, 4), where M is the number of true classes.
-    :type true_bboxes: np.ndarray
-    :param min_iou: Minimum IoU threshold to consider a prediction as
-        valid, by default 0.5.
-    :type min_iou: float
+        Args:
+            predicted_bboxes (np.ndarray): Array of predicted bounding boxes with shape (N, 4), where N is the number of predictions.
+            true_bboxes (np.ndarray): Array of true bounding boxes with shape (M, 4), where M is the number of true classes.
+            min_iou (float): Minimum IoU threshold to consider a prediction as valid, by default 0.5.
 
-    :return: A tuple containing 1) an array of aligned predicted bounding boxes
-        that have IoU greater than the minimum threshold and 2) an array of
-        true bounding boxes that correspond to the valid predicted bounding
-        boxes.
-    :rtype: tuple[np.ndarray, np.ndarray]
+        Returns:
+            tuple[np.ndarray, np.ndarray]: A tuple containing 1) an array of aligned predicted bounding boxes that have IoU greater than the minimum threshold and 2) an array of true bounding boxes that correspond to the valid predicted bounding boxes.
 
-    .. note::
-        This function pads the predicted bounding boxes to match the number of
-        true bounding boxes if necessary. It then calculates the IoU matrix
-        between true and predicted bounding boxes and performs linear sum
-        assignment to maximize the total IoU. Finally, it filters out the
-        bounding boxes that do not meet the minimum IoU threshold.
+        Note:
+            This function pads the predicted bounding boxes to match the number of
+            true bounding boxes if necessary. It then calculates the IoU matrix
+            between true and predicted bounding boxes and performs linear sum
+            assignment to maximize the total IoU. Finally, it filters out the
+            bounding boxes that do not meet the minimum IoU threshold.
 
-    Example
-    -------
-    .. code-block:: python
-
+            Example
+            -------
+    ```python
         >>> import numpy as np
         >>> predicted_bboxes = np.array([[10, 10, 50, 50], [20, 20, 60, 60]])
         >>> true_bboxes = np.array([[12, 12, 48, 48], [22, 22, 58, 58], [30, 30, 70, 70]])
         >>> hungarian_assignment(predicted_bboxes, true_bboxes, min_iou=0.5)
         (array([[10, 10, 50, 50], [20, 20, 60, 60]]), array([[12, 12, 48, 48], [22, 22, 58, 58]]))
-
-    """
+    ```"""
 
     b = get_backend(predicted_bboxes, true_bboxes)
     predicted_bboxes = b.to_numpy(b.asarray(predicted_bboxes))
@@ -641,18 +617,16 @@ def hungarian_assignment(
         valid_indices,
     )
 
+
 def generate_leverage_func(X):
-    """
-    Generate a leverage function based on the input data X. The leverage
-    function is used to compute the leverage scores for provided samples.
+    """Generate a leverage function based on the input data X. The leverage
+        function is used to compute the leverage scores for provided samples.
 
-    :param X: Train data from which to generate the leverage function.
-        X has to be standardized and have more samples than features
-        (n_samples > n_features) for the leverage scores to be well-defined.
-    :type X: array-like
+    Args:
+        X (array-like): Train data from which to generate the leverage function. X has to be standardized and have more samples than features (n_samples > n_features) for the leverage scores to be well-defined.
 
-    :return: A function that takes as input a sample and returns its leverage score.
-    :rtype: Callable
+    Returns:
+        Callable: A function that takes as input a sample and returns its leverage score.
     """
     b = get_backend(X)
     X_np = b.to_numpy(b.asarray(X))
