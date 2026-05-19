@@ -29,15 +29,17 @@ PyTorch, JAX and TensorFlow objects.
 # pylint: disable=C0115,C0116,C0321,C0415,R0911,C0301
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+import sys
 from typing import Any
+from typing import Callable
 from typing import Protocol
 from typing import Sequence
 from typing import Tuple
 from typing import runtime_checkable
 
 import numpy as _np
-import sys
 
 
 # -------------------------
@@ -63,6 +65,57 @@ def _is_tf(x: Any) -> bool:
 def _is_pandas(x: Any) -> bool:
     pd = sys.modules.get("pandas")
     return bool(pd) and isinstance(x, (pd.Series, pd.DataFrame, pd.Index))
+
+
+def _is_sklearn_model(model: Any) -> bool:
+    sklearn_base = sys.modules.get("sklearn.base")
+    return bool(sklearn_base) and isinstance(
+        model, getattr(sklearn_base, "BaseEstimator", ())
+    )
+
+
+def _is_torch_model(model: Any) -> bool:
+    torch = sys.modules.get("torch")
+    return bool(torch) and isinstance(model, getattr(torch.nn, "Module", ()))
+
+
+def _is_tensorflow_model(model: Any) -> bool:
+    tf = sys.modules.get("tensorflow")
+    keras = getattr(tf, "keras", None) if tf else None
+    return bool(keras) and isinstance(model, getattr(keras, "Model", ()))
+
+
+def _contains_jax_arrays(obj: Any, visited: set[int] | None = None) -> bool:
+    if visited is None:
+        visited = set()
+
+    obj_id = id(obj)
+    if obj_id in visited:  # pragma: no cover - recursion guard
+        return False
+    visited.add(obj_id)
+
+    if _is_jax(obj):
+        return True
+
+    if isinstance(obj, dict):
+        return any(_contains_jax_arrays(value, visited) for value in obj.values())
+
+    if isinstance(obj, (list, tuple, set, frozenset)):
+        return any(_contains_jax_arrays(value, visited) for value in obj)
+
+    obj_dict = getattr(obj, "__dict__", None)
+    if isinstance(obj_dict, dict):
+        return any(_contains_jax_arrays(value, visited) for value in obj_dict.values())
+
+    return False
+
+
+def _is_jax_model(model: Any) -> bool:
+    if _is_jax(model):
+        return True
+    if "jax" not in sys.modules:
+        return False
+    return _contains_jax_arrays(model)
 
 
 def infer_backend(*xs: Any) -> str:
@@ -98,6 +151,77 @@ def infer_backend(*xs: Any) -> str:
         raise TypeError(f"Mixed backends are not supported: {sorted(kinds)}")
 
     return next(iter(kinds), "numpy")
+
+
+def infer_model_backend(model: Any) -> str:
+    """Infer backend name from a model-like object.
+
+    Supported model backends are ``sklearn``, ``torch``, ``tensorflow`` and
+    ``jax``. Everything else falls back to ``generic``.
+
+    :param Any model: model-like object to inspect.
+
+    :returns: inferred model backend name.
+    :rtype: str
+    """
+    if _is_tensorflow_model(model):
+        return "tensorflow"
+    if _is_torch_model(model):
+        return "torch"
+    if _is_sklearn_model(model):
+        return "sklearn"
+    if _is_jax_model(model):
+        return "jax"
+    return "generic"
+
+
+def _copy_deepcopy_model(model: Any) -> Any:
+    return deepcopy(model)
+
+
+def _copy_tensorflow_model(model: Any) -> Any:
+    tf = sys.modules.get("tensorflow")
+    if tf is None:  # pragma: no cover - defensive guard
+        raise RuntimeError(
+            "TensorFlow model copying requires the already-loaded tensorflow module."
+        )
+
+    copied_model = tf.keras.models.clone_model(model)
+    if hasattr(model, "get_weights") and hasattr(copied_model, "set_weights"):
+        try:
+            copied_model.set_weights(model.get_weights())
+        except Exception:
+            pass
+    return copied_model
+
+
+_MODEL_COPIERS: dict[str, Callable[[Any], Any]] = {
+    "generic": _copy_deepcopy_model,
+    "sklearn": _copy_deepcopy_model,
+    "torch": _copy_deepcopy_model,
+    "jax": _copy_deepcopy_model,
+    "tensorflow": _copy_tensorflow_model,
+}
+
+
+def copy_model(model: Any) -> Any:
+    """Copy a model-like object using the matching backend strategy.
+
+    :param Any model: model-like object to copy.
+
+    :returns: copied model.
+    :rtype: Any
+
+    :raises RuntimeError: if the model cannot be copied.
+    """
+    backend_name = infer_model_backend(model)
+    copier = _MODEL_COPIERS[backend_name]
+    try:
+        return copier(model)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Cannot copy model with backend '{backend_name}': {exc}"
+        ) from exc
 
 
 # -------------------------

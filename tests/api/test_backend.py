@@ -21,12 +21,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from pathlib import Path
+import subprocess
+import sys
+
 import numpy as np
 import pytest
 
 from deel.puncc.api.backend import concat_columns
+from deel.puncc.api.backend import copy_model
 from deel.puncc.api.backend import get_backend
 from deel.puncc.api.backend import infer_backend
+from deel.puncc.api.backend import infer_model_backend
 from deel.puncc.api.backend import shape2
 from deel.puncc.api.backend import split_columns
 
@@ -81,6 +87,13 @@ def test_infer_backend_pandas_and_mixed_error():
 
     with pytest.raises(TypeError):
         infer_backend(pd.Series([1, 2, 3]), np.array([1, 2, 3]))
+
+
+def test_infer_model_backend_generic_default():
+    class GenericModel:
+        pass
+
+    assert infer_model_backend(GenericModel()) == "generic"
 
 
 @pytest.mark.parametrize("name", ["numpy", "pandas", "torch", "tensorflow", "jax"])
@@ -578,3 +591,143 @@ def test_pandas_backend_take_along_axis_returns_raw_output(monkeypatch):
 
     out = ops.take_along_axis(series, pd.Series([0, 0]), axis=0)
     assert np.array(out).shape == ()
+
+def test_copy_model_sklearn_preserves_fitted_state():
+    linear_model = pytest.importorskip("sklearn.linear_model")
+
+    X = np.array([[0.0], [1.0], [2.0]])
+    y = np.array([0.0, 1.0, 2.0])
+    model = linear_model.LinearRegression().fit(X, y)
+
+    copied = copy_model(model)
+
+    assert infer_model_backend(model) == "sklearn"
+    assert copied is not model
+    np.testing.assert_allclose(copied.predict(X), model.predict(X))
+
+    model.coef_[0] += 1.0
+    assert not np.allclose(copied.coef_, model.coef_)
+
+
+def test_copy_model_torch_preserves_parameters():
+    torch = pytest.importorskip("torch")
+
+    model = torch.nn.Sequential(torch.nn.Linear(2, 1, bias=True))
+    with torch.no_grad():
+        model[0].weight.copy_(torch.tensor([[1.0, 2.0]]))
+        model[0].bias.copy_(torch.tensor([0.5]))
+
+    copied = copy_model(model)
+
+    assert infer_model_backend(model) == "torch"
+    assert copied is not model
+    for original_param, copied_param in zip(model.parameters(), copied.parameters()):
+        assert torch.allclose(original_param, copied_param)
+
+    with torch.no_grad():
+        model[0].weight.add_(1.0)
+    assert not torch.allclose(model[0].weight, copied[0].weight)
+
+
+def test_copy_model_tensorflow_unbuilt_model():
+    tf = pytest.importorskip("tensorflow")
+
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(1))
+
+    copied = copy_model(model)
+
+    assert infer_model_backend(model) == "tensorflow"
+    assert copied is not model
+    assert copied.built is False
+
+
+def test_copy_model_tensorflow_preserves_weights():
+    tf = pytest.importorskip("tensorflow")
+
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Input(shape=(2,)),
+            tf.keras.layers.Dense(1, use_bias=True),
+        ]
+    )
+    model.set_weights(
+        [
+            np.array([[1.0], [2.0]], dtype=np.float32),
+            np.array([0.5], dtype=np.float32),
+        ]
+    )
+
+    copied = copy_model(model)
+
+    assert infer_model_backend(model) == "tensorflow"
+    assert copied is not model
+    for original_weights, copied_weights in zip(model.get_weights(), copied.get_weights()):
+        np.testing.assert_allclose(copied_weights, original_weights)
+
+    model.set_weights(
+        [
+            np.array([[3.0], [4.0]], dtype=np.float32),
+            np.array([1.5], dtype=np.float32),
+        ]
+    )
+    assert not np.allclose(model.get_weights()[0], copied.get_weights()[0])
+
+
+def test_copy_model_jax_preserves_pytree_values():
+    jnp = pytest.importorskip("jax.numpy")
+
+    model = {
+        "weights": jnp.asarray([[1.0, 2.0], [3.0, 4.0]]),
+        "bias": jnp.asarray([0.5, 1.5]),
+    }
+
+    copied = copy_model(model)
+
+    assert infer_model_backend(model) == "jax"
+    assert copied is not model
+    np.testing.assert_allclose(
+        _to_numpy(copied["weights"]), np.array([[1.0, 2.0], [3.0, 4.0]])
+    )
+    np.testing.assert_allclose(_to_numpy(copied["bias"]), np.array([0.5, 1.5]))
+
+    model["weights"] = model["weights"] + 1.0
+    np.testing.assert_allclose(
+        _to_numpy(copied["weights"]), np.array([[1.0, 2.0], [3.0, 4.0]])
+    )
+
+
+def test_prediction_import_does_not_eagerly_import_tensorflow():
+    repo_root = Path(__file__).resolve().parents[2]
+    script = (
+        "import sys; "
+        "sys.modules.pop('tensorflow', None); "
+        "import deel.puncc.api.prediction; "
+        "print('tensorflow' in sys.modules)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        check=True,
+        cwd=repo_root,
+        text=True,
+    )
+
+    assert result.stdout.strip().splitlines()[-1] == "False"
+
+def test_is_jax_model_true_for_jax_array():
+    jnp = pytest.importorskip("jax.numpy")
+    import deel.puncc.api.backend as backend_module
+
+    assert backend_module._is_jax_model(jnp.asarray([1.0])) is True
+
+
+
+def test_is_jax_model_false_without_loaded_jax(monkeypatch):
+    import deel.puncc.api.backend as backend_module
+
+    monkeypatch.delitem(backend_module.sys.modules, "jax", raising=False)
+    monkeypatch.delitem(backend_module.sys.modules, "jax.numpy", raising=False)
+
+    assert backend_module._is_jax_model(object()) is False
+
