@@ -439,7 +439,7 @@ the RAPS algorithm works in two stages:
     #. The prediction set for a test point :math:`X_{new}` is defined as :math:`\widehat{C}_{\alpha}(X_{new})=\big\lbrace (1),\dots,(k)\big\rbrace`, where
     
         .. math::
-            k = \max\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)} + \lambda(i-k_{reg}+1) \leq \delta_\alpha\big\rbrace + 1.
+            k = \max\big\lbrace i : \widehat{\pi}_{(1)}+\cdots+\widehat{\pi}_{(i)} + \lambda(i-k_{reg}+1) < \delta_\alpha\big\rbrace + 1.
 
 
 Classwise Conformal Prediction
