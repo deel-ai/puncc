@@ -37,6 +37,19 @@ class TinyNet(torch.nn.Module):
         return self.linear(x)
 
 
+class SequentialNet(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(2, 4),
+            torch.nn.ReLU(),
+            torch.nn.Linear(4, 1),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
 def test_torch_predictor_fit_updates_weights_and_predicts():
     torch.manual_seed(0)
     model = TinyNet(input_feat=2, output_feat=1)
@@ -110,3 +123,22 @@ def test_torch_predictor_fit_defaults_to_one_epoch():
     predictor.fit(x, y)
 
     assert not torch.allclose(model.linear.weight.detach(), weights_before)
+
+def test_torch_predictor_copy_supports_non_shape_constructor():
+    torch.manual_seed(0)
+    predictor = TorchPredictor(
+        model=SequentialNet(),
+        is_trained=True,
+        optimizer=torch.optim.SGD,
+        criterion=torch.nn.MSELoss(reduction="sum"),
+        lr=0.05,
+    )
+
+    predictor_copy = predictor.copy()
+
+    assert predictor_copy is not predictor
+    assert predictor_copy.model is not predictor.model
+
+    x = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
+    assert torch.allclose(predictor.model(x), predictor_copy.model(x))
+

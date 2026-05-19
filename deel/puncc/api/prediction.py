@@ -23,9 +23,7 @@
 """
 This module provides standard wrappings for ML models.
 """
-import importlib
-from copy import deepcopy
-import copy as _copy
+
 from typing import Any
 from typing import Iterable
 from typing import List
@@ -35,11 +33,9 @@ from typing import Tuple
 import numpy as np
 
 from deel.puncc.api import nonconformity_scores
+from deel.puncc.api.backend import copy_model
 from deel.puncc.api.utils import dual_predictor_check
 from deel.puncc.api.utils import supported_types_check
-
-if importlib.util.find_spec("tensorflow") is not None:
-    import tensorflow as tf
 
 
 class BasePredictor:
@@ -180,8 +176,7 @@ class BasePredictor:
         return np.squeeze(self.model.predict(X, **kwargs))
 
     def copy(self):
-        """Returns a copy of the predictor. The underlying model is either
-        cloned (Keras model) or deepcopied (sklearn and similar models).
+        """Returns a copy of the predictor.
 
         :returns: copy of the predictor.
         :rtype: BasePredictor
@@ -189,22 +184,7 @@ class BasePredictor:
         :raises RuntimeError: copy unsupported for provided models.
 
         """
-
-        model_type_str = str(type(self.model))
-
-        if (
-            "tensorflow" in model_type_str
-            or "keras" in model_type_str
-            and importlib.util.find_spec("tensorflow") is not None
-        ):
-            # pylint: disable=E1101
-            model = tf.keras.models.clone_model(self.model)
-            try:
-                model.set_weights(self.model.get_weights())
-            except Exception:
-                pass
-        else:
-            model = deepcopy(self.model)
+        model = copy_model(self.model)
 
         predictor_copy = self.__class__(
             model=model, is_trained=self.is_trained, **self.compile_kwargs
@@ -474,8 +454,7 @@ class DualPredictor:
         return np.squeeze(Y_pred)
 
     def copy(self):
-        """Returns a copy of the predictor. The underlying models are either
-        cloned (Keras model) or deepcopied (sklearn and similar models).
+        """Returns a copy of the predictor.
 
         :returns: copy of the predictor.
         :rtype: DualPredictor
@@ -485,22 +464,7 @@ class DualPredictor:
         """
         models_copy = []
         for model in self.models:
-            try:
-                model_copy = deepcopy(model)
-            except Exception as e_outer:
-                if importlib.util.find_spec("tensorflow") is not None:
-                    try:
-                        # pylint: disable=E1101
-                        model_copy = tf.keras.models.clone_model(model)
-                    except Exception as e_inner:
-                        msg = (
-                            f"Cannot copy models. Many possible reasons:\n"
-                            f" 1- {e_inner} \n 2- {e_outer}"
-                        )
-                        raise RuntimeError(msg)
-                else:
-                    raise Exception(e_outer)
-            models_copy.append(model_copy)
+            models_copy.append(copy_model(model))
 
         predictor_copy = self.__class__(
             models=models_copy,

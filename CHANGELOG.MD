@@ -4,6 +4,25 @@ This file documents main changes across releases of **PUNCC**.
 
 ---
 
+## [0.9.2] - TBD
+
+### Added 
+- Backend-level model copy abstraction supporting sklearn, JAX, TensorFlow/Keras, and PyTorch models through a unified `copy_model` entrypoint
+
+### Changed
+- Refactored predictor wrappers to delegate model cloning to the backend abstraction 
+- Updated `TorchPredictor` experimental wrapper to reuse the shared backend copy mechanism
+- Avoid eager import (e.g. tensorflow) from prediction wrappers by detecting loaded frameworks through runtime module inspection
+
+### Fixed
+- Improved framework-agnostic model copy compatibility across predictor wrappers
+- Corrected the definition of the prediction set for RAPS in theory overview 
+
+### CI / Maintenance
+- Expanded API test coverage for backend-driven model copying and wrapper copy behavior
+
+---
+
 ## [0.9.1] - 2026-04-09
 
 ### Added
