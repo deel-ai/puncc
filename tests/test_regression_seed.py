@@ -53,6 +53,7 @@ RESULTS = {
     "lwcp": {"cov": 0.93, "width": 211.90},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.93, "width": 204.52},
+    "cqr_new_sklearn": {"cov": 0.94, "width": 204.624497},
     "cv+": {"cov": 0.9, "width": 232.55},
     "enbpi": {"cov": 0.9, "width": 221.5},
     "aenbpi": {"cov": 0.87, "width": 272.14},
@@ -65,7 +66,7 @@ RESULTS = {
 )
 def test_split_cp(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -103,7 +104,7 @@ def test_split_cp(diabetes_data, alpha, random_state):
 )
 def test_ne_split_cp(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -146,7 +147,7 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 )
 def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -187,7 +188,7 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
 )
 def test_leverage_weighted_cp(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -226,7 +227,7 @@ def test_leverage_weighted_cp(diabetes_data, alpha, random_state):
 
 def test_leverage_weighted_cp_requires_x_fit(diabetes_data):
     # Get data
-    (X_train, _, y_train, _) = diabetes_data
+    X_train, _, y_train, _ = diabetes_data
     # split train data into fit and calibration
     _, X_calib, _, y_calib = train_test_split(X_train, y_train, random_state=42)
 
@@ -244,7 +245,7 @@ def test_leverage_weighted_cp_requires_x_fit(diabetes_data):
 )
 def test_cqr(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -281,11 +282,15 @@ def test_cqr(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["cqr"]["cov"], RESULTS["cqr"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+
+    assert any(
+        np.allclose(
+            [coverage, width],
+            [RESULTS[k]["cov"], RESULTS[k]["width"]],
+            rtol=0.0,
+            atol=5e-3,
+        )
+        for k in ("cqr", "cqr_new_sklearn")
     )
 
 
@@ -295,7 +300,7 @@ def test_cqr(diabetes_data, alpha, random_state):
 )
 def test_cv_plus(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
 
     # Create RF regression object and wrap it by a predictor
     rf_model = RandomForestRegressor(
@@ -328,7 +333,7 @@ def test_cv_plus(diabetes_data, alpha, random_state):
 )
 def test_enbpi(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # Create RF regression object and wrap it by a predictor
     rf_model = RandomForestRegressor(
         n_estimators=100, random_state=random_state
@@ -362,7 +367,7 @@ def test_enbpi(diabetes_data, alpha, random_state):
 )
 def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     # Get data
-    (X_train, X_test, y_train, y_test) = diabetes_data
+    X_train, X_test, y_train, y_test = diabetes_data
     # Create mean and dispersion regressors
     mean_model = RandomForestRegressor(
         n_estimators=100, random_state=random_state

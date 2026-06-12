@@ -19,7 +19,9 @@ This file documents main changes across releases of **PUNCC**.
 - Corrected the definition of the prediction set for RAPS in theory overview 
 
 ### CI / Maintenance
-- Expanded API test coverage for backend-driven model copying and wrapper copy behavior
+- Expanded API test coverage for backend-driven model copying and predictor wrapper copy behavior.
+- Raised the minimum supported scikit-learn version to 1.5.0 to address security vulnerabilities in older releases.
+- Added alternative expected seed results in conformal regression tests for newer scikit-learn versions.
 
 ---
 

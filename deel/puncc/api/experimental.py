@@ -24,8 +24,15 @@
 This module provides experimental features. Use cautiously.
 """
 
-import torch
 from deel.puncc.api.backend import copy_model
+
+try:
+    import torch
+except ImportError as exc:
+    raise ImportError(
+        "Experimental module requires torch to be installed. "
+        "Please install torch to use this module."
+    ) from exc
 
 
 class TorchPredictor:
@@ -40,8 +47,8 @@ class TorchPredictor:
         Defaults to `torch.optim.Adam`.
     :param torch.nn.modules.loss criterion: criterion that measures the distance
         between predictions and outputs. Default to  `torch.nn.MSELoss`.
-    :param compile_kwargs: keyword arguments to be used if needed during the
-        call :func:`model.compile` on the underlying model
+    :param compile_kwargs: keyword arguments passed to the optimizer
+        constructor when creating the optimizer in :func:`fit`.
 
     """
 
@@ -92,6 +99,7 @@ class TorchPredictor:
         :rtype: torch.Tensor
 
         """
+        self.model.eval()
         return self.model(X)
 
     def copy(self):
