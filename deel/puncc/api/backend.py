@@ -57,10 +57,13 @@ def _is_jax(x: Any) -> bool:
     jnp = sys.modules.get("jax.numpy")
     if not (jax and jnp):
         return False
-    # jax.Array exists on newer JAX; keep jnp.ndarray for older
-    return isinstance(
-        x, (getattr(jax, "Array", ()), getattr(jnp, "ndarray", ()))
-    )
+
+    jax_array = getattr(jax, "Array", None)
+
+    if jax_array is not None:
+        return isinstance(x, (jax_array, jnp.ndarray))
+
+    return isinstance(x, jnp.ndarray)
 
 
 def _is_tf(x: Any) -> bool:
