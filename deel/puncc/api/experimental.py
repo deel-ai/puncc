@@ -99,8 +99,13 @@ class TorchPredictor:
         :rtype: torch.Tensor
 
         """
+        was_training = self.model.training
         self.model.eval()
-        return self.model(X)
+        try:
+            with torch.no_grad():
+                return self.model(X)
+        finally:
+            self.model.train(was_training)
 
     def copy(self):
         """Returns a copy of the predictor.
