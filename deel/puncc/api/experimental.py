@@ -28,11 +28,8 @@ from deel.puncc.api.backend import copy_model
 
 try:
     import torch
-except ImportError as exc:
-    raise ImportError(
-        "Experimental module requires torch to be installed. "
-        "Please install torch to use this module."
-    ) from exc
+except ImportError:  # pragma: no cover
+    torch = None
 
 
 class TorchPredictor:
@@ -60,6 +57,8 @@ class TorchPredictor:
         criterion=torch.nn.MSELoss(reduction="sum"),
         **compile_kwargs,
     ):
+        if torch is None:  # pragma: no cover
+            raise ImportError("TorchPredictor requires torch to be installed.")
         self.model = model
         self.is_trained = is_trained
         self.compile_kwargs = compile_kwargs
@@ -74,20 +73,25 @@ class TorchPredictor:
         :param kwargs: keyword arguments to configure the training.
 
         """
-        if "epochs" in kwargs.keys():
-            epochs = kwargs["epochs"]
-        else:
-            epochs = 1
+        was_training = self.model.training
+        self.model.train()
+        try:
+            if "epochs" in kwargs.keys():
+                epochs = kwargs["epochs"]
+            else:
+                epochs = 1
 
-        optimizer = self.optimizer(
-            self.model.parameters(), **self.compile_kwargs
-        )
-        for _ in range(epochs):
-            y_pred = self.model(X)
-            loss = self.criterion(y_pred, y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            optimizer = self.optimizer(
+                self.model.parameters(), **self.compile_kwargs
+            )
+            for _ in range(epochs):
+                y_pred = self.model(X)
+                loss = self.criterion(y_pred, y)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+        finally:
+            self.model.train(was_training)
 
     def predict(self, X):
         """Compute predictions on new examples.

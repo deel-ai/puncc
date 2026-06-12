@@ -26,6 +26,7 @@
 This module provides backend inference and a unified API over NumPy, pandas,
 PyTorch, JAX and TensorFlow objects.
 """
+
 # pylint: disable=C0115,C0116,C0321,C0415,R0911,C0301
 from __future__ import annotations
 
@@ -41,14 +42,15 @@ from typing import runtime_checkable
 
 import numpy as _np
 
-
 # -------------------------
 # Detection helpers
 # -------------------------
 
+
 def _is_torch(x: Any) -> bool:
     torch = sys.modules.get("torch")
     return bool(torch) and isinstance(x, torch.Tensor)
+
 
 def _is_jax(x: Any) -> bool:
     jax = sys.modules.get("jax")
@@ -56,11 +58,15 @@ def _is_jax(x: Any) -> bool:
     if not (jax and jnp):
         return False
     # jax.Array exists on newer JAX; keep jnp.ndarray for older
-    return isinstance(x, (getattr(jax, "Array", ()), getattr(jnp, "ndarray", ())))
+    return isinstance(
+        x, (getattr(jax, "Array", ()), getattr(jnp, "ndarray", ()))
+    )
+
 
 def _is_tf(x: Any) -> bool:
     tf = sys.modules.get("tensorflow")
     return bool(tf) and isinstance(x, (tf.Tensor, tf.Variable))
+
 
 def _is_pandas(x: Any) -> bool:
     pd = sys.modules.get("pandas")
@@ -85,7 +91,7 @@ def _is_tensorflow_model(model: Any) -> bool:
     return bool(keras) and isinstance(model, getattr(keras, "Model", ()))
 
 
-def _contains_jax_arrays(obj: Any, visited: set[int] | None = None) -> bool:
+def _contains_jax_arrays(obj: Any, visited: "set[int] | None" = None) -> bool:
     if visited is None:
         visited = set()
 
@@ -98,14 +104,18 @@ def _contains_jax_arrays(obj: Any, visited: set[int] | None = None) -> bool:
         return True
 
     if isinstance(obj, dict):
-        return any(_contains_jax_arrays(value, visited) for value in obj.values())
+        return any(
+            _contains_jax_arrays(value, visited) for value in obj.values()
+        )
 
     if isinstance(obj, (list, tuple, set, frozenset)):
         return any(_contains_jax_arrays(value, visited) for value in obj)
 
     obj_dict = getattr(obj, "__dict__", None)
     if isinstance(obj_dict, dict):
-        return any(_contains_jax_arrays(value, visited) for value in obj_dict.values())
+        return any(
+            _contains_jax_arrays(value, visited) for value in obj_dict.values()
+        )
 
     return False
 
@@ -228,6 +238,7 @@ def copy_model(model: Any) -> Any:
 # Canonical ops interface
 # -------------------------
 
+
 @runtime_checkable
 class BackendOps(Protocol):
     """Protocol describing backend operations used across the API."""
@@ -272,13 +283,16 @@ class BackendOps(Protocol):
     def scalar_at(self, x: Any, index: int) -> Any: ...
 
     # ordering / indexing (needed for RAPS-like scores, quantiles, bbox sets, etc.)
-    def argsort(self, x: Any, axis: int = -1, descending: bool = False) -> Any: ...
+    def argsort(
+        self, x: Any, axis: int = -1, descending: bool = False
+    ) -> Any: ...
     def take_along_axis(self, arr: Any, indices: Any, axis: int) -> Any: ...
 
 
 # -------------------------
 # Concrete backends
 # -------------------------
+
 
 @dataclass(frozen=True)
 class _NumpyOps:
@@ -297,31 +311,72 @@ class _NumpyOps:
         # accept list-like
         return _np.asarray(x)
 
-    def abs(self, x): return _np.abs(x)
-    def maximum(self, a, b): return _np.maximum(a, b)
-    def minimum(self, a, b): return _np.minimum(a, b)
-    def clip(self, x, a_min, a_max): return _np.clip(x, a_min, a_max)
-    def sqrt(self, x): return _np.sqrt(x)
-    def where(self, cond, x, y): return _np.where(cond, x, y)
-    def any(self, x): return bool(_np.any(x))
+    def abs(self, x):
+        return _np.abs(x)
 
-    def sum(self, x, axis=None, keepdims=False): return _np.sum(x, axis=axis,
-                                                                keepdims=keepdims)
-    def mean(self, x, axis=None, keepdims=False): return _np.mean(x, axis=axis, keepdims=keepdims)
-    def max(self, x, axis=None, keepdims=False): return _np.max(x, axis=axis, keepdims=keepdims)
-    def min(self, x, axis=None, keepdims=False): return _np.min(x, axis=axis, keepdims=keepdims)
-    def cumsum(self, x, axis=0): return _np.cumsum(x, axis=axis)
-    def argmax(self, x, axis=None): return _np.argmax(x, axis=axis)
+    def maximum(self, a, b):
+        return _np.maximum(a, b)
 
-    def reshape(self, x, shape): return _np.reshape(x, shape)
-    def squeeze(self, x, axis=None): return _np.squeeze(x, axis=axis)
-    def concat(self, xs, axis=0): return _np.concatenate(xs, axis=axis)
-    def arange(self, start, stop=None, step=1): return _np.arange(start, stop, step)
-    def full(self, shape, fill_value, dtype=None): return _np.full(shape, fill_value, dtype=dtype)
-    def ones_like(self, x): return _np.ones_like(x)
-    def equal(self, a, b): return _np.equal(a, b)
-    def astype(self, x, dtype): return _np.asarray(x).astype(dtype)
-    def random_uniform(self, shape): return _np.random.uniform(size=shape)
+    def minimum(self, a, b):
+        return _np.minimum(a, b)
+
+    def clip(self, x, a_min, a_max):
+        return _np.clip(x, a_min, a_max)
+
+    def sqrt(self, x):
+        return _np.sqrt(x)
+
+    def where(self, cond, x, y):
+        return _np.where(cond, x, y)
+
+    def any(self, x):
+        return bool(_np.any(x))
+
+    def sum(self, x, axis=None, keepdims=False):
+        return _np.sum(x, axis=axis, keepdims=keepdims)
+
+    def mean(self, x, axis=None, keepdims=False):
+        return _np.mean(x, axis=axis, keepdims=keepdims)
+
+    def max(self, x, axis=None, keepdims=False):
+        return _np.max(x, axis=axis, keepdims=keepdims)
+
+    def min(self, x, axis=None, keepdims=False):
+        return _np.min(x, axis=axis, keepdims=keepdims)
+
+    def cumsum(self, x, axis=0):
+        return _np.cumsum(x, axis=axis)
+
+    def argmax(self, x, axis=None):
+        return _np.argmax(x, axis=axis)
+
+    def reshape(self, x, shape):
+        return _np.reshape(x, shape)
+
+    def squeeze(self, x, axis=None):
+        return _np.squeeze(x, axis=axis)
+
+    def concat(self, xs, axis=0):
+        return _np.concatenate(xs, axis=axis)
+
+    def arange(self, start, stop=None, step=1):
+        return _np.arange(start, stop, step)
+
+    def full(self, shape, fill_value, dtype=None):
+        return _np.full(shape, fill_value, dtype=dtype)
+
+    def ones_like(self, x):
+        return _np.ones_like(x)
+
+    def equal(self, a, b):
+        return _np.equal(a, b)
+
+    def astype(self, x, dtype):
+        return _np.asarray(x).astype(dtype)
+
+    def random_uniform(self, shape):
+        return _np.random.uniform(size=shape)
+
     def scalar_at(self, x, index):
         return _np.asarray(x).reshape(-1)[index].item()
 
@@ -341,10 +396,15 @@ class _PandasOps:
 
     def asarray(self, x: Any):
         import pandas as pd
+
         if isinstance(x, (pd.DataFrame, pd.Series, pd.Index)):
             return x
         # Heuristique minimale
-        if isinstance(x, (list, tuple)) and len(x) > 0 and isinstance(x[0], (list, tuple, dict)):
+        if (
+            isinstance(x, (list, tuple))
+            and len(x) > 0
+            and isinstance(x[0], (list, tuple, dict))
+        ):
             return pd.DataFrame(x)
         return pd.Series(x)
 
@@ -360,8 +420,10 @@ class _PandasOps:
         return x.abs() if hasattr(x, "abs") else _np.abs(self.to_numpy(x))
 
     def maximum(self, a, b):
-        a = self.asarray(a); b = self.asarray(b)
+        a = self.asarray(a)
+        b = self.asarray(b)
         import pandas as pd
+
         if isinstance(a, pd.DataFrame) and isinstance(b, pd.DataFrame):
             return a.where(a >= b, b)
         if isinstance(a, pd.Series) and isinstance(b, pd.Series):
@@ -371,8 +433,10 @@ class _PandasOps:
         return self._wrap_like(a, out)
 
     def minimum(self, a, b):
-        a = self.asarray(a); b = self.asarray(b)
+        a = self.asarray(a)
+        b = self.asarray(b)
         import pandas as pd
+
         if isinstance(a, pd.DataFrame) and isinstance(b, pd.DataFrame):
             return a.where(a <= b, b)
         if isinstance(a, pd.Series) and isinstance(b, pd.Series):
@@ -397,19 +461,38 @@ class _PandasOps:
         return self._wrap_like(x, out)
 
     def where(self, cond, x, y):
-        x = self.asarray(x); y = self.asarray(y)
+        x = self.asarray(x)
+        y = self.asarray(y)
         import pandas as pd
+
         if isinstance(x, pd.DataFrame):
             cond = self.asarray(cond)
             if isinstance(cond, pd.DataFrame):
                 cond = cond.reindex(index=x.index, columns=x.columns)
-            return x.where(cond, other=y if isinstance(y, pd.DataFrame) else self._wrap_like(x, self.to_numpy(y)))
+            return x.where(
+                cond,
+                other=(
+                    y
+                    if isinstance(y, pd.DataFrame)
+                    else self._wrap_like(x, self.to_numpy(y))
+                ),
+            )
         if isinstance(x, pd.Series):
             cond = self.asarray(cond)
             if isinstance(cond, pd.Series):
                 cond = cond.reindex(x.index)
-            return x.where(cond, other=y if isinstance(y, pd.Series) else self._wrap_like(x, self.to_numpy(y)))
-        return _np.where(self.to_numpy(cond), self.to_numpy(x), self.to_numpy(y))
+            return x.where(
+                cond,
+                other=(
+                    y
+                    if isinstance(y, pd.Series)
+                    else self._wrap_like(x, self.to_numpy(y))
+                ),
+            )
+        return _np.where(
+            self.to_numpy(cond), self.to_numpy(x), self.to_numpy(y)
+        )
+
     def any(self, x):
         return bool(_np.any(self.to_numpy(self.asarray(x))))
 
@@ -433,6 +516,7 @@ class _PandasOps:
         x = self.asarray(x)
         out = x.min(axis=axis)
         return self._keepdims(x, out, axis) if keepdims else out
+
     def cumsum(self, x, axis=0):
         x = self.asarray(x)
         if hasattr(x, "cumsum"):
@@ -441,6 +525,7 @@ class _PandasOps:
             except Exception:
                 pass
         return self._wrap_like(x, _np.cumsum(self.to_numpy(x), axis=axis))
+
     def argmax(self, x, axis=None):
         return _np.argmax(self.to_numpy(self.asarray(x)), axis=axis)
 
@@ -451,9 +536,16 @@ class _PandasOps:
         x = self.asarray(x)
         out = self.to_numpy(x).reshape(shape)
         if len(shape) != 2:
-            raise ValueError("pandas backend supports reshape only to 2D (DataFrame).")
+            raise ValueError(
+                "pandas backend supports reshape only to 2D (DataFrame)."
+            )
         import pandas as pd
-        idx = x.index if hasattr(x, "index") and shape[0] == len(x.index) else None
+
+        idx = (
+            x.index
+            if hasattr(x, "index") and shape[0] == len(x.index)
+            else None
+        )
         return pd.DataFrame(out, index=idx)
 
     def squeeze(self, x, axis=None):
@@ -461,34 +553,46 @@ class _PandasOps:
         x = self.asarray(x)
         out = _np.squeeze(self.to_numpy(x), axis=axis)
         return self._wrap_like(x, out)
+
     def concat(self, xs, axis=0):
         import pandas as pd
 
         if len(xs) == 0:
-            raise ValueError("concat requires at least one array to concatenate.")
+            raise ValueError(
+                "concat requires at least one array to concatenate."
+            )
         if all(isinstance(x, (pd.DataFrame, pd.Series, pd.Index)) for x in xs):
             return pd.concat(xs, axis=axis)
 
-        out = _np.concatenate([self.to_numpy(self.asarray(x)) for x in xs], axis=axis)
+        out = _np.concatenate(
+            [self.to_numpy(self.asarray(x)) for x in xs], axis=axis
+        )
         return self._wrap_like(self.asarray(xs[0]), out)
-    def arange(self, start, stop=None, step=1): return _np.arange(start, stop, step)
+
+    def arange(self, start, stop=None, step=1):
+        return _np.arange(start, stop, step)
+
     def full(self, shape, fill_value, dtype=None):
         out = _np.full(shape, fill_value, dtype=dtype)
         import pandas as pd
+
         if len(shape) == 1:
             return pd.Series(out)
         if len(shape) == 2:
             return pd.DataFrame(out)
         return out
+
     def ones_like(self, x):
         x = self.asarray(x)
         out = _np.ones_like(self.to_numpy(x))
         return self._wrap_like(x, out)
+
     def equal(self, a, b):
         a = self.asarray(a)
         b = self.asarray(b)
         out = _np.equal(self.to_numpy(a), self.to_numpy(b))
         return self._wrap_like(a, out)
+
     def astype(self, x, dtype):
         x = self.asarray(x)
         if hasattr(x, "astype"):
@@ -497,9 +601,16 @@ class _PandasOps:
             except Exception:
                 pass
         return self._wrap_like(x, self.to_numpy(x).astype(dtype))
-    def random_uniform(self, shape): return _np.random.uniform(size=shape)
+
+    def random_uniform(self, shape):
+        return _np.random.uniform(size=shape)
+
     def scalar_at(self, x, index):
-        return _np.asarray(self.to_numpy(self.asarray(x))).reshape(-1)[index].item()
+        return (
+            _np.asarray(self.to_numpy(self.asarray(x)))
+            .reshape(-1)[index]
+            .item()
+        )
 
     # ---------- ordering / indexing ----------
     def argsort(self, x, axis=-1, descending=False):
@@ -514,9 +625,12 @@ class _PandasOps:
         # This operation breaks the semantics of columns if axis=1 with row-wise indices.
         # We return DataFrame/Series with preserved index, columns RangeIndex.
         import pandas as pd
+
         arr = self.asarray(arr)
         ind = self.asarray(indices)
-        out = _np.take_along_axis(self.to_numpy(arr), self.to_numpy(ind), axis=axis)
+        out = _np.take_along_axis(
+            self.to_numpy(arr), self.to_numpy(ind), axis=axis
+        )
 
         if isinstance(arr, pd.DataFrame):
             if out.ndim == 2:
@@ -533,6 +647,7 @@ class _PandasOps:
     # ---------- helpers ----------
     def _wrap_like(self, ref, out: _np.ndarray):
         import pandas as pd
+
         out = _np.asarray(out)
 
         if isinstance(ref, pd.DataFrame):
@@ -552,12 +667,17 @@ class _PandasOps:
             return pd.Series(out) if out.ndim == 1 else pd.DataFrame(out)
 
         if isinstance(ref, pd.Index):
-            return pd.Index(out, name=ref.name) if out.ndim == 1 else pd.DataFrame(out)
+            return (
+                pd.Index(out, name=ref.name)
+                if out.ndim == 1
+                else pd.DataFrame(out)
+            )
 
         return out
 
     def _keepdims(self, ref, reduced, axis):
         import pandas as pd
+
         if isinstance(ref, pd.DataFrame) and isinstance(reduced, pd.Series):
             if axis in (None, 0, "index"):
                 return reduced.to_frame().T
@@ -567,6 +687,7 @@ class _PandasOps:
             return pd.Series([reduced], name=ref.name)
         return reduced
 
+
 @dataclass(frozen=True)
 class _TorchOps:
     name: str = "torch"
@@ -574,6 +695,7 @@ class _TorchOps:
     @property
     def _torch(self):
         import torch
+
         return torch
 
     def asarray(self, x: Any):
@@ -592,29 +714,48 @@ class _TorchOps:
             return x.to_numpy()
         return _np.asarray(x)
 
-    def abs(self, x): return self._torch.abs(x)
-    def maximum(self, a, b): return self._torch.maximum(a, b)
-    def minimum(self, a, b): return self._torch.minimum(a, b)
-    def clip(self, x, a_min, a_max): return self._torch.clamp(x, min=a_min, max=a_max)
-    def sqrt(self, x): return self._torch.sqrt(x)
-    def where(self, cond, x, y): return self._torch.where(cond, x, y)
-    def any(self, x): return bool(self._torch.any(x).item())
+    def abs(self, x):
+        return self._torch.abs(x)
+
+    def maximum(self, a, b):
+        return self._torch.maximum(a, b)
+
+    def minimum(self, a, b):
+        return self._torch.minimum(a, b)
+
+    def clip(self, x, a_min, a_max):
+        return self._torch.clamp(x, min=a_min, max=a_max)
+
+    def sqrt(self, x):
+        return self._torch.sqrt(x)
+
+    def where(self, cond, x, y):
+        return self._torch.where(cond, x, y)
+
+    def any(self, x):
+        return bool(self._torch.any(x).item())
 
     def sum(self, x, axis=None, keepdims=False):
         return self._torch.sum(x, dim=axis, keepdim=keepdims)
+
     def mean(self, x, axis=None, keepdims=False):
         return self._torch.mean(x, dim=axis, keepdim=keepdims)
+
     def max(self, x, axis=None, keepdims=False):
         if axis is None:
             return self._torch.max(x)
         v, _ = self._torch.max(x, dim=axis, keepdim=keepdims)
         return v
+
     def min(self, x, axis=None, keepdims=False):
         if axis is None:
             return self._torch.min(x)
         v, _ = self._torch.min(x, dim=axis, keepdim=keepdims)
         return v
-    def cumsum(self, x, axis=0): return self._torch.cumsum(x, dim=axis)
+
+    def cumsum(self, x, axis=0):
+        return self._torch.cumsum(x, dim=axis)
+
     def argmax(self, x, axis=None):
         if hasattr(x, "dtype") and x.dtype == self._torch.bool:
             x = x.to(dtype=self._torch.int64)
@@ -622,13 +763,20 @@ class _TorchOps:
             return self._torch.argmax(x)
         return self._torch.argmax(x, dim=axis)
 
-    def reshape(self, x, shape): return x.reshape(shape)
-    def squeeze(self, x, axis=None): return x.squeeze(dim=axis) if axis is not None else x.squeeze()
-    def concat(self, xs, axis=0): return self._torch.cat(xs, dim=axis)
+    def reshape(self, x, shape):
+        return x.reshape(shape)
+
+    def squeeze(self, x, axis=None):
+        return x.squeeze(dim=axis) if axis is not None else x.squeeze()
+
+    def concat(self, xs, axis=0):
+        return self._torch.cat(xs, dim=axis)
+
     def arange(self, start, stop=None, step=1):
         if stop is None:
             return self._torch.arange(start)
         return self._torch.arange(start, stop, step)
+
     def full(self, shape, fill_value, dtype=None):
         kwargs = {}
         if dtype is not None:
@@ -639,8 +787,13 @@ class _TorchOps:
                 raise TypeError(f"Unsupported torch dtype: {dtype}")
             kwargs["dtype"] = torch_dtype
         return self._torch.full(shape, fill_value, **kwargs)
-    def ones_like(self, x): return self._torch.ones_like(x)
-    def equal(self, a, b): return self._torch.eq(a, b)
+
+    def ones_like(self, x):
+        return self._torch.ones_like(x)
+
+    def equal(self, a, b):
+        return self._torch.eq(a, b)
+
     def astype(self, x, dtype):
         torch_dtype = getattr(self._torch, str(dtype), None)
         if torch_dtype is None:
@@ -648,7 +801,10 @@ class _TorchOps:
         if torch_dtype is None:
             raise TypeError(f"Unsupported torch dtype: {dtype}")
         return x.to(dtype=torch_dtype)
-    def random_uniform(self, shape): return self._torch.rand(shape)
+
+    def random_uniform(self, shape):
+        return self._torch.rand(shape)
+
     def scalar_at(self, x, index):
         return self.asarray(x).reshape(-1)[index].item()
 
@@ -667,6 +823,7 @@ class _JaxOps:
     @property
     def _jnp(self):
         import jax.numpy as jnp
+
         return jnp
 
     def asarray(self, x: Any):
@@ -677,30 +834,72 @@ class _JaxOps:
     def to_numpy(self, x: Any) -> _np.ndarray:
         return _np.asarray(x)
 
-    def abs(self, x): return self._jnp.abs(x)
-    def maximum(self, a, b): return self._jnp.maximum(a, b)
-    def minimum(self, a, b): return self._jnp.minimum(a, b)
-    def clip(self, x, a_min, a_max): return self._jnp.clip(x, a_min, a_max)
-    def sqrt(self, x): return self._jnp.sqrt(x)
-    def where(self, cond, x, y): return self._jnp.where(cond, x, y)
-    def any(self, x): return bool(_np.asarray(self._jnp.any(x)))
+    def abs(self, x):
+        return self._jnp.abs(x)
 
-    def sum(self, x, axis=None, keepdims=False): return self._jnp.sum(x, axis=axis, keepdims=keepdims)
-    def mean(self, x, axis=None, keepdims=False): return self._jnp.mean(x, axis=axis, keepdims=keepdims)
-    def max(self, x, axis=None, keepdims=False): return self._jnp.max(x, axis=axis, keepdims=keepdims)
-    def min(self, x, axis=None, keepdims=False): return self._jnp.min(x, axis=axis, keepdims=keepdims)
-    def cumsum(self, x, axis=0): return self._jnp.cumsum(x, axis=axis)
-    def argmax(self, x, axis=None): return self._jnp.argmax(x, axis=axis)
+    def maximum(self, a, b):
+        return self._jnp.maximum(a, b)
 
-    def reshape(self, x, shape): return self._jnp.reshape(x, shape)
-    def squeeze(self, x, axis=None): return self._jnp.squeeze(x, axis=axis)
-    def concat(self, xs, axis=0): return self._jnp.concatenate(xs, axis=axis)
-    def arange(self, start, stop=None, step=1): return self._jnp.arange(start, stop, step)
-    def full(self, shape, fill_value, dtype=None): return self._jnp.full(shape, fill_value, dtype=dtype)
-    def ones_like(self, x): return self._jnp.ones_like(x)
-    def equal(self, a, b): return self._jnp.equal(a, b)
-    def astype(self, x, dtype): return x.astype(dtype)
-    def random_uniform(self, shape): return self._jnp.asarray(_np.random.uniform(size=shape))
+    def minimum(self, a, b):
+        return self._jnp.minimum(a, b)
+
+    def clip(self, x, a_min, a_max):
+        return self._jnp.clip(x, a_min, a_max)
+
+    def sqrt(self, x):
+        return self._jnp.sqrt(x)
+
+    def where(self, cond, x, y):
+        return self._jnp.where(cond, x, y)
+
+    def any(self, x):
+        return bool(_np.asarray(self._jnp.any(x)))
+
+    def sum(self, x, axis=None, keepdims=False):
+        return self._jnp.sum(x, axis=axis, keepdims=keepdims)
+
+    def mean(self, x, axis=None, keepdims=False):
+        return self._jnp.mean(x, axis=axis, keepdims=keepdims)
+
+    def max(self, x, axis=None, keepdims=False):
+        return self._jnp.max(x, axis=axis, keepdims=keepdims)
+
+    def min(self, x, axis=None, keepdims=False):
+        return self._jnp.min(x, axis=axis, keepdims=keepdims)
+
+    def cumsum(self, x, axis=0):
+        return self._jnp.cumsum(x, axis=axis)
+
+    def argmax(self, x, axis=None):
+        return self._jnp.argmax(x, axis=axis)
+
+    def reshape(self, x, shape):
+        return self._jnp.reshape(x, shape)
+
+    def squeeze(self, x, axis=None):
+        return self._jnp.squeeze(x, axis=axis)
+
+    def concat(self, xs, axis=0):
+        return self._jnp.concatenate(xs, axis=axis)
+
+    def arange(self, start, stop=None, step=1):
+        return self._jnp.arange(start, stop, step)
+
+    def full(self, shape, fill_value, dtype=None):
+        return self._jnp.full(shape, fill_value, dtype=dtype)
+
+    def ones_like(self, x):
+        return self._jnp.ones_like(x)
+
+    def equal(self, a, b):
+        return self._jnp.equal(a, b)
+
+    def astype(self, x, dtype):
+        return x.astype(dtype)
+
+    def random_uniform(self, shape):
+        return self._jnp.asarray(_np.random.uniform(size=shape))
+
     def scalar_at(self, x, index):
         return _np.asarray(self.asarray(x).reshape(-1)[index]).item()
 
@@ -721,6 +920,7 @@ class _TensorflowOps:
     @property
     def _tf(self):
         import tensorflow as tf
+
         return tf
 
     def asarray(self, x: Any):
@@ -739,39 +939,78 @@ class _TensorflowOps:
             return x.to_numpy()
         return _np.asarray(x)
 
-    def abs(self, x): return self._tf.abs(x)
-    def maximum(self, a, b): return self._tf.maximum(a, b)
-    def minimum(self, a, b): return self._tf.minimum(a, b)
-    def clip(self, x, a_min, a_max): return self._tf.clip_by_value(x, a_min, a_max)
-    def sqrt(self, x): return self._tf.sqrt(x)
-    def where(self, cond, x, y): return self._tf.where(cond, x, y)
-    def any(self, x): return bool(self.to_numpy(self._tf.reduce_any(x)))
+    def abs(self, x):
+        return self._tf.abs(x)
+
+    def maximum(self, a, b):
+        return self._tf.maximum(a, b)
+
+    def minimum(self, a, b):
+        return self._tf.minimum(a, b)
+
+    def clip(self, x, a_min, a_max):
+        return self._tf.clip_by_value(x, a_min, a_max)
+
+    def sqrt(self, x):
+        return self._tf.sqrt(x)
+
+    def where(self, cond, x, y):
+        return self._tf.where(cond, x, y)
+
+    def any(self, x):
+        return bool(self.to_numpy(self._tf.reduce_any(x)))
 
     # TF reduction names differ -> normalize here
-    def sum(self, x, axis=None, keepdims=False): return self._tf.reduce_sum(x, axis=axis, keepdims=keepdims)
-    def mean(self, x, axis=None, keepdims=False): return self._tf.reduce_mean(x, axis=axis, keepdims=keepdims)
-    def max(self, x, axis=None, keepdims=False): return self._tf.reduce_max(x, axis=axis, keepdims=keepdims)
-    def min(self, x, axis=None, keepdims=False): return self._tf.reduce_min(x, axis=axis, keepdims=keepdims)
-    def cumsum(self, x, axis=0): return self._tf.cumsum(x, axis=axis)
+    def sum(self, x, axis=None, keepdims=False):
+        return self._tf.reduce_sum(x, axis=axis, keepdims=keepdims)
+
+    def mean(self, x, axis=None, keepdims=False):
+        return self._tf.reduce_mean(x, axis=axis, keepdims=keepdims)
+
+    def max(self, x, axis=None, keepdims=False):
+        return self._tf.reduce_max(x, axis=axis, keepdims=keepdims)
+
+    def min(self, x, axis=None, keepdims=False):
+        return self._tf.reduce_min(x, axis=axis, keepdims=keepdims)
+
+    def cumsum(self, x, axis=0):
+        return self._tf.cumsum(x, axis=axis)
+
     def argmax(self, x, axis=None):
         return self._tf.argmax(x, axis=axis, output_type=self._tf.int64)
 
-    def reshape(self, x, shape): return self._tf.reshape(x, shape)
-    def squeeze(self, x, axis=None): return self._tf.squeeze(x, axis=axis)
-    def concat(self, xs, axis=0): return self._tf.concat(xs, axis=axis)
+    def reshape(self, x, shape):
+        return self._tf.reshape(x, shape)
+
+    def squeeze(self, x, axis=None):
+        return self._tf.squeeze(x, axis=axis)
+
+    def concat(self, xs, axis=0):
+        return self._tf.concat(xs, axis=axis)
+
     def arange(self, start, stop=None, step=1):
         if stop is None:
             return self._tf.range(start)
         return self._tf.range(start, limit=stop, delta=step)
+
     def full(self, shape, fill_value, dtype=None):
         out = self._tf.fill(shape, fill_value)
         if dtype is not None:
             out = self._tf.cast(out, self._tf.as_dtype(dtype))
         return out
-    def ones_like(self, x): return self._tf.ones_like(x)
-    def equal(self, a, b): return self._tf.equal(a, b)
-    def astype(self, x, dtype): return self._tf.cast(x, self._tf.as_dtype(dtype))
-    def random_uniform(self, shape): return self._tf.random.uniform(shape)
+
+    def ones_like(self, x):
+        return self._tf.ones_like(x)
+
+    def equal(self, a, b):
+        return self._tf.equal(a, b)
+
+    def astype(self, x, dtype):
+        return self._tf.cast(x, self._tf.as_dtype(dtype))
+
+    def random_uniform(self, shape):
+        return self._tf.random.uniform(shape)
+
     def scalar_at(self, x, index):
         flat = self._tf.reshape(self.asarray(x), (-1,))
         return self.to_numpy(flat[index]).item()
@@ -787,7 +1026,9 @@ class _TensorflowOps:
         # Move axis to last for gather, then invert permutation
         rank = tf.rank(arr)
         axis_ = axis if axis >= 0 else axis + arr.shape.rank
-        perm = tf.concat([tf.range(axis_), tf.range(axis_ + 1, rank), [axis_]], axis=0)
+        perm = tf.concat(
+            [tf.range(axis_), tf.range(axis_ + 1, rank), [axis_]], axis=0
+        )
         inv = tf.argsort(perm)
         a = tf.transpose(arr, perm)
         ind = tf.transpose(indices, perm)
@@ -850,7 +1091,9 @@ def shape2(x: Any) -> Tuple[int, Tuple[int, ...]]:
         return arr.ndim, arr.shape
 
 
-def split_columns(x: Any, columns: Sequence[int], *, keepdims: bool = False) -> Tuple[Any, ...]:
+def split_columns(
+    x: Any, columns: Sequence[int], *, keepdims: bool = False
+) -> Tuple[Any, ...]:
     """Extract selected columns from a 2D backend object.
 
     :param Any x: backend array/tensor/dataframe with shape ``(n, d)``.
@@ -896,18 +1139,22 @@ def concat_columns(cols: Sequence[Any], *, like: Any) -> Any:
 
     if b.name == "torch":
         import torch
+
         return torch.cat(cols, dim=1)
 
     if b.name == "tensorflow":
         import tensorflow as tf
+
         return tf.concat(cols, axis=1)
 
     if b.name == "jax":
         import jax.numpy as jnp
+
         return jnp.concatenate(cols, axis=1)
 
     if b.name == "pandas":
         import pandas as pd
+
         return pd.concat(cols, axis=1)
 
     return _np.concatenate(cols, axis=1)
