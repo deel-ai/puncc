@@ -53,12 +53,18 @@ class TorchPredictor:
         self,
         model,
         is_trained=False,
-        optimizer=torch.optim.Adam,
-        criterion=torch.nn.MSELoss(reduction="sum"),
+        optimizer=None,
+        criterion=None,
         **compile_kwargs,
     ):
         if torch is None:  # pragma: no cover
             raise ImportError("TorchPredictor requires torch to be installed.")
+
+        if optimizer is None:  # pragma: no cover
+            optimizer = torch.optim.Adam
+        if criterion is None:  # pragma: no cover
+            criterion = torch.nn.MSELoss(reduction="sum")
+
         self.model = model
         self.is_trained = is_trained
         self.compile_kwargs = compile_kwargs
