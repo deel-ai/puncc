@@ -33,7 +33,7 @@ from typing import Tuple
 import numpy as np
 
 from deel.puncc.api import nonconformity_scores
-from deel.puncc.api.backend import copy_model
+from deel.puncc.api.backend import copy_model, get_backend
 from deel.puncc.api.utils import dual_predictor_check
 from deel.puncc.api.utils import supported_types_check
 
@@ -430,9 +430,9 @@ class DualPredictor:
             a couple :math:`\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))`.
         :rtype: Tuple[ndarray]
 
-        :raises NotImplementedError: predicted values not formated as numpy
-            ndarrays.
-
+        :raises NotImplementedError:  Different backends for dual predictions
+            is not supported. Please make sure both models return predictions
+            of the same type.
         .. note::
 
             For more details, check this :ref:`code snippet
@@ -443,15 +443,16 @@ class DualPredictor:
         model1_pred = self.models[0].predict(X, **dictargs[0])
         model2_pred = self.models[1].predict(X, **dictargs[1])
         supported_types_check(model1_pred, model2_pred)
-
-        if isinstance(model1_pred, np.ndarray):
-            Y_pred = np.column_stack((model1_pred, model2_pred))
-        else:  # In case the models return something other than an np.ndarray
+        if get_backend(model1_pred) != get_backend(
+            model2_pred
+        ):  # pragma: no cover
             raise NotImplementedError(
-                "Predicted values must be of type numpy.ndarray."
+                "Different backsends for dual predictions is not supported. "
+                "Please make sure both models return predictions of the same type."
             )
-
-        return np.squeeze(Y_pred)
+        b = get_backend(model1_pred)
+        Y_pred = b.column_stack((model1_pred, model2_pred))
+        return b.squeeze(Y_pred)
 
     def copy(self):
         """Returns a copy of the predictor.
