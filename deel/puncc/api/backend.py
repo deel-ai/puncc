@@ -267,7 +267,6 @@ class BackendOps(Protocol):
     name: str
 
     # conversion / construction
-    # conversion / construction
     def asarray(self, x: Any, like: Any = None) -> Any:
         """Convert ``x`` to this backend's native array/tensor type.
 
@@ -277,7 +276,6 @@ class BackendOps(Protocol):
         on the same device as ``like``. NumPy and pandas ignore ``like`` because
         they do not expose accelerator-device placement through this backend.
         """
-        ...
 
     def to_numpy(self, x: Any) -> _np.ndarray: ...
 
@@ -1126,6 +1124,7 @@ class _TensorflowOps:
 
         ref = self.asarray(xs[0])
         cols = []
+        col = None
         for x in xs:
             col = self.asarray(x, like=ref)
             if col.shape.rank is not None and col.shape.rank < 2:
