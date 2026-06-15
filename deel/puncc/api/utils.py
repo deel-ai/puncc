@@ -238,7 +238,7 @@ def supported_bbox_shape_check(
 
     if yp_ndim != 2 or yp_shape[1] != 4:
         raise RuntimeError(
-            "Each predicted bounding box must contain " "4 coordinates."
+            "Each predicted bounding box must contain 4 coordinates."
         )
     if yt_ndim != 2 or yt_shape[1] != 4:
         raise RuntimeError("Each true bounding box must contain 4 coordinates.")
