@@ -8,25 +8,38 @@ This file documents main changes across releases of **PUNCC**.
 
 ### Added 
 - Backend-level model copy abstraction supporting sklearn, JAX, TensorFlow/Keras, and PyTorch models through a unified `copy_model` entrypoint
+- Added tutorial on how to use native tensorflow/keras models with puncc
+- Added `column_stack(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
 - Added `normalize_backend_inputs(...)` to infer a backend and normalize user-provided inputs once at API boundaries
 - Added `empty_like(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
+- Added optional `like` support to backend `asarray(...)` methods to place auxiliary arrays on the same backend device as a reference object when supported
+
 
 ### Changed
 - Refactored predictor wrappers to delegate model cloning to the backend abstraction 
 - Updated `TorchPredictor` experimental wrapper to reuse the shared backend copy mechanism
+- Revised the PyTorch tutorial to use native torch models directly, removing the dependency on Skorch
+- Updated CV conformalization to support GPU acceleration
 - Avoid eager import (e.g. tensorflow) from prediction wrappers by detecting loaded frameworks through runtime module inspection
 - Clarified the backend normalization contract in `backend.py` docstrings and helper utilities
 - Updated `nonconformity_scores.py` and `prediction_sets.py` to reuse the shared backend normalization helper where backend inference semantics are preserved
 - Updated the conformalization module so it no longer assumes NumPy arrays for inputs or outputs
+- Updated `prediction_sets.py` to convert `scores_quantile` with `b.asarray(..., like=...)`, ensuring quantiles are placed on the same device as predictions for backend operations
+- Updated `BasePredictor` and `DualPredictor` to support GPU acceleration   
+
 
 ### Fixed
 - Improved framework-agnostic model copy compatibility across predictor wrappers
 - Corrected the definition of the prediction set for RAPS in theory overview 
 - Completed backend `empty_like(...)` coverage and preserved pandas index/column structure for `empty_like` outputs
+- Fixed mixed-device prediction set operations by aligning NumPy-derived `scores_quantile` values with the prediction tensor device for PyTorch, JAX, and TensorFlow backends
+
 
 ### CI / Maintenance
 - Expanded API test coverage for backend-driven model copying and predictor wrapper copy behavior.
-- Added backend tests for `normalize_backend_inputs(...)` and `empty_like(...)`, plus regression coverage for updated nonconformity score and prediction set helpers
+- Added backend tests for `normalize_backend_inputs(...)` and `empty_like(...)`, plus regression 
+coverage for updated nonconformity score and prediction set helpers
+- Added backend tests covering `asarray(..., like=...)` behavior across NumPy, pandas, PyTorch, JAX, and TensorFlow, including JAX device compatibility paths and optional CUDA coverage for PyTorch
 - Raised the minimum supported scikit-learn version to 1.5.0 to address security vulnerabilities in older releases.
 - Added alternative expected seed results in conformal regression tests for newer scikit-learn versions.
 - Removed py38 from tox envlist

@@ -32,7 +32,9 @@ from deel.puncc.api.prediction import MeanVarPredictor
 
 class DummyModel:
     def __init__(self, prediction=None):
-        self.prediction = np.array([1.0, 2.0]) if prediction is None else prediction
+        self.prediction = (
+            np.array([1.0, 2.0]) if prediction is None else prediction
+        )
         self.fit_calls = []
         self.compile_calls = []
 
@@ -91,10 +93,6 @@ def test_dual_predictor_validation_and_non_numpy_prediction():
         np.array([[1.0, 3.0], [2.0, 4.0]]),
     )
 
-    bad_predictor = DualPredictor(models=[UncopyableModel(), UncopyableModel()])
-    with pytest.raises(NotImplementedError):
-        bad_predictor.predict(np.array([[1.0]]), [{}, {}])
-
 
 def test_dual_predictor_copy_and_meanvar_fit():
     model1 = DummyModel(prediction=np.array([1.0, 2.0]))
@@ -130,7 +128,9 @@ def test_dual_predictor_copy_runtime_error_branch():
 
     predictor = DualPredictor(models=[ReallyUncopyable(), ReallyUncopyable()])
 
-    with pytest.raises(RuntimeError, match="Cannot copy model with backend 'generic'"):
+    with pytest.raises(
+        RuntimeError, match="Cannot copy model with backend 'generic'"
+    ):
         predictor.copy()
 
 

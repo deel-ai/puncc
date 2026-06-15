@@ -295,7 +295,7 @@ def constant_interval(y_pred: Iterable, scores_quantile):
     """
     supported_types_check(y_pred)
     b, (y_pred,) = normalize_backend_inputs(y_pred)
-    q = b.asarray(scores_quantile)
+    q = b.asarray(scores_quantile, like=y_pred)
     y_lo = y_pred - q
     y_hi = y_pred + q
     return y_lo, y_hi
@@ -343,7 +343,7 @@ def scaled_interval(
         )
 
     fints = sigma_pred + eps > 0
-    q = b.asarray(scores_quantile)
+    q = b.asarray(scores_quantile, like=y_pred)
     y_lo = b.where(
         fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf")
     )
@@ -351,31 +351,6 @@ def scaled_interval(
         fints, y_pred + q * (sigma_pred + eps) * weights, float("inf")
     )
     return y_lo, y_hi
-
-    # supported_types_check(Y_pred)
-
-    # b = get_backend(Y_pred)
-    # yp = b.asarray(Y_pred)
-
-    # ndim, shape = shape2(yp)
-    # if ndim != 2 or shape[1] != 2:
-    #     raise RuntimeError(
-    #         "Each Y_pred must contain a point prediction and a dispersion estimation."
-    #     )
-
-    # y_pred, sigma_pred = split_columns(yp, (0, 1))
-
-    # if b.any(sigma_pred + eps <= 0):
-    #     print(
-    #         "Warning: test points with MAD predictions below -eps"
-    #         " will have infinite sized prediction intervals."
-    #     )
-
-    # fints = sigma_pred + eps > 0
-    # q = b.asarray(scores_quantile)
-    # y_lo = b.where(fints, y_pred - q * (sigma_pred + eps), -float("inf"))
-    # y_hi = b.where(fints, y_pred + q * (sigma_pred + eps), float("inf"))
-    # return y_lo, y_hi
 
 
 def cqr_interval(Y_pred: Iterable, scores_quantile):
@@ -409,7 +384,7 @@ def cqr_interval(Y_pred: Iterable, scores_quantile):
         )
 
     q_lo, q_hi = split_columns(yp, (0, 1))
-    q = b.asarray(scores_quantile)
+    q = b.asarray(scores_quantile, like=yp)
 
     y_lo = q_lo - q
     y_hi = q_hi + q

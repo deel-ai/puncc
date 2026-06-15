@@ -267,7 +267,18 @@ class BackendOps(Protocol):
     name: str
 
     # conversion / construction
-    def asarray(self, x: Any) -> Any: ...
+    # conversion / construction
+    def asarray(self, x: Any, like: Any = None) -> Any:
+        """Convert ``x`` to this backend's native array/tensor type.
+
+        If ``like`` is provided, the returned value should also follow
+        backend-specific placement metadata from ``like`` when supported. In
+        practice, PyTorch, JAX and TensorFlow implementations place the result
+        on the same device as ``like``. NumPy and pandas ignore ``like`` because
+        they do not expose accelerator-device placement through this backend.
+        """
+        ...
+
     def to_numpy(self, x: Any) -> _np.ndarray: ...
 
     # elementwise
@@ -290,6 +301,7 @@ class BackendOps(Protocol):
     # shape utilities
     def reshape(self, x: Any, shape: Tuple[int, ...]) -> Any: ...
     def squeeze(self, x: Any, axis: Any = None) -> Any: ...
+    def column_stack(self, xs: Sequence[Any]) -> Any: ...
     def concat(self, xs: Sequence[Any], axis: int = 0) -> Any: ...
 
     # creation / typing / comparisons
@@ -321,7 +333,8 @@ class BackendOps(Protocol):
 class _NumpyOps:
     name: str = "numpy"
 
-    def asarray(self, x: Any) -> _np.ndarray:
+    def asarray(self, x: Any, like: Any = None) -> _np.ndarray:
+        del like
         if _is_pandas(x):
             return x.to_numpy()
         return _np.asarray(x)
@@ -379,6 +392,9 @@ class _NumpyOps:
     def squeeze(self, x, axis=None):
         return _np.squeeze(x, axis=axis)
 
+    def column_stack(self, xs):
+        return _np.column_stack(xs)
+
     def concat(self, xs, axis=0):
         return _np.concatenate(xs, axis=axis)
 
@@ -420,12 +436,13 @@ class _NumpyOps:
 class _PandasOps:
     name: str = "pandas"
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
+        del like
         import pandas as pd
 
         if isinstance(x, (pd.DataFrame, pd.Series, pd.Index)):
             return x
-        # Heuristique minimale
+
         if (
             isinstance(x, (list, tuple))
             and len(x) > 0
@@ -580,6 +597,27 @@ class _PandasOps:
         out = _np.squeeze(self.to_numpy(x), axis=axis)
         return self._wrap_like(x, out)
 
+    def column_stack(self, xs):
+        import pandas as pd
+
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        normalized = []
+        for x in xs:
+            arr = self.asarray(x)
+            if isinstance(arr, pd.Index):
+                arr = pd.Series(arr, name=arr.name)
+            normalized.append(arr)
+
+        if all(isinstance(x, (pd.DataFrame, pd.Series)) for x in normalized):
+            return pd.concat(normalized, axis=1)
+
+        out = _np.column_stack([self.to_numpy(x) for x in normalized])
+        return self._wrap_like(normalized[0], out)
+
     def concat(self, xs, axis=0):
         import pandas as pd
 
@@ -729,13 +767,15 @@ class _TorchOps:
 
         return torch
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
         t = self._torch
+        device = getattr(like, "device", None) if like is not None else None
+
         if isinstance(x, t.Tensor):
-            return x
+            return x.to(device=device) if device is not None else x
         if _is_pandas(x):
-            return t.as_tensor(x.to_numpy())
-        return t.as_tensor(x)
+            return t.as_tensor(x.to_numpy(), device=device)
+        return t.as_tensor(x, device=device)
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         t = self._torch
@@ -800,6 +840,21 @@ class _TorchOps:
     def squeeze(self, x, axis=None):
         return x.squeeze(dim=axis) if axis is not None else x.squeeze()
 
+    def column_stack(self, xs):
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        ref = self.asarray(xs[0])
+        cols = []
+        for x in xs:
+            col = self.asarray(x, like=ref)
+            if col.ndim < 2:
+                col = col.reshape(-1, 1)
+            cols.append(col)
+        return self._torch.cat(cols, dim=1)
+
     def concat(self, xs, axis=0):
         return self._torch.cat(xs, dim=axis)
 
@@ -860,10 +915,24 @@ class _JaxOps:
 
         return jnp
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
+        from jax import device_put
+
         if _is_pandas(x):
-            return self._jnp.asarray(x.to_numpy())
-        return self._jnp.asarray(x)
+            x = x.to_numpy()
+
+        arr = self._jnp.asarray(x)
+
+        if like is None:
+            return arr
+
+        device = getattr(like, "device", None)
+
+        if device is None and hasattr(like, "devices"):
+            devices = like.devices()
+            device = next(iter(devices)) if devices else None
+
+        return device_put(arr, device) if device is not None else arr
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         return _np.asarray(x)
@@ -913,6 +982,21 @@ class _JaxOps:
     def squeeze(self, x, axis=None):
         return self._jnp.squeeze(x, axis=axis)
 
+    def column_stack(self, xs):
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        ref = self.asarray(xs[0])
+        cols = []
+        for x in xs:
+            col = self.asarray(x, like=ref)
+            if col.ndim < 2:
+                col = self._jnp.reshape(col, (-1, 1))
+            cols.append(col)
+        return self._jnp.concatenate(cols, axis=1)
+
     def concat(self, xs, axis=0):
         return self._jnp.concatenate(xs, axis=axis)
 
@@ -960,13 +1044,25 @@ class _TensorflowOps:
 
         return tf
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
         tf = self._tf
-        if isinstance(x, (tf.Tensor, tf.Variable)):
-            return x
+
         if _is_pandas(x):
-            return tf.convert_to_tensor(x.to_numpy())
-        return tf.convert_to_tensor(x)
+            x = x.to_numpy()
+
+        if like is None:
+            return (
+                x
+                if isinstance(x, (tf.Tensor, tf.Variable))
+                else tf.convert_to_tensor(x)
+            )
+
+        with tf.device(like.device):
+            return (
+                tf.identity(x)
+                if isinstance(x, (tf.Tensor, tf.Variable))
+                else tf.convert_to_tensor(x)
+            )
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         tf = self._tf
@@ -1021,6 +1117,27 @@ class _TensorflowOps:
 
     def squeeze(self, x, axis=None):
         return self._tf.squeeze(x, axis=axis)
+
+    def column_stack(self, xs):
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        ref = self.asarray(xs[0])
+        cols = []
+        for x in xs:
+            col = self.asarray(x, like=ref)
+            if col.shape.rank is not None and col.shape.rank < 2:
+                col = self._tf.reshape(col, (-1, 1))
+            elif col.shape.rank is None:
+                col = self._tf.cond(
+                    self._tf.less(self._tf.rank(col), 2),
+                    lambda: self._tf.reshape(col, (-1, 1)),
+                    lambda: col,
+                )
+            cols.append(col)
+        return self._tf.concat(cols, axis=1)
 
     def concat(self, xs, axis=0):
         return self._tf.concat(xs, axis=axis)

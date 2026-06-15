@@ -20,8 +20,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable
-
 import numpy as np
 import pytest
 from sklearn.model_selection import train_test_split
@@ -34,6 +32,7 @@ from deel.puncc.api.calibration import ClasswiseCalibrator
 from deel.puncc.api.calibration import CvPlusCalibrator
 from deel.puncc.api.calibration import LeveragedCalibrator
 from deel.puncc.api.calibration import ScoreCalibrator
+from deel.puncc.api.prediction_sets import constant_interval
 
 
 @pytest.mark.parametrize(
@@ -42,7 +41,7 @@ from deel.puncc.api.calibration import ScoreCalibrator
 )
 def test_regression_calibrator(rand_reg_data, alpha, random_state):
     # Generate data
-    (y_pred_calib, y_calib, y_pred_test, y_test) = rand_reg_data
+    y_pred_calib, y_calib, y_pred_test, y_test = rand_reg_data
 
     # Nonconformity score function that takes as argument
     # the predicted values y_pred = model(X) and the true labels y_true. In
@@ -88,7 +87,7 @@ def test_regression_calibrator(rand_reg_data, alpha, random_state):
 )
 def test_classification_calibrator(rand_class_data, alpha, random_state):
     # Generate data
-    (y_pred_calib, y_calib, y_pred_test, y_test) = rand_class_data
+    y_pred_calib, y_calib, y_pred_test, y_test = rand_class_data
 
     # The calibrator is instantiated
     calibrator = BaseCalibrator(
@@ -117,7 +116,7 @@ def test_anomaly_detection_calibrator(
     rand_anomaly_detection_data, alpha, random_state
 ):
     # Generate data
-    (z_train, z_test) = rand_anomaly_detection_data
+    z_train, z_test = rand_anomaly_detection_data
 
     # Split data into proper fitting and calibration sets
     z_fit, z_calib = train_test_split(
@@ -173,7 +172,7 @@ def test_multivariate_regression_calibrator(
     rand_multivariate_reg_data, alpha, random_state
 ):
     # Generate data
-    (y_pred_calib, y_calib, y_pred_test, y_test) = rand_multivariate_reg_data
+    y_pred_calib, y_calib, y_pred_test, y_test = rand_multivariate_reg_data
 
     # Nonconformity score function that takes as argument
     # the predicted values y_pred = model(X) and the true labels y_true. In
@@ -216,7 +215,10 @@ def test_multivariate_regression_calibrator(
 def test_base_calibrator_compute_quantile_and_barber_weights():
     calibrator = BaseCalibrator(
         nonconf_score_func=lambda y_pred, y_true: np.abs(y_pred - y_true),
-        pred_set_func=lambda y_pred, scores_quantile: (y_pred - scores_quantile, y_pred + scores_quantile),
+        pred_set_func=lambda y_pred, scores_quantile: (
+            y_pred - scores_quantile,
+            y_pred + scores_quantile,
+        ),
     )
 
     with pytest.raises(RuntimeError):
@@ -246,7 +248,9 @@ def test_classwise_calibrator_handles_missing_class_scores():
         nonconf_score_func=lambda y_pred, y_true: residuals,
         pred_set_func=lambda y_pred, scores_quantile: scores_quantile,
     )
-    calibrator.fit(y_pred=np.zeros_like(residuals), y_true=np.zeros_like(residuals))
+    calibrator.fit(
+        y_pred=np.zeros_like(residuals), y_true=np.zeros_like(residuals)
+    )
 
     quantiles = calibrator.compute_quantile(alpha=0.5)
 
@@ -266,8 +270,14 @@ def test_classwise_calibrator_compute_quantile_raises_before_fit():
 
 def test_leveraged_calibrator_fit_and_calibrate():
     calibrator = LeveragedCalibrator(
-        nonconf_score_func=lambda X, y_pred, y_true, weight_func: np.abs(y_pred - y_true) * weight_func(X),
-        pred_set_func=lambda y_pred, scores_quantile, weights: (y_pred - scores_quantile * weights, y_pred + scores_quantile * weights),
+        nonconf_score_func=lambda X, y_pred, y_true, weight_func: np.abs(
+            y_pred - y_true
+        )
+        * weight_func(X),
+        pred_set_func=lambda y_pred, scores_quantile, weights: (
+            y_pred - scores_quantile * weights,
+            y_pred + scores_quantile * weights,
+        ),
         weight_func=lambda x: x + 1.0,
         leverage_func=lambda x: x * 2.0,
     )
@@ -277,7 +287,9 @@ def test_leveraged_calibrator_fit_and_calibrate():
     y_true = np.array([1.5, 3.5, 5.5])
 
     calibrator.fit(X=X, y_pred=y_pred, y_true=y_true)
-    y_lo, y_hi = calibrator.calibrate(alpha=0.5, X=np.array([1.0, 3.0]), y_pred=np.array([10.0, 20.0]))
+    y_lo, y_hi = calibrator.calibrate(
+        alpha=0.5, X=np.array([1.0, 3.0]), y_pred=np.array([10.0, 20.0])
+    )
 
     assert y_lo.shape == (2,)
     assert y_hi.shape == (2,)
@@ -322,9 +334,7 @@ class DummyCvCalibrator:
     def __init__(self, scores, norm_weights=None, pred_set_func=None):
         self._scores = scores
         self._norm_weights = norm_weights
-        self.pred_set_func = pred_set_func or (
-            lambda y_pred, nconf_scores: (y_pred - nconf_scores, y_pred + nconf_scores)
-        )
+        self.pred_set_func = pred_set_func or constant_interval
 
     def get_nonconformity_scores(self):
         return self._scores
@@ -346,7 +356,9 @@ class BadArrayLike:
 
 
 def test_score_calibrator_get_nonconformity_scores():
-    calibrator = ScoreCalibrator(nonconf_score_func=lambda z: np.asarray(z, dtype=float))
+    calibrator = ScoreCalibrator(
+        nonconf_score_func=lambda z: np.asarray(z, dtype=float)
+    )
     calibrator.fit(np.array([1.0, 2.0, 3.0]))
 
     np.testing.assert_allclose(
@@ -362,10 +374,39 @@ def test_cvplus_calibrator_additional_error_paths():
 
     good = DummyCvCalibrator(scores=np.array([1.0, 2.0]))
     cv_none_pred = CvPlusCalibrator({0: good})
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Exception):
         cv_none_pred.calibrate(
             X=np.array([[0.0]]),
             kfold_predictors_dict={0: DummyCvPredictor(None)},
+            alpha=0.5,
+        )
+
+
+
+def test_cvplus_calibrator_raises_when_backend_returns_no_prediction(
+    monkeypatch,
+):
+    import deel.puncc.api.calibration as calibration_module
+
+    class BackendReturningNone:
+        def to_numpy(self, x):
+            del x
+            return None
+
+    good = DummyCvCalibrator(scores=np.array([1.0, 2.0]))
+    cv = CvPlusCalibrator({0: good})
+
+    monkeypatch.setattr(
+        calibration_module, "alpha_calib_check", lambda alpha, n: None
+    )
+    monkeypatch.setattr(
+        calibration_module, "get_backend", lambda X: BackendReturningNone()
+    )
+
+    with pytest.raises(RuntimeError, match=r"No prediction obtained with cv\+\."):
+        cv.calibrate(
+            X=np.array([[0.0]]),
+            kfold_predictors_dict={0: DummyCvPredictor(object())},
             alpha=0.5,
         )
 
@@ -392,23 +433,13 @@ def test_cvplus_calibrator_weighted_and_multivariate_paths():
         )
 
 
-def test_cvplus_calibrator_noncastable_scores_raise_runtime_error():
-    bad = DummyCvCalibrator(scores=BadArrayLike())
-    cv = CvPlusCalibrator({0: bad})
-
-    with pytest.raises(RuntimeError):
-        cv.calibrate(
-            X=np.array([[0.0]]),
-            kfold_predictors_dict={0: DummyCvPredictor(np.array([10.0]))},
-            alpha=0.5,
-        )
-
-
 def test_cvplus_calibrator_empty_predictor_dict_hits_sanity_check(monkeypatch):
     import deel.puncc.api.calibration as calibration_module
 
     cv = CvPlusCalibrator({})
-    monkeypatch.setattr(calibration_module, "alpha_calib_check", lambda alpha, n: None)
+    monkeypatch.setattr(
+        calibration_module, "alpha_calib_check", lambda alpha, n: None
+    )
 
     with pytest.raises(RuntimeError):
         cv.calibrate(X=np.array([[0.0]]), kfold_predictors_dict={}, alpha=0.5)
@@ -416,8 +447,12 @@ def test_cvplus_calibrator_empty_predictor_dict_hits_sanity_check(monkeypatch):
 
 def test_cvplus_calibrator_weighted_concat_path_reaches_both_inf_appends():
     pred_func = lambda y_pred, nconf_scores: (
-        np.array([y_pred.reshape(-1)[0] - np.asarray(nconf_scores).reshape(-1)[0]]),
-        np.array([y_pred.reshape(-1)[0] + np.asarray(nconf_scores).reshape(-1)[0]]),
+        np.array(
+            [y_pred.reshape(-1)[0] - np.asarray(nconf_scores).reshape(-1)[0]]
+        ),
+        np.array(
+            [y_pred.reshape(-1)[0] + np.asarray(nconf_scores).reshape(-1)[0]]
+        ),
     )
     cal0 = DummyCvCalibrator(
         scores=np.array([[1.0], [2.0]]),

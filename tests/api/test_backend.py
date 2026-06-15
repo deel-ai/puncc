@@ -318,6 +318,28 @@ def test_backend_concat_and_ones_like(name):
 @pytest.mark.parametrize(
     "name", ["numpy", "pandas", "torch", "tensorflow", "jax"]
 )
+def test_backend_column_stack(name):
+    b = get_backend(_make_backend_array(name, [1.0]))
+
+    left_vec = b.asarray(_make_backend_array(name, [1.0, 3.0]))
+    right_vec = b.asarray(_make_backend_array(name, [2.0, 4.0]))
+    stacked_vec = b.column_stack([left_vec, right_vec])
+    np.testing.assert_allclose(
+        _to_numpy(stacked_vec), np.array([[1.0, 2.0], [3.0, 4.0]])
+    )
+
+    left_mat = b.asarray(_make_backend_array(name, [[1.0, 2.0], [3.0, 4.0]]))
+    right_mat = b.asarray(_make_backend_array(name, [[5.0, 6.0], [7.0, 8.0]]))
+    stacked_mat = b.column_stack([left_mat, right_mat])
+    np.testing.assert_allclose(
+        _to_numpy(stacked_mat),
+        np.array([[1.0, 2.0, 5.0, 6.0], [3.0, 4.0, 7.0, 8.0]]),
+    )
+
+
+@pytest.mark.parametrize(
+    "name", ["numpy", "pandas", "torch", "tensorflow", "jax"]
+)
 def test_shape2_split_concat_helpers(name):
     x = _make_backend_array(name, [[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]])
     b = get_backend(x)
@@ -780,6 +802,130 @@ def test_pandas_backend_take_along_axis_returns_raw_output(monkeypatch):
     assert np.array(out).shape == ()
 
 
+
+def test_pandas_column_stack_empty_input_raises():
+    from deel.puncc.api.backend import _PandasOps
+
+    with pytest.raises(ValueError, match="column_stack requires at least one array"):
+        _PandasOps().column_stack([])
+
+
+
+def test_pandas_column_stack_converts_index_and_wraps_forced_mixed_inputs(
+    monkeypatch,
+):
+    pd = pytest.importorskip("pandas")
+    from deel.puncc.api.backend import _PandasOps
+
+    ops = _PandasOps()
+    original_asarray = _PandasOps.asarray
+
+    def patched_asarray(self, x, like=None):
+        if isinstance(x, np.ndarray):
+            return x
+        return original_asarray(self, x, like=like)
+
+    monkeypatch.setattr(_PandasOps, "asarray", patched_asarray)
+
+    out = ops.column_stack([pd.Index([1.0, 3.0], name="idx"), np.array([2.0, 4.0])])
+
+    assert isinstance(out, pd.DataFrame)
+    np.testing.assert_allclose(out.to_numpy(), np.array([[1.0, 2.0], [3.0, 4.0]]))
+
+
+
+def test_torch_column_stack_empty_input_raises():
+    pytest.importorskip("torch")
+    from deel.puncc.api.backend import _TorchOps
+
+    with pytest.raises(ValueError, match="column_stack requires at least one array"):
+        _TorchOps().column_stack([])
+
+
+
+def test_jax_column_stack_empty_input_raises():
+    pytest.importorskip("jax.numpy")
+    from deel.puncc.api.backend import _JaxOps
+
+    with pytest.raises(ValueError, match="column_stack requires at least one array"):
+        _JaxOps().column_stack([])
+
+
+
+def test_tensorflow_column_stack_empty_input_raises():
+    pytest.importorskip("tensorflow")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    with pytest.raises(ValueError, match="column_stack requires at least one array"):
+        _TensorflowOps().column_stack([])
+
+
+
+def test_tensorflow_column_stack_unknown_rank_uses_tf_cond(monkeypatch):
+    import types
+
+    pytest.importorskip("tensorflow")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    class FakeShape:
+        def __init__(self, rank):
+            self.rank = rank
+
+    class FakeTensor:
+        def __init__(self, name, rank):
+            self.name = name
+            self.shape = FakeShape(rank)
+
+    ref = FakeTensor("ref", 1)
+    unknown = FakeTensor("unknown", None)
+    calls = {"rank": [], "reshape": []}
+
+    def fake_asarray(self, x, like=None):
+        del like
+        if x == "ref":
+            return ref
+        return unknown
+
+    def fake_rank(tensor):
+        calls["rank"].append(tensor.name)
+        return 1
+
+    def fake_less(left, right):
+        calls["less"] = (left, right)
+        return "predicate"
+
+    def fake_reshape(tensor, shape):
+        calls["reshape"].append((tensor.name, shape))
+        return FakeTensor(f"reshaped-{tensor.name}", 2)
+
+    def fake_cond(predicate, true_fn, false_fn):
+        calls["predicate"] = predicate
+        return true_fn()
+
+    def fake_concat(cols, axis):
+        calls["concat"] = ([col.name for col in cols], axis)
+        return cols
+
+    fake_tf = types.SimpleNamespace(
+        rank=fake_rank,
+        less=fake_less,
+        reshape=fake_reshape,
+        cond=fake_cond,
+        concat=fake_concat,
+    )
+
+    monkeypatch.setattr(_TensorflowOps, "_tf", fake_tf)
+    monkeypatch.setattr(_TensorflowOps, "asarray", fake_asarray)
+
+    out = _TensorflowOps().column_stack(["ref", "unknown"])
+
+    assert [col.name for col in out] == ["reshaped-ref", "reshaped-unknown"]
+    assert calls["rank"] == ["unknown"]
+    assert calls["less"] == (1, 2)
+    assert calls["predicate"] == "predicate"
+    assert calls["concat"] == (["reshaped-ref", "reshaped-unknown"], 1)
+
+
 def test_copy_model_sklearn_preserves_fitted_state():
     linear_model = pytest.importorskip("sklearn.linear_model")
 
@@ -922,3 +1068,163 @@ def test_is_jax_model_false_without_loaded_jax(monkeypatch):
     monkeypatch.delitem(backend_module.sys.modules, "jax.numpy", raising=False)
 
     assert backend_module._is_jax_model(object()) is False
+
+
+def test_numpy_and_pandas_asarray_like_argument_is_ignored():
+    pd = pytest.importorskip("pandas")
+    from deel.puncc.api.backend import _NumpyOps, _PandasOps
+
+    np_like = np.asarray([99.0])
+    np.testing.assert_allclose(
+        _NumpyOps().asarray(pd.Series([1.0, 2.0]), like=np_like),
+        np.array([1.0, 2.0]),
+    )
+
+    pd_like = pd.Series([99.0])
+    series = _PandasOps().asarray([1.0, 2.0], like=pd_like)
+    assert isinstance(series, pd.Series)
+    np.testing.assert_allclose(series.to_numpy(), np.array([1.0, 2.0]))
+
+
+def test_torch_asarray_like_places_numpy_pandas_and_tensor_on_like_device():
+    torch = pytest.importorskip("torch")
+    pd = pytest.importorskip("pandas")
+    from deel.puncc.api.backend import _TorchOps
+
+    ops = _TorchOps()
+    like = torch.tensor([0.0])
+
+    from_numpy = ops.asarray(np.array([1.0, 2.0]), like=like)
+    assert isinstance(from_numpy, torch.Tensor)
+    assert from_numpy.device == like.device
+    np.testing.assert_allclose(_to_numpy(from_numpy), np.array([1.0, 2.0]))
+
+    from_pandas = ops.asarray(pd.Series([3.0, 4.0]), like=like)
+    assert isinstance(from_pandas, torch.Tensor)
+    assert from_pandas.device == like.device
+    np.testing.assert_allclose(_to_numpy(from_pandas), np.array([3.0, 4.0]))
+
+    source_tensor = torch.tensor([5.0, 6.0])
+    from_tensor = ops.asarray(source_tensor, like=like)
+    assert isinstance(from_tensor, torch.Tensor)
+    assert from_tensor.device == like.device
+    np.testing.assert_allclose(_to_numpy(from_tensor), np.array([5.0, 6.0]))
+
+
+def test_torch_asarray_like_moves_cpu_input_to_cuda_like_device():
+    torch = pytest.importorskip("torch")
+    if torch.cuda.device_count() == 0:
+        pytest.skip(
+            "CUDA is needed to verify torch asarray(like=...) moves to GPU."
+        )
+
+    from deel.puncc.api.backend import _TorchOps
+
+    like = torch.tensor([0.0], device="cuda")
+    out = _TorchOps().asarray(np.array([1.0, 2.0]), like=like)
+
+    assert out.device == like.device
+    np.testing.assert_allclose(_to_numpy(out), np.array([1.0, 2.0]))
+
+
+def test_jax_asarray_like_uses_device_attribute_when_available():
+    jax = pytest.importorskip("jax")
+    jnp = pytest.importorskip("jax.numpy")
+    from deel.puncc.api.backend import _JaxOps
+
+    ops = _JaxOps()
+    like = jnp.asarray([0.0])
+    out = ops.asarray(np.array([1.0, 2.0]), like=like)
+
+    expected_device = getattr(like, "device", None)
+    if expected_device is not None:
+        assert getattr(out, "device", None) == expected_device
+    np.testing.assert_allclose(_to_numpy(out), np.array([1.0, 2.0]))
+
+
+def test_jax_asarray_like_falls_back_to_devices_method(monkeypatch):
+    jax = pytest.importorskip("jax")
+    pytest.importorskip("jax.numpy")
+    from deel.puncc.api.backend import _JaxOps
+
+    calls = []
+
+    def fake_device_put(arr, device):
+        calls.append(device)
+        return arr
+
+    class LikeWithDevices:
+        def devices(self):
+            return ["fake-device"]
+
+    monkeypatch.setattr(jax, "device_put", fake_device_put)
+
+    out = _JaxOps().asarray([1.0, 2.0], like=LikeWithDevices())
+
+    assert calls == ["fake-device"]
+    np.testing.assert_allclose(_to_numpy(out), np.array([1.0, 2.0]))
+
+
+def test_jax_asarray_like_returns_array_when_like_has_no_device_metadata(
+    monkeypatch,
+):
+    jax = pytest.importorskip("jax")
+    pytest.importorskip("jax.numpy")
+    from deel.puncc.api.backend import _JaxOps
+
+    def fail_device_put(arr, device):
+        raise AssertionError(
+            "device_put should not be called without device metadata"
+        )
+
+    monkeypatch.setattr(jax, "device_put", fail_device_put)
+
+    out = _JaxOps().asarray([1.0, 2.0], like=object())
+
+    np.testing.assert_allclose(_to_numpy(out), np.array([1.0, 2.0]))
+
+
+def test_tensorflow_asarray_like_places_numpy_pandas_and_tensor_on_like_device():
+    tf = pytest.importorskip("tensorflow")
+    pd = pytest.importorskip("pandas")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    ops = _TensorflowOps()
+    like = tf.constant([0.0])
+
+    from_numpy = ops.asarray(np.array([1.0, 2.0]), like=like)
+    assert isinstance(from_numpy, tf.Tensor)
+    assert from_numpy.device == like.device
+    np.testing.assert_allclose(_to_numpy(from_numpy), np.array([1.0, 2.0]))
+
+    from_pandas = ops.asarray(pd.Series([3.0, 4.0]), like=like)
+    assert isinstance(from_pandas, tf.Tensor)
+    assert from_pandas.device == like.device
+    np.testing.assert_allclose(_to_numpy(from_pandas), np.array([3.0, 4.0]))
+
+    source_tensor = tf.constant([5.0, 6.0])
+    from_tensor = ops.asarray(source_tensor, like=like)
+    assert isinstance(from_tensor, tf.Tensor)
+    assert from_tensor.device == like.device
+    np.testing.assert_allclose(_to_numpy(from_tensor), np.array([5.0, 6.0]))
+
+
+def test_tensorflow_empty_like_falls_back_to_zeros_like(monkeypatch):
+    import types
+
+    tf = pytest.importorskip("tensorflow")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    ops = _TensorflowOps()
+    x = tf.constant([[1.0, 2.0], [3.0, 4.0]])
+
+    monkeypatch.setattr(
+        tf, "experimental", types.SimpleNamespace(numpy=types.SimpleNamespace())
+    )
+
+    out = ops.empty_like(x)
+
+    np.testing.assert_allclose(
+        _to_numpy(out), np.zeros((2, 2), dtype=np.float32)
+    )
+    assert out.dtype == x.dtype
