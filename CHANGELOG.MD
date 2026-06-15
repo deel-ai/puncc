@@ -8,18 +8,25 @@ This file documents main changes across releases of **PUNCC**.
 
 ### Added 
 - Backend-level model copy abstraction supporting sklearn, JAX, TensorFlow/Keras, and PyTorch models through a unified `copy_model` entrypoint
+- Added `normalize_backend_inputs(...)` to infer a backend and normalize user-provided inputs once at API boundaries
+- Added `empty_like(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
 
 ### Changed
 - Refactored predictor wrappers to delegate model cloning to the backend abstraction 
 - Updated `TorchPredictor` experimental wrapper to reuse the shared backend copy mechanism
 - Avoid eager import (e.g. tensorflow) from prediction wrappers by detecting loaded frameworks through runtime module inspection
+- Clarified the backend normalization contract in `backend.py` docstrings and helper utilities
+- Updated `nonconformity_scores.py` and `prediction_sets.py` to reuse the shared backend normalization helper where backend inference semantics are preserved
+- Updated the conformalization module so it no longer assumes NumPy arrays for inputs or outputs
 
 ### Fixed
 - Improved framework-agnostic model copy compatibility across predictor wrappers
 - Corrected the definition of the prediction set for RAPS in theory overview 
+- Completed backend `empty_like(...)` coverage and preserved pandas index/column structure for `empty_like` outputs
 
 ### CI / Maintenance
 - Expanded API test coverage for backend-driven model copying and predictor wrapper copy behavior.
+- Added backend tests for `normalize_backend_inputs(...)` and `empty_like(...)`, plus regression coverage for updated nonconformity score and prediction set helpers
 - Raised the minimum supported scikit-learn version to 1.5.0 to address security vulnerabilities in older releases.
 - Added alternative expected seed results in conformal regression tests for newer scikit-learn versions.
 - Removed py38 from tox envlist

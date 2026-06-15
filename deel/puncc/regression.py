@@ -23,6 +23,7 @@
 """
 This module implements usual conformal regression wrappers.
 """
+
 from copy import deepcopy
 from typing import Any
 from typing import Callable
@@ -37,7 +38,10 @@ from sklearn.utils import resample
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator, LeveragedCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor, SplitConformalPredictor
+from deel.puncc.api.conformalization import (
+    ConformalPredictor,
+    SplitConformalPredictor,
+)
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.prediction import MeanVarPredictor
@@ -118,12 +122,14 @@ class SplitCP(SplitConformalPredictor):
         random_state: Optional[int] = None,
         weight_func=None,
     ):
-        super().__init__(predictor=predictor,
-                         nonconf_score_func=nonconformity_scores.absolute_difference,
-                         pred_set_func=prediction_sets.constant_interval,
-                         train=train,
-                         random_state=random_state,
-                         weight_func=weight_func)
+        super().__init__(
+            predictor=predictor,
+            nonconf_score_func=nonconformity_scores.absolute_difference,
+            pred_set_func=prediction_sets.constant_interval,
+            train=train,
+            random_state=random_state,
+            weight_func=weight_func,
+        )
 
 
 class LocallyAdaptiveCP(SplitConformalPredictor):
@@ -202,12 +208,15 @@ class LocallyAdaptiveCP(SplitConformalPredictor):
         random_state: int = None,
         weight_func: Callable = None,
     ):
-        super().__init__(predictor=predictor,
-                    nonconf_score_func=nonconformity_scores.scaled_ad,
-                    pred_set_func=prediction_sets.scaled_interval,
-                    train=train,
-                    random_state=random_state,
-                    weight_func=weight_func)
+        super().__init__(
+            predictor=predictor,
+            nonconf_score_func=nonconformity_scores.scaled_ad,
+            pred_set_func=prediction_sets.scaled_interval,
+            train=train,
+            random_state=random_state,
+            weight_func=weight_func,
+        )
+
 
 class LeverageWeightedCP(SplitConformalPredictor):
     """Leverage-weighted conformal prediction method. For more details, we refer the user to
@@ -218,10 +227,11 @@ class LeverageWeightedCP(SplitConformalPredictor):
         Defaults to True.
     :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
-    :param Callable weight_func: function that weights the leverage scores. 
+    :param Callable weight_func: function that weights the leverage scores.
         Defaults to None for uniform weighting.
-        
+
     .. _example lwcp:
+
     Example::
 
         from deel.puncc.regression import LeverageWeightedCP
@@ -317,17 +327,19 @@ class LeverageWeightedCP(SplitConformalPredictor):
         :param Iterable y_calib: labels from the calibration dataset.
         :param dict kwargs: predict configuration to be passed to the model's
             predict method.
-    """
+        """
         if X_fit is None:
-            raise ValueError("X_fit should be provided for leverage-weighted "
-                             "conformal prediction even when model is trained. "
-                             "This is because the leverage function is derived "
-                             "from the training set.")
+            raise ValueError(
+                "X_fit should be provided for leverage-weighted "
+                "conformal prediction even when model is trained. "
+                "This is because the leverage function is derived "
+                "from the training set."
+            )
         leverage_func = generate_leverage_func(X_fit)
         self.conformal_predictor.calibrator.leverage_func = leverage_func
-        super().fit(X_fit=X_fit, y_fit=y_fit,
-                    X_calib=X_calib, y_calib=y_calib,
-                    **kwargs)
+        super().fit(
+            X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib, **kwargs
+        )
 
 
 class CQR(SplitConformalPredictor):
@@ -409,15 +421,17 @@ class CQR(SplitConformalPredictor):
         predictor: DualPredictor,
         *,
         train: bool = True,
-        random_state= None,
+        random_state=None,
         weight_func: Callable = None,
     ):
-        super().__init__(predictor=predictor,
+        super().__init__(
+            predictor=predictor,
             nonconf_score_func=nonconformity_scores.cqr_score,
             pred_set_func=prediction_sets.cqr_interval,
             train=train,
             random_state=random_state,
-            weight_func=weight_func)
+            weight_func=weight_func,
+        )
 
 
 class CVPlus:

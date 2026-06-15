@@ -31,7 +31,7 @@ from typing import Iterable
 from typing import List
 
 from deel.puncc.api.backend import concat_columns
-from deel.puncc.api.backend import get_backend
+from deel.puncc.api.backend import normalize_backend_inputs
 from deel.puncc.api.backend import shape2
 from deel.puncc.api.backend import split_columns
 from deel.puncc.api.utils import logit_normalization_check
@@ -62,8 +62,7 @@ def lac_set(Y_pred, scores_quantile) -> List:
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred)
-    yp = b.asarray(Y_pred)
+    b, (yp,) = normalize_backend_inputs(Y_pred)
 
     pred_len = len(yp)
     logger.debug(f"Shape of Y_pred: {shape2(yp)[1]}")
@@ -100,9 +99,7 @@ def classwise_lac_set(Y_pred, scores_quantile) -> List:
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, scores_quantile)
-    yp = b.asarray(Y_pred)
-    sq = b.asarray(scores_quantile)
+    b, (yp, sq) = normalize_backend_inputs(Y_pred, scores_quantile)
     _, shape = shape2(yp)
     n_test = shape[0]
 
@@ -159,8 +156,7 @@ def raps_set(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred)
-    yp = b.asarray(Y_pred)
+    b, (yp,) = normalize_backend_inputs(Y_pred)
 
     _, shape = shape2(yp)
     pred_len = shape[0]
@@ -298,8 +294,7 @@ def constant_interval(y_pred: Iterable, scores_quantile):
     :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred)
-    b = get_backend(y_pred)
-    y_pred = b.asarray(y_pred)
+    b, (y_pred,) = normalize_backend_inputs(y_pred)
     q = b.asarray(scores_quantile)
     y_lo = y_pred - q
     y_hi = y_pred + q
@@ -331,8 +326,7 @@ def scaled_interval(
     :raises TypeError: unsupported data types.
     """
 
-    b = get_backend(Y_pred)
-    Yp = b.asarray(Y_pred)
+    b, (Yp,) = normalize_backend_inputs(Y_pred)
 
     try:
         supported_meanvar_models_shape_check(Y_pred)
@@ -406,8 +400,7 @@ def cqr_interval(Y_pred: Iterable, scores_quantile):
     """
     supported_types_check(Y_pred)
 
-    b = get_backend(Y_pred)
-    yp = b.asarray(Y_pred)
+    b, (yp,) = normalize_backend_inputs(Y_pred)
 
     ndim, shape = shape2(yp)
     if ndim != 2 or shape[1] != 2:
@@ -440,8 +433,7 @@ def constant_bbox(Y_pred, scores_quantile):
 
     :raises TypeError: unsupported data types.
     """
-    b = get_backend(Y_pred)
-    yp = b.asarray(Y_pred)
+    b, (yp,) = normalize_backend_inputs(Y_pred)
 
     ndim, shape = shape2(yp)
     if ndim != 2 or shape[1] != 4:
@@ -482,8 +474,7 @@ def scaled_bbox(Y_pred, scores_quantile):
 
     :raises TypeError: unsupported data types.
     """
-    b = get_backend(Y_pred)
-    yp = b.asarray(Y_pred)
+    b, (yp,) = normalize_backend_inputs(Y_pred)
 
     ndim, shape = shape2(yp)
     if ndim != 2 or shape[1] != 4:
