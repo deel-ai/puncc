@@ -24,10 +24,17 @@
 This module provides nonconformity scores for conformal prediction. To be used
 when building a :ref:`calibrator <calibration>`.
 """
+
 from typing import Callable
 from typing import Iterable
 
-from deel.puncc.api.backend import concat_columns, get_backend, shape2, split_columns
+from deel.puncc.api.backend import (
+    concat_columns,
+    get_backend,
+    normalize_backend_inputs,
+    shape2,
+    split_columns,
+)
 
 from deel.puncc.api.utils import supported_types_check
 from deel.puncc.api.utils import supported_dual_models_shape_check
@@ -35,7 +42,6 @@ from deel.puncc.api.utils import supported_meanvar_models_shape_check
 
 from deel.puncc.api.utils import supported_bbox_shape_check
 from deel.puncc.api.utils import logit_normalization_check
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Classification ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -61,9 +67,8 @@ def lac_score(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, y_true)
+    yt = b.astype(b.squeeze(yt), "int64")
 
     # Gather predicted probability at true-label index for each sample.
     p_true = b.take_along_axis(yp, b.reshape(yt, (-1, 1)), axis=1)
@@ -97,9 +102,8 @@ def classwise_lac_score(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, y_true)
+    yt = b.astype(b.squeeze(yt), "int64")
 
     _, shape = shape2(yp)
     n_samples = shape[0]
@@ -136,9 +140,8 @@ def raps_score(
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, y_true)
+    yt = b.astype(b.squeeze(yt), "int64")
 
     # Sort classes by descending probability order.
     class_ranking = b.argsort(yp, axis=1, descending=True)
@@ -222,9 +225,7 @@ def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     :raises TypeError: unsupported data types.
     """
     supported_types_check(y_pred, y_true)
-    b = get_backend(y_pred, y_true)
-    yp = b.asarray(y_pred)
-    yt = b.asarray(y_true)
+    b, (yp, yt) = normalize_backend_inputs(y_pred, y_true)
     return b.squeeze(yp) - b.squeeze(yt)
 
 
@@ -270,9 +271,7 @@ def scaled_ad(
     """
     supported_dual_models_shape_check(Y_pred, y_true)
 
-    b = get_backend(Y_pred, y_true)
-    Yp = b.asarray(Y_pred)
-    yt = b.asarray(y_true)
+    b, (Yp, yt) = normalize_backend_inputs(Y_pred, y_true)
 
     y_pred, sigma_pred = split_columns(Yp, (0, 1))
     mad = b.abs(y_pred - yt)
@@ -285,9 +284,13 @@ def scaled_ad(
     nonneg = sigma_pred + eps > 0
     return mad[nonneg] / (sigma_pred[nonneg] + eps)
 
+
 def weighted_scaled_ad(
-    X, Y_pred: Iterable, y_true: Iterable, weight_func: Callable,
-    eps: float = 1e-12
+    X,
+    Y_pred: Iterable,
+    y_true: Iterable,
+    weight_func: Callable,
+    eps: float = 1e-12,
 ) -> Iterable:
     """Weighted Scaled Absolute Deviation. Similar to :func:`scaled_ad`
     but with an extra weighting of the nonconformity scores by a function of X.
@@ -315,9 +318,7 @@ def weighted_scaled_ad(
     # Models should either predict only the point estimate or both the point
     # estimate and the conditional MAD.
 
-    b = get_backend(Y_pred, y_true)
-    yt = b.asarray(y_true)
-    Yp = b.asarray(Y_pred)
+    b, (Yp, yt) = normalize_backend_inputs(Y_pred, y_true)
 
     try:
         supported_meanvar_models_shape_check(Y_pred, y_true)
@@ -336,6 +337,7 @@ def weighted_scaled_ad(
     nonneg = sigma_pred + eps > 0
     weights = weight_func(X[nonneg]) if weight_func is not None else 1
     return mad[nonneg] / (sigma_pred[nonneg] + eps) * weights
+
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     """CQR nonconformity score. Considering
@@ -358,9 +360,7 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     """
     supported_dual_models_shape_check(Y_pred, y_true)
 
-    b = get_backend(Y_pred, y_true)
-    Yp = b.asarray(Y_pred)
-    yt = b.asarray(y_true)
+    b, (Yp, yt) = normalize_backend_inputs(Y_pred, y_true)
 
     q_lo, q_hi = split_columns(Yp, (0, 1))
     diff_lo = q_lo - yt
@@ -393,9 +393,7 @@ def scaled_bbox_difference(Y_pred: Iterable, Y_true: Iterable):
     :raises TypeError: unsupported data types.
     """
     supported_bbox_shape_check(Y_pred, Y_true)
-    b = get_backend(Y_pred, Y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.asarray(Y_true)
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, Y_true)
 
     x_min, y_min, x_max, y_max = split_columns(yp, (0, 1, 2, 3), keepdims=True)
     dx = b.abs(x_max - x_min)

@@ -25,6 +25,16 @@
 
 This module provides backend inference and a unified API over NumPy, pandas,
 PyTorch, JAX and TensorFlow objects.
+
+Note:
+-----
+Public API functions should infer the backend from user-provided inputs, call
+:meth:`BackendOps.asarray` once at the function boundary, and then pass the
+normalized backend-native values to the rest of the backend operations. Most
+backend methods intentionally stay close to their native library semantics and
+do not defensively normalize every argument. Use
+:func:`normalize_backend_inputs` when a function needs both backend inference
+and one-shot input normalization.
 """
 
 # pylint: disable=C0115,C0116,C0321,C0415,R0911,C0301
@@ -244,7 +254,15 @@ def copy_model(model: Any) -> Any:
 
 @runtime_checkable
 class BackendOps(Protocol):
-    """Protocol describing backend operations used across the API."""
+    """Protocol describing backend operations used across the API.
+
+    Contract:
+    - :meth:`asarray` converts external user inputs to the backend-native type.
+    - :meth:`to_numpy` converts backend-native values back to ``numpy.ndarray``.
+    - All other methods are primarily defined over already-normalized
+      backend-native values. Callers should normalize once at the function
+      boundary instead of relying on every backend op to coerce inputs.
+    """
 
     name: str
 
@@ -280,6 +298,8 @@ class BackendOps(Protocol):
         self, shape: Tuple[int, ...], fill_value: Any, dtype: Any = None
     ) -> Any: ...
     def ones_like(self, x: Any) -> Any: ...
+    def empty_like(self, x: Any) -> Any: ...
+
     def equal(self, a: Any, b: Any) -> Any: ...
     def astype(self, x: Any, dtype: Any) -> Any: ...
     def random_uniform(self, shape: Tuple[int, ...]) -> Any: ...
@@ -370,6 +390,9 @@ class _NumpyOps:
 
     def ones_like(self, x):
         return _np.ones_like(x)
+
+    def empty_like(self, x):
+        return _np.empty_like(x)
 
     def equal(self, a, b):
         return _np.equal(a, b)
@@ -590,6 +613,11 @@ class _PandasOps:
         out = _np.ones_like(self.to_numpy(x))
         return self._wrap_like(x, out)
 
+    def empty_like(self, x):
+        x = self.asarray(x)
+        out = _np.empty_like(self.to_numpy(x))
+        return self._wrap_like(x, out)
+
     def equal(self, a, b):
         a = self.asarray(a)
         b = self.asarray(b)
@@ -794,6 +822,9 @@ class _TorchOps:
     def ones_like(self, x):
         return self._torch.ones_like(x)
 
+    def empty_like(self, x):
+        return self._torch.empty_like(x)
+
     def equal(self, a, b):
         return self._torch.eq(a, b)
 
@@ -893,6 +924,9 @@ class _JaxOps:
 
     def ones_like(self, x):
         return self._jnp.ones_like(x)
+
+    def empty_like(self, x):
+        return self._jnp.empty_like(x)
 
     def equal(self, a, b):
         return self._jnp.equal(a, b)
@@ -1005,6 +1039,13 @@ class _TensorflowOps:
     def ones_like(self, x):
         return self._tf.ones_like(x)
 
+    def empty_like(self, x):
+        if hasattr(self._tf, "experimental") and hasattr(
+            self._tf.experimental.numpy, "empty_like"
+        ):
+            return self._tf.experimental.numpy.empty_like(x)
+        return self._tf.zeros_like(x)
+
     def equal(self, a, b):
         return self._tf.equal(a, b)
 
@@ -1055,6 +1096,11 @@ _BACKENDS = {
 def get_backend(*xs: Any) -> BackendOps:
     """Instantiate backend operations from input objects.
 
+    This function selects the backend implementation. After calling
+    :func:`get_backend`, callers should use :meth:`BackendOps.asarray`
+    or :func:`normalize_backend_inputs` to normalize user-provided inputs
+    before applying backend operations.
+
     :param Any xs: objects used to infer backend.
 
     :returns: backend operations instance implementing :class:`BackendOps`.
@@ -1067,6 +1113,24 @@ def get_backend(*xs: Any) -> BackendOps:
     if cls is None:
         raise RuntimeError(f"Unsupported backend: {name}")
     return cls()
+
+
+def normalize_backend_inputs(*xs: Any) -> Tuple[BackendOps, Tuple[Any, ...]]:
+    """Infer a backend and normalize user-provided inputs once.
+
+    This helper is intended for public API boundaries. It keeps backend
+    selection explicit while avoiding repeated ``b.asarray(...)`` calls spread
+    across the rest of the implementation. ``None`` values are preserved.
+
+    :param Any xs: external inputs to normalize.
+
+    :returns: tuple ``(backend, normalized_inputs)`` where ``normalized_inputs``
+        contains backend-native values in the same order as ``xs``.
+    :rtype: Tuple[BackendOps, Tuple[Any, ...]]
+    """
+    backend = get_backend(*xs)
+    normalized = tuple(None if x is None else backend.asarray(x) for x in xs)
+    return backend, normalized
 
 
 def shape2(x: Any) -> Tuple[int, Tuple[int, ...]]:
@@ -1107,8 +1171,7 @@ def split_columns(
     :returns: extracted columns in the same backend.
     :rtype: Tuple[Any, ...]
     """
-    b = get_backend(x)
-    arr = b.asarray(x)
+    b, (arr,) = normalize_backend_inputs(x)
 
     if b.name == "pandas":
         # Return Series to avoid DataFrame column-label alignment issues
