@@ -23,6 +23,7 @@
 """
 This module implements utility functions.
 """
+
 import logging
 import sys
 from typing import Any
@@ -35,8 +36,6 @@ import numpy as np
 
 from deel.puncc.metrics import iou
 from deel.puncc.api.backend import get_backend, shape2
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +151,10 @@ def supported_types_check(*data: Iterable):
                 "a pandas object, a tensor, or an array-like convertible input."
             ) from e
 
-def supported_meanvar_models_shape_check(Y_pred: Iterable, y_true: Iterable = None):
+
+def supported_meanvar_models_shape_check(
+    Y_pred: Iterable, y_true: Iterable = None
+):
     """Check if arguments have the correct shape for mean-dispersion methods.
     Mean-dispersion methods require Y_pred to have shape (n_samples, 2) including
     two point predictions (e.g. mean and variance) and y_true to have shape
@@ -184,6 +186,7 @@ def supported_meanvar_models_shape_check(Y_pred: Iterable, y_true: Iterable = No
     if yt_ndim != 1:
         raise RuntimeError("Each y_true must contain a point observation.")
 
+
 def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
     """Check if arguments have the correct shape for dual-model methods.
     Dual-model methods require Y_pred to have shape (n_samples, 2) including
@@ -210,7 +213,10 @@ def supported_dual_models_shape_check(Y_pred: Iterable, y_true: Iterable):
     if yt.ndim != 1:
         raise RuntimeError("Each y_true must contain a point observation.")
 
-def supported_bbox_shape_check(predicted_bboxes: Iterable, true_bboxes: Iterable):
+
+def supported_bbox_shape_check(
+    predicted_bboxes: Iterable, true_bboxes: Iterable
+):
     """Check if predicted and true bounding boxes have the same shape and the
     correct number of coordinates.
 
@@ -231,10 +237,12 @@ def supported_bbox_shape_check(predicted_bboxes: Iterable, true_bboxes: Iterable
     yt_ndim, yt_shape = shape2(true_bboxes)
 
     if yp_ndim != 2 or yp_shape[1] != 4:
-        raise RuntimeError("Each predicted bounding box must contain "
-                           "4 coordinates.")
+        raise RuntimeError(
+            "Each predicted bounding box must contain " "4 coordinates."
+        )
     if yt_ndim != 2 or yt_shape[1] != 4:
         raise RuntimeError("Each true bounding box must contain 4 coordinates.")
+
 
 def alpha_calib_check(
     alpha: Union[float, np.ndarray], n: int, complement_check: bool = False
@@ -343,7 +351,7 @@ def get_min_max_alpha_calib(
 def quantile(
     a: Iterable,
     q: Union[float, np.ndarray],
-    w: np.ndarray = None,
+    w: Optional[Iterable] = None,
     axis: int = None,
     feature_axis: int = None,
 ) -> Union[float, np.ndarray]:
@@ -351,7 +359,7 @@ def quantile(
 
     :param Iterable a: collection of n samples
     :param Union[float, np.ndarray] q: q-th quantiles to compute. All elements must be in (0, 1).
-    :param ndarray w: vector of size n. By default, w is None and equal weights
+    :param Optional[Iterable] w: vector of size n. By default, w is None and equal weights
         (:math:`1/n`) are associated.
     :param int axis: axis along which to compute quantiles. If None,
         quantiles are computed along the flattened array.
@@ -373,7 +381,7 @@ def quantile(
         bw = get_backend(w)
         w = bw.to_numpy(bw.asarray(w))
 
-# Sanity checks
+    # Sanity checks
     if np.any(q <= 0) or np.any(q >= 1):
         raise ValueError(
             "All coordinates of [q] must be in the open interval (0, 1)."
@@ -640,6 +648,7 @@ def hungarian_assignment(
         true_bboxes[valid_indices],
         valid_indices,
     )
+
 
 def generate_leverage_func(X):
     """

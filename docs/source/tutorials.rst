@@ -23,6 +23,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Tutorial on CP with PyTorch**
      - Learn how to use *puncc* with PyTorch.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_pytorch.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_pytorch.ipynb>`__
+   * - **Tutorial on CP with TensorFlow**
+     - Learn how to use *puncc* with TensorFlow / Keras.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__
    * - **Conformal Object Detection**
      - Learn to conformalize an object detector.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb>`__

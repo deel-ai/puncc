@@ -25,6 +25,7 @@ This module implements the core calibrator, providing a structure to estimate
 the nonconformity scores on the calibration set and to compute the prediction
 sets.
 """
+
 import logging
 import warnings
 from typing import Callable
@@ -129,7 +130,7 @@ class BaseCalibrator:
         nonconf_score_func: Callable,
         pred_set_func: Callable,
         weight_func: Callable = None,
-        **kwargs
+        **kwargs,
     ):
         del kwargs
         self.nonconf_score_func = nonconf_score_func
@@ -140,13 +141,7 @@ class BaseCalibrator:
         self._norm_weights = None
         self._feature_axis = None
 
-    def fit(
-        self,
-        *,
-        y_true: Iterable,
-        y_pred: Iterable,
-        **kwargs
-    ) -> None:
+    def fit(self, *, y_true: Iterable, y_pred: Iterable, **kwargs) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
         :param Iterable y_true: true labels.
@@ -158,7 +153,7 @@ class BaseCalibrator:
         self._residuals = self.nonconf_score_func(y_pred, y_true)
         self._len_calib = len(self._residuals)
 
-    def calibrate( # pylint: disable=unused-argument
+    def calibrate(  # pylint: disable=unused-argument
         self,
         *,
         alpha: float,
@@ -171,7 +166,7 @@ class BaseCalibrator:
         significance level :math:`\\alpha`.
 
         :param float alpha: significance level (max miscoverage target).
-        :param Iterable X: test features, used to compute the weights if a 
+        :param Iterable X: test features, used to compute the weights if a
             weight_func is defined.
         :param Iterable y_pred: predicted values.
         :param Iterable weights: weights to be associated to the nonconformity
@@ -255,20 +250,20 @@ class BaseCalibrator:
 
         alpha = correction(alpha)
 
-        # Check consistency of alpha w.r.t the size of calibration data
         if weights is None:
             alpha_calib_check(alpha=alpha, n=self._len_calib)
 
-        # Compute weighted quantiles
-        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
-        ## The coverage guarantee holds with 1) the inflated
-        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
-        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
-        if self._residuals.ndim > 1:
-            infty_array = np.full((1, self._residuals.shape[-1]), np.inf)
-        else:
-            infty_array = np.array([np.inf])
-        lemma_residuals = np.concatenate((self._residuals, infty_array), axis=0)
+        b = get_backend(self._residuals)
+        residuals = b.to_numpy(self._residuals)
+
+        if weights is not None:
+            weights = get_backend(weights).to_numpy(weights)
+
+        infty_shape = (1, residuals.shape[-1]) if residuals.ndim > 1 else (1,)
+        infty_array = np.full(infty_shape, np.inf)
+
+        lemma_residuals = np.concatenate((residuals, infty_array), axis=0)
+
         residuals_Q = quantile(
             lemma_residuals,
             1 - alpha,
@@ -276,7 +271,7 @@ class BaseCalibrator:
             feature_axis=self._feature_axis,
         )
 
-        return residuals_Q
+        return np.asarray(residuals_Q)
 
     def _update_feature_axis(self, y_pred):
         b = get_backend(y_pred)
@@ -304,6 +299,7 @@ class BaseCalibrator:
         w_norm[weights_len] = 1 / (sum_weights + 1)
 
         return w_norm
+
 
 class ClasswiseCalibrator(BaseCalibrator):
     """Calibrator for classwise conformal prediction.
@@ -357,7 +353,9 @@ class ClasswiseCalibrator(BaseCalibrator):
 
             if len(class_scores) == 0:
                 quantiles[c] = np.inf
-                logger.warning(f"No calibration samples for class {c}, setting quantile to inf.")
+                logger.warning(
+                    f"No calibration samples for class {c}, setting quantile to inf."
+                )
                 continue
 
             # Check consistency of alpha w.r.t the size of calibration data for this class
@@ -372,6 +370,7 @@ class ClasswiseCalibrator(BaseCalibrator):
             )
 
         return quantiles
+
 
 class LeveragedCalibrator(BaseCalibrator):
     """Calibrator for leverage-weighted conformal prediction.
@@ -407,6 +406,7 @@ class LeveragedCalibrator(BaseCalibrator):
         self.weight_func = None
         self.leverage_func = leverage_func
         self.wlf = lambda x: x
+
     def fit(self, *, X: Iterable, y_true: Iterable, y_pred: Iterable) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
@@ -418,18 +418,27 @@ class LeveragedCalibrator(BaseCalibrator):
         # for the nonconformity scores
         self._update_feature_axis(y_pred)
         self.wlf = lambda x: self.lweight_func(self.leverage_func(x))
-        self._residuals = self.nonconf_score_func(X, y_pred, y_true,
-                                                  weight_func=self.wlf)
+        self._residuals = self.nonconf_score_func(
+            X, y_pred, y_true, weight_func=self.wlf
+        )
         self._len_calib = len(self._residuals)
 
-    def calibrate(self, *, alpha: float, X: Iterable, y_pred: Iterable,
-                  weights: Optional[Iterable] = None,
-                  correction: Optional[Callable] = bonferroni) -> Tuple:
+    def calibrate(
+        self,
+        *,
+        alpha: float,
+        X: Iterable,
+        y_pred: Iterable,
+        weights: Optional[Iterable] = None,
+        correction: Optional[Callable] = bonferroni,
+    ) -> Tuple:
         residuals_Q = self.compute_quantile(
             alpha=alpha, weights=weights, correction=correction
         )
-        return self.pred_set_func(y_pred, scores_quantile=residuals_Q,
-                                  weights=1/self.wlf(X))
+        return self.pred_set_func(
+            y_pred, scores_quantile=residuals_Q, weights=1 / self.wlf(X)
+        )
+
 
 class ScoreCalibrator:
     """:class:`ScoreCalibrator` offers a framework to compute user-defined
@@ -655,16 +664,18 @@ class CvPlusCalibrator:
         concat_y_lo = None
         concat_y_hi = None
         concat_norm_weights = None
+        b_X = get_backend(X)
 
         for k, predictor in kfold_predictors_dict.items():
             # Predictions
             y_pred = predictor.predict(X)
+            y_pred_np = b_X.to_numpy(y_pred)
 
-            if y_pred is None:
+            if y_pred_np is None:
                 raise RuntimeError("No prediction obtained with cv+.")
 
             # Check for multivariate predictions
-            if y_pred.ndim > 1:
+            if y_pred_np.ndim > 1:
                 self._feature_axis = -1
 
             # nonconformity scores
@@ -675,25 +686,23 @@ class CvPlusCalibrator:
             # Reshaping nonconformity scores to broadcast them
             # on y_pred samples when computing the prediction sets
             # Source: R. Barber Section 3 https://arxiv.org/pdf/1905.02928.pdf
-            y_pred = y_pred[..., np.newaxis]
+            y_pred_np = y_pred_np[..., np.newaxis]
             if len(nconf_scores.shape) != 2:
-                try:
-                    nconf_scores = np.array(nconf_scores)
-                    nconf_scores = nconf_scores[np.newaxis, ...]
-                except Exception:
-                    # @TODO extend the scope beyond castable to ndarrays
-                    raise RuntimeError(
-                        "Cannot cast nonconformity scores to numpy array."
-                    )
+                b = get_backend(nconf_scores)
+                nconf_scores = b.to_numpy(nconf_scores)
+                nconf_scores = nconf_scores[np.newaxis, ...]
 
             if concat_y_lo is None or concat_y_hi is None:
-                (concat_y_lo, concat_y_hi) = kth_calibrator.pred_set_func(
-                    y_pred, nconf_scores
+                concat_y_lo, concat_y_hi = kth_calibrator.pred_set_func(
+                    y_pred_np, nconf_scores
                 )
                 if norm_weights is not None:
                     concat_norm_weights = norm_weights
             else:
-                y_lo, y_hi = kth_calibrator.pred_set_func(y_pred, nconf_scores)
+                y_lo, y_hi = kth_calibrator.pred_set_func(
+                    y_pred_np, nconf_scores
+                )
+                y_lo, y_hi = b_X.to_numpy(y_lo), b_X.to_numpy(y_hi)
                 concat_y_lo = np.concatenate([concat_y_lo, y_lo], axis=1)
                 concat_y_hi = np.concatenate([concat_y_hi, y_hi], axis=1)
                 if norm_weights is not None:
@@ -727,4 +736,4 @@ class CvPlusCalibrator:
             axis=1,
             feature_axis=self._feature_axis,
         )
-        return y_lo, y_hi
+        return b_X.asarray(y_lo, like=X), b_X.asarray(y_hi, like=X)
