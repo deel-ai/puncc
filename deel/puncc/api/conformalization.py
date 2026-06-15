@@ -23,6 +23,7 @@
 """
 This module provides the canvas for conformal prediction.
 """
+
 import logging
 import pickle
 from copy import deepcopy
@@ -43,6 +44,7 @@ from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.splitting import BaseSplitter
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import RandomSplitter
+from deel.puncc.api.backend import get_backend
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +121,7 @@ class SplitConformalPredictor:
         predictor = BasePredictor(model, is_trained=False)
 
         # Split conformal predictor
-        cp = SplitConformalPredictor(predictor, 
+        cp = SplitConformalPredictor(predictor,
                                     nonconf_score_func=nonconformity_scores.absolute_difference,
                                     pred_set_func=prediction_sets.constant_interval,
                                     train=True,
@@ -130,6 +132,7 @@ class SplitConformalPredictor:
         y_pred, y_lower, y_upper = cp.predict(X_test, alpha=0.2)
 
     """
+
     def __init__(
         self,
         predictor: Union[BasePredictor, Any],
@@ -235,9 +238,10 @@ class SplitConformalPredictor:
                 raise RuntimeError(
                     "Argument 'train' is True but no training dataset provided."
                 )
+            b = get_backend(X_calib, y_calib)
             splitter = IdSplitter(
-                np.empty_like(X_calib),
-                np.empty_like(y_calib),
+                b.empty_like(X_calib),
+                b.empty_like(y_calib),
                 X_calib,
                 y_calib,
             )
@@ -252,7 +256,7 @@ class SplitConformalPredictor:
 
     def predict(
         self, X_test: Iterable, alpha: float
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[Iterable, Iterable, Iterable]:
         """Conformal interval predictions (w.r.t target miscoverage alpha) for
         new samples.
 
@@ -283,6 +287,7 @@ class SplitConformalPredictor:
             return list(kfold_nconf_scores.values())[0]
 
         return kfold_nconf_scores
+
 
 class ConformalPredictor:
     """Conformal predictor class.
@@ -554,9 +559,7 @@ class ConformalPredictor:
         X: Iterable,
         alpha: float,
         correction_func: Optional[Callable] = bonferroni,
-    ) -> Union[
-        Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
-    ]:
+    ) -> Union[Tuple[Iterable, Iterable], Tuple[Iterable, Iterable, Iterable]]:
         """Predict point, and interval estimates for X data.
 
         :param Iterable X: features.
@@ -566,8 +569,7 @@ class ConformalPredictor:
             Bonferroni correction.
 
         :returns: (y_pred, y_lower, y_higher) or (y_pred, pred_set).
-        :rtype: Union[Tuple[np.ndarray, np.ndarray],
-            Tuple[np.ndarray, np.ndarray, np.ndarray]]
+        :rtype: Union[Tuple[Iterable, Iterable], Tuple[Iterable, Iterable, Iterable]]
         """
         if self._cv_cp_agg is None:
             raise RuntimeError("Error: call 'fit' method first.")
@@ -578,10 +580,10 @@ class ConformalPredictor:
         """Serialize current conformal predictor and write it to a file.
 
         :param str path: File path.
-        
-        :param bool save_data: If True, save the custom data used to 
+
+        :param bool save_data: If True, save the custom data used to
             fit/calibrate the model.
-        
+
         """
         # Remove cached data if needed (case of IdSplitter)
         is_cached = False
@@ -589,9 +591,11 @@ class ConformalPredictor:
             cached = self.splitter._split
             is_cached = True
             self.splitter._split = None
-            print("\033[33m\033[1mWarning:\033[0m Custom train/calibration data removed from the"
+            print(
+                "\033[33m\033[1mWarning:\033[0m Custom train/calibration data removed from the"
                 " conformal predictor. If you want to keep them,"
-                " please set flag `save_data` to True.")
+                " please set flag `save_data` to True."
+            )
 
         with open(path, "wb") as output_file:
             pickle.dump(self.__dict__, output_file)
@@ -691,8 +695,8 @@ class CrossValCpAggregator:
         alpha: float,
         correction_func: Optional[Callable] = bonferroni,
     ) -> Union[
-        Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]
-    ]:  #  type: ignore
+        Tuple[Iterable, Iterable], Tuple[Iterable, Iterable, Iterable]
+    ]:  # type: ignore
         """Predict point, interval and variability estimates for X data.
 
         :param Iterable X: features.
@@ -702,8 +706,7 @@ class CrossValCpAggregator:
             Bonferroni correction.
 
         :returns: y_pred, y_lower, y_higher.
-        :rtype: Union[Tuple[np.ndarray, np.ndarray],
-            Tuple[np.ndarray, np.ndarray, np.ndarray]]
+        :rtype: Union[Tuple[Iterable, Iterable], Tuple[Iterable, Iterable, Iterable]]
         """
         assert (
             self._predictors.keys() == self._calibrators.keys()

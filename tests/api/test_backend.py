@@ -33,6 +33,7 @@ from deel.puncc.api.backend import copy_model
 from deel.puncc.api.backend import get_backend
 from deel.puncc.api.backend import infer_backend
 from deel.puncc.api.backend import infer_model_backend
+from deel.puncc.api.backend import normalize_backend_inputs
 from deel.puncc.api.backend import shape2
 from deel.puncc.api.backend import split_columns
 
@@ -103,6 +104,37 @@ def test_get_backend_name(name):
     x = _make_backend_array(name, [[1.0, 2.0], [3.0, 4.0]])
     b = get_backend(x)
     assert b.name == name
+
+
+@pytest.mark.parametrize(
+    "name", ["numpy", "pandas", "torch", "tensorflow", "jax"]
+)
+def test_normalize_backend_inputs(name):
+    x = _make_backend_array(name, [[1.0, 2.0], [3.0, 4.0]])
+    y = _make_backend_array(name, [1, 0])
+
+    b, (xn, yn, missing) = normalize_backend_inputs(x, y, None)
+
+    assert b.name == name
+    np.testing.assert_allclose(_to_numpy(xn), _to_numpy(x))
+    np.testing.assert_allclose(_to_numpy(yn), _to_numpy(y))
+    assert missing is None
+
+    if name in {"pandas", "torch", "tensorflow"}:
+        assert xn is x
+        assert yn is y
+
+
+@pytest.mark.parametrize(
+    "name", ["numpy", "pandas", "torch", "tensorflow", "jax"]
+)
+def test_normalize_backend_inputs_single_argument(name):
+    x = _make_backend_array(name, [[1.0, 2.0], [3.0, 4.0]])
+
+    b, (xn,) = normalize_backend_inputs(x)
+
+    assert b.name == name
+    np.testing.assert_allclose(_to_numpy(xn), _to_numpy(x))
 
 
 @pytest.mark.parametrize(
@@ -237,6 +269,24 @@ def test_backend_shape_dtype_and_indexing_ops(name):
         axis=1,
     )
     np.testing.assert_allclose(_to_numpy(ta), np.array([[30, 10], [50, 50]]))
+
+
+@pytest.mark.parametrize(
+    "name", ["numpy", "pandas", "torch", "tensorflow", "jax"]
+)
+def test_backend_empty_like(name):
+    b = get_backend(_make_backend_array(name, [1.0]))
+
+    left = b.asarray(_make_backend_array(name, [[1.0, 2.0], [3.0, 4.0]]))
+    empty = b.empty_like(left)
+    empty_np = _to_numpy(empty)
+
+    assert empty_np.shape == (2, 2)
+    assert empty_np.dtype == _to_numpy(left).dtype
+
+    if name == "pandas":
+        assert list(empty.index) == list(left.index)
+        assert list(empty.columns) == list(left.columns)
 
 
 @pytest.mark.parametrize(
