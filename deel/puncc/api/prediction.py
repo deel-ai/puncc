@@ -443,11 +443,11 @@ class DualPredictor:
         model1_pred = self.models[0].predict(X, **dictargs[0])
         model2_pred = self.models[1].predict(X, **dictargs[1])
         supported_types_check(model1_pred, model2_pred)
-        if get_backend(model1_pred) != get_backend(
-            model2_pred
+        if (
+            get_backend(model1_pred).name != get_backend(model2_pred).name
         ):  # pragma: no cover
             raise NotImplementedError(
-                "Different backsends for dual predictions is not supported. "
+                "Different backends for dual predictions is not supported. "
                 "Please make sure both models return predictions of the same type."
             )
         b = get_backend(model1_pred)
