@@ -202,3 +202,14 @@ def test_classwise_lac_and_raps_variants():
 
     built = raps_set_builder(lambd=0.1, k_reg=1, rand=False)
     assert built(y_pred, 0.65)[0] == raps_sets
+
+
+def test_classwise_lac_accepts_numpy_quantiles_with_torch_predictions():
+    torch = pytest.importorskip("torch")
+
+    y_pred = torch.tensor([[0.7, 0.2, 0.1], [0.2, 0.5, 0.3]])
+    scores_quantile = np.array([0.2, 0.4, 0.8])
+
+    classwise_sets = classwise_lac_set(y_pred, scores_quantile)[0]
+
+    assert classwise_sets == [[], [2]]

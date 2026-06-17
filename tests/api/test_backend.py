@@ -1111,6 +1111,34 @@ def test_torch_asarray_like_places_numpy_pandas_and_tensor_on_like_device():
     np.testing.assert_allclose(_to_numpy(from_tensor), np.array([5.0, 6.0]))
 
 
+def test_torch_asarray_like_returns_same_tensor_on_same_device():
+    torch = pytest.importorskip("torch")
+    from deel.puncc.api.backend import _TorchOps
+
+    ops = _TorchOps()
+    like = torch.tensor([0.0])
+    source_tensor = torch.tensor([5.0, 6.0], device=like.device)
+
+    out = ops.asarray(source_tensor, like=like)
+
+    assert out is source_tensor
+
+
+def test_torch_asarray_like_moves_tensor_to_meta_like_device():
+    torch = pytest.importorskip("torch")
+    from deel.puncc.api.backend import _TorchOps
+
+    ops = _TorchOps()
+    source_tensor = torch.tensor([1.0, 2.0])
+
+    class Like:
+        device = torch.device("meta")
+
+    out = ops.asarray(source_tensor, like=Like())
+
+    assert out.device.type == "meta"
+
+
 def test_torch_asarray_like_moves_cpu_input_to_cuda_like_device():
     torch = pytest.importorskip("torch")
     if torch.cuda.device_count() == 0:
@@ -1207,6 +1235,19 @@ def test_tensorflow_asarray_like_places_numpy_pandas_and_tensor_on_like_device()
     assert isinstance(from_tensor, tf.Tensor)
     assert from_tensor.device == like.device
     np.testing.assert_allclose(_to_numpy(from_tensor), np.array([5.0, 6.0]))
+
+
+def test_tensorflow_asarray_like_returns_same_tensor_on_same_device():
+    tf = pytest.importorskip("tensorflow")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    ops = _TensorflowOps()
+    like = tf.constant([0.0])
+    source_tensor = tf.constant([5.0, 6.0])
+
+    out = ops.asarray(source_tensor, like=like)
+
+    assert out is source_tensor
 
 
 def test_tensorflow_empty_like_falls_back_to_zeros_like(monkeypatch):

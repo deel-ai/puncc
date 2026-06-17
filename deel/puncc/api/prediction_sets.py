@@ -31,7 +31,7 @@ from typing import Iterable
 from typing import List
 
 from deel.puncc.api.backend import concat_columns
-from deel.puncc.api.backend import normalize_backend_inputs
+from deel.puncc.api.backend import normalize_backend_inputs, get_backend
 from deel.puncc.api.backend import shape2
 from deel.puncc.api.backend import split_columns
 from deel.puncc.api.utils import logit_normalization_check
@@ -99,7 +99,8 @@ def classwise_lac_set(Y_pred, scores_quantile) -> List:
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b, (yp, sq) = normalize_backend_inputs(Y_pred, scores_quantile)
+    b, (yp,) = normalize_backend_inputs(Y_pred)
+    sq = b.asarray(scores_quantile, like=yp)
     _, shape = shape2(yp)
     n_test = shape[0]
 
@@ -344,6 +345,8 @@ def scaled_interval(
 
     fints = sigma_pred + eps > 0
     q = b.asarray(scores_quantile, like=y_pred)
+    bw = get_backend(weights)
+    weights = bw.asarray(weights, like=y_pred)
     y_lo = b.where(
         fints, y_pred - q * (sigma_pred + eps) * weights, -float("inf")
     )
