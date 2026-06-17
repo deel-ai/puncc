@@ -24,7 +24,6 @@ from os import path
 
 import setuptools
 
-
 # read the contents of your README file
 
 this_directory = path.abspath(path.dirname(__file__))
@@ -52,7 +51,7 @@ dev_requirements = _read_requirements("requirements_dev.txt")
 
 setuptools.setup(
     name="puncc",
-    version="0.9.1",
+    version="0.9.2",
     author=", ".join(["Mouhcine Mendil", "Luca Mossina", "Joseba Dalmau"]),
     author_email=", ".join(
         [

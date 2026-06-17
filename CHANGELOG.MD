@@ -9,6 +9,7 @@ This file documents main changes across releases of **PUNCC**.
 ### Added 
 - Backend-level model copy abstraction supporting sklearn, JAX, TensorFlow/Keras, and PyTorch models through a unified `copy_model` entrypoint
 - Added tutorial on how to use native tensorflow/keras models with puncc
+- Added tutorial on how to use puncc with custom nonconformity scores and calibration workflows.
 - Added `column_stack(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
 - Added `normalize_backend_inputs(...)` to infer a backend and normalize user-provided inputs once at API boundaries
 - Added `empty_like(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
