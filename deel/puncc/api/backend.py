@@ -770,7 +770,9 @@ class _TorchOps:
         device = getattr(like, "device", None) if like is not None else None
 
         if isinstance(x, t.Tensor):
-            return x.to(device=device) if device is not None else x
+            if device is None or x.device == device:
+                return x
+            return x.to(device=device)
         if _is_pandas(x):
             return t.as_tensor(x.to_numpy(), device=device)
         return t.as_tensor(x, device=device)
@@ -1054,6 +1056,9 @@ class _TensorflowOps:
                 if isinstance(x, (tf.Tensor, tf.Variable))
                 else tf.convert_to_tensor(x)
             )
+
+        if isinstance(x, (tf.Tensor, tf.Variable)) and x.device == like.device:
+            return x
 
         with tf.device(like.device):
             return (

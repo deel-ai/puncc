@@ -290,6 +290,8 @@ class BaseCalibrator:
         :rtype: ndarray
         """
 
+        bw = get_backend(weights)
+        weights = bw.to_numpy(weights)
         weights_len = len(weights)
 
         # Computation of normalized weights
@@ -688,9 +690,9 @@ class CvPlusCalibrator:
             # on y_pred samples when computing the prediction sets
             # Source: R. Barber Section 3 https://arxiv.org/pdf/1905.02928.pdf
             y_pred_np = y_pred_np[..., np.newaxis]
+            b = get_backend(nconf_scores)
+            nconf_scores = b.to_numpy(nconf_scores)
             if len(nconf_scores.shape) != 2:
-                b = get_backend(nconf_scores)
-                nconf_scores = b.to_numpy(nconf_scores)
                 nconf_scores = nconf_scores[np.newaxis, ...]
 
             if concat_y_lo is None or concat_y_hi is None:
@@ -719,9 +721,11 @@ class CvPlusCalibrator:
             weights = None
         else:
             weights = concat_norm_weights
-            infty_array = np.array([np.inf])
-            concat_y_lo = np.concatenate([concat_y_lo, infty_array])
-            concat_y_hi = np.concatenate([concat_y_hi, infty_array])
+            inf_shape = (1,) + concat_y_lo.shape[1:]
+            inf_block = np.full(inf_shape, np.inf)
+
+            concat_y_lo = np.concatenate([concat_y_lo, inf_block], axis=0)
+            concat_y_hi = np.concatenate([concat_y_hi, inf_block], axis=0)
 
         y_lo = -1 * quantile(
             -1 * concat_y_lo,
