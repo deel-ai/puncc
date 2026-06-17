@@ -669,10 +669,11 @@ class CvPlusCalibrator:
         for k, predictor in kfold_predictors_dict.items():
             # Predictions
             y_pred = predictor.predict(X)
-            y_pred_np = b_X.to_numpy(y_pred)
 
-            if y_pred_np is None:
+            if y_pred is None:  # sanity check
                 raise RuntimeError("No prediction obtained with cv+.")
+
+            y_pred_np = b_X.to_numpy(y_pred)
 
             # Check for multivariate predictions
             if y_pred_np.ndim > 1:
