@@ -29,7 +29,7 @@ This file documents main changes across releases of **PUNCC**.
 - Updated `BasePredictor` and `DualPredictor` to support GPU acceleration   
 - Updated `scaled_interval` to convert weights into the prediction backend before interval arithmetic.
 - Updated `CvPlusCalibrator` to convert nonconformity scores to NumPy before shape handling.
-- Weighted CV+ now appends an inf block using the existing array rank instead of a 1-D scalar append.
+- Updated weighted CV+ to append an inf block using the existing array rank instead of a 1-D scalar append.
 
 
 ### Fixed
