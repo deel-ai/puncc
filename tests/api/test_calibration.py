@@ -236,6 +236,14 @@ def test_base_calibrator_compute_quantile_and_barber_weights():
     )
 
 
+def test_base_calibrator_barber_weights_accepts_torch_tensors():
+    torch = pytest.importorskip("torch")
+
+    weights = BaseCalibrator.barber_weights(torch.tensor([1.0, 3.0]))
+
+    np.testing.assert_allclose(weights, np.array([0.2, 0.6, 0.2]))
+
+
 def test_classwise_calibrator_handles_missing_class_scores():
     residuals = np.array(
         [
@@ -413,6 +421,41 @@ def test_cvplus_calibrator_raises_when_backend_returns_no_prediction(
 
 
 def test_cvplus_calibrator_weighted_and_multivariate_paths():
+    pred_func = lambda y_pred, nconf_scores: (
+        np.array([[1.0, 2.0]]),
+        np.array([[3.0, 4.0]]),
+    )
+    cal0 = DummyCvCalibrator(
+        scores=np.array([[1.0, 2.0], [3.0, 4.0]]),
+        norm_weights=np.array([0.25, 0.75]),
+        pred_set_func=pred_func,
+    )
+    cv = CvPlusCalibrator({0: cal0})
+
+    y_lo, y_hi = cv.calibrate(
+        X=np.array([[0.0]]),
+        kfold_predictors_dict={0: DummyCvPredictor(np.array([[10.0, 20.0]]))},
+        alpha=0.4,
+    )
+
+    assert y_lo.shape == (2,)
+    assert y_hi.shape == (2,)
+    assert np.all(y_lo <= y_hi)
+
+
+def test_cvplus_calibrator_concatenates_norm_weights_across_folds(monkeypatch):
+    import deel.puncc.api.calibration as calibration_module
+
+    recorded_weights = []
+
+    def fake_quantile(a, q, w=None, axis=None, feature_axis=None):
+        del q, axis, feature_axis
+        if w is not None:
+            recorded_weights.append(np.asarray(w))
+        return np.zeros(a.shape[0])
+
+    monkeypatch.setattr(calibration_module, "quantile", fake_quantile)
+
     cal0 = DummyCvCalibrator(
         scores=np.array([1.0, 2.0]),
         norm_weights=np.array([0.2, 0.3]),
@@ -423,15 +466,19 @@ def test_cvplus_calibrator_weighted_and_multivariate_paths():
     )
     cv = CvPlusCalibrator({0: cal0, 1: cal1})
 
-    with pytest.raises(ValueError):
-        cv.calibrate(
-            X=np.array([[0.0], [1.0]]),
-            kfold_predictors_dict={
-                0: DummyCvPredictor(np.array([[10.0, 20.0], [30.0, 40.0]])),
-                1: DummyCvPredictor(np.array([[11.0, 21.0], [31.0, 41.0]])),
-            },
-            alpha=0.4,
-        )
+    cv.calibrate(
+        X=np.array([[0.0], [1.0]]),
+        kfold_predictors_dict={
+            0: DummyCvPredictor(np.array([10.0, 20.0])),
+            1: DummyCvPredictor(np.array([11.0, 21.0])),
+        },
+        alpha=0.4,
+    )
+
+    expected_weights = np.array([0.2, 0.3, 0.1, 0.4])
+    assert len(recorded_weights) == 2
+    np.testing.assert_allclose(recorded_weights[0], expected_weights)
+    np.testing.assert_allclose(recorded_weights[1], expected_weights)
 
 
 def test_cvplus_calibrator_empty_predictor_dict_hits_sanity_check(monkeypatch):

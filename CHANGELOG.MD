@@ -27,6 +27,9 @@ This file documents main changes across releases of **PUNCC**.
 - Updated the conformalization module so it no longer assumes NumPy arrays for inputs or outputs
 - Updated `prediction_sets.py` to convert `scores_quantile` with `b.asarray(..., like=...)`, ensuring quantiles are placed on the same device as predictions for backend operations
 - Updated `BasePredictor` and `DualPredictor` to support GPU acceleration   
+- Updated `scaled_interval` to convert weights into the prediction backend before interval arithmetic.
+- Updated `CvPlusCalibrator` to convert nonconformity scores to NumPy before shape handling.
+- Weighted CV+ now appends an inf block using the existing array rank instead of a 1-D scalar append.
 
 
 ### Fixed
@@ -44,7 +47,8 @@ coverage for updated nonconformity score and prediction set helpers
 - Raised the minimum supported scikit-learn version to 1.5.0 to address security vulnerabilities in older releases.
 - Added alternative expected seed results in conformal regression tests for newer scikit-learn versions.
 - Removed py38 from tox envlist
-
+- Added backend regression tests for torch/tensorflow same-device identity and torch device-move coverage.
+- Added regression tests for torch weight handling, mixed torch/NumPy classwise LAC, and CV+ weight concatenation across folds.
 ---
 
 ## [0.9.1] - 2026-04-09
