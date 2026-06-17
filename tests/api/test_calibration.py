@@ -374,13 +374,12 @@ def test_cvplus_calibrator_additional_error_paths():
 
     good = DummyCvCalibrator(scores=np.array([1.0, 2.0]))
     cv_none_pred = CvPlusCalibrator({0: good})
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         cv_none_pred.calibrate(
             X=np.array([[0.0]]),
             kfold_predictors_dict={0: DummyCvPredictor(None)},
             alpha=0.5,
         )
-
 
 
 def test_cvplus_calibrator_raises_when_backend_returns_no_prediction(
@@ -403,10 +402,12 @@ def test_cvplus_calibrator_raises_when_backend_returns_no_prediction(
         calibration_module, "get_backend", lambda X: BackendReturningNone()
     )
 
-    with pytest.raises(RuntimeError, match=r"No prediction obtained with cv\+\."):
+    with pytest.raises(
+        RuntimeError, match=r"No prediction obtained with cv\+\."
+    ):
         cv.calibrate(
             X=np.array([[0.0]]),
-            kfold_predictors_dict={0: DummyCvPredictor(object())},
+            kfold_predictors_dict={0: DummyCvPredictor(None)},
             alpha=0.5,
         )
 
