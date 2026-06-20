@@ -149,8 +149,11 @@ class BaseCalibrator:
 
         """
         del kwargs
-        self._update_feature_axis(y_pred)
-        self._residuals = self.nonconf_score_func(y_pred, y_true)
+        b = get_backend(y_pred)
+        yp = b.asarray(y_pred)
+        yt = b.asarray(y_true, like=yp)
+        self._update_feature_axis(yp)
+        self._residuals = self.nonconf_score_func(yp, yt)
         self._len_calib = len(self._residuals)
 
     def calibrate(  # pylint: disable=unused-argument
