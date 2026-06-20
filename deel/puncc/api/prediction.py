@@ -30,8 +30,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api.backend import copy_model, get_backend
 from deel.puncc.api.utils import dual_predictor_check
