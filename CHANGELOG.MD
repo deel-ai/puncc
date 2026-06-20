@@ -4,7 +4,7 @@ This file documents main changes across releases of **PUNCC**.
 
 ---
 
-## [0.9.2] - TBD
+## [0.9.2] - 2026-06-20
 
 ### Added 
 - Backend-level model copy abstraction supporting sklearn, JAX, TensorFlow/Keras, and PyTorch models through a unified `copy_model` entrypoint
