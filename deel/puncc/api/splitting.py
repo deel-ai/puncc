@@ -23,7 +23,6 @@
 """
 This module provides data splitting schemes.
 """
-import sys
 from abc import ABC
 from typing import Any
 from typing import Iterable
@@ -33,24 +32,15 @@ from typing import Tuple
 import numpy as np
 from sklearn import model_selection
 
+from deel.puncc.api.backend import get_backend
 from deel.puncc.api.utils import features_len_check
 from deel.puncc.api.utils import sample_len_check
 from deel.puncc.api.utils import supported_types_check
 
 
-def _is_pandas(x: Any) -> bool:
-    pd = sys.modules.get("pandas")
-    return bool(pd) and isinstance(x, (pd.DataFrame, pd.Series, pd.Index))
-
 def _take(x: Any, idx):
-    """Index `x` with integer indices `idx` in a backend-agnostic way."""
-    if _is_pandas(x):
-        return x.iloc[idx]
-    # numpy / torch / jax / tf typically support integer array/list indexing
-    try:
-        return x[idx]
-    except Exception:
-        return [x[i] for i in idx]
+    """Index `x` with integer indices `idx` via the inferred backend."""
+    return get_backend(x).take(x, idx, axis=0)
 
 class BaseSplitter(ABC):
     """Abstract structure of a splitter. A splitter provides a function

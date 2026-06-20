@@ -154,7 +154,7 @@ class BasePredictor:
             self.model.fit(X, y, **kwargs)
         # self.is_trained = True
 
-    def predict(self, X: Iterable, **kwargs) -> np.ndarray:
+    def predict(self, X: Iterable, **kwargs) -> Iterable:
         """Compute predictions on new examples.
 
         :param Iterable X: new examples' features.
@@ -163,7 +163,7 @@ class BasePredictor:
 
         :returns: predictions :math:`\hat{f}(X)` associated to the new
             examples X.
-        :rtype: ndarray
+        :rtype: Iterable
 
         .. note::
 
@@ -173,7 +173,8 @@ class BasePredictor:
         """
         # Remove axis of length one to avoid broadcast in computation
         # of non-conformity scores
-        return np.squeeze(self.model.predict(X, **kwargs))
+        b = get_backend(X)
+        return b.squeeze(self.model.predict(X, **kwargs))
 
     def copy(self):
         """Returns a copy of the predictor.
@@ -417,7 +418,9 @@ class DualPredictor:
             if not self.is_trained[count]:
                 model.fit(X, y, **dictargs[count])
 
-    def predict(self, X, dictargs: List[dict] = [{}, {}]) -> Tuple[np.ndarray]:
+    def predict(
+        self, X, dictargs: List[dict] = [{}, {}]
+    ) -> Tuple[Iterable, Iterable]:
         """Compute predictions on new examples.
 
         :param Iterable X: new examples' features.
@@ -428,7 +431,7 @@ class DualPredictor:
         :returns: predictions :math:`\hat{y}=\hat{f}(X)` associated to the new
             examples X. For an instance :math:`X_i`, the prediction consists of
             a couple :math:`\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))`.
-        :rtype: Tuple[ndarray]
+        :rtype: Tuple[Iterable, Iterable]
 
         :raises NotImplementedError:  Different backends for dual predictions
             is not supported. Please make sure both models return predictions
@@ -450,7 +453,7 @@ class DualPredictor:
                 "Different backends for dual predictions is not supported. "
                 "Please make sure both models return predictions of the same type."
             )
-        b = get_backend(model1_pred)
+        b = get_backend(X)
         Y_pred = b.column_stack((model1_pred, model2_pred))
         return b.squeeze(Y_pred)
 

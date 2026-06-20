@@ -244,6 +244,22 @@ def test_base_calibrator_barber_weights_accepts_torch_tensors():
     np.testing.assert_allclose(weights, np.array([0.2, 0.6, 0.2]))
 
 
+def test_base_calibrator_fit_accepts_mixed_numpy_tensorflow_backends():
+    tf = pytest.importorskip("tensorflow")
+
+    calibrator = BaseCalibrator(
+        nonconf_score_func=nonconformity_scores.absolute_difference,
+        pred_set_func=constant_interval,
+    )
+
+    y_pred = np.array([[1.0], [3.0]], dtype=np.float32)
+    y_true = tf.constant([[0.5], [2.5]], dtype=tf.float32)
+
+    calibrator.fit(y_pred=y_pred, y_true=y_true)
+
+    np.testing.assert_allclose(calibrator.get_nonconformity_scores(), np.array([0.5, 0.5]))
+
+
 def test_classwise_calibrator_handles_missing_class_scores():
     residuals = np.array(
         [

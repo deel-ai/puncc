@@ -314,6 +314,7 @@ class BackendOps(Protocol):
     def astype(self, x: Any, dtype: Any) -> Any: ...
     def random_uniform(self, shape: Tuple[int, ...]) -> Any: ...
     def scalar_at(self, x: Any, index: int) -> Any: ...
+    def take(self, x: Any, indices: Any, axis: int = 0) -> Any: ...
 
     # ordering / indexing (needed for RAPS-like scores, quantiles, bbox sets, etc.)
     def argsort(
@@ -419,6 +420,9 @@ class _NumpyOps:
 
     def scalar_at(self, x, index):
         return _np.asarray(x).reshape(-1)[index].item()
+
+    def take(self, x, indices, axis=0):
+        return _np.take(x, indices, axis=axis)
 
     def argsort(self, x, axis=-1, descending=False):
         idx = _np.argsort(x, axis=axis)
@@ -679,6 +683,16 @@ class _PandasOps:
             .item()
         )
 
+    def take(self, x, indices, axis=0):
+        import pandas as pd
+
+        x = self.asarray(x)
+        if isinstance(x, (pd.DataFrame, pd.Series, pd.Index)) and axis == 0:
+            return x.iloc[indices]
+
+        out = _np.take(self.to_numpy(x), _np.asarray(indices), axis=axis)
+        return self._wrap_like(x, out)
+
     # ---------- ordering / indexing ----------
     def argsort(self, x, axis=-1, descending=False):
         x = self.asarray(x)
@@ -768,14 +782,18 @@ class _TorchOps:
     def asarray(self, x: Any, like: Any = None):
         t = self._torch
         device = getattr(like, "device", None) if like is not None else None
+        dtype = getattr(like, "dtype", None) if like is not None else None
 
         if isinstance(x, t.Tensor):
             if device is None or x.device == device:
-                return x
-            return x.to(device=device)
+                return x if dtype is None or x.dtype == dtype else x.to(dtype=dtype)
+            kwargs = {"device": device}
+            if dtype is not None:
+                kwargs["dtype"] = dtype
+            return x.to(**kwargs)
         if _is_pandas(x):
-            return t.as_tensor(x.to_numpy(), device=device)
-        return t.as_tensor(x, device=device)
+            return t.as_tensor(x.to_numpy(), device=device, dtype=dtype)
+        return t.as_tensor(x, device=device, dtype=dtype)
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         t = self._torch
@@ -897,6 +915,12 @@ class _TorchOps:
     def scalar_at(self, x, index):
         return self.asarray(x).reshape(-1)[index].item()
 
+    def take(self, x, indices, axis=0):
+        idx = self.asarray(indices, like=x)
+        return self._torch.index_select(
+            x, dim=axis, index=idx.to(dtype=self._torch.int64)
+        )
+
     def argsort(self, x, axis=-1, descending=False):
         return self._torch.argsort(x, dim=axis, descending=descending)
 
@@ -921,7 +945,8 @@ class _JaxOps:
         if _is_pandas(x):
             x = x.to_numpy()
 
-        arr = self._jnp.asarray(x)
+        dtype = getattr(like, "dtype", None) if like is not None else None
+        arr = self._jnp.asarray(x, dtype=dtype)
 
         if like is None:
             return arr
@@ -1024,6 +1049,9 @@ class _JaxOps:
     def scalar_at(self, x, index):
         return _np.asarray(self.asarray(x).reshape(-1)[index]).item()
 
+    def take(self, x, indices, axis=0):
+        return self._jnp.take(x, indices, axis=axis)
+
     def argsort(self, x, axis=-1, descending=False):
         idx = self._jnp.argsort(x, axis=axis)
         if descending:
@@ -1057,15 +1085,21 @@ class _TensorflowOps:
                 else tf.convert_to_tensor(x)
             )
 
+        like_dtype = getattr(like, "dtype", None)
+
         if isinstance(x, (tf.Tensor, tf.Variable)) and x.device == like.device:
-            return x
+            return x if like_dtype is None or x.dtype == like_dtype else tf.cast(x, like_dtype)
 
         with tf.device(like.device):
-            return (
+            out = (
                 tf.identity(x)
                 if isinstance(x, (tf.Tensor, tf.Variable))
-                else tf.convert_to_tensor(x)
+                else tf.convert_to_tensor(x, dtype=like_dtype)
             )
+
+        if like_dtype is not None and out.dtype != like_dtype:
+            out = tf.cast(out, like_dtype)
+        return out
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         tf = self._tf
@@ -1179,6 +1213,9 @@ class _TensorflowOps:
     def scalar_at(self, x, index):
         flat = self._tf.reshape(self.asarray(x), (-1,))
         return self.to_numpy(flat[index]).item()
+
+    def take(self, x, indices, axis=0):
+        return self._tf.gather(x, self.asarray(indices), axis=axis)
 
     def argsort(self, x, axis=-1, descending=False):
         direction = "DESCENDING" if descending else "ASCENDING"
