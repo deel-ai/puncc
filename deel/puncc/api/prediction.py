@@ -422,7 +422,7 @@ class DualPredictor:
         """Compute predictions on new examples.
 
         :param Iterable X: new examples' features.
-        :param dict kwargs: list of predict configurations to be passed to the
+        :param List[dict[str]] dictargs: list of predict configurations to be passed to the
             `predict` method of the underlying models :math:`\hat{f}_1` and
             :math:`\hat{f}_2`, respectively.
 
@@ -434,6 +434,7 @@ class DualPredictor:
         :raises NotImplementedError:  Different backends for dual predictions
             is not supported. Please make sure both models return predictions
             of the same type.
+
         .. note::
 
             For more details, check this :ref:`code snippet

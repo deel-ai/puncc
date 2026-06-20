@@ -257,6 +257,7 @@ class BackendOps(Protocol):
     """Protocol describing backend operations used across the API.
 
     Contract:
+
     - :meth:`asarray` converts external user inputs to the backend-native type.
     - :meth:`to_numpy` converts backend-native values back to ``numpy.ndarray``.
     - All other methods are primarily defined over already-normalized
@@ -786,7 +787,11 @@ class _TorchOps:
 
         if isinstance(x, t.Tensor):
             if device is None or x.device == device:
-                return x if dtype is None or x.dtype == dtype else x.to(dtype=dtype)
+                return (
+                    x
+                    if dtype is None or x.dtype == dtype
+                    else x.to(dtype=dtype)
+                )
             kwargs = {"device": device}
             if dtype is not None:
                 kwargs["dtype"] = dtype
@@ -1088,7 +1093,11 @@ class _TensorflowOps:
         like_dtype = getattr(like, "dtype", None)
 
         if isinstance(x, (tf.Tensor, tf.Variable)) and x.device == like.device:
-            return x if like_dtype is None or x.dtype == like_dtype else tf.cast(x, like_dtype)
+            return (
+                x
+                if like_dtype is None or x.dtype == like_dtype
+                else tf.cast(x, like_dtype)
+            )
 
         with tf.device(like.device):
             out = (

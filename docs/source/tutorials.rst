@@ -26,15 +26,21 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Tutorial on CP with TensorFlow**
      - Learn how to use *puncc* with TensorFlow / Keras.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__
+   * - **Tutorial on Adaptive Conformal Regression**
+     - Learn how conformalize regression models to obtain adaptive prediction intervals using methods such as LACP, LWCP and CQR.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb>`__
    * - **Conformal Object Detection**
      - Learn to conformalize an object detector.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb>`__
    * - **Conformal Text Classification**
      - Learn to conformalize a pretrained NLP model.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb>`__
-   * - **Classwise Conformal Classification**
+   * - **Conformal Classwise Classification**
      - Learn to use classwise CP for class-conditional coverage.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__
+   * - **Custom Conformal Workflow**
+     - Build new conformal predictors with custom nonconformity scores, prediction sets and conformalization logic.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_custom_conformalization.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_custom_conformalization.ipynb>`__ 
    * - **Conformal Time Series Forecasting**
      - Learn to conformalize time series models.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb>`__
