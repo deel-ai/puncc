@@ -270,6 +270,15 @@ def test_backend_shape_dtype_and_indexing_ops(name):
     )
     np.testing.assert_allclose(_to_numpy(ta), np.array([[30, 10], [50, 50]]))
 
+    taken_rows = b.take(
+        b.asarray(_make_backend_array(name, [[10, 20], [30, 40], [50, 60]])),
+        b.asarray(_make_backend_array(name, [2, 0])),
+        axis=0,
+    )
+    np.testing.assert_allclose(
+        _to_numpy(taken_rows), np.array([[50, 60], [10, 20]])
+    )
+
 
 @pytest.mark.parametrize(
     "name", ["numpy", "pandas", "torch", "tensorflow", "jax"]
@@ -802,6 +811,20 @@ def test_pandas_backend_take_along_axis_returns_raw_output(monkeypatch):
     assert np.array(out).shape == ()
 
 
+def test_pandas_take_non_row_axis_wraps_like_input():
+    pd = pytest.importorskip("pandas")
+    from deel.puncc.api.backend import _PandasOps
+
+    ops = _PandasOps()
+    frame = pd.DataFrame([[1.0, 2.0], [3.0, 4.0]], index=["a", "b"], columns=["x", "y"])
+
+    out = ops.take(frame, [1, 0], axis=1)
+
+    assert isinstance(out, pd.DataFrame)
+    assert list(out.index) == ["a", "b"]
+    np.testing.assert_allclose(out.to_numpy(), np.array([[2.0, 1.0], [4.0, 3.0]]))
+
+
 
 def test_pandas_column_stack_empty_input_raises():
     from deel.puncc.api.backend import _PandasOps
@@ -1124,6 +1147,21 @@ def test_torch_asarray_like_returns_same_tensor_on_same_device():
     assert out is source_tensor
 
 
+def test_torch_asarray_like_casts_dtype_to_match_like():
+    torch = pytest.importorskip("torch")
+    from deel.puncc.api.backend import _TorchOps
+
+    ops = _TorchOps()
+    like = torch.tensor([0.0], dtype=torch.float32)
+
+    out = ops.asarray(np.array([1.0, 2.0], dtype=np.float64), like=like)
+
+    assert out.dtype == like.dtype
+    np.testing.assert_allclose(
+        _to_numpy(out), np.array([1.0, 2.0], dtype=np.float32)
+    )
+
+
 def test_torch_asarray_like_moves_tensor_to_meta_like_device():
     torch = pytest.importorskip("torch")
     from deel.puncc.api.backend import _TorchOps
@@ -1137,6 +1175,23 @@ def test_torch_asarray_like_moves_tensor_to_meta_like_device():
     out = ops.asarray(source_tensor, like=Like())
 
     assert out.device.type == "meta"
+
+
+def test_torch_asarray_like_moves_tensor_and_casts_dtype():
+    torch = pytest.importorskip("torch")
+    from deel.puncc.api.backend import _TorchOps
+
+    ops = _TorchOps()
+    source_tensor = torch.tensor([1.0, 2.0], dtype=torch.float32)
+
+    class Like:
+        device = torch.device("meta")
+        dtype = torch.float64
+
+    out = ops.asarray(source_tensor, like=Like())
+
+    assert out.device.type == "meta"
+    assert out.dtype == torch.float64
 
 
 def test_torch_asarray_like_moves_cpu_input_to_cuda_like_device():
@@ -1168,6 +1223,21 @@ def test_jax_asarray_like_uses_device_attribute_when_available():
     if expected_device is not None:
         assert getattr(out, "device", None) == expected_device
     np.testing.assert_allclose(_to_numpy(out), np.array([1.0, 2.0]))
+
+
+def test_jax_asarray_like_casts_dtype_to_match_like():
+    jnp = pytest.importorskip("jax.numpy")
+    from deel.puncc.api.backend import _JaxOps
+
+    ops = _JaxOps()
+    like = jnp.asarray([0.0], dtype=jnp.float32)
+
+    out = ops.asarray(np.array([1.0, 2.0], dtype=np.float64), like=like)
+
+    assert getattr(out, "dtype", None) == like.dtype
+    np.testing.assert_allclose(
+        _to_numpy(out), np.array([1.0, 2.0], dtype=np.float32)
+    )
 
 
 def test_jax_asarray_like_falls_back_to_devices_method(monkeypatch):
@@ -1248,6 +1318,40 @@ def test_tensorflow_asarray_like_returns_same_tensor_on_same_device():
     out = ops.asarray(source_tensor, like=like)
 
     assert out is source_tensor
+
+def test_tensorflow_asarray_like_casts_dtype_to_match_like():
+    tf = pytest.importorskip("tensorflow")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    ops = _TensorflowOps()
+    like = tf.constant([0.0], dtype=tf.float32)
+
+    out = ops.asarray(np.array([1.0, 2.0], dtype=np.float64), like=like)
+
+    assert out.dtype == like.dtype
+    np.testing.assert_allclose(
+        _to_numpy(out), np.array([1.0, 2.0], dtype=np.float32)
+    )
+
+
+def test_tensorflow_asarray_like_casts_tensor_after_identity():
+    tf = pytest.importorskip("tensorflow")
+    from deel.puncc.api.backend import _TensorflowOps
+
+    ops = _TensorflowOps()
+    source_tensor = tf.constant([1.0, 2.0], dtype=tf.float64)
+
+    class Like:
+        device = "/CPU:0"
+        dtype = tf.float32
+
+    out = ops.asarray(source_tensor, like=Like())
+
+    assert out.dtype == tf.float32
+    np.testing.assert_allclose(
+        _to_numpy(out), np.array([1.0, 2.0], dtype=np.float32)
+    )
+
 
 
 def test_tensorflow_empty_like_falls_back_to_zeros_like(monkeypatch):
