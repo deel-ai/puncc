@@ -25,12 +25,14 @@ API's Modules
 
     conformalization
     prediction
-    experimental
     calibration
-    splitting
-    utils
     nonconformity_scores
     prediction_sets
+    corrections
+    splitting
+    utils
+    backend
+    experimental
 
 Overview
 ********
