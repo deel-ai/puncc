@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🚩 Anomaly detection &mdash; PUNCC 0.9.1 documentation</title>
+  <title>Corrections &mdash; PUNCC 0.9.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
@@ -20,8 +20,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="💻 API" href="api.html" />
-    <link rel="prev" title="🖼️ Object Detection" href="object_detection.html" /> 
+    <link rel="next" title="Splitting" href="splitting.html" />
+    <link rel="prev" title="Prediction sets" href="prediction_sets.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -147,16 +147,16 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">🚩 Anomaly detection</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#deel.puncc.anomaly_detection.SplitCAD"><code class="docutils literal notranslate"><span class="pre">SplitCAD</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.anomaly_detection.SplitCAD.fit"><code class="docutils literal notranslate"><span class="pre">SplitCAD.fit()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#deel.puncc.anomaly_detection.SplitCAD.predict"><code class="docutils literal notranslate"><span class="pre">SplitCAD.predict()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="anomaly_detection.html">🚩 Anomaly detection</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD"><code class="docutils literal notranslate"><span class="pre">SplitCAD</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.fit"><code class="docutils literal notranslate"><span class="pre">SplitCAD.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="anomaly_detection.html#deel.puncc.anomaly_detection.SplitCAD.predict"><code class="docutils literal notranslate"><span class="pre">SplitCAD.predict()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">💻 API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">💻 API</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="api.html#api-s-modules">API’s Modules</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="conformalization.html">Conformalization</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.ConformalPredictor"><code class="docutils literal notranslate"><span class="pre">ConformalPredictor</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="conformalization.html#conformalization.CrossValCpAggregator"><code class="docutils literal notranslate"><span class="pre">CrossValCpAggregator</span></code></a></li>
@@ -203,9 +203,9 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="corrections.html">Corrections</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="corrections.html#corrections.bonferroni"><code class="docutils literal notranslate"><span class="pre">bonferroni()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="corrections.html#corrections.weighted_bonferroni"><code class="docutils literal notranslate"><span class="pre">weighted_bonferroni()</span></code></a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Corrections</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#corrections.bonferroni"><code class="docutils literal notranslate"><span class="pre">bonferroni()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#corrections.weighted_bonferroni"><code class="docutils literal notranslate"><span class="pre">weighted_bonferroni()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
@@ -309,9 +309,10 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">🚩 Anomaly detection</li>
+          <li class="breadcrumb-item"><a href="api.html">💻 API</a></li>
+      <li class="breadcrumb-item active">Corrections</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/anomaly_detection.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/corrections.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -319,160 +320,48 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="anomaly-detection">
-<span id="id1"></span><h1>🚩 Anomaly detection<a class="headerlink" href="#anomaly-detection" title="Link to this heading"></a></h1>
-<p>Currently implemented conformal anomaly detectors are listed in this page.</p>
-<p>Each of these wrappers calibrate the decision threshold for anomaly detectors
-that are passed as argument in the object constructor. Such models <strong>need</strong> to
-implement the <code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code> methods.
-<a class="reference internal" href="prediction.html"><span class="doc">Prediction module</span></a> from the <a class="reference internal" href="api.html"><span class="doc">API</span></a> ensures the
-compliance of models from various ML/DL libraries (such as Keras and scikit-learn) to <strong>puncc</strong>.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="deel.puncc.anomaly_detection.SplitCAD">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deel.puncc.anomaly_detection.</span></span><span class="sig-name descname"><span class="pre">SplitCAD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD" title="Link to this definition"></a></dt>
-<dd><p>Split conformal anomaly detection method based on Laxhammar’s algorithm.
-The anomaly detection is based on the calibrated threshold (through
-conformal prediction) of underlying anomaly detection (model’s) scores.
-For more details, we refer the user to the <a class="reference internal" href="theory_overview.html#theory-overview"><span class="std std-ref">theory overview
-page</span></a>.</p>
+  <section id="corrections">
+<span id="id1"></span><h1>Corrections<a class="headerlink" href="#corrections" title="Link to this heading"></a></h1>
+<p id="module-corrections">This module provides correction functions for multiple hypothesis testing. To be used
+when building a <a class="reference internal" href="calibration.html#calibration"><span class="std std-ref">calibrator</span></a> for multivariate regression or object detection.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="corrections.bonferroni">
+<span class="sig-prename descclassname"><span class="pre">corrections.</span></span><span class="sig-name descname"><span class="pre">bonferroni</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nvars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#corrections.bonferroni" title="Link to this definition"></a></dt>
+<dd><p>Bonferroni correction for multiple comparisons.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>predictor</strong> (<a class="reference internal" href="prediction.html#prediction.BasePredictor" title="prediction.BasePredictor"><em>BasePredictor</em></a>) – a predictor implementing fit and predict.</p></li>
-<li><p><strong>train</strong> (<em>bool</em>) – if False, prediction model(s) will not be (re)trained.
-Defaults to True.</p></li>
-<li><p><strong>random_state</strong> (<em>float</em>) – random seed used when the user does not
-provide a custom fit/calibration split in <cite>fit</cite> method.</p></li>
-</ul>
-</dd>
-</dl>
-<p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsolationForest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_moons</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.anomaly_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">SplitCAD</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">deel.puncc.api.prediction</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePredictor</span>
-
-<span class="c1"># We generate the two moons dataset</span>
-<span class="n">dataset</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">make_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span>
-    <span class="mi">0</span>
-<span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">])</span>
-
-<span class="c1"># We generate uniformly new (test) data points</span>
-<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">z_test</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">low</span><span class="o">=-</span><span class="mi">6</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-
-
-<span class="c1"># The nonconformity scores are defined as the IF scores (anomaly score).</span>
-<span class="c1"># By default, score_samples return the opposite of IF scores.</span>
-<span class="c1"># We need to redefine the predict to output the nonconformity scores.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ADPredictor</span><span class="p">(</span><span class="n">BasePredictor</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
-        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">score_samples</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-
-<span class="c1"># Instantiate the Isolation Forest (IF) anomaly detection model</span>
-<span class="c1"># and wrap it in a predictor</span>
-<span class="n">if_predictor</span> <span class="o">=</span> <span class="n">ADPredictor</span><span class="p">(</span><span class="n">IsolationForest</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">))</span>
-
-<span class="c1"># Instantiate CAD on top of IF predictor</span>
-<span class="n">if_cad</span> <span class="o">=</span> <span class="n">SplitCAD</span><span class="p">(</span><span class="n">if_predictor</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-<span class="c1"># Fit the IF on the proper fitting dataset and</span>
-<span class="c1"># calibrate it using calibration dataset.</span>
-<span class="c1"># The two datasets are sampled randomly with a ration of 7:3,</span>
-<span class="c1"># respectively.</span>
-<span class="n">if_cad</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">fit_ratio</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
-
-<span class="c1"># We set the maximum false detection rate to 1%</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.01</span>
-
-<span class="c1"># The method `predict` is called on the new data points</span>
-<span class="c1"># to test which are anomalous and which are not</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">if_cad</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">z_test</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
-
-<span class="n">anomalies</span> <span class="o">=</span> <span class="n">z_test</span><span class="p">[</span><span class="n">results</span><span class="p">]</span>
-<span class="n">not_anomalies</span> <span class="o">=</span> <span class="n">z_test</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">results</span><span class="p">)]</span>
-
-<span class="c1"># Plot results</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">dataset</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">dataset</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Inliers&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-    <span class="n">anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
-    <span class="n">anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
-    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
-    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
-    <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Anomalies&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-    <span class="n">not_anomalies</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
-    <span class="n">not_anomalies</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
-    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
-    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
-    <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Normal&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(())</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-</pre></div>
-</div>
-<dl class="py method">
-<dt class="sig sig-object py" id="deel.puncc.anomaly_detection.SplitCAD.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_fit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_calib</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD.fit" title="Link to this definition"></a></dt>
-<dd><p>This method fits the models on the fit data
-and computes nonconformity scores on calibration data.
-If z are provided, randomly split data into
-fit and calib subsets w.r.t to the fit_ratio.
-In case z_fit and z_calib are provided,
-the conformalization is performed on the given user defined
-fit and calibration sets.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If z is provided, <cite>fit</cite> ignores
-any user-defined fit/calib split.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>z</strong> (<em>Iterable</em>) – data points from the training dataset.</p></li>
-<li><p><strong>fit_ratio</strong> (<em>float</em>) – the proportion of samples assigned to the
-fit subset.</p></li>
-<li><p><strong>z_fit</strong> (<em>Iterable</em>) – data points from the fit dataset.</p></li>
-<li><p><strong>z_calib</strong> (<em>Iterable</em>) – data points from the calibration dataset.</p></li>
-<li><p><strong>kwargs</strong> (<em>dict</em>) – predict configuration to be passed to the model’s
-fit method.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>RuntimeError</strong> – no dataset provided.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="deel.puncc.anomaly_detection.SplitCAD.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deel.puncc.anomaly_detection.SplitCAD.predict" title="Link to this definition"></a></dt>
-<dd><p>Predict whether each example is an anomaly or not. The decision is
-taken based on the calibrated threshold (through conformal prediction)
-of underlying anomaly detection scores.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>z_test</strong> (<em>Iterable</em>) – new data points.</p></li>
-<li><p><strong>alpha</strong> (<em>float</em>) – target maximum FDR.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – nominal coverage level.</p></li>
+<li><p><strong>nvars</strong> (<em>int</em>) – number of output features.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>outlier tag. True if outlier, False otherwise.</p>
+<dd class="field-even"><p>corrected coverage level.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Iterables[bool]</p>
+<dd class="field-odd"><p>float or ndarray.</p>
 </dd>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="corrections.weighted_bonferroni">
+<span class="sig-prename descclassname"><span class="pre">corrections.</span></span><span class="sig-name descname"><span class="pre">weighted_bonferroni</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#corrections.weighted_bonferroni" title="Link to this definition"></a></dt>
+<dd><p>Weighted Bonferroni correction for multiple comparisons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> (<em>float</em>) – nominal coverage level.</p></li>
+<li><p><strong>weights</strong> (<em>np.ndarray</em>) – weights associated to each output feature.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>array of corrected featurewise coverage levels.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -481,8 +370,8 @@ of underlying anomaly detection scores.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="object_detection.html" class="btn btn-neutral float-left" title="🖼️ Object Detection" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="api.html" class="btn btn-neutral float-right" title="💻 API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="prediction_sets.html" class="btn btn-neutral float-left" title="Prediction sets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="splitting.html" class="btn btn-neutral float-right" title="Splitting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

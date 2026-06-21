@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🖼️ Object Detection &mdash; PUNCC 0.8.0 documentation</title>
+  <title>🖼️ Object Detection &mdash; PUNCC 0.9.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=9dc39874"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -81,6 +81,12 @@
 <li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.fit"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.get_nonconformity_scores()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.predict"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP.fit"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP.predict"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.predict()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR"><code class="docutils literal notranslate"><span class="pre">CQR</span></code></a><ul>
@@ -164,29 +170,12 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction.html#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ClasswiseCalibrator"><code class="docutils literal notranslate"><span class="pre">ClasswiseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.LeveragedCalibrator"><code class="docutils literal notranslate"><span class="pre">LeveragedCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.BaseSplitter"><code class="docutils literal notranslate"><span class="pre">BaseSplitter</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.IdSplitter"><code class="docutils literal notranslate"><span class="pre">IdSplitter</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.RandomSplitter"><code class="docutils literal notranslate"><span class="pre">RandomSplitter</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.KFoldSplitter"><code class="docutils literal notranslate"><span class="pre">KFoldSplitter</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.hungarian_assignment"><code class="docutils literal notranslate"><span class="pre">hungarian_assignment()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
@@ -212,6 +201,41 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="corrections.html">Corrections</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="corrections.html#corrections.bonferroni"><code class="docutils literal notranslate"><span class="pre">bonferroni()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="corrections.html#corrections.weighted_bonferroni"><code class="docutils literal notranslate"><span class="pre">weighted_bonferroni()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.BaseSplitter"><code class="docutils literal notranslate"><span class="pre">BaseSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.IdSplitter"><code class="docutils literal notranslate"><span class="pre">IdSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.RandomSplitter"><code class="docutils literal notranslate"><span class="pre">RandomSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.KFoldSplitter"><code class="docutils literal notranslate"><span class="pre">KFoldSplitter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.hungarian_assignment"><code class="docutils literal notranslate"><span class="pre">hungarian_assignment()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="backend.html">Backend</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#note">Note:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.BackendOps"><code class="docutils literal notranslate"><span class="pre">BackendOps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.concat_columns"><code class="docutils literal notranslate"><span class="pre">concat_columns()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.copy_model"><code class="docutils literal notranslate"><span class="pre">copy_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.get_backend"><code class="docutils literal notranslate"><span class="pre">get_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.infer_backend"><code class="docutils literal notranslate"><span class="pre">infer_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.infer_model_backend"><code class="docutils literal notranslate"><span class="pre">infer_model_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.normalize_backend_inputs"><code class="docutils literal notranslate"><span class="pre">normalize_backend_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.shape2"><code class="docutils literal notranslate"><span class="pre">shape2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.split_columns"><code class="docutils literal notranslate"><span class="pre">split_columns()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
 </ul>
 </li>
 </ul>

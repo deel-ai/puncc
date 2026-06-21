@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prediction &mdash; PUNCC 0.8.0 documentation</title>
+  <title>Prediction &mdash; PUNCC 0.9.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/_static/theme_overrides.css" />
@@ -14,14 +14,14 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=9dc39874"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Experimental" href="experimental.html" />
+    <link rel="next" title="Calibration" href="calibration.html" />
     <link rel="prev" title="Conformalization" href="conformalization.html" /> 
 </head>
 
@@ -82,6 +82,12 @@
 <li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.fit"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.get_nonconformity_scores()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LocallyAdaptiveCP.predict"><code class="docutils literal notranslate"><span class="pre">LocallyAdaptiveCP.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP.fit"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.get_nonconformity_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="regression.html#deel.puncc.regression.LeverageWeightedCP.predict"><code class="docutils literal notranslate"><span class="pre">LeverageWeightedCP.predict()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="regression.html#deel.puncc.regression.CQR"><code class="docutils literal notranslate"><span class="pre">CQR</span></code></a><ul>
@@ -165,29 +171,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#prediction.MeanVarPredictor"><code class="docutils literal notranslate"><span class="pre">MeanVarPredictor</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="calibration.html">Calibration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.BaseCalibrator"><code class="docutils literal notranslate"><span class="pre">BaseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ClasswiseCalibrator"><code class="docutils literal notranslate"><span class="pre">ClasswiseCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.CvPlusCalibrator"><code class="docutils literal notranslate"><span class="pre">CvPlusCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.LeveragedCalibrator"><code class="docutils literal notranslate"><span class="pre">LeveragedCalibrator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="calibration.html#calibration.ScoreCalibrator"><code class="docutils literal notranslate"><span class="pre">ScoreCalibrator</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.BaseSplitter"><code class="docutils literal notranslate"><span class="pre">BaseSplitter</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.IdSplitter"><code class="docutils literal notranslate"><span class="pre">IdSplitter</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.RandomSplitter"><code class="docutils literal notranslate"><span class="pre">RandomSplitter</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.KFoldSplitter"><code class="docutils literal notranslate"><span class="pre">KFoldSplitter</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.hungarian_assignment"><code class="docutils literal notranslate"><span class="pre">hungarian_assignment()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="nonconformity_scores.html">Nonconformity scores</a><ul>
@@ -213,6 +202,41 @@
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.raps_set_builder"><code class="docutils literal notranslate"><span class="pre">raps_set_builder()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_bbox"><code class="docutils literal notranslate"><span class="pre">scaled_bbox()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="prediction_sets.html#prediction_sets.scaled_interval"><code class="docutils literal notranslate"><span class="pre">scaled_interval()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="corrections.html">Corrections</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="corrections.html#corrections.bonferroni"><code class="docutils literal notranslate"><span class="pre">bonferroni()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="corrections.html#corrections.weighted_bonferroni"><code class="docutils literal notranslate"><span class="pre">weighted_bonferroni()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="splitting.html">Splitting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.BaseSplitter"><code class="docutils literal notranslate"><span class="pre">BaseSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.IdSplitter"><code class="docutils literal notranslate"><span class="pre">IdSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.RandomSplitter"><code class="docutils literal notranslate"><span class="pre">RandomSplitter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="splitting.html#splitting.KFoldSplitter"><code class="docutils literal notranslate"><span class="pre">KFoldSplitter</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html">Utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.alpha_calib_check"><code class="docutils literal notranslate"><span class="pre">alpha_calib_check()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.quantile"><code class="docutils literal notranslate"><span class="pre">quantile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#deel.puncc.api.utils.hungarian_assignment"><code class="docutils literal notranslate"><span class="pre">hungarian_assignment()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="backend.html">Backend</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#note">Note:</a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.BackendOps"><code class="docutils literal notranslate"><span class="pre">BackendOps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.concat_columns"><code class="docutils literal notranslate"><span class="pre">concat_columns()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.copy_model"><code class="docutils literal notranslate"><span class="pre">copy_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.get_backend"><code class="docutils literal notranslate"><span class="pre">get_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.infer_backend"><code class="docutils literal notranslate"><span class="pre">infer_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.infer_model_backend"><code class="docutils literal notranslate"><span class="pre">infer_model_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.normalize_backend_inputs"><code class="docutils literal notranslate"><span class="pre">normalize_backend_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.shape2"><code class="docutils literal notranslate"><span class="pre">shape2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="backend.html#backend.split_columns"><code class="docutils literal notranslate"><span class="pre">split_columns()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="experimental.html">Experimental</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="experimental.html#experimental.TorchPredictor"><code class="docutils literal notranslate"><span class="pre">TorchPredictor</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -389,8 +413,7 @@ call <code class="xref py py-func docutils literal notranslate"><span class="pre
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.BasePredictor.copy">
 <span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.BasePredictor.copy" title="Link to this definition"></a></dt>
-<dd><p>Returns a copy of the predictor. The underlying model is either
-cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dd><p>Returns a copy of the predictor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>copy of the predictor.</p>
@@ -455,7 +478,7 @@ method of the underlying model <span class="math notranslate nohighlight">\(\hat
 examples X.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>ndarray</p>
+<dd class="field-odd"><p>Iterable</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -530,8 +553,7 @@ to compile the underlying models.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.DualPredictor.copy">
 <span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.DualPredictor.copy" title="Link to this definition"></a></dt>
-<dd><p>Returns a copy of the predictor. The underlying models are either
-cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dd><p>Returns a copy of the predictor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>copy of the predictor.</p>
@@ -589,7 +611,7 @@ Returns True only when both models are pretrained.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>X</strong> (<em>Iterable</em>) – new examples’ features.</p></li>
-<li><p><strong>kwargs</strong> (<em>dict</em>) – list of predict configurations to be passed to the
+<li><p><strong>dictargs</strong> (<em>List</em><em>[</em><em>dict</em><em>[</em><em>str</em><em>]</em><em>]</em>) – list of predict configurations to be passed to the
 <cite>predict</cite> method of the underlying models <span class="math notranslate nohighlight">\(\hat{f}_1\)</span> and
 <span class="math notranslate nohighlight">\(\hat{f}_2\)</span>, respectively.</p></li>
 </ul>
@@ -600,11 +622,12 @@ examples X. For an instance <span class="math notranslate nohighlight">\(X_i\)</
 a couple <span class="math notranslate nohighlight">\(\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))\)</span>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[ndarray]</p>
+<dd class="field-odd"><p>Tuple[Iterable, Iterable]</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>NotImplementedError</strong> – predicted values not formated as numpy
-ndarrays.</p>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – Different backends for dual predictions
+is not supported. Please make sure both models return predictions
+of the same type.</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -695,8 +718,7 @@ The predictions are directly returned without any modification.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.IdPredictor.copy">
 <span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.IdPredictor.copy" title="Link to this definition"></a></dt>
-<dd><p>Returns a copy of the predictor. The underlying model is either
-cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dd><p>Returns a copy of the predictor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>copy of the predictor.</p>
@@ -835,8 +857,7 @@ arguments to the underlying models, check this
 <dl class="py method">
 <dt class="sig sig-object py" id="prediction.MeanVarPredictor.copy">
 <span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#prediction.MeanVarPredictor.copy" title="Link to this definition"></a></dt>
-<dd><p>Returns a copy of the predictor. The underlying models are either
-cloned (Keras model) or deepcopied (sklearn and similar models).</p>
+<dd><p>Returns a copy of the predictor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>copy of the predictor.</p>
@@ -893,7 +914,7 @@ Returns True only when both models are pretrained.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>X</strong> (<em>Iterable</em>) – new examples’ features.</p></li>
-<li><p><strong>kwargs</strong> (<em>dict</em>) – list of predict configurations to be passed to the
+<li><p><strong>dictargs</strong> (<em>List</em><em>[</em><em>dict</em><em>[</em><em>str</em><em>]</em><em>]</em>) – list of predict configurations to be passed to the
 <cite>predict</cite> method of the underlying models <span class="math notranslate nohighlight">\(\hat{f}_1\)</span> and
 <span class="math notranslate nohighlight">\(\hat{f}_2\)</span>, respectively.</p></li>
 </ul>
@@ -904,11 +925,12 @@ examples X. For an instance <span class="math notranslate nohighlight">\(X_i\)</
 a couple <span class="math notranslate nohighlight">\(\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))\)</span>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[ndarray]</p>
+<dd class="field-odd"><p>Tuple[Iterable, Iterable]</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>NotImplementedError</strong> – predicted values not formated as numpy
-ndarrays.</p>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – Different backends for dual predictions
+is not supported. Please make sure both models return predictions
+of the same type.</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -926,7 +948,7 @@ ndarrays.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="conformalization.html" class="btn btn-neutral float-left" title="Conformalization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="experimental.html" class="btn btn-neutral float-right" title="Experimental" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="calibration.html" class="btn btn-neutral float-right" title="Calibration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
