@@ -4,6 +4,19 @@ This file documents main changes across releases of **PUNCC**.
 
 ---
 
+## [0.9.3] - 2026-06-23
+
+### Changed
+- Updated `deel.puncc.classification.RAPS` to subclass `SplitConformalPredictor`. This enable substantial code factorization
+- Updated `deel.puncc.classification.ClasswiseLAC` to pass `ClasswiseCalibrator` directly to the `SplitConformalPredictor`'s constructor
+
+### Fixed
+- Documentation typos
+
+### CI / Maintenance
+- Updated branching tests following the changes of RAPS and ClasswiseLAC
+---
+
 ## [0.9.2] - 2026-06-20
 
 ### Added 

@@ -51,7 +51,7 @@ dev_requirements = _read_requirements("requirements_dev.txt")
 
 setuptools.setup(
     name="puncc",
-    version="0.9.2",
+    version="0.9.3",
     author=", ".join(["Mouhcine Mendil", "Luca Mossina", "Joseba Dalmau"]),
     author_email=", ".join(
         [
