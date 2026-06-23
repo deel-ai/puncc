@@ -14,7 +14,8 @@ This file documents main changes across releases of **PUNCC**.
 - Documentation typos
 
 ### CI / Maintenance
-- Updated branching tests following the changes of RAPS and ClasswiseLAC.
+- Updated branching tests following the changes of RAPS and ClasswiseLAC
+---
 
 ## [0.9.2] - 2026-06-20
 
