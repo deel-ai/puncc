@@ -268,6 +268,8 @@ class SplitConformalPredictor:
         :rtype: Tuple
 
         """
+        if self.conformal_predictor is None:
+            raise RuntimeError("Fit method should be called before predict.")
         return self.conformal_predictor.predict(X_test, alpha=alpha)
 
     def get_nonconformity_scores(self) -> np.ndarray:

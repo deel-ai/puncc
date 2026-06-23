@@ -45,7 +45,11 @@ from deel.puncc.regression import SplitCP
 class DummyConformalPredictor:
     def __init__(self, prediction=None):
         self.splitter = None
-        self.prediction = prediction if prediction is not None else (np.array([1.0]), np.array([0.0]), np.array([2.0]))
+        self.prediction = (
+            prediction
+            if prediction is not None
+            else (np.array([1.0]), np.array([0.0]), np.array([2.0]))
+        )
         self.nconf_scores = {0: np.array([1.0, 2.0])}
 
     def fit(self, X=None, y=None, **kwargs):
@@ -127,14 +131,18 @@ class NoFitPredictModel:
 
 def test_lac_wrapper_branches():
     lac = LAC(DummyPredictor())
-    lac.conformal_predictor = DummyConformalPredictor(prediction=(np.array([0.8]), ([0],)))
+    lac.conformal_predictor = DummyConformalPredictor(
+        prediction=(np.array([0.8]), ([0],))
+    )
 
     y_pred, set_pred = lac.predict(np.array([[1.0]]), alpha=0.1)
     np.testing.assert_allclose(y_pred, np.array([0.8]))
     assert set_pred == ([0],)
 
     lac.conformal_predictor = None
-    with pytest.raises(AttributeError):
+    with pytest.raises(
+        RuntimeError, match="Fit method should be called before predict"
+    ):
         lac.predict(np.array([[1.0]]), alpha=0.1)
 
     lac2 = LAC(DummyPredictor(trained=False), train=False)
@@ -177,7 +185,9 @@ def test_lac_wrapper_branches():
 
     lac7 = LAC(DummyPredictor())
     lac7.conformal_predictor = DummyConformalPredictor()
-    np.testing.assert_allclose(lac7.get_nonconformity_scores(), np.array([1.0, 2.0]))
+    np.testing.assert_allclose(
+        lac7.get_nonconformity_scores(), np.array([1.0, 2.0])
+    )
     lac7.conformal_predictor.nconf_scores = {
         0: np.array([1.0]),
         1: np.array([2.0]),
@@ -187,7 +197,9 @@ def test_lac_wrapper_branches():
 
 def test_raps_wrapper_branches():
     raps = RAPS(DummyPredictor())
-    raps.conformal_predictor = DummyConformalPredictor(prediction=(np.array([0.7]), ([0, 1],)))
+    raps.conformal_predictor = DummyConformalPredictor(
+        prediction=(np.array([0.7]), ([0, 1],))
+    )
 
     y_pred, set_pred = raps.predict(np.array([[1.0]]), alpha=0.1)
     np.testing.assert_allclose(y_pred, np.array([0.7]))
@@ -202,7 +214,7 @@ def test_raps_wrapper_branches():
     raps2.fit(X=np.array([[1.0], [2.0]]), y=np.array([0, 1]))
     assert raps2.conformal_predictor.splitter is not None
 
-    raps3 = RAPS(DummyPredictor())
+    raps3 = RAPS(DummyPredictor(), train=False)
     raps3.conformal_predictor = DummyConformalPredictor()
     raps3.fit(
         X_calib=np.array([[1.0]]),
@@ -300,7 +312,9 @@ def test_plotting_branch_cases(tmp_path):
 
     image_path = tmp_path / "bbox.png"
     Image.new("RGB", (10, 10), color="white").save(image_path)
-    im = draw_bounding_box(image_path=str(image_path), legend="loaded", show=False)
+    im = draw_bounding_box(
+        image_path=str(image_path), legend="loaded", show=False
+    )
     assert im.size == (10, 10)
 
     image = Image.new("RGB", (10, 10), color="white")
@@ -373,7 +387,11 @@ def test_conformalization_guard_and_aggregator_branches(tmp_path):
     cp_untrained = ConformalPredictor(
         calibrator=DummyCalibrator(),
         predictor=DummyPredictor(trained=False),
-        splitter=type("MultiSplitter", (), {"__call__": lambda self, X, y: [(X, y, X, y), (X, y, X, y)]})(),
+        splitter=type(
+            "MultiSplitter",
+            (),
+            {"__call__": lambda self, X, y: [(X, y, X, y), (X, y, X, y)]},
+        )(),
         train=False,
     )
     with pytest.raises(RuntimeError):
@@ -390,13 +408,17 @@ def test_conformalization_guard_and_aggregator_branches(tmp_path):
         cp_bad_splitter.fit(np.array([[1.0], [2.0]]), np.array([1.0, 2.0]))
 
     weighted_cp = ConformalPredictor(
-        calibrator=DummyCalibrator(weight_func=lambda X: np.arange(1, len(X) + 1)),
+        calibrator=DummyCalibrator(
+            weight_func=lambda X: np.arange(1, len(X) + 1)
+        ),
         predictor=DummyPredictor(),
         splitter=None,
         train=False,
     )
     weighted_cp.fit(np.array([[1.0], [2.0]]), np.array([1.0, 2.0]))
-    np.testing.assert_allclose(weighted_cp.get_weights()[0], np.array([1 / 3, 2 / 3]))
+    np.testing.assert_allclose(
+        weighted_cp.get_weights()[0], np.array([1 / 3, 2 / 3])
+    )
 
     cached_cp = ConformalPredictor(
         calibrator=DummyCalibrator(),
@@ -410,7 +432,9 @@ def test_conformalization_guard_and_aggregator_branches(tmp_path):
     )
     cached_cp.predictor.is_trained = True
     cached_cp.fit(np.array([[1.0], [2.0]]), np.array([1.0, 2.0]))
-    cached_cp.fit(np.array([[3.0], [4.0]]), np.array([3.0, 4.0]), use_cached=True)
+    cached_cp.fit(
+        np.array([[3.0], [4.0]]), np.array([3.0, 4.0]), use_cached=True
+    )
     assert cached_cp._cv_cp_agg.K == 2
 
     path = tmp_path / "cp.pkl"
@@ -420,7 +444,9 @@ def test_conformalization_guard_and_aggregator_branches(tmp_path):
 
     agg = CrossValCpAggregator(K=1)
     dummy_predictor = DummyPredictor()
-    dummy_calibrator = DummyCalibrator(weight_func=lambda X: np.array([0.5] * len(X)))
+    dummy_calibrator = DummyCalibrator(
+        weight_func=lambda X: np.array([0.5] * len(X))
+    )
     dummy_calibrator.set_norm_weights(np.array([0.5, 0.5]))
     agg.append_predictor(0, dummy_predictor)
     agg.append_calibrator(0, dummy_calibrator)
@@ -449,7 +475,9 @@ def test_conformalization_guard_and_aggregator_branches(tmp_path):
             return np.zeros(len(X)), np.ones(len(X))
 
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr(conformalization_module, "CvPlusCalibrator", FakeCvPlusCalibrator)
+    monkeypatch.setattr(
+        conformalization_module, "CvPlusCalibrator", FakeCvPlusCalibrator
+    )
     try:
         cv_agg = CrossValCpAggregator(K=2)
         cv_agg._predictors = {0: dummy_predictor, 1: dummy_predictor}
@@ -494,11 +522,17 @@ def test_splitcp_and_enbpi_regression_branches(monkeypatch):
         del kwargs
         return np.zeros(len(horizon_indices), dtype=int)
 
-    monkeypatch.setattr(regression_module, "resample", resample_no_oob_for_first_unit)
+    monkeypatch.setattr(
+        regression_module, "resample", resample_no_oob_for_first_unit
+    )
     with pytest.raises(RuntimeError, match='Increase "B"'):
         enbpi.fit(np.array([[1.0], [2.0]]), np.array([1.0, 2.0]))
 
-    enbpi = EnbPI(DummyPredictor(), B=1, agg_func_loo=lambda arr, axis=0: np.mean(arr, axis=axis))
+    enbpi = EnbPI(
+        DummyPredictor(),
+        B=1,
+        agg_func_loo=lambda arr, axis=0: np.mean(arr, axis=axis),
+    )
     enbpi.residuals = [1.0, 2.0, 3.0]
     enbpi._boot_predictors = [DummyPredictor()]
     enbpi._oob_matrix = np.array([[1.0]])
@@ -510,7 +544,9 @@ def test_splitcp_and_enbpi_regression_branches(monkeypatch):
     )
     assert y_pred.shape == y_lo.shape == y_hi.shape == (4,)
 
-    scalar_enbpi = EnbPI(DummyPredictor(), B=1, agg_func_loo=lambda arr, axis=0: np.array(1.5))
+    scalar_enbpi = EnbPI(
+        DummyPredictor(), B=1, agg_func_loo=lambda arr, axis=0: np.array(1.5)
+    )
     scalar_enbpi.residuals = [1.0, 2.0]
     scalar_enbpi._boot_predictors = [DummyPredictor()]
     scalar_enbpi._oob_matrix = np.array([[1.0]])
