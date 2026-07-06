@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
             # Predict on validation set
             print(f"  Predicting with RCPS-selected lambda...")
-            val_sets, lhat = rcps.predict(val_scores, alpha=ALPHA, lambda_grid=LAMBDA_GRID)
+            val_sets = rcps.predict(val_scores, alpha=ALPHA, lambda_grid=LAMBDA_GRID)
 
             # Metrics
             print(f"  Evaluating empirical risk and set sizes...")

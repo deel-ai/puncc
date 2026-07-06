@@ -32,7 +32,9 @@ dependencies = [
   "matplotlib",
   "numpy",
   "pandas",
+  "plotly",
   "scikit-learn",
+  "scipy",
   "tqdm",
 ]
 

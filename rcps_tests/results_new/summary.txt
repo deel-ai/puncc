@@ -1,0 +1,22 @@
+RCPS ImageNet experiment
+  n_runs=20, n_calib=30000, n_val=20000
+  alpha=0.1, delta=0.1
+  seed=0
+
+CLT
+  Mean risk:        0.0978 +/- 0.0023  (target <= 0.1)
+  Risk violations:  3 / 20
+  Mean lambda_hat:  -0.2774 +/- 0.0069
+  Mean set size:    1.06 +/- 0.35
+
+HOEFFDING_BENTKUS
+  Mean risk:        0.0967 +/- 0.0023  (target <= 0.1)
+  Risk violations:  2 / 20
+  Mean lambda_hat:  -0.2688 +/- 0.0072
+  Mean set size:    1.07 +/- 0.35
+
+WSR
+  Mean risk:        0.0964 +/- 0.0023  (target <= 0.1)
+  Risk violations:  2 / 20
+  Mean lambda_hat:  -0.2668 +/- 0.0076
+  Mean set size:    1.07 +/- 0.36

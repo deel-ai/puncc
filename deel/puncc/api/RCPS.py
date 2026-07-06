@@ -30,7 +30,7 @@ from scipy.stats import norm, binom
 from typing import Optional
 from typing import Callable, Iterable, Any
 from functools import lru_cache
-from deel.puncc.api.conformalization import ConformalMethod
+from deel.puncc.api.conformalization import ConformalMethod, ConformalPrediction
 from deel.puncc.typing import TensorLike, LambdaPredictor
 
 
@@ -101,7 +101,7 @@ class RCPS(ConformalMethod):
         return float(lambda_grid[last_violation + 1])
 
 
-    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, lambda_grid:Iterable[float]) -> Iterable[Any]:
+    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, lambda_grid:Iterable[float]) -> ConformalPrediction:
         if not isinstance(alpha, float):
             raise NotImplementedError("Only scalar alpha is supported for RCPS.")
         if not self.is_calibrated():
@@ -110,7 +110,6 @@ class RCPS(ConformalMethod):
         lambda_hat = self.__get_lambda_from_alpha(alpha/self.loss_function_upper_bound, lambda_grid)
         c_lambda_pred = self.model.predict(X_test, lambda_hat)
         return c_lambda_pred
-
 
 def clt_ucb(risk:Callable, risk_std:Callable, delta:float, n_calib:int) -> Callable:
     z = norm.ppf(1 - delta)
@@ -153,7 +152,7 @@ def wsr_ucb(losses: Iterable[Callable], delta: float,
 
         mu_i     = (1/2 + sum_{j=1}^i L_j) / (1+i),        sigma2_0 = 1/4
         sigma2_i = (1/4 + sum_{j=1}^i (L_j - mu_j)^2) / (1+i)
-        nu_i     = min(1, sqrt(2 ln(1/delta)) / (n * sigma2_{i-1}))
+        nu_i     = min(1, sqrt(2 ln(1/delta) / (n * sigma2_{i-1})))
         K_i(R)   = prod_{j=1}^i (1 - nu_j (L_j - R))
 
     :param Iterable[Callable] losses: individual loss functions f_1,...,f_n.
@@ -181,7 +180,7 @@ def wsr_ucb(losses: Iterable[Callable], delta: float,
         sigma2[1:] = (0.25 + np.cumsum((L - mu) ** 2)) / (i_arr + 2)
 
         # Betting fractions nu_i use sigma2_{i-1}, i.e. sigma2[:n]
-        nu = np.minimum(1.0, np.sqrt(2.0 * np.log(1.0 / delta)) / (n * sigma2[:n]))
+        nu = np.minimum(1.0, np.sqrt(2.0 * np.log(1.0 / delta) / (n * sigma2[:n])))
 
         # factors[i, r] = 1 - nu[i] * (L[i] - R_grid[r])
         # Guaranteed in [0, 2] since L, R in [0,1] and nu in [0,1]
@@ -246,7 +245,7 @@ def bernoulli_rate_function(t: float, p: float) -> float:
 
 
 def tighter_hoeffding_tpb(t: float, R: float, n: int) -> float:
-    return np.exp(-2 * n * bernoulli_rate_function(t, R))
+    return np.exp(-n * bernoulli_rate_function(t, R))
 
 
 def bentkus_tpb(t: float, R: float, n: int) -> float:

@@ -1,5 +1,3 @@
-import torch
-import torch.nn.functional as F
 import numpy as np
 
 
@@ -15,6 +13,12 @@ class LambdaPredictor:
       - a torch.Tensor of shape (n, C, H, W)  [raw images, runs the model]
       - a numpy.ndarray of shape (n, num_classes)  [pre-computed softmax scores]
 
+    torch is only imported lazily (on first use with raw image tensors),
+    so this class -- and LambdaPredictorFromSoftmax /
+    LambdaPredictorSetSizeFromSofmax below, which never touch torch at all
+    -- can be used in environments without torch installed, as long as
+    inputs are always pre-computed numpy score arrays.
+
     Parameters
     ----------
     backbone : torch.nn.Module
@@ -23,7 +27,7 @@ class LambdaPredictor:
         Device to run inference on ('cuda' or 'cpu').
     """
 
-    def __init__(self, backbone: torch.nn.Module, device: str = "cuda"):
+    def __init__(self, backbone, device: str = "cuda"):
         self.backbone = backbone
         self.device = device
 
@@ -31,7 +35,10 @@ class LambdaPredictor:
         if isinstance(X, np.ndarray):
             # Already pre-computed softmax scores
             return X
-        # Raw image tensors: run the model
+        # Raw image tensors: run the model (torch needed only on this path)
+        import torch
+        import torch.nn.functional as F
+
         self.backbone.eval()
         with torch.no_grad():
             logits = self.backbone(X.to(self.device))
