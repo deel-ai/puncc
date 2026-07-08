@@ -32,6 +32,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Classwise Conformal Classification**
      - Learn to use classwise CP for class-conditional coverage.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__
+   * - **Risk-Controlling Prediction Sets**
+     - Learn to control a custom, class-varying risk with RCPS.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_rcps.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_rcps.ipynb>`__
    * - **Conformal Time Series Forecasting**
      - Learn to conformalize time series models.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_timeseries.ipynb>`__
