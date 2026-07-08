@@ -101,7 +101,7 @@ class RCPS(ConformalMethod):
         return float(lambda_grid[last_violation + 1])
 
 
-    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, lambda_grid:Iterable[float]) -> ConformalPrediction:
+    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, lambda_grid:Iterable[float]):
         if not isinstance(alpha, float):
             raise NotImplementedError("Only scalar alpha is supported for RCPS.")
         if not self.is_calibrated():
