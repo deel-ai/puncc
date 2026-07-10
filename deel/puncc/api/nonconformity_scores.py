@@ -20,13 +20,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""This module provides nonconformity scores for conformal prediction. To be used
-when building a `calibrator`."""
+"""
+This module provides nonconformity scores for conformal prediction. To be used
+when building a :ref:`calibrator <calibration>`.
+"""
 
 from typing import Callable
 from typing import Iterable
 
-from deel.puncc.api.backend import concat_columns, get_backend, shape2, split_columns
+from deel.puncc.api.backend import (
+    concat_columns,
+    get_backend,
+    normalize_backend_inputs,
+    shape2,
+    split_columns,
+)
 
 from deel.puncc.api.utils import supported_types_check
 from deel.puncc.api.utils import supported_dual_models_shape_check
@@ -44,23 +52,23 @@ def lac_score(
 ) -> Iterable:
     """LAC nonconformity score.
 
-    Args:
-        Y_pred (Iterable): $Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})$ where $P_{\\text{C}_i}$ is logit associated to class i.
-        y_true (Iterable): true labels.
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable y_true: true labels.
 
-    Returns:
-        Iterable: LAC nonconformity scores.
+    :returns: LAC nonconformity scores.
+    :rtype: Iterable
 
-    Raises:
-        TypeError: unsupported data types."""
+    :raises TypeError: unsupported data types.
+    """
     supported_types_check(Y_pred, y_true)
 
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, y_true)
+    yt = b.astype(b.squeeze(yt), "int64")
 
     # Gather predicted probability at true-label index for each sample.
     p_true = b.take_along_axis(yp, b.reshape(yt, (-1, 1)), axis=1)
@@ -73,28 +81,29 @@ def classwise_lac_score(
 ) -> Iterable:
     """Classwise LAC nonconformity score.
 
-        Computes nonconformity scores for classwise conformal prediction.
-        For each sample, the score is stored only for its true class,
-        with NaN values for other classes. This allows computing
-        per-class quantiles during calibration.
+    Computes nonconformity scores for classwise conformal prediction.
+    For each sample, the score is stored only for its true class,
+    with NaN values for other classes. This allows computing
+    per-class quantiles during calibration.
 
-    Args:
-        Y_pred (Iterable): $Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})$ where $P_{\\text{C}_i}$ is logit associated to class i.
-        y_true (Iterable): true labels.
+    :param Iterable Y_pred:
+        :math:`Y_{\\text{pred}} = (P_{\\text{C}_1}, ..., P_{\\text{C}_n})`
+        where :math:`P_{\\text{C}_i}` is logit associated to class i.
+    :param Iterable y_true: true labels.
 
-    Returns:
-        Iterable: Classwise LAC nonconformity scores of shape (n_samples, n_classes). Entry [i, c] contains `1 - Y_pred[i, c]` if `y_true[i] == c`, else NaN.
+    :returns: Classwise LAC nonconformity scores of shape (n_samples, n_classes).
+        Entry [i, c] contains `1 - Y_pred[i, c]` if `y_true[i] == c`, else NaN.
+    :rtype: Iterable
 
-    Raises:
-        TypeError: unsupported data types."""
+    :raises TypeError: unsupported data types.
+    """
     supported_types_check(Y_pred, y_true)
 
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, y_true)
+    yt = b.astype(b.squeeze(yt), "int64")
 
     _, shape = shape2(yp)
     n_samples = shape[0]
@@ -119,19 +128,20 @@ def raps_score(
 ) -> Iterable:
     """RAPS nonconformity score.
 
-    Warning:
+    .. warning::
 
         This signature is incompatible with the interface of calibrators.
-        **Use** `raps_score_builder` **to properly initialize**
-        `deel.puncc.api.calibration.BaseCalibrator`."""
+        **Use** :func:`raps_score_builder` **to properly initialize**
+        :class:`deel.puncc.api.calibration.BaseCalibrator`.
+
+    """
     supported_types_check(Y_pred, y_true)
 
     # Check if logits sum is close to one
     logit_normalization_check(Y_pred)
 
-    b = get_backend(Y_pred, y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.astype(b.squeeze(b.asarray(y_true)), "int64")
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, y_true)
+    yt = b.astype(b.squeeze(yt), "int64")
 
     # Sort classes by descending probability order.
     class_ranking = b.argsort(yp, axis=1, descending=True)
@@ -166,21 +176,29 @@ def raps_score(
     return E
 
 
-def raps_score_builder(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> Callable:
+def raps_score_builder(
+    lambd: float = 0, k_reg: int = 1, rand: bool = True
+) -> Callable:
     """RAPS nonconformity score builder. When called, returns a RAPS
-        nonconformity score function `raps_score` with given initialitation
-        of regularization hyperparameters.
+    nonconformity score function :func:`raps_score` with given initialitation
+    of regularization hyperparameters.
 
-    Args:
-        lambd (float): positive weight associated to the regularization term that encourages small set sizes. If $\\lambda = 0$, there is no regularization and the implementation identifies with **APS**.
-        k_reg (float): class rank (ordered by descending probability) starting from which the regularization is applied. For example, if $k_{reg} = 3$, then the fourth most likely estimated class has an extra penalty of size $\\lambda$.
-        rand (bool): turn on or off the randomization term that smoothes the discrete probability mass jump when including a new class.
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
+        regularization and the implementation identifies with **APS**.
+    :param float k_reg: class rank (ordered by descending probability) starting
+        from which the regularization is applied. For example, if
+        :math:`k_{reg} = 3`, then the fourth most likely estimated class has
+        an extra penalty of size :math:`\\lambda`.
+    :param bool rand: turn on or off the randomization term that smoothes the
+        discrete probability mass jump when including a new class.
 
-    Returns:
-        Callable: RAPS nonconformity score function that takes two parameters: `Y_pred` and `y_true`.
+    :returns: RAPS nonconformity score function that takes two parameters:
+        `Y_pred` and `y_true`.
+    :rtype: Callable
 
-    Raises:
-        TypeError: unsupported data types."""
+    :raises TypeError: unsupported data types.
+    """
 
     def _raps_score_function(Y_pred: Iterable, y_true: Iterable) -> Iterable:
         return raps_score(Y_pred, y_true, lambd, k_reg, rand)
@@ -194,79 +212,66 @@ def raps_score_builder(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> C
 def difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     """Elementwise difference.
 
-    $$
+    .. math::
 
-    R = y_{\\text{pred}}-y_{\\text{true}}
+        R = y_{\\text{pred}}-y_{\\text{true}}
 
-    Args:
-        y_pred (Iterable): predictions.
-        y_true (Iterable): true labels.
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
 
-    Returns:
-        Iterable: coordinatewise difference.
+    :returns: coordinatewise difference.
+    :rtype: Iterable
 
-    Raises:
-        TypeError: unsupported data types.
-
-    $$"""
+    :raises TypeError: unsupported data types.
+    """
     supported_types_check(y_pred, y_true)
-    b = get_backend(y_pred, y_true)
-    yp = b.asarray(y_pred)
-    yt = b.asarray(y_true)
+    b, (yp, yt) = normalize_backend_inputs(y_pred, y_true)
     return b.squeeze(yp) - b.squeeze(yt)
 
 
 def absolute_difference(y_pred: Iterable, y_true: Iterable) -> Iterable:
     """Absolute Deviation.
 
-    $$
+    .. math::
 
-    R = |y_{\\text{true}}-y_{\\text{pred}}|
+        R = |y_{\\text{true}}-y_{\\text{pred}}|
 
-    Args:
-        y_pred (Iterable): predictions.
-        y_true (Iterable): true labels.
+    :param Iterable y_pred: predictions.
+    :param Iterable y_true: true labels.
 
-    Returns:
-        Iterable: mean absolute deviation.
+    :returns: mean absolute deviation.
+    :rtype: Iterable
 
-    Raises:
-        TypeError: unsupported data types.
-
-    $$"""
+    :raises TypeError: unsupported data types.
+    """
     b = get_backend(y_pred, y_true)
     return b.abs(difference(y_pred, y_true))
 
 
-def scaled_ad(Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12) -> Iterable:
+def scaled_ad(
+    Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12
+) -> Iterable:
     """Scaled Absolute Deviation, normalized by an estimation of the conditional
-        mean absolute deviation (conditional MAD). Considering
-        $Y_{\\text{pred}} = (\\mu_{\\text{pred}}, \\sigma_{\\text{pred}})$:
+    mean absolute deviation (conditional MAD). Considering
+    :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
-    $$
+    .. math::
 
-    R = \\frac{|y_{\\text{true}}-\\mu_{\\text{pred}}|}{\\sigma_{\\text{pred}}}
+        R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}}
 
-    Args:
-        Y_pred (Iterable): point and conditional MAD predictions.
+    :param Iterable Y_pred: point and conditional MAD predictions.
+        :math:`Y_{\\text{pred}}=(y_{\\text{pred}}, \sigma_{\\text{pred}})`
+    :param Iterable y_true: true labels.
+    :param float eps: small positive value to avoid division by negative or zero.
 
-    $Y_{\\text{pred}}=(y_{\\text{pred}}, \\sigma_{\\text{pred}})$
-    Args:
-        y_true (Iterable): true labels.
-        eps (float): small positive value to avoid division by negative or zero.
+    :returns: scaled absolute deviation.
+    :rtype: Iterable
 
-    Returns:
-        Iterable: scaled absolute deviation.
-
-    Raises:
-        TypeError: unsupported data types.
-
-    $$"""
+    :raises TypeError: unsupported data types.
+    """
     supported_dual_models_shape_check(Y_pred, y_true)
 
-    b = get_backend(Y_pred, y_true)
-    Yp = b.asarray(Y_pred)
-    yt = b.asarray(y_true)
+    b, (Yp, yt) = normalize_backend_inputs(Y_pred, y_true)
 
     y_pred, sigma_pred = split_columns(Yp, (0, 1))
     mad = b.abs(y_pred - yt)
@@ -281,42 +286,39 @@ def scaled_ad(Y_pred: Iterable, y_true: Iterable, eps: float = 1e-12) -> Iterabl
 
 
 def weighted_scaled_ad(
-    X, Y_pred: Iterable, y_true: Iterable, weight_func: Callable, eps: float = 1e-12
+    X,
+    Y_pred: Iterable,
+    y_true: Iterable,
+    weight_func: Callable,
+    eps: float = 1e-12,
 ) -> Iterable:
-    """Weighted Scaled Absolute Deviation. Similar to `scaled_ad`
-        but with an extra weighting of the nonconformity scores by a function of X.
-        This allows to give more importance to calibration points, as measured by
-        weight function.
-        Considering $Y_{\\text{pred}} = (\\mu_{\\text{pred}}, \\sigma_{\\text{pred}})$:
+    """Weighted Scaled Absolute Deviation. Similar to :func:`scaled_ad`
+    but with an extra weighting of the nonconformity scores by a function of X.
+    This allows to give more importance to calibration points, as measured by
+    weight function.
+    Considering :math:`Y_{\\text{pred}} = (\mu_{\\text{pred}}, \sigma_{\\text{pred}})`:
 
-    $$
-    R = \\frac{|y_{\\text{true}}-\\mu_{\\text{pred}}|}{\\sigma_{\\text{pred}}} *
-    w(X)
+    .. math::
+        R = \\frac{|y_{\\text{true}}-\mu_{\\text{pred}}|}{\sigma_{\\text{pred}}} *
+        w(X)
 
-    where $w(X)$ is the weight function applied to the inputs.
+        where :math:`w(X)` is the weight function applied to the inputs.
 
-    Args:
-        Y_pred (Iterable): point predictions. Optionally with conditional MAD
+    :param Iterable Y_pred: point predictions. Optionally with conditional MAD
+        predictions if available.
+    :param Iterable y_true: true labels.
+    :param Callable weight_func: function of X that computes the weighted scores.
+    :param float eps: small positive value to avoid division by negative or zero.
 
-    predictions if available.
-    Args:
-        y_true (Iterable): true labels.
-        weight_func (Callable): function of X that computes the weighted scores.
-        eps (float): small positive value to avoid division by negative or zero.
+    :returns: weighted scaled absolute deviation.
+    :rtype: Iterable
 
-    Returns:
-        Iterable: weighted scaled absolute deviation.
-
-    Raises:
-        TypeError: unsupported data types.
-
-    $$"""
+    :raises TypeError: unsupported data types.
+    """
     # Models should either predict only the point estimate or both the point
     # estimate and the conditional MAD.
 
-    b = get_backend(Y_pred, y_true)
-    yt = b.asarray(y_true)
-    Yp = b.asarray(Y_pred)
+    b, (Yp, yt) = normalize_backend_inputs(Y_pred, y_true)
 
     try:
         supported_meanvar_models_shape_check(Y_pred, y_true)
@@ -339,31 +341,26 @@ def weighted_scaled_ad(
 
 def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
     """CQR nonconformity score. Considering
-        $Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})$:
+    :math:`Y_{\\text{pred}} = (q_{\\text{lo}}, q_{\\text{hi}})`:
 
-    $$
+    .. math::
 
-    R = max\\{q_{\\text{lo}} - y_{\\text{true}}, y_{\\text{true}} - q_{\\text{hi}}\\}
+        R = max\{q_{\\text{lo}} - y_{\\text{true}}, y_{\\text{true}} - q_{\\text{hi}}\}
 
-    where $q_{\\text{lo}}$ (resp. $q_{\\text{hi}}$) is the lower
+    where :math:`q_{\\text{lo}}` (resp. :math:`q_{\\text{hi}}`) is the lower
     (resp. higher) quantile prediction
 
-    Args:
-        Y_pred (Iterable): predicted quantiles couples.
-        y_true (Iterable): true quantiles couples.
+    :param Iterable Y_pred: predicted quantiles couples.
+    :param Iterable y_true: true quantiles couples.
 
-    Returns:
-        Iterable: CQR nonconformity scores.
+    :returns: CQR nonconformity scores.
+    :rtype: Iterable
 
-    Raises:
-        TypeError: unsupported data types.
-
-    $$"""
+    :raises TypeError: unsupported data types.
+    """
     supported_dual_models_shape_check(Y_pred, y_true)
 
-    b = get_backend(Y_pred, y_true)
-    Yp = b.asarray(Y_pred)
-    yt = b.asarray(y_true)
+    b, (Yp, yt) = normalize_backend_inputs(Y_pred, y_true)
 
     q_lo, q_hi = split_columns(Yp, (0, 1))
     diff_lo = q_lo - yt
@@ -376,32 +373,27 @@ def cqr_score(Y_pred: Iterable, y_true: Iterable) -> Iterable:
 
 def scaled_bbox_difference(Y_pred: Iterable, Y_true: Iterable):
     """Object detection scaled nonconformity score. Considering
-        $Y_{\\text{pred}} = (\\hat{x}_1, \\hat{y}_1, \\hat{x}_2, \\hat{y}_2)$ and
-        $Y_{\\text{true}} = (x_1, y_1, x_2, y_2)$:
+    :math:`Y_{\\text{pred}} = (\hat{x}_1, \hat{y}_1, \hat{x}_2, \hat{y}_2)` and
+    :math:`Y_{\\text{true}} = (x_1, y_1, x_2, y_2)`:
 
-    $$
+    .. math::
 
-    R = (\\frac{\\hat{x}_1-x_1}{\\Delta x}, \\frac{\\hat{y}_1-y_1}{\\Delta y},
-    \\frac{\\hat{x}_2-x_2}{\\Delta x}, \\frac{\\hat{y}_1-y_1}{\\Delta y})
+        R = (\\frac{\hat{x}_1-x_1}{\Delta x}, \\frac{\hat{y}_1-y_1}{\Delta y},
+        \\frac{\hat{x}_2-x_2}{\Delta x}, \\frac{\hat{y}_1-y_1}{\Delta y})
 
-    where $\\Delta x = |\\hat{x}_2 - \\hat{x}_1|$ and
-    $\\Delta y = |\\hat{y}_2 - \\hat{y}_1|$.
+    where :math:`\Delta x = |\hat{x}_2 - \hat{x}_1|` and
+    :math:`\Delta y = |\hat{y}_2 - \hat{y}_1|`.
 
-    Args:
-        Y_pred (Iterable): predicted coordinates of the bounding box.
-        y_true (Iterable): true coordinates of the bounding box.
+    :param Iterable Y_pred: predicted coordinates of the bounding box.
+    :param Iterable y_true: true coordinates of the bounding box.
 
-    Returns:
-        Iterable: scaled object detection nonconformity scores.
+    :returns: scaled object detection nonconformity scores.
+    :rtype: Iterable
 
-    Raises:
-        TypeError: unsupported data types.
-
-    $$"""
+    :raises TypeError: unsupported data types.
+    """
     supported_bbox_shape_check(Y_pred, Y_true)
-    b = get_backend(Y_pred, Y_true)
-    yp = b.asarray(Y_pred)
-    yt = b.asarray(Y_true)
+    b, (yp, yt) = normalize_backend_inputs(Y_pred, Y_true)
 
     x_min, y_min, x_max, y_max = split_columns(yp, (0, 1, 2, 3), keepdims=True)
     dx = b.abs(x_max - x_min)

@@ -32,7 +32,9 @@ from deel.puncc.api.prediction import MeanVarPredictor
 
 class DummyModel:
     def __init__(self, prediction=None):
-        self.prediction = np.array([1.0, 2.0]) if prediction is None else prediction
+        self.prediction = (
+            np.array([1.0, 2.0]) if prediction is None else prediction
+        )
         self.fit_calls = []
         self.compile_calls = []
 
@@ -91,10 +93,6 @@ def test_dual_predictor_validation_and_non_numpy_prediction():
         np.array([[1.0, 3.0], [2.0, 4.0]]),
     )
 
-    bad_predictor = DualPredictor(models=[UncopyableModel(), UncopyableModel()])
-    with pytest.raises(NotImplementedError):
-        bad_predictor.predict(np.array([[1.0]]), [{}, {}])
-
 
 def test_dual_predictor_copy_and_meanvar_fit():
     model1 = DummyModel(prediction=np.array([1.0, 2.0]))
@@ -123,45 +121,36 @@ def test_dual_predictor_copy_and_meanvar_fit():
     assert sigma_fit_args[2] == {"epochs": 2}
 
 
-def test_dual_predictor_copy_runtime_error_branch(monkeypatch):
-    import deel.puncc.api.prediction as prediction_module
-
+def test_dual_predictor_copy_runtime_error_branch():
     class ReallyUncopyable:
         def __deepcopy__(self, memo):
             raise RuntimeError("no deepcopy")
 
     predictor = DualPredictor(models=[ReallyUncopyable(), ReallyUncopyable()])
 
-    class FailingClone:
-        @staticmethod
-        def clone_model(model):
-            raise RuntimeError("clone failed")
-
-    class FakeKeras:
-        models = FailingClone()
-
-    class FakeTf:
-        keras = FakeKeras()
-
-    monkeypatch.setattr(prediction_module.importlib.util, "find_spec", lambda name: object())
-    monkeypatch.setattr(prediction_module, "tf", FakeTf())
-
-    with pytest.raises(RuntimeError, match="Cannot copy models"):
+    with pytest.raises(
+        RuntimeError, match="Cannot copy model with backend 'generic'"
+    ):
         predictor.copy()
 
 
-def test_dual_predictor_copy_re_raises_without_tensorflow(monkeypatch):
+def test_base_predictor_copy_uses_backend_copy_model(monkeypatch):
     import deel.puncc.api.prediction as prediction_module
 
-    class ReallyUncopyable:
-        def __deepcopy__(self, memo):
-            raise RuntimeError("no deepcopy")
+    expected_model = DummyModel(prediction=np.array([3.0, 4.0]))
+    copied_models = []
 
-    predictor = DualPredictor(models=[ReallyUncopyable(), ReallyUncopyable()])
-    monkeypatch.setattr(prediction_module.importlib.util, "find_spec", lambda name: None)
+    def fake_copy_model(model):
+        copied_models.append(model)
+        return expected_model
 
-    with pytest.raises(Exception, match="no deepcopy"):
-        predictor.copy()
+    monkeypatch.setattr(prediction_module, "copy_model", fake_copy_model)
+
+    predictor = BasePredictor(DummyModel(), is_trained=True)
+    copied = predictor.copy()
+
+    assert copied_models == [predictor.model]
+    assert copied.model is expected_model
 
 
 def test_base_predictor_copy_preserves_extra_attributes():

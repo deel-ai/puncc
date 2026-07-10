@@ -24,20 +24,33 @@
 """Backend abstraction layer for array/tensor operations.
 
 This module provides backend inference and a unified API over NumPy, pandas,
-PyTorch, JAX and TensorFlow objects."""
+PyTorch, JAX and TensorFlow objects.
+
+Note:
+-----
+Public API functions should infer the backend from user-provided inputs, call
+:meth:`BackendOps.asarray` once at the function boundary, and then pass the
+normalized backend-native values to the rest of the backend operations. Most
+backend methods intentionally stay close to their native library semantics and
+do not defensively normalize every argument. Use
+:func:`normalize_backend_inputs` when a function needs both backend inference
+and one-shot input normalization.
+"""
 
 # pylint: disable=C0115,C0116,C0321,C0415,R0911,C0301
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+import sys
 from typing import Any
+from typing import Callable
 from typing import Protocol
 from typing import Sequence
 from typing import Tuple
 from typing import runtime_checkable
 
 import numpy as _np
-import sys
 
 # -------------------------
 # Detection helpers
@@ -54,8 +67,13 @@ def _is_jax(x: Any) -> bool:
     jnp = sys.modules.get("jax.numpy")
     if not (jax and jnp):
         return False
-    # jax.Array exists on newer JAX; keep jnp.ndarray for older
-    return isinstance(x, (getattr(jax, "Array", ()), getattr(jnp, "ndarray", ())))
+
+    jax_array = getattr(jax, "Array", None)
+
+    if jax_array is not None:
+        return isinstance(x, (jax_array, jnp.ndarray))
+
+    return isinstance(x, jnp.ndarray)
 
 
 def _is_tf(x: Any) -> bool:
@@ -68,20 +86,74 @@ def _is_pandas(x: Any) -> bool:
     return bool(pd) and isinstance(x, (pd.Series, pd.DataFrame, pd.Index))
 
 
+def _is_sklearn_model(model: Any) -> bool:
+    sklearn_base = sys.modules.get("sklearn.base")
+    return bool(sklearn_base) and isinstance(
+        model, getattr(sklearn_base, "BaseEstimator", ())
+    )
+
+
+def _is_torch_model(model: Any) -> bool:
+    torch = sys.modules.get("torch")
+    return bool(torch) and isinstance(model, getattr(torch.nn, "Module", ()))
+
+
+def _is_tensorflow_model(model: Any) -> bool:
+    tf = sys.modules.get("tensorflow")
+    keras = getattr(tf, "keras", None) if tf else None
+    return bool(keras) and isinstance(model, getattr(keras, "Model", ()))
+
+
+def _contains_jax_arrays(obj: Any, visited: "set[int] | None" = None) -> bool:
+    if visited is None:
+        visited = set()
+
+    obj_id = id(obj)
+    if obj_id in visited:  # pragma: no cover - recursion guard
+        return False
+    visited.add(obj_id)
+
+    if _is_jax(obj):
+        return True
+
+    if isinstance(obj, dict):
+        return any(
+            _contains_jax_arrays(value, visited) for value in obj.values()
+        )
+
+    if isinstance(obj, (list, tuple, set, frozenset)):
+        return any(_contains_jax_arrays(value, visited) for value in obj)
+
+    obj_dict = getattr(obj, "__dict__", None)
+    if isinstance(obj_dict, dict):
+        return any(
+            _contains_jax_arrays(value, visited) for value in obj_dict.values()
+        )
+
+    return False
+
+
+def _is_jax_model(model: Any) -> bool:
+    if _is_jax(model):
+        return True
+    if "jax" not in sys.modules:
+        return False
+    return _contains_jax_arrays(model)
+
+
 def infer_backend(*xs: Any) -> str:
     """Infer backend name from one or more objects.
 
-        Priority order is: ``torch > jax > tensorflow > pandas > numpy``.
-        Mixed explicit backends are rejected.
+    Priority order is: ``torch > jax > tensorflow > pandas > numpy``.
+    Mixed explicit backends are rejected.
 
-    Args:
-        xs (Any): objects used to infer the computational backend.
+    :param Any xs: objects used to infer the computational backend.
 
-    Returns:
-        str: inferred backend name.
+    :returns: inferred backend name.
+    :rtype: str
 
-    Raises:
-        TypeError: if multiple incompatible backends are mixed."""
+    :raises TypeError: if multiple incompatible backends are mixed.
+    """
     kinds = set()
     for x in xs:
         if x is None:
@@ -104,6 +176,77 @@ def infer_backend(*xs: Any) -> str:
     return next(iter(kinds), "numpy")
 
 
+def infer_model_backend(model: Any) -> str:
+    """Infer backend name from a model-like object.
+
+    Supported model backends are ``sklearn``, ``torch``, ``tensorflow`` and
+    ``jax``. Everything else falls back to ``generic``.
+
+    :param Any model: model-like object to inspect.
+
+    :returns: inferred model backend name.
+    :rtype: str
+    """
+    if _is_tensorflow_model(model):
+        return "tensorflow"
+    if _is_torch_model(model):
+        return "torch"
+    if _is_sklearn_model(model):
+        return "sklearn"
+    if _is_jax_model(model):
+        return "jax"
+    return "generic"
+
+
+def _copy_deepcopy_model(model: Any) -> Any:
+    return deepcopy(model)
+
+
+def _copy_tensorflow_model(model: Any) -> Any:
+    tf = sys.modules.get("tensorflow")
+    if tf is None:  # pragma: no cover - defensive guard
+        raise RuntimeError(
+            "TensorFlow model copying requires the already-loaded tensorflow module."
+        )
+
+    copied_model = tf.keras.models.clone_model(model)
+    if hasattr(model, "get_weights") and hasattr(copied_model, "set_weights"):
+        try:
+            copied_model.set_weights(model.get_weights())
+        except Exception:
+            pass
+    return copied_model
+
+
+_MODEL_COPIERS: dict[str, Callable[[Any], Any]] = {
+    "generic": _copy_deepcopy_model,
+    "sklearn": _copy_deepcopy_model,
+    "torch": _copy_deepcopy_model,
+    "jax": _copy_deepcopy_model,
+    "tensorflow": _copy_tensorflow_model,
+}
+
+
+def copy_model(model: Any) -> Any:
+    """Copy a model-like object using the matching backend strategy.
+
+    :param Any model: model-like object to copy.
+
+    :returns: copied model.
+    :rtype: Any
+
+    :raises RuntimeError: if the model cannot be copied.
+    """
+    backend_name = infer_model_backend(model)
+    copier = _MODEL_COPIERS[backend_name]
+    try:
+        return copier(model)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Cannot copy model with backend '{backend_name}': {exc}"
+        ) from exc
+
+
 # -------------------------
 # Canonical ops interface
 # -------------------------
@@ -111,12 +254,30 @@ def infer_backend(*xs: Any) -> str:
 
 @runtime_checkable
 class BackendOps(Protocol):
-    """Protocol describing backend operations used across the API."""
+    """Protocol describing backend operations used across the API.
+
+    Contract:
+
+    - :meth:`asarray` converts external user inputs to the backend-native type.
+    - :meth:`to_numpy` converts backend-native values back to ``numpy.ndarray``.
+    - All other methods are primarily defined over already-normalized
+      backend-native values. Callers should normalize once at the function
+      boundary instead of relying on every backend op to coerce inputs.
+    """
 
     name: str
 
     # conversion / construction
-    def asarray(self, x: Any) -> Any: ...
+    def asarray(self, x: Any, like: Any = None) -> Any:
+        """Convert ``x`` to this backend's native array/tensor type.
+
+        If ``like`` is provided, the returned value should also follow
+        backend-specific placement metadata from ``like`` when supported. In
+        practice, PyTorch, JAX and TensorFlow implementations place the result
+        on the same device as ``like``. NumPy and pandas ignore ``like`` because
+        they do not expose accelerator-device placement through this backend.
+        """
+
     def to_numpy(self, x: Any) -> _np.ndarray: ...
 
     # elementwise
@@ -139,6 +300,7 @@ class BackendOps(Protocol):
     # shape utilities
     def reshape(self, x: Any, shape: Tuple[int, ...]) -> Any: ...
     def squeeze(self, x: Any, axis: Any = None) -> Any: ...
+    def column_stack(self, xs: Sequence[Any]) -> Any: ...
     def concat(self, xs: Sequence[Any], axis: int = 0) -> Any: ...
 
     # creation / typing / comparisons
@@ -147,13 +309,18 @@ class BackendOps(Protocol):
         self, shape: Tuple[int, ...], fill_value: Any, dtype: Any = None
     ) -> Any: ...
     def ones_like(self, x: Any) -> Any: ...
+    def empty_like(self, x: Any) -> Any: ...
+
     def equal(self, a: Any, b: Any) -> Any: ...
     def astype(self, x: Any, dtype: Any) -> Any: ...
     def random_uniform(self, shape: Tuple[int, ...]) -> Any: ...
     def scalar_at(self, x: Any, index: int) -> Any: ...
+    def take(self, x: Any, indices: Any, axis: int = 0) -> Any: ...
 
     # ordering / indexing (needed for RAPS-like scores, quantiles, bbox sets, etc.)
-    def argsort(self, x: Any, axis: int = -1, descending: bool = False) -> Any: ...
+    def argsort(
+        self, x: Any, axis: int = -1, descending: bool = False
+    ) -> Any: ...
     def take_along_axis(self, arr: Any, indices: Any, axis: int) -> Any: ...
 
 
@@ -166,7 +333,8 @@ class BackendOps(Protocol):
 class _NumpyOps:
     name: str = "numpy"
 
-    def asarray(self, x: Any) -> _np.ndarray:
+    def asarray(self, x: Any, like: Any = None) -> _np.ndarray:
+        del like
         if _is_pandas(x):
             return x.to_numpy()
         return _np.asarray(x)
@@ -224,6 +392,9 @@ class _NumpyOps:
     def squeeze(self, x, axis=None):
         return _np.squeeze(x, axis=axis)
 
+    def column_stack(self, xs):
+        return _np.column_stack(xs)
+
     def concat(self, xs, axis=0):
         return _np.concatenate(xs, axis=axis)
 
@@ -236,6 +407,9 @@ class _NumpyOps:
     def ones_like(self, x):
         return _np.ones_like(x)
 
+    def empty_like(self, x):
+        return _np.empty_like(x)
+
     def equal(self, a, b):
         return _np.equal(a, b)
 
@@ -247,6 +421,9 @@ class _NumpyOps:
 
     def scalar_at(self, x, index):
         return _np.asarray(x).reshape(-1)[index].item()
+
+    def take(self, x, indices, axis=0):
+        return _np.take(x, indices, axis=axis)
 
     def argsort(self, x, axis=-1, descending=False):
         idx = _np.argsort(x, axis=axis)
@@ -262,12 +439,13 @@ class _NumpyOps:
 class _PandasOps:
     name: str = "pandas"
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
+        del like
         import pandas as pd
 
         if isinstance(x, (pd.DataFrame, pd.Series, pd.Index)):
             return x
-        # Heuristique minimale
+
         if (
             isinstance(x, (list, tuple))
             and len(x) > 0
@@ -357,7 +535,9 @@ class _PandasOps:
                     else self._wrap_like(x, self.to_numpy(y))
                 ),
             )
-        return _np.where(self.to_numpy(cond), self.to_numpy(x), self.to_numpy(y))
+        return _np.where(
+            self.to_numpy(cond), self.to_numpy(x), self.to_numpy(y)
+        )
 
     def any(self, x):
         return bool(_np.any(self.to_numpy(self.asarray(x))))
@@ -402,10 +582,16 @@ class _PandasOps:
         x = self.asarray(x)
         out = self.to_numpy(x).reshape(shape)
         if len(shape) != 2:
-            raise ValueError("pandas backend supports reshape only to 2D (DataFrame).")
+            raise ValueError(
+                "pandas backend supports reshape only to 2D (DataFrame)."
+            )
         import pandas as pd
 
-        idx = x.index if hasattr(x, "index") and shape[0] == len(x.index) else None
+        idx = (
+            x.index
+            if hasattr(x, "index") and shape[0] == len(x.index)
+            else None
+        )
         return pd.DataFrame(out, index=idx)
 
     def squeeze(self, x, axis=None):
@@ -414,15 +600,40 @@ class _PandasOps:
         out = _np.squeeze(self.to_numpy(x), axis=axis)
         return self._wrap_like(x, out)
 
+    def column_stack(self, xs):
+        import pandas as pd
+
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        normalized = []
+        for x in xs:
+            arr = self.asarray(x)
+            if isinstance(arr, pd.Index):
+                arr = pd.Series(arr, name=arr.name)
+            normalized.append(arr)
+
+        if all(isinstance(x, (pd.DataFrame, pd.Series)) for x in normalized):
+            return pd.concat(normalized, axis=1)
+
+        out = _np.column_stack([self.to_numpy(x) for x in normalized])
+        return self._wrap_like(normalized[0], out)
+
     def concat(self, xs, axis=0):
         import pandas as pd
 
         if len(xs) == 0:
-            raise ValueError("concat requires at least one array to concatenate.")
+            raise ValueError(
+                "concat requires at least one array to concatenate."
+            )
         if all(isinstance(x, (pd.DataFrame, pd.Series, pd.Index)) for x in xs):
             return pd.concat(xs, axis=axis)
 
-        out = _np.concatenate([self.to_numpy(self.asarray(x)) for x in xs], axis=axis)
+        out = _np.concatenate(
+            [self.to_numpy(self.asarray(x)) for x in xs], axis=axis
+        )
         return self._wrap_like(self.asarray(xs[0]), out)
 
     def arange(self, start, stop=None, step=1):
@@ -441,6 +652,11 @@ class _PandasOps:
     def ones_like(self, x):
         x = self.asarray(x)
         out = _np.ones_like(self.to_numpy(x))
+        return self._wrap_like(x, out)
+
+    def empty_like(self, x):
+        x = self.asarray(x)
+        out = _np.empty_like(self.to_numpy(x))
         return self._wrap_like(x, out)
 
     def equal(self, a, b):
@@ -462,7 +678,21 @@ class _PandasOps:
         return _np.random.uniform(size=shape)
 
     def scalar_at(self, x, index):
-        return _np.asarray(self.to_numpy(self.asarray(x))).reshape(-1)[index].item()
+        return (
+            _np.asarray(self.to_numpy(self.asarray(x)))
+            .reshape(-1)[index]
+            .item()
+        )
+
+    def take(self, x, indices, axis=0):
+        import pandas as pd
+
+        x = self.asarray(x)
+        if isinstance(x, (pd.DataFrame, pd.Series, pd.Index)) and axis == 0:
+            return x.iloc[indices]
+
+        out = _np.take(self.to_numpy(x), _np.asarray(indices), axis=axis)
+        return self._wrap_like(x, out)
 
     # ---------- ordering / indexing ----------
     def argsort(self, x, axis=-1, descending=False):
@@ -480,7 +710,9 @@ class _PandasOps:
 
         arr = self.asarray(arr)
         ind = self.asarray(indices)
-        out = _np.take_along_axis(self.to_numpy(arr), self.to_numpy(ind), axis=axis)
+        out = _np.take_along_axis(
+            self.to_numpy(arr), self.to_numpy(ind), axis=axis
+        )
 
         if isinstance(arr, pd.DataFrame):
             if out.ndim == 2:
@@ -517,7 +749,11 @@ class _PandasOps:
             return pd.Series(out) if out.ndim == 1 else pd.DataFrame(out)
 
         if isinstance(ref, pd.Index):
-            return pd.Index(out, name=ref.name) if out.ndim == 1 else pd.DataFrame(out)
+            return (
+                pd.Index(out, name=ref.name)
+                if out.ndim == 1
+                else pd.DataFrame(out)
+            )
 
         return out
 
@@ -544,13 +780,25 @@ class _TorchOps:
 
         return torch
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
         t = self._torch
+        device = getattr(like, "device", None) if like is not None else None
+        dtype = getattr(like, "dtype", None) if like is not None else None
+
         if isinstance(x, t.Tensor):
-            return x
+            if device is None or x.device == device:
+                return (
+                    x
+                    if dtype is None or x.dtype == dtype
+                    else x.to(dtype=dtype)
+                )
+            kwargs = {"device": device}
+            if dtype is not None:
+                kwargs["dtype"] = dtype
+            return x.to(**kwargs)
         if _is_pandas(x):
-            return t.as_tensor(x.to_numpy())
-        return t.as_tensor(x)
+            return t.as_tensor(x.to_numpy(), device=device, dtype=dtype)
+        return t.as_tensor(x, device=device, dtype=dtype)
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         t = self._torch
@@ -615,6 +863,21 @@ class _TorchOps:
     def squeeze(self, x, axis=None):
         return x.squeeze(dim=axis) if axis is not None else x.squeeze()
 
+    def column_stack(self, xs):
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        ref = self.asarray(xs[0])
+        cols = []
+        for x in xs:
+            col = self.asarray(x, like=ref)
+            if col.ndim < 2:
+                col = col.reshape(-1, 1)
+            cols.append(col)
+        return self._torch.cat(cols, dim=1)
+
     def concat(self, xs, axis=0):
         return self._torch.cat(xs, dim=axis)
 
@@ -637,6 +900,9 @@ class _TorchOps:
     def ones_like(self, x):
         return self._torch.ones_like(x)
 
+    def empty_like(self, x):
+        return self._torch.empty_like(x)
+
     def equal(self, a, b):
         return self._torch.eq(a, b)
 
@@ -653,6 +919,12 @@ class _TorchOps:
 
     def scalar_at(self, x, index):
         return self.asarray(x).reshape(-1)[index].item()
+
+    def take(self, x, indices, axis=0):
+        idx = self.asarray(indices, like=x)
+        return self._torch.index_select(
+            x, dim=axis, index=idx.to(dtype=self._torch.int64)
+        )
 
     def argsort(self, x, axis=-1, descending=False):
         return self._torch.argsort(x, dim=axis, descending=descending)
@@ -672,10 +944,25 @@ class _JaxOps:
 
         return jnp
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
+        from jax import device_put
+
         if _is_pandas(x):
-            return self._jnp.asarray(x.to_numpy())
-        return self._jnp.asarray(x)
+            x = x.to_numpy()
+
+        dtype = getattr(like, "dtype", None) if like is not None else None
+        arr = self._jnp.asarray(x, dtype=dtype)
+
+        if like is None:
+            return arr
+
+        device = getattr(like, "device", None)
+
+        if device is None and hasattr(like, "devices"):
+            devices = like.devices()
+            device = next(iter(devices)) if devices else None
+
+        return device_put(arr, device) if device is not None else arr
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         return _np.asarray(x)
@@ -725,6 +1012,21 @@ class _JaxOps:
     def squeeze(self, x, axis=None):
         return self._jnp.squeeze(x, axis=axis)
 
+    def column_stack(self, xs):
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        ref = self.asarray(xs[0])
+        cols = []
+        for x in xs:
+            col = self.asarray(x, like=ref)
+            if col.ndim < 2:
+                col = self._jnp.reshape(col, (-1, 1))
+            cols.append(col)
+        return self._jnp.concatenate(cols, axis=1)
+
     def concat(self, xs, axis=0):
         return self._jnp.concatenate(xs, axis=axis)
 
@@ -737,6 +1039,9 @@ class _JaxOps:
     def ones_like(self, x):
         return self._jnp.ones_like(x)
 
+    def empty_like(self, x):
+        return self._jnp.empty_like(x)
+
     def equal(self, a, b):
         return self._jnp.equal(a, b)
 
@@ -748,6 +1053,9 @@ class _JaxOps:
 
     def scalar_at(self, x, index):
         return _np.asarray(self.asarray(x).reshape(-1)[index]).item()
+
+    def take(self, x, indices, axis=0):
+        return self._jnp.take(x, indices, axis=axis)
 
     def argsort(self, x, axis=-1, descending=False):
         idx = self._jnp.argsort(x, axis=axis)
@@ -769,13 +1077,38 @@ class _TensorflowOps:
 
         return tf
 
-    def asarray(self, x: Any):
+    def asarray(self, x: Any, like: Any = None):
         tf = self._tf
-        if isinstance(x, (tf.Tensor, tf.Variable)):
-            return x
+
         if _is_pandas(x):
-            return tf.convert_to_tensor(x.to_numpy())
-        return tf.convert_to_tensor(x)
+            x = x.to_numpy()
+
+        if like is None:
+            return (
+                x
+                if isinstance(x, (tf.Tensor, tf.Variable))
+                else tf.convert_to_tensor(x)
+            )
+
+        like_dtype = getattr(like, "dtype", None)
+
+        if isinstance(x, (tf.Tensor, tf.Variable)) and x.device == like.device:
+            return (
+                x
+                if like_dtype is None or x.dtype == like_dtype
+                else tf.cast(x, like_dtype)
+            )
+
+        with tf.device(like.device):
+            out = (
+                tf.identity(x)
+                if isinstance(x, (tf.Tensor, tf.Variable))
+                else tf.convert_to_tensor(x, dtype=like_dtype)
+            )
+
+        if like_dtype is not None and out.dtype != like_dtype:
+            out = tf.cast(out, like_dtype)
+        return out
 
     def to_numpy(self, x: Any) -> _np.ndarray:
         tf = self._tf
@@ -831,6 +1164,28 @@ class _TensorflowOps:
     def squeeze(self, x, axis=None):
         return self._tf.squeeze(x, axis=axis)
 
+    def column_stack(self, xs):
+        if len(xs) == 0:
+            raise ValueError(
+                "column_stack requires at least one array to stack."
+            )
+
+        ref = self.asarray(xs[0])
+        cols = []
+        col = None
+        for x in xs:
+            col = self.asarray(x, like=ref)
+            if col.shape.rank is not None and col.shape.rank < 2:
+                col = self._tf.reshape(col, (-1, 1))
+            elif col.shape.rank is None:
+                col = self._tf.cond(
+                    self._tf.less(self._tf.rank(col), 2),
+                    lambda: self._tf.reshape(col, (-1, 1)),
+                    lambda: col,
+                )
+            cols.append(col)
+        return self._tf.concat(cols, axis=1)
+
     def concat(self, xs, axis=0):
         return self._tf.concat(xs, axis=axis)
 
@@ -848,6 +1203,13 @@ class _TensorflowOps:
     def ones_like(self, x):
         return self._tf.ones_like(x)
 
+    def empty_like(self, x):
+        if hasattr(self._tf, "experimental") and hasattr(
+            self._tf.experimental.numpy, "empty_like"
+        ):
+            return self._tf.experimental.numpy.empty_like(x)
+        return self._tf.zeros_like(x)
+
     def equal(self, a, b):
         return self._tf.equal(a, b)
 
@@ -861,6 +1223,9 @@ class _TensorflowOps:
         flat = self._tf.reshape(self.asarray(x), (-1,))
         return self.to_numpy(flat[index]).item()
 
+    def take(self, x, indices, axis=0):
+        return self._tf.gather(x, self.asarray(indices), axis=axis)
+
     def argsort(self, x, axis=-1, descending=False):
         direction = "DESCENDING" if descending else "ASCENDING"
         return self._tf.argsort(x, axis=axis, direction=direction)
@@ -872,7 +1237,9 @@ class _TensorflowOps:
         # Move axis to last for gather, then invert permutation
         rank = tf.rank(arr)
         axis_ = axis if axis >= 0 else axis + arr.shape.rank
-        perm = tf.concat([tf.range(axis_), tf.range(axis_ + 1, rank), [axis_]], axis=0)
+        perm = tf.concat(
+            [tf.range(axis_), tf.range(axis_ + 1, rank), [axis_]], axis=0
+        )
         inv = tf.argsort(perm)
         a = tf.transpose(arr, perm)
         ind = tf.transpose(indices, perm)
@@ -896,14 +1263,18 @@ _BACKENDS = {
 def get_backend(*xs: Any) -> BackendOps:
     """Instantiate backend operations from input objects.
 
-    Args:
-        xs (Any): objects used to infer backend.
+    This function selects the backend implementation. After calling
+    :func:`get_backend`, callers should use :meth:`BackendOps.asarray`
+    or :func:`normalize_backend_inputs` to normalize user-provided inputs
+    before applying backend operations.
 
-    Returns:
-        BackendOps: backend operations instance implementing `BackendOps`.
+    :param Any xs: objects used to infer backend.
 
-    Raises:
-        RuntimeError: if inferred backend has no registered implementation."""
+    :returns: backend operations instance implementing :class:`BackendOps`.
+    :rtype: BackendOps
+
+    :raises RuntimeError: if inferred backend has no registered implementation.
+    """
     name = infer_backend(*xs)
     cls = _BACKENDS.get(name)
     if cls is None:
@@ -911,14 +1282,32 @@ def get_backend(*xs: Any) -> BackendOps:
     return cls()
 
 
+def normalize_backend_inputs(*xs: Any) -> Tuple[BackendOps, Tuple[Any, ...]]:
+    """Infer a backend and normalize user-provided inputs once.
+
+    This helper is intended for public API boundaries. It keeps backend
+    selection explicit while avoiding repeated ``b.asarray(...)`` calls spread
+    across the rest of the implementation. ``None`` values are preserved.
+
+    :param Any xs: external inputs to normalize.
+
+    :returns: tuple ``(backend, normalized_inputs)`` where ``normalized_inputs``
+        contains backend-native values in the same order as ``xs``.
+    :rtype: Tuple[BackendOps, Tuple[Any, ...]]
+    """
+    backend = get_backend(*xs)
+    normalized = tuple(None if x is None else backend.asarray(x) for x in xs)
+    return backend, normalized
+
+
 def shape2(x: Any) -> Tuple[int, Tuple[int, ...]]:
     """Return dimensionality and shape for backend arrays/tensors.
 
-    Args:
-        x (Any): input array-like.
+    :param Any x: input array-like.
 
-    Returns:
-        Tuple[int, Tuple[int, ...]]: ``(ndim, shape_tuple)``."""
+    :returns: ``(ndim, shape_tuple)``.
+    :rtype: Tuple[int, Tuple[int, ...]]
+    """
     shape = getattr(x, "shape", None)
     if shape is None:
         arr = _np.asarray(x)
@@ -941,15 +1330,15 @@ def split_columns(
 ) -> Tuple[Any, ...]:
     """Extract selected columns from a 2D backend object.
 
-    Args:
-        x (Any): backend array/tensor/dataframe with shape ``(n, d)``.
-        columns (Sequence[int]): column indices to extract.
-        keepdims (bool): if ``True``, keep extracted columns as 2D objects. Defaults to ``False``.
+    :param Any x: backend array/tensor/dataframe with shape ``(n, d)``.
+    :param Sequence[int] columns: column indices to extract.
+    :param bool keepdims: if ``True``, keep extracted columns as 2D objects.
+        Defaults to ``False``.
 
-    Returns:
-        Tuple[Any, ...]: extracted columns in the same backend."""
-    b = get_backend(x)
-    arr = b.asarray(x)
+    :returns: extracted columns in the same backend.
+    :rtype: Tuple[Any, ...]
+    """
+    b, (arr,) = normalize_backend_inputs(x)
 
     if b.name == "pandas":
         # Return Series to avoid DataFrame column-label alignment issues
@@ -973,12 +1362,12 @@ def split_columns(
 def concat_columns(cols: Sequence[Any], *, like: Any) -> Any:
     """Concatenate column objects along axis 1 using ``like`` backend.
 
-    Args:
-        cols (Sequence[Any]): column-like objects to concatenate.
-        like (Any): reference object used to infer backend.
+    :param Sequence[Any] cols: column-like objects to concatenate.
+    :param Any like: reference object used to infer backend.
 
-    Returns:
-        Any: concatenated object in the backend of ``like``."""
+    :returns: concatenated object in the backend of ``like``.
+    :rtype: Any
+    """
     b = get_backend(like)
 
     if b.name == "torch":

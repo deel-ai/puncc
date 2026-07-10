@@ -73,6 +73,7 @@ nav:
       - Calibration: calibration.md
       - Splitting: splitting.md
       - Utils: utils.md
+      - Backend: backend.md
       - Corrections: corrections.md
       - Nonconformity Scores: nonconformity_scores.md
       - Prediction Sets: prediction_sets.md

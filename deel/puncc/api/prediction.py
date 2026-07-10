@@ -20,94 +20,104 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""This module provides standard wrappings for ML models."""
+"""
+This module provides standard wrappings for ML models.
+"""
 
-import importlib
-from copy import deepcopy
 from typing import Any
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
 
-import numpy as np
-
 from deel.puncc.api import nonconformity_scores
+from deel.puncc.api.backend import copy_model, get_backend
 from deel.puncc.api.utils import dual_predictor_check
 from deel.puncc.api.utils import supported_types_check
 
-if importlib.util.find_spec("tensorflow") is not None:
-    import tensorflow as tf
-
 
 class BasePredictor:
-    """
-    Wrapper of a point prediction model $\\hat{f}$.
+    """Wrapper of a point prediction model :math:`\hat{f}`. Enables to
+    standardize the interface of predictors and to expose generic :func:`fit`,
+    :func:`predict` and :func:`copy` methods.
 
-    Enables standardization of predictor interfaces by exposing generic
-    [`fit`][deel.puncc.api.prediction.BasePredictor.fit],
-    [`predict`][deel.puncc.api.prediction.BasePredictor.predict],
-    and [`copy`][deel.puncc.api.prediction.BasePredictor.copy] methods.
+    :param Any model: prediction model :math:`\hat{f}`
+    :param bool is_trained: boolean flag that informs if the model is
+        pre-trained. If True, the call to :func:`fit` will be skipped
+    :param compile_kwargs: keyword arguments to be used if needed during the
+        call :func:`model.compile` on the underlying model
 
-    Args:
-        model: Prediction model $\\hat{f}$.
-        is_trained: Whether the model is already trained. If `True`,
-            calls to `fit` are skipped.
-        compile_kwargs: Keyword arguments forwarded to
-            `model.compile(...)` when relevant.
+    .. _example basepredictor:
 
-    Examples:
-        Sklearn regression:
+    Sklearn regression examples::
 
-        ```python
         from deel.puncc.api.prediction import BasePredictor
         from sklearn.ensemble import RandomForestRegressor
         import numpy as np
 
-        X_train = np.random.uniform(0, 10, 1000).reshape(-1, 1)
-        X_new = np.random.uniform(0, 10, 100).reshape(-1, 1)
-        y_train = np.sin(X_train).ravel()
+        # Generate data
+        X_train = np.random.uniform(0, 10, 1000)
+        X_new = np.random.uniform(0, 10, 100)
+        y_train = np.sin(X)
 
-        rf_model = RandomForestRegressor(n_estimators=100)
+        # Instantiate two random forest models composed of 100 trees.
+        rf_model1 = RandomForestRegressor(n_estimators=100)
+        rf_model2 = RandomForestRegressor(n_estimators=100)
 
-        predictor = BasePredictor(rf_model)
+        # Consider that `rf_model2` is previously trained
+        rf_model2.fit(X_train, y_train)
 
-        predictor.fit(X_train, y_train)
+        # We will instantiate two wrappers:
+        # - `predictor1` will wrap `rf_model1`.
+        # - `predictor2` will wrap `rf_model2`. Also, we don't want to retrain our model,
+        #   so we will specify it to the constructor by setting the argument
+        #   `is_trained` to True. If `fit` is called, it will be skipped.
+        # The argument `is_trained` defaults to False.
+        predictor1 = BasePredictor(rf_model1, is_trained=False)
+        predictor2 = BasePredictor(rf_model2, is_trained=True)
 
-        y_pred = predictor.predict(X_new)
-        ```
+        # Fit `predictor2` to the training data.
+        # No need to call fit on `predictor2`. But if you do, it will be skipped.
+        predictor1.fit(X_train,y_train)
 
-        Keras classification:
+        # Predict on X_new
+        y_pred1 = predictor1.predict(X_new)
+        y_pred2 = predictor2.fit(X_new)
 
-        ```python
+
+    Keras classification example::
+
         from deel.puncc.api.prediction import BasePredictor
         import tensorflow as tf
         import numpy as np
 
+        # Generate data
         X_train = np.random.uniform(0, 10, 1000)
-        X_train = np.expand_dims(X_train, -1)
-
-        y_train = np.array([1 if x > 5 else 0 for x in X_train[:, 0]])
+        X_train = np.expand_dims(X_train,-1)
+        X_new = np.random.uniform(0, 10, 100)
+        y_train = np.array([1 if x>5 else 0 for x in X_train])
         y_train = tf.keras.utils.to_categorical(y_train)
 
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(10, activation="relu"),
-            tf.keras.layers.Dense(2, activation="softmax"),
-        ])
+        # Instantiate a classifier as sequential model and add two dense layers
+        cl_model = tf.keras.Sequential()
+        cl_model.add(tf.keras.layers.Dense(10, activation="relu"))
+        cl_model.add(tf.keras.layers.Dense(2, activation="softmax"))
 
-        predictor = BasePredictor(
-            model,
-            optimizer="rmsprop",
-            loss="categorical_crossentropy",
-        )
+        # The compile options need be passed to the constructor `BasePredictor`.
+        # The wrapper will call compile(**compile_kwargs) on an internal copy of the model.
+        # Our model is a classifier, we use categorical crossentropy as loss function.
+        compile_kwargs={"optimizer":"rmsprop", "loss":"categorical_crossentropy"}
+        predictor = BasePredictor(cl_model, is_trained=False, **compile_kwargs)
 
-        predictor.fit(
-            X_train,
-            y_train,
-            epochs=5,
-            batch_size=128,
-        )
-        ```
+        # The fit method is provided with a given training dataset (X,y) and
+        # with the train configuration of the underlying model. In the example below,
+        # we train the model over 5 epochs on batches containing 128 examples.
+        predictor.fit(X_train, y_train, **{"epochs":5,"batch_size":128})
+
+        # The `BasePredictor.predict` method enables to pass keyword arguments
+        # to the `predict`call of the underlying model (e.g., verbose).
+        y_pred = predictor.predict(X_new, **{"verbose":1})
+
     """
 
     def __init__(self, model: Any, is_trained: bool = False, **compile_kwargs):
@@ -125,64 +135,55 @@ class BasePredictor:
     def fit(self, X: Iterable, y: Optional[Iterable] = None, **kwargs) -> None:
         """Fit model to the training data.
 
-        Args:
-            X (Iterable): train features.
-            y (Optional[Iterable]): train labels. Defaults to None (unsupervised).
-            kwargs: keyword arguments to be passed to the call `fit` on the underlying model $\\hat{f}$.
+        :param Iterable X: train features.
+        :param Optional[Iterable] y: train labels. Defaults to None (unsupervised).
+        :param kwargs: keyword arguments to be passed to the call :func:`fit`
+            on the underlying model :math:`\hat{f}`.
 
-        !!! note
-            For more details, see the examples in [`BasePredictor`][deel.puncc.api.prediction.BasePredictor].
+        .. note::
+
+            For more details, check this :ref:`code snippets
+            <example basepredictor>`.
+
         """
-
         if y is None:
             self.model.fit(X, **kwargs)
         else:
             self.model.fit(X, y, **kwargs)
         # self.is_trained = True
 
-    def predict(self, X: Iterable, **kwargs) -> np.ndarray:
+    def predict(self, X: Iterable, **kwargs) -> Iterable:
         """Compute predictions on new examples.
 
-        Args:
-            X (Iterable): new examples' features.
-            kwargs (dict): predict configuration to be passed to the `predict` method of the underlying model $\\hat{f}$.
+        :param Iterable X: new examples' features.
+        :param dict kwargs: predict configuration to be passed to the `predict`
+            method of the underlying model :math:`\hat{f}`.
 
-        Returns:
-            ndarray: predictions $\\hat{f}(X)$ associated to the new examples X.
+        :returns: predictions :math:`\hat{f}(X)` associated to the new
+            examples X.
+        :rtype: Iterable
 
-        !!! note
-            For more details, see the examples in [`BasePredictor`][deel.puncc.api.prediction.BasePredictor].
+        .. note::
+
+            For more details, check this :ref:`code snippets
+            <example basepredictor>`.
+
         """
-
         # Remove axis of length one to avoid broadcast in computation
         # of non-conformity scores
-        return np.squeeze(self.model.predict(X, **kwargs))
+        b = get_backend(X)
+        return b.squeeze(self.model.predict(X, **kwargs))
 
     def copy(self):
-        """Returns a copy of the predictor. The underlying model is either
-                cloned (Keras model) or deepcopied (sklearn and similar models).
+        """Returns a copy of the predictor.
 
-        Returns:
-            BasePredictor: copy of the predictor.
+        :returns: copy of the predictor.
+        :rtype: BasePredictor
 
-        Raises:
-            RuntimeError: copy unsupported for provided models."""
+        :raises RuntimeError: copy unsupported for provided models.
 
-        model_type_str = str(type(self.model))
-
-        if (
-            "tensorflow" in model_type_str
-            or "keras" in model_type_str
-            and importlib.util.find_spec("tensorflow") is not None
-        ):
-            # pylint: disable=E1101
-            model = tf.keras.models.clone_model(self.model)
-            try:
-                model.set_weights(self.model.get_weights())
-            except Exception:
-                pass
-        else:
-            model = deepcopy(self.model)
+        """
+        model = copy_model(self.model)
 
         predictor_copy = self.__class__(
             model=model, is_trained=self.is_trained, **self.compile_kwargs
@@ -196,87 +197,83 @@ class BasePredictor:
 
 
 class IdPredictor(BasePredictor):
-    """
-    Subclass of [`BasePredictor`][deel.puncc.api.prediction.BasePredictor]
-    to directly wrap existing predictions.
+    """Subclass of :class:`BasePredictor` to directly wrap existing predictions.
     The predictions are directly returned without any modification.
 
-    Args:
-        model: Model to be wrapped.
+    :param model: model to be wrapped.
 
-    Examples:
-        Conformal regression:
+    .. _example idpredictor:
 
-        ```python
+    Conformal regression example::
+
         import numpy as np
         from deel.puncc.api.prediction import IdPredictor
         from deel.puncc.regression import SplitCP
-        from deel.puncc.metrics import (
-            regression_mean_coverage,
-            regression_sharpness,
-        )
+        from deel.puncc.metrics import regression_mean_coverage, regression_sharpness
         from deel.puncc.plotting import plot_prediction_intervals
 
         # Generate data
         X = np.linspace(0, 20, 5000)
-
-        # Randomly shuffle the data
+        # randomly shuffle the data
         np.random.shuffle(X)
         X_calib, X_test = X[:4000], X[1000:]
+
 
         # Define the real target function
         def real_f(X):
             return 2 * X + np.random.randn(len(X)) * X * 0.5
 
-        # Target values for the calibration and test data
+
+        # Target values for the calibration and new data
         y_calib = real_f(X_calib)
         y_test = real_f(X_test)
 
+
         # Suppose we can obtain predictions from an API call
         def api_call(X):
-            return 2 * X
+            return 2 * X  # This is a remote model that estimates of the target
 
-        # Instantiate the predictor wrapper
+
+        # The model can still be conformalized using the calibration data as follows
+        ## 1. Instantiate the Predictor wrapper, which serves as a container to host the predictions
         dummy_predictor = IdPredictor()
 
-        # CP method initialization
-        split_cp = SplitCP(dummy_predictor, train=False)
+        ## 2. CP method initialization
+        split_cp = SplitCP(
+            dummy_predictor, train=False
+        )  # train=False to avoid trying to retrain the model internally
 
-        # Request predictions on the calibration set
+        ## 3. Request predictions on the calibration set
         y_pred = api_call(X_calib)
 
-        # Compute nonconformity scores
+        ## 4. The call to fit computes the nonconformity scores on the
+        ## calibration set. Instead of features, we need to provide the
+        ## predictions as X_calib along with the true target values.
         split_cp.fit(X_calib=y_pred, y_calib=y_calib)
 
-        # Infer prediction intervals
+        ## 5. The predict method infers prediction intervals with respect to
+        ## the significance level alpha = 10%. Make sure you provide the
+        ## point predictions on the test set.
         y_pred, y_pred_lower, y_pred_upper = split_cp.predict(
-            api_call(X_test),
-            alpha=0.1,
+            api_call(X_test), alpha=0.1
         )
 
-        # Compute metrics
-        coverage = regression_mean_coverage(
-            y_test,
-            y_pred_lower,
-            y_pred_upper,
-        )
-
+        # Compute marginal coverage and average width of the prediction intervals
+        coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
         width = regression_sharpness(
-            y_pred_lower=y_pred_lower,
-            y_pred_upper=y_pred_upper,
+            y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
         )
-
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average width: {np.round(width, 2)}")
 
         ax = plot_prediction_intervals(
-            y_test,
-            y_pred_lower,
-            y_pred_upper,
-            X=X_test,
-            y_pred=y_pred,
+            y_test, y_pred_lower, y_pred_upper, X=X_test, y_pred=y_pred
         )
-        ```
+
+
+
+
+
     """
 
     def __init__(self, model=None, **kwargs):
@@ -293,45 +290,48 @@ class IdPredictor(BasePredictor):
     def predict(self, X: Iterable):
         """Returns the input argument as output data.
 
-        Args:
-            X (Iterable): predictions.
+        :param Iterable X: predictions.
 
-        Returns:
-            np.ndarray: predictions."""
+        :return: predictions.
+        :rtype: np.ndarray
+        """
         return X
 
     def predict_with_model(self, X):
-        """Predicts the output using the wrapped model.
+        """
+        Predicts the output using the wrapped model.
 
-        Args:
-            X (Iterable): the input features to build predictions.
+        :param Iterable X: the input features to build predictions.
 
-        Returns:
-            np.ndarray: predictions."""
+        :return: predictions.
+        :rtype: np.ndarray
+        """
         return self.model.predict(X)
 
 
 class DualPredictor:
     """Wrapper of **two** joint point prediction models
-        $(\\hat{f_1},\\hat{f_2})$.
-        The prediction $\\hat{y}$ of a `DualPredictor` is a tuple
-        $\\hat{y}=(\\hat{y}_1,\\hat{y}_2)$, where $\\hat{y}_1$
-        (resp. $\\hat{y}_2$) is the prediction of $\\hat{f}_1$
-        (resp. $\\hat{f}_2$).
-        Enables to standardize the interface of predictors and to expose generic
-        [`fit`][deel.puncc.api.prediction.DualPredictor.fit],
-        [`predict`][deel.puncc.api.prediction.DualPredictor.predict] and
-        [`copy`][deel.puncc.api.prediction.DualPredictor.copy] methods.
+    :math:`(\hat{f_1},\hat{f_2})`.
+    The prediction :math:`\hat{y}` of a :class:`DualPredictor` is a tuple
+    :math:`\hat{y}=(\hat{y}_1,\hat{y}_2)`, where :math:`\hat{y}_1`
+    (resp. :math:`\hat{y}_2`) is the prediction of :math:`\hat{f}_1`
+    (resp. :math:`\hat{f}_2`).
 
-    Args:
-        model (List[Any]): list of two prediction models $[\\hat{f_1},\\hat{f_2}]$.
-        is_trained (List[bool]): list of boolean flag that informs if the models are pre-trained. True value will skip the fitting of the corresponding model.
-        compile_kwargs (List): list of keyword arguments to be used if needed to compile the underlying models.
+    Enables to standardize the interface of predictors and to expose generic
+    :func:`fit`, :func:`predict` and :func:`copy` methods.
 
-    Examples:
-        Joint conditional mean / quantile regression
+    :param List[Any] model: list of two prediction models
+        :math:`[\hat{f_1},\hat{f_2}]`.
+    :param List[bool] is_trained: list of boolean flag that informs if the
+        models are pre-trained. True value will skip the fitting of the
+        corresponding model.
+    :param List compile_kwargs: list of keyword arguments to be used if needed
+        to compile the underlying models.
 
-        ```python
+    .. _example dualpredictor:
+
+    Joint conditional mean / quantile regression example::
+
         from deel.puncc.api.prediction import DualPredictor
         import tensorflow_addons as tfa
         import tensorflow as tf
@@ -351,7 +351,7 @@ class DualPredictor:
         # The wrapper will call compile on the internal copy of each model if needed.
         # Our predictor combines two regressors, of which only the second needs to be compiled.
         tf_predictor = DualPredictor(models=[rf_model, q_model],
-                                        compile_args=[{}, compile_kwargs])
+                                     compile_args=[{}, compile_kwargs])
 
         # The fit method is provided with a given training dataset (X,y) and
         # the train configurations of the underlying models. In the example below,
@@ -365,7 +365,8 @@ class DualPredictor:
         # Besides, `y_pred` consists of a couple (y1, y2) for each new example.
         # If `X_new` is a (n,m) matrix, the shape of `y_pred` will be (n, 2).
         y_pred = predictor.predict(X_new, [{}, {"verbose":0}])
-        ```
+
+
     """
 
     def __init__(
@@ -389,82 +390,84 @@ class DualPredictor:
 
     def get_is_trained(self) -> bool:
         """Get flag that informs if the models are pre-trained.
-        Returns True only when both models are pretrained."""
+        Returns True only when both models are pretrained.
+        """
         return self.is_trained[0] and self.is_trained[1]
 
-    def fit(self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]) -> None:
+    def fit(
+        self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]
+    ) -> None:
         """Fit model to the training data.
 
-        Args:
-            X (Iterable): train features.
-            y (Iterable): train labels.
-            dictargs (List[dict[str]]): list of fit configurations to be passed to the `fit` method of the underlying models $\\hat{f}_1$ and $\\hat{f}_2$, respectively.
+        :param Iterable X: train features.
+        :param Iterable y: train labels.
+        :param List[dict[str]] dictargs: list of fit configurations to be
+            passed to the `fit` method of the underlying models
+            :math:`\hat{f}_1` and :math:`\hat{f}_2`, respectively.
 
-        !!! note
-            For more details, see the examples in [`DualPredictor`][deel.puncc.api.prediction.DualPredictor].
+        .. note::
+
+            For more details, check this :ref:`code snippet
+            <example dualpredictor>`.
+
         """
-
         dual_predictor_check(dictargs, "dictargs", "dictionnaries")
         for count, model in enumerate(self.models):
             if not self.is_trained[count]:
                 model.fit(X, y, **dictargs[count])
 
-    def predict(self, X, dictargs: List[dict] = [{}, {}]) -> Tuple[np.ndarray]:
+    def predict(
+        self, X, dictargs: List[dict] = [{}, {}]
+    ) -> Tuple[Iterable, Iterable]:
         """Compute predictions on new examples.
 
-        Args:
-            X (Iterable): new examples' features.
-            dictargs (List[dict]): list of predict configurations to be passed to the `predict` method of the underlying models $\\hat{f}_1$ and $\\hat{f}_2$, respectively.
+        :param Iterable X: new examples' features.
+        :param List[dict[str]] dictargs: list of predict configurations to be passed to the
+            `predict` method of the underlying models :math:`\hat{f}_1` and
+            :math:`\hat{f}_2`, respectively.
 
-        Returns:
-            Tuple[ndarray]: predictions $\\hat{y}=\\hat{f}(X)$ associated to the new examples X. For an instance $X_i$, the prediction consists of a couple $\\hat{f}(X_i)=(\\hat{f}_1(X_i), \\hat{f}_2(X_i))$.
+        :returns: predictions :math:`\hat{y}=\hat{f}(X)` associated to the new
+            examples X. For an instance :math:`X_i`, the prediction consists of
+            a couple :math:`\hat{f}(X_i)=(\hat{f}_1(X_i), \hat{f}_2(X_i))`.
+        :rtype: Tuple[Iterable, Iterable]
 
-        Raises:
-            NotImplementedError: predicted values not formated as numpy ndarrays.
+        :raises NotImplementedError:  Different backends for dual predictions
+            is not supported. Please make sure both models return predictions
+            of the same type.
 
-        !!! note
-            For more details, see the examples in [`DualPredictor`][deel.puncc.api.prediction.DualPredictor].
+        .. note::
+
+            For more details, check this :ref:`code snippet
+            <example dualpredictor>`.
+
         """
-
         dual_predictor_check(dictargs, "dictargs", "dictionnaries")
         model1_pred = self.models[0].predict(X, **dictargs[0])
         model2_pred = self.models[1].predict(X, **dictargs[1])
         supported_types_check(model1_pred, model2_pred)
-
-        if isinstance(model1_pred, np.ndarray):
-            Y_pred = np.column_stack((model1_pred, model2_pred))
-        else:  # In case the models return something other than an np.ndarray
-            raise NotImplementedError("Predicted values must be of type numpy.ndarray.")
-
-        return np.squeeze(Y_pred)
+        if (
+            get_backend(model1_pred).name != get_backend(model2_pred).name
+        ):  # pragma: no cover
+            raise NotImplementedError(
+                "Different backends for dual predictions is not supported. "
+                "Please make sure both models return predictions of the same type."
+            )
+        b = get_backend(X)
+        Y_pred = b.column_stack((model1_pred, model2_pred))
+        return b.squeeze(Y_pred)
 
     def copy(self):
-        """Returns a copy of the predictor. The underlying models are either
-                cloned (Keras model) or deepcopied (sklearn and similar models).
+        """Returns a copy of the predictor.
 
-        Returns:
-            DualPredictor: copy of the predictor.
+        :returns: copy of the predictor.
+        :rtype: DualPredictor
 
-        Raises:
-            RuntimeError: copy unsupported for provided models."""
+        :raises RuntimeError: copy unsupported for provided models.
+
+        """
         models_copy = []
         for model in self.models:
-            try:
-                model_copy = deepcopy(model)
-            except Exception as e_outer:
-                if importlib.util.find_spec("tensorflow") is not None:
-                    try:
-                        # pylint: disable=E1101
-                        model_copy = tf.keras.models.clone_model(model)
-                    except Exception as e_inner:
-                        msg = (
-                            f"Cannot copy models. Many possible reasons:\n"
-                            f" 1- {e_inner} \n 2- {e_outer}"
-                        )
-                        raise RuntimeError(msg)
-                else:
-                    raise Exception(e_outer)
-            models_copy.append(model_copy)
+            models_copy.append(copy_model(model))
 
         predictor_copy = self.__class__(
             models=models_copy,
@@ -480,65 +483,80 @@ class DualPredictor:
 
 
 class MeanVarPredictor(DualPredictor):
-    """Wrap conditional mean and dispersion estimators.
+    """Subclass of :class:`DualPredictor` to specifically wrap a conditional
+    mean estimator :math:`\hat{\mu}` and a conditional dispersion estimator
+    :math:`\hat{\sigma}`.\n
 
-    `MeanVarPredictor` is a `DualPredictor` for a conditional mean estimator
-    $\\hat{\\mu}$ and a conditional dispersion estimator $\\hat{\\sigma}$.
-    The dispersion model is trained on the mean absolute deviation of
-    $\\hat{\\mu}$ predictions from the true labels $y$. Given two training
-    algorithms ${\\cal A}_1$ and ${\\cal A}_2$ and a training dataset
-    $(X_{train}, y_{train})$:
+     Specifically, the dispersion model :math:`\hat{\sigma}` is trained on the
+     mean absolute deviation of :math:`\hat{\mu}`'s predictions from the true
+     labels :math:`y`. Given two training algorithms :math:`{\cal A}_1` and
+     :math:`{\cal A}_2` and a training dataset :math:`(X_{train}, y_{train})`:
 
-    $$
-    \\hat{\\mu} \\Leftarrow {\\cal A}_1(X_{train}, y_{train})
-    $$
+         .. math::
 
-    $$
-    \\hat{\\sigma} \\Leftarrow {\\cal A}_2(
-        X_{train}, |\\hat{\\mu}(X_{train}) - y_{train}|
-    )
-    $$
+             \hat{\mu} \Leftarrow {\cal A}_1(X_{train}, y_{train})
 
-    Args:
-        model (List[Any]): List of two prediction models
-            $[\\hat{\\mu}, \\hat{\\sigma}]$.
-        is_trained (List[bool]): List of boolean flags indicating whether the
-            models are pre-trained. `True` skips fitting for the corresponding
-            model.
-        compile_kwargs (List): List of keyword arguments used, when needed, to
-            compile the underlying models $\\hat{\\mu}$ and
-            $\\hat{\\sigma}$.
+         .. math::
+             \hat{\sigma} \Leftarrow {\cal A}_2(X_{train},
+             |\hat{\mu}(X_{train})-y_{train}|)
 
-    Examples:
-        Wrapping conditional mean and dispersion models:
 
-        ```python
+     :param List[Any] model: list of two prediction models
+        :math:`[\hat{\mu},\hat{\sigma}]`.
+     :param List[bool] is_trained: list of boolean flag that informs if the
+        models are pre-trained. True value will skip the fitting of the
+        corresponding model.
+     :param List compile_kwargs: list of keyword arguments to be used if
+        needed to compile the underlying models :math:`\hat{\mu}` and
+        :math:`\hat{\sigma}`, respectively.
+
+     .. _example MeanVarPredictor:
+
+    Here follows an example of wrapping conditional mean and dispersion models::
+
         from deel.puncc.api.prediction import MeanVarPredictor
-        from sklearn import linear_model
         from sklearn.ensemble import RandomForestRegressor
 
+        # Instantiate conditional mean model
         mu_model = linear_model.LinearRegression()
-        sigma_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        # Instantiate conditional dispersion model
+        sigma_model = RandomForestRegressor(
+            n_estimators=100, random_state=random_seed
+        )
 
+        # The instantiation of a :class:`MeanVarPredictor` is simple as the
+        # selected models do not require any compilation
         mean_var_predictor = MeanVarPredictor([mu_model, sigma_model])
-        mean_var_predictor.fit(X_train, y_train)
-        y_pred = mean_var_predictor.predict(X_new)
-        ```
 
-        To pass compilation, fit, or predict configurations to the underlying
-        models, see the related code snippets in the documentation.
+        # The fit method is provided with a given training dataset (X,y).
+        # We do not choose any specific the train configurations.
+        mean_var_predictor.fit(X_train, y_train)
+
+        # The method `predict` yields `y_pred` that consists of a couple
+        # (y1, y2) for each new example.
+        # If `X_new` is a (n,m) matrix, the shape of `y_pred` will be (n, 2).
+        y_pred = mean_var_predictor.predict(X_new)
+
+
+    To see an example how to pass compilation/fit/predict configurations as
+    arguments to the underlying models, check this
+    :ref:`code snippet <example DualPredictor>`.
+
     """
 
-    def fit(self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]) -> None:
+    def fit(
+        self, X: Iterable, y: Iterable, dictargs: List[dict] = [{}, {}]
+    ) -> None:
         """Fit models to the training data. The dispersion model
-                $\\hat{\\sigma}$ is trained on the mean absolute deviation of
-                $\\hat{mu}$'s predictions $\\hat{\\mu}$ from the true labels
-                $y$.
+        :math:`\hat{\sigma}` is trained on the mean absolute deviation of
+        :math:`\hat{mu}`'s predictions :math:`\hat{\mu}` from the true labels
+        :math:`y`.
 
-        Args:
-            X (Iterable): train features.
-            y (Iterable): train labels.
-            dictargs (List[dict]): list of fit configurations to be passed to the `fit` method of the underlying models $\\hat{\\mu}$ and $\\hat{\\sigma}$, respectively.
+        :param Iterable X: train features.
+        :param Iterable y: train labels.
+        :param List[dict] dictargs: list of fit configurations to be passed to
+            the `fit` method of the underlying models :math:`\hat{\mu}` and
+            :math:`\hat{\sigma}`, respectively.
         """
         self.models[0].fit(X, y, **dictargs[0])
         mu_pred = self.models[0].predict(X)

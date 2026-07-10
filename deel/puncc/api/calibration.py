@@ -20,9 +20,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""This module implements the core calibrator, providing a structure to estimate
+"""
+This module implements the core calibrator, providing a structure to estimate
 the nonconformity scores on the calibration set and to compute the prediction
-sets."""
+sets.
+"""
 
 import logging
 import warnings
@@ -42,69 +44,84 @@ logger = logging.getLogger(__name__)
 
 
 class BaseCalibrator:
-    """Compute nonconformity scores and construct calibrated prediction sets.
+    """:class:`BaseCalibrator` offers a framework to compute user-defined
+    nonconformity scores on calibration dataset(s) (:func:`fit`) and to use for
+    constructing and/or calibrating prediction sets (:func:`calibrate`).
 
-    `BaseCalibrator` offers a framework to compute user-defined nonconformity
-    scores on calibration datasets with `fit` and to construct calibrated
-    prediction sets with `calibrate`.
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable pred_set_func: prediction set construction function.
+    :param callable weight_func: function that takes as argument an array of
+        features X and returns associated "conformality" weights,
+        defaults to None.
 
-    Args:
-        nonconf_score_func (callable): Nonconformity score function.
-        pred_set_func (callable): Prediction set construction function.
-        weight_func (callable): Function that takes an array of features `X`
-            and returns associated conformality weights. Defaults to `None`.
+    :raises NotImplementedError: provided :data:`weight_method` is not suitable.
 
-    Raises:
-        NotImplementedError: Provided `weight_method` is not suitable.
+    .. _example basecalibrator:
 
-    Examples:
-        Consider a pretrained model $\\hat{f}$, a calibration dataset
-        $(X_{calib}, y_{calib})$ and a test dataset $(X_{test}, y_{test})$.
-        The model $\\hat{f}$ generates predictions on the calibration and test
-        sets:
+    **Regression calibrator example:**
 
-        $$
-        y_{pred, calib}=\\hat{f}(X_{calib})
-        $$
 
-        $$
-        y_{pred, test}=\\hat{f}(X_{test})
-        $$
+    Consider a pretrained model :math:`\hat{f}`, a calibration dataset
+    :math:`(X_{calib}, y_{calib})` and a test dataset :math:`(X_{test}, y_{test})`.
+    The model :math:`\hat{f}` generates predictions on the calibration and
+    test sets:
 
-        Two functions need to be defined before instantiating the
-        `BaseCalibrator`: a nonconformity score function and a definition of
-        how the prediction sets are computed. In the example below, these are
-        implemented from scratch, but ready-to-use nonconformity scores and
-        prediction sets are provided in the `nonconformity_scores` and
-        `prediction_sets` modules.
+    .. math::
+        y_{pred, calib}=\hat{f}(X_{calib})
 
-        ```python
+    .. math::
+        y_{pred, test}=\hat{f}(X_{test})
+
+    Two function need to be defined before instantiating the
+    :class:`BaseCalibrator`: a nonconformity score function and a definition of
+    how the prediction sets are computed. In the example below, these are
+    implemented from scratch but a collection of ready-to-use nonconformity
+    scores and prediction sets are provided in the modules
+    :ref:`nonconformity_scores <nonconformity_scores>` and
+    :ref:`prediction_sets <prediction_sets>`, respectively.
+
+
+    .. code-block:: python
+
         from deel.puncc.api.calibration import BaseCalibrator
         import numpy as np
 
+        # First, we define a nonconformity score function that takes as argument
+        # the predicted values y_pred = model(X) and the true labels y_true. In
+        # this example, we reimplement the mean absolute deviation that is
+        # already defined in `deel.puncc.api.nonconformity_scores.mad`
         def nonconformity_function(y_pred, y_true):
             return np.abs(y_pred - y_true)
 
+        # Prediction sets are computed based on points predictions and
+        # the quantiles of nonconformity scores. The function below returns a
+        # fixed size interval around the point predictions.
         def prediction_set_function(y_pred, scores_quantile):
             y_lo = y_pred - scores_quantile
             y_hi = y_pred + scores_quantile
             return y_lo, y_hi
 
+        # The calibrator is instantiated by passing the two functions defined
+        # above to the constructor.
         calibrator = BaseCalibrator(
             nonconf_score_func=nonconformity_function,
-            pred_set_func=prediction_set_function,
+            pred_set_func=prediction_set_function
         )
 
+        # Generate dummy data and predictions
         y_pred_calib = np.random.rand(1000)
         y_true_calib = np.random.rand(1000)
         y_pred_test = np.random.rand(1000)
 
+        # The nonconformity scores are computed by calling the `fit` method
+        # on the calibration dataset.
         calibrator.fit(y_pred=y_pred_calib, y_true=y_true_calib)
-        y_pred_low, y_pred_high = calibrator.calibrate(
-            y_pred=y_pred_test,
-            alpha=0.1,
-        )
-        ```
+
+        # The lower and upper bounds of the prediction interval are then returned
+        # by the call to calibrate on the new data w.r.t a risk level of 10%.
+        y_pred_low, y_pred_high = calibrator.calibrate(y_pred=y_pred_test, alpha=.1)
+
+
     """
 
     def __init__(
@@ -127,12 +144,16 @@ class BaseCalibrator:
     def fit(self, *, y_true: Iterable, y_pred: Iterable, **kwargs) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
-        Args:
-            y_true (Iterable): true labels.
-            y_pred (Iterable): predicted values."""
+        :param Iterable y_true: true labels.
+        :param Iterable y_pred: predicted values.
+
+        """
         del kwargs
-        self._update_feature_axis(y_pred)
-        self._residuals = self.nonconf_score_func(y_pred, y_true)
+        b = get_backend(y_pred)
+        yp = b.asarray(y_pred)
+        yt = b.asarray(y_true, like=yp)
+        self._update_feature_axis(yp)
+        self._residuals = self.nonconf_score_func(yp, yt)
         self._len_calib = len(self._residuals)
 
     def calibrate(  # pylint: disable=unused-argument
@@ -145,21 +166,28 @@ class BaseCalibrator:
         correction: Optional[Callable] = bonferroni,
     ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction sets for new examples w.r.t a
-                significance level $\\alpha$.
+        significance level :math:`\\alpha`.
 
-        Args:
-            alpha (float): significance level (max miscoverage target).
-            X (Iterable): test features, used to compute the weights if a  weight_func is defined.
-            y_pred (Iterable): predicted values.
-            weights (Iterable): weights to be associated to the nonconformity scores. Defaults to None when all the scores are equiprobable.
-            correction (Callable): correction for multiple hypothesis testing in the case of multivariate regression. Defaults to Bonferroni correction.
+        :param float alpha: significance level (max miscoverage target).
+        :param Iterable X: test features, used to compute the weights if a
+            weight_func is defined.
+        :param Iterable y_pred: predicted values.
+        :param Iterable weights: weights to be associated to the nonconformity
+                                 scores. Defaults to None when all the scores
+                                 are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing
+                                    in the case of multivariate regression.
+                                    Defaults to Bonferroni correction.
 
-        Returns:
-            Tuple[ndarray]: prediction set. In case of regression, returns (y_lower, y_upper). In case of classification, returns (classes,).
+        :returns: prediction set.
+                  In case of regression, returns (y_lower, y_upper).
+                  In case of classification, returns (classes,).
+        :rtype: Tuple[ndarray]
 
-        Raises:
-            RuntimeError: `calibrate` called before `fit`.
-            ValueError: failed check on :data:`alpha` w.r.t size of the calibration set.
+        :raises RuntimeError: :meth:`calibrate` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set.
+
         """
         residuals_Q = self.compute_quantile(
             alpha=alpha, weights=weights, correction=correction
@@ -169,25 +197,28 @@ class BaseCalibrator:
 
     def set_norm_weights(self, norm_weights: np.ndarray) -> None:
         """Setter of normalized weights associated to the nonconformity
-                scores on the calibration set.
+        scores on the calibration set.
 
-        Args:
-            norm_weights (ndarray): normalized weights array"""
+        :param ndarray norm_weights: normalized weights array
+
+        """
         self._norm_weights = norm_weights
 
     def get_norm_weights(self) -> np.ndarray:
         """Getter of normalized weights associated to the nonconformity
-                scores on the calibration set.
+        scores on the calibration set.
 
-        Returns:
-            np.ndarray: normalized weights of nonconformity scores."""
+        :returns: normalized weights of nonconformity scores.
+        :rtype: np.ndarray
+        """
         return self._norm_weights
 
     def get_nonconformity_scores(self) -> np.ndarray:
         """Getter of computed nonconformity scores on the calibration set.
 
-        Returns:
-            np.ndarray: nonconformity scores."""
+        :returns: nonconformity scores.
+        :rtype: np.ndarray
+        """
         return self._residuals
 
     def compute_quantile(
@@ -198,19 +229,23 @@ class BaseCalibrator:
         correction: Optional[Callable] = bonferroni,
     ) -> np.ndarray:
         """Compute quantile of scores w.r.t a
-                significance level $\\alpha$.
+        significance level :math:`\\alpha`.
 
-        Args:
-            alpha (float): significance level (max miscoverage target).
-            weights (Iterable): weights to be associated to the nonconformity scores. Defaults to None when all the scores are equiprobable.
-            correction (Callable): correction for multiple hypothesis testing in the case of multivariate regression. Defaults to Bonferroni correction.
+        :param float alpha: significance level (max miscoverage target).
+        :param Iterable weights: weights to be associated to the nonconformity
+                                 scores. Defaults to None when all the scores
+                                 are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing
+                                    in the case of multivariate regression.
+                                    Defaults to Bonferroni correction.
 
-        Returns:
-            ndarray: quantile
+        :returns: quantile
+        :rtype: ndarray
 
-        Raises:
-            RuntimeError: `compute_quantile` called before `fit`.
-            ValueError: failed check on :data:`alpha` w.r.t size of the calibration set.
+        :raises RuntimeError: :meth:`compute_quantile` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set.
+
         """
 
         if self._residuals is None:
@@ -218,20 +253,20 @@ class BaseCalibrator:
 
         alpha = correction(alpha)
 
-        # Check consistency of alpha w.r.t the size of calibration data
         if weights is None:
             alpha_calib_check(alpha=alpha, n=self._len_calib)
 
-        # Compute weighted quantiles
-        ## Lemma 1 of Tibshirani's paper (https://arxiv.org/pdf/1904.06019.pdf)
-        ## The coverage guarantee holds with 1) the inflated
-        ## (1-\alpha)(1+1/n)-th quantile or 2) when adding an infinite term to
-        ## the sequence and computing the $(1-\alpha)$-th empirical quantile.
-        if self._residuals.ndim > 1:
-            infty_array = np.full((1, self._residuals.shape[-1]), np.inf)
-        else:
-            infty_array = np.array([np.inf])
-        lemma_residuals = np.concatenate((self._residuals, infty_array), axis=0)
+        b = get_backend(self._residuals)
+        residuals = b.to_numpy(self._residuals)
+
+        if weights is not None:
+            weights = get_backend(weights).to_numpy(weights)
+
+        infty_shape = (1, residuals.shape[-1]) if residuals.ndim > 1 else (1,)
+        infty_array = np.full(infty_shape, np.inf)
+
+        lemma_residuals = np.concatenate((residuals, infty_array), axis=0)
+
         residuals_Q = quantile(
             lemma_residuals,
             1 - alpha,
@@ -239,7 +274,7 @@ class BaseCalibrator:
             feature_axis=self._feature_axis,
         )
 
-        return residuals_Q
+        return np.asarray(residuals_Q)
 
     def _update_feature_axis(self, y_pred):
         b = get_backend(y_pred)
@@ -250,14 +285,16 @@ class BaseCalibrator:
     @staticmethod
     def barber_weights(weights: np.ndarray) -> np.ndarray:
         """Compute and normalize inference weights of the nonconformity distribution
-                based on [Barber et al.](https://arxiv.org/abs/2202.13415).
+        based on `Barber et al. <https://arxiv.org/abs/2202.13415>`_.
 
-        Args:
-            weights (ndarray): weights assigned to the samples.
+        :param ndarray weights: weights assigned to the samples.
 
-        Returns:
-            ndarray: normalized weights."""
+        :returns: normalized weights.
+        :rtype: ndarray
+        """
 
+        bw = get_backend(weights)
+        weights = bw.to_numpy(weights)
         weights_len = len(weights)
 
         # Computation of normalized weights
@@ -272,13 +309,14 @@ class BaseCalibrator:
 class ClasswiseCalibrator(BaseCalibrator):
     """Calibrator for classwise conformal prediction.
 
-        This calibrator computes per-class quantiles of nonconformity scores,
-        handling NaN values that indicate scores from other classes.
+    This calibrator computes per-class quantiles of nonconformity scores,
+    handling NaN values that indicate scores from other classes.
 
-    Args:
-        nonconf_score_func (callable): nonconformity score function.
-        pred_set_func (callable): prediction set construction function.
-        weight_func (callable): function that takes as argument an array of features X and returns associated "conformality" weights, defaults to None.
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable pred_set_func: prediction set construction function.
+    :param callable weight_func: function that takes as argument an array of
+        features X and returns associated "conformality" weights,
+        defaults to None.
     """
 
     def compute_quantile(
@@ -289,19 +327,21 @@ class ClasswiseCalibrator(BaseCalibrator):
         correction: Optional[Callable] = bonferroni,
     ) -> np.ndarray:
         """Compute per-class quantiles of scores w.r.t a
-                significance level $\\alpha$.
+        significance level :math:`\\alpha`.
 
-        Args:
-            alpha (float): significance level (max miscoverage target).
-            weights (Iterable): weights to be associated to the nonconformity scores. Defaults to None when all the scores are equiprobable.
-            correction (Callable): correction for multiple hypothesis testing. Defaults to Bonferroni correction.
+        :param float alpha: significance level (max miscoverage target).
+        :param Iterable weights: weights to be associated to the nonconformity
+                                 scores. Defaults to None when all the scores
+                                 are equiprobable.
+        :param Callable correction: correction for multiple hypothesis testing.
+                                    Defaults to Bonferroni correction.
 
-        Returns:
-            ndarray: per-class quantiles, shape (n_classes,)
+        :returns: per-class quantiles, shape (n_classes,)
+        :rtype: ndarray
 
-        Raises:
-            RuntimeError: `compute_quantile` called before `fit`.
-            ValueError: failed check on :data:`alpha` w.r.t size of the calibration set for a given class.
+        :raises RuntimeError: :meth:`compute_quantile` called before :meth:`fit`.
+        :raise ValueError: failed check on :data:`alpha` w.r.t size of the
+            calibration set for a given class.
         """
         if self._residuals is None:
             raise RuntimeError("Run `fit` method before calling `calibrate`.")
@@ -340,15 +380,18 @@ class ClasswiseCalibrator(BaseCalibrator):
 class LeveragedCalibrator(BaseCalibrator):
     """Calibrator for leverage-weighted conformal prediction.
 
-        This calibrator computes quantiles of nonconformity scores with weights
-        derived from the leverage function, as proposed in `Fadnavis
-        <https://arxiv.org/abs/2602.12693>`_.
+    This calibrator computes quantiles of nonconformity scores with weights
+    derived from the leverage function, as proposed in `Fadnavis
+    <https://arxiv.org/abs/2602.12693>`_.
 
-    Args:
-        nonconf_score_func (callable): nonconformity score function.
-        pred_set_func (callable): prediction set construction function.
-        weight_func (callable): function that takes as argument an array of features X and returns associated weighted leverage-based "conformality" weights, defaults to identity function.
-        leverage_func (Callable): function to compute covariates leverage score."""
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable pred_set_func: prediction set construction function.
+    :param callable weight_func: function that takes as argument an array of
+        features X and returns associated weighted leverage-based "conformality"
+        weights, defaults to identity function.
+    :param Callable leverage_func: function to compute covariates leverage
+            score.
+    """
 
     def __init__(
         self,
@@ -372,10 +415,10 @@ class LeveragedCalibrator(BaseCalibrator):
     def fit(self, *, X: Iterable, y_true: Iterable, y_pred: Iterable) -> None:
         """Compute and store nonconformity scores on the calibration set.
 
-        Args:
-            X (Iterable): input features.
-            y_true (Iterable): true labels.
-            y_pred (Iterable): predicted values."""
+        :param Iterable X: input features.
+        :param Iterable y_true: true labels.
+        :param Iterable y_pred: predicted values.
+        """
         # Weigthed leverage function to compute the weights
         # for the nonconformity scores
         self._update_feature_axis(y_pred)
@@ -403,26 +446,30 @@ class LeveragedCalibrator(BaseCalibrator):
 
 
 class ScoreCalibrator:
-    """Compute and calibrate user-defined conformity scores.
+    """:class:`ScoreCalibrator` offers a framework to compute user-defined
+    scores on a calibration dataset (:func:`fit`) and to test the conformity
+    of new data points (:func:`is_conformal`) with respect to a significance
+    (error) level :math:`\\alpha`. Such calibrator can be used for example
+    to calibrate the decision threshold of anomaly detection scores.
 
-    `ScoreCalibrator` computes user-defined scores on a calibration dataset
-    with `fit` and tests the conformity of new data points with
-    `is_conformal` at a significance level $\\alpha$. It can be used, for
-    example, to calibrate the decision threshold of anomaly detection scores.
+    :param callable nonconf_score_func: nonconformity score function.
+    :param callable weight_func: function that takes as argument an array of
+        data points and returns associated "conformality" weights,
+        defaults to None.
 
-    Args:
-        nonconf_score_func (callable): Nonconformity score function.
-        weight_func (callable): Function that takes an array of data points
-            and returns associated conformality weights. Defaults to `None`.
+    .. _example scorecalibrator:
 
-    Examples:
-        Consider the two moons dataset. We want to detect anomalous points in a
-        new sample generated from a uniform distribution. The LOF algorithm is
-        used to obtain anomaly scores; then a `ScoreCalibrator` is instantiated
-        to decide which scores are conformal with respect to a significance
-        level $\\alpha$.
+    **Anomaly detection example:**
 
-        ```python
+
+    Consider the two moons dataset. We want to detect anomalous points in a new
+    sample generated following a uniform distribution. The LOF algorithm is
+    used to obtain anomaly scores; then a :class:`ScoreCalibrator` is
+    instantiated to decide which scores are conformal (not anomalies) with
+    respect to a significance level :math:`\\alpha`.
+
+    .. code-block:: python
+
         import numpy as np
         from sklearn.datasets import make_moons
         from sklearn.model_selection import train_test_split
@@ -431,51 +478,60 @@ class ScoreCalibrator:
 
         from deel.puncc.api.calibration import ScoreCalibrator
 
-        dataset = (
-            4 * make_moons(n_samples=1000, noise=0.05, random_state=0)[0]
-            - np.array([0.5, 0.25])
-        )
-        fit_set, calib_set = train_test_split(dataset, train_size=0.8)
+        # First, we generate the two moons dataset
+        dataset = 4*make_moons(n_samples=1000, noise=0.05,
+            random_state=0)[0] - np.array([0.5, 0.25])
 
+        # Split data into proper fitting and calibration sets
+        fit_set, calib_set = train_test_split(dataset, train_size=.8)
+
+        # Generate new data points
         rng = np.random.RandomState(42)
         new_samples = rng.uniform(low=-6, high=8, size=(200, 2))
 
+        # Instantiate the LOF anomaly detection algorithm
         algorithm = LocalOutlierFactor(n_neighbors=35, novelty=True)
+
+        # Fit the LOF on the proper fitting dataset
         algorithm.fit(X=fit_set)
 
+        # The nonconformity scores are defined as the LOF (anomaly) scores.
+        # By default, score_samples return the opposite of LOF scores.
         ncf = lambda X: -algorithm.score_samples(X)
+
+        # The ScoreCalibrator is instantiated by passing the LOF score function
+        # to the constructor
         cad = ScoreCalibrator(nonconf_score_func=ncf)
+
+        # The LOF scores are computed by calling the `fit` method
+        # on the calibration dataset
         cad.fit(calib_set)
 
-        alpha = 0.01
+        # We set the target false detection rate to 1%
+        alpha = .01
+
+        # The method `is_conformal` is called on the new data points
+        # to test which are conformal (not anomalous) and which are not
         results = cad.is_conformal(z=new_samples, alpha=alpha)
         not_anomalies = new_samples[results]
         anomalies = new_samples[np.invert(results)]
 
-        plt.scatter(calib_set[:, 0], calib_set[:, 1], s=10, label="Inliers")
-        plt.scatter(
-            not_anomalies[:, 0],
-            not_anomalies[:, 1],
-            s=40,
-            marker="x",
-            color="blue",
-            label="Normal",
-        )
-        plt.scatter(
-            anomalies[:, 0],
-            anomalies[:, 1],
-            s=40,
-            marker="x",
-            color="red",
-            label="Anomaly",
-        )
+        # Plot the results
+        plt.scatter(calib_set[:,0], calib_set[:,1],
+                    s=10, label="Inliers")
+        plt.scatter(not_anomalies[:, 0], not_anomalies[:, 1], s=40, marker="x",
+                    color="blue", label="Normal")
+        plt.scatter(anomalies[:, 0], anomalies[:, 1], s=40, marker="x",
+                    color="red", label="Anomaly")
         plt.xticks(())
         plt.yticks(())
         plt.legend(loc="lower left")
-        ```
+
     """
 
-    def __init__(self, nonconf_score_func: Callable, weight_func: Callable = None):
+    def __init__(
+        self, nonconf_score_func: Callable, weight_func: Callable = None
+    ):
         self.nonconf_score_func = nonconf_score_func
         self._nonconf_scores = None
         self._calib_len = 0
@@ -484,17 +540,17 @@ class ScoreCalibrator:
     def fit(self, z: Iterable):
         """Compute and store nonconformity scores on the calibration set.
 
-        Args:
-            z (Iterable): calibration dataset."""
+        :param Iterable z: calibration dataset.
+        """
         self._nonconf_scores = self.nonconf_score_func(z)
         self._calib_len = len(self._nonconf_scores)
 
     def set_nonconformity_scores(self, scores: np.array):
         """Setter of nonconformity scores. Can be used instead of calling
-                `fit` if the nonconformity scores are already computed.
+        :func:`fit` if the nonconformity scores are already computed.
 
-        Args:
-            scores (ndarray): nonconformity scores."""
+        :param ndarray scores: nonconformity scores.
+        """
         if self._nonconf_scores is not None:
             warnings.warn(
                 "Warning........... You are overwriting previously computed or provided scores."
@@ -505,21 +561,22 @@ class ScoreCalibrator:
     def get_nonconformity_scores(self) -> np.ndarray:
         """Getter of computed nonconformity scores on the calibration set.
 
-        Returns:
-            np.ndarray: nonconformity scores."""
+        :returns: nonconformity scores.
+        :rtype: np.ndarray
+        """
         return self._nonconf_scores
 
     def is_conformal(self, z: Iterable, alpha: float) -> np.ndarray:
         """Test if new data points `z` are conformal. The test result is True
-                if the new sample is conformal w.r.t a significance level
-                $\\alpha$ and False otherwise.
+        if the new sample is conformal w.r.t a significance level
+        :math:`\\alpha` and False otherwise.
 
-        Args:
-            z (Iterable): new samples.
-            alpha (float): significance level.
+        :param Iterable z: new samples.
+        :param float alpha: significance level.
 
-        Returns:
-            np.ndarray[bool]: conformity test results."""
+        :returns: conformity test results.
+        :rtype: np.ndarray[bool]
+        """
         if self._nonconf_scores is None:
             raise RuntimeError(
                 "Run `fit` or 'set_nonconformity_scores' methods before calling `is_conformal`."
@@ -531,7 +588,9 @@ class ScoreCalibrator:
         if self.weight_func:
             weights = self.weight_func(z)
 
-        q_hat = quantile(self._nonconf_scores, q=(1 - alpha) * (n + 1) / n, w=weights)
+        q_hat = quantile(
+            self._nonconf_scores, q=(1 - alpha) * (n + 1) / n, w=weights
+        )
 
         test_nonconf_scores = self.nonconf_score_func(z)
 
@@ -540,11 +599,13 @@ class ScoreCalibrator:
 
 class CvPlusCalibrator:
     """Meta calibrator that combines the estimations of nonconformity
-        scores by each K-Fold calibrator and produces associated prediction
-        intervals based on [CV+](https://arxiv.org/abs/1905.02928).
+    scores by each K-Fold calibrator and produces associated prediction
+    intervals based on `CV+ <https://arxiv.org/abs/1905.02928>`_.
 
-    Args:
-        kfold_calibrators_dict (dict): collection of calibrators for each K-fold (disjoint calibration subsets). Each calibrator needs to priorly estimate the nonconformity scores w.r.t the associated calibration fold.
+    :param dict kfold_calibrators_dict: collection of calibrators for each
+        K-fold (disjoint calibration subsets). Each calibrator needs to priorly
+        estimate the nonconformity scores w.r.t the associated calibration fold.
+
     """
 
     def __init__(self, kfold_calibrators: dict):
@@ -565,8 +626,9 @@ class CvPlusCalibrator:
     def fit(self) -> None:
         """Check if all calibrators have already been fitted.
 
-        Raises:
-            RuntimeError: one or more of the calibrators did not estimate the nonconformity scores.
+        :raises RuntimeError: one or more of the calibrators did not estimate
+            the nonconformity scores.
+
         """
         len_calib = 0
         for k, calibrator in self.kfold_calibrators_dict.items():
@@ -589,13 +651,14 @@ class CvPlusCalibrator:
     ) -> Tuple[np.ndarray]:
         """Compute calibrated prediction intervals for new examples X.
 
-        Args:
-            X (Iterable): test features.
-            kfold_predictors_dict (dict): dictionnary of predictors trained on each fold.
-            alpha (float): significance level (maximum miscoverage target).
+        :param Iterable X: test features.
+        :param dict kfold_predictors_dict: dictionnary of predictors trained
+            on each fold.
+        :param float alpha: significance level (maximum miscoverage target).
 
-        Returns:
-            Tuple[ndarray]: y_lower, y_upper."""
+        :returns: y_lower, y_upper.
+        :rtype: Tuple[ndarray]
+        """
         # Check if all calibrators have already been fitted
         self.fit()
 
@@ -606,16 +669,19 @@ class CvPlusCalibrator:
         concat_y_lo = None
         concat_y_hi = None
         concat_norm_weights = None
+        b_X = get_backend(X)
 
         for k, predictor in kfold_predictors_dict.items():
             # Predictions
             y_pred = predictor.predict(X)
 
-            if y_pred is None:
+            if y_pred is None:  # sanity check
                 raise RuntimeError("No prediction obtained with cv+.")
 
+            y_pred_np = b_X.to_numpy(y_pred)
+
             # Check for multivariate predictions
-            if y_pred.ndim > 1:
+            if y_pred_np.ndim > 1:
                 self._feature_axis = -1
 
             # nonconformity scores
@@ -626,25 +692,23 @@ class CvPlusCalibrator:
             # Reshaping nonconformity scores to broadcast them
             # on y_pred samples when computing the prediction sets
             # Source: R. Barber Section 3 https://arxiv.org/pdf/1905.02928.pdf
-            y_pred = y_pred[..., np.newaxis]
+            y_pred_np = y_pred_np[..., np.newaxis]
+            b = get_backend(nconf_scores)
+            nconf_scores = b.to_numpy(nconf_scores)
             if len(nconf_scores.shape) != 2:
-                try:
-                    nconf_scores = np.array(nconf_scores)
-                    nconf_scores = nconf_scores[np.newaxis, ...]
-                except Exception:
-                    # @TODO extend the scope beyond castable to ndarrays
-                    raise RuntimeError(
-                        "Cannot cast nonconformity scores to numpy array."
-                    )
+                nconf_scores = nconf_scores[np.newaxis, ...]
 
             if concat_y_lo is None or concat_y_hi is None:
                 concat_y_lo, concat_y_hi = kth_calibrator.pred_set_func(
-                    y_pred, nconf_scores
+                    y_pred_np, nconf_scores
                 )
                 if norm_weights is not None:
                     concat_norm_weights = norm_weights
             else:
-                y_lo, y_hi = kth_calibrator.pred_set_func(y_pred, nconf_scores)
+                y_lo, y_hi = kth_calibrator.pred_set_func(
+                    y_pred_np, nconf_scores
+                )
+                y_lo, y_hi = b_X.to_numpy(y_lo), b_X.to_numpy(y_hi)
                 concat_y_lo = np.concatenate([concat_y_lo, y_lo], axis=1)
                 concat_y_hi = np.concatenate([concat_y_hi, y_hi], axis=1)
                 if norm_weights is not None:
@@ -660,9 +724,11 @@ class CvPlusCalibrator:
             weights = None
         else:
             weights = concat_norm_weights
-            infty_array = np.array([np.inf])
-            concat_y_lo = np.concatenate([concat_y_lo, infty_array])
-            concat_y_hi = np.concatenate([concat_y_hi, infty_array])
+            inf_shape = (1,) + concat_y_lo.shape[1:]
+            inf_block = np.full(inf_shape, np.inf)
+
+            concat_y_lo = np.concatenate([concat_y_lo, inf_block], axis=0)
+            concat_y_hi = np.concatenate([concat_y_hi, inf_block], axis=0)
 
         y_lo = -1 * quantile(
             -1 * concat_y_lo,
@@ -678,4 +744,4 @@ class CvPlusCalibrator:
             axis=1,
             feature_axis=self._feature_axis,
         )
-        return y_lo, y_hi
+        return b_X.asarray(y_lo, like=X), b_X.asarray(y_hi, like=X)

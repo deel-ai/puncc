@@ -24,6 +24,7 @@ import os
 import unittest
 
 import numpy as np
+import pytest
 from sklearn import linear_model
 from sklearn.datasets import make_regression
 from sklearn.model_selection import train_test_split
@@ -338,3 +339,32 @@ class ConformalPredictorCheck(unittest.TestCase):
         np.testing.assert_array_equal(y_pred_hi, l_y_pred_hi)
 
         os.remove("my_cp.pkl")
+
+def test_conformal_predictor_accepts_torch_weight_function_outputs():
+    torch = pytest.importorskip("torch")
+
+    X_fit = np.array([[0.0], [1.0]])
+    y_fit = np.array([0.0, 1.0])
+    X_calib = np.array([[2.0], [3.0]])
+    y_calib = np.array([2.0, 3.0])
+
+    predictor = BasePredictor(linear_model.LinearRegression())
+    calibrator = BaseCalibrator(
+        nonconf_score_func=nonconformity_scores.absolute_difference,
+        pred_set_func=prediction_sets.constant_interval,
+        weight_func=lambda x: torch.ones(len(x)),
+    )
+    conformal_predictor = ConformalPredictor(
+        predictor=predictor,
+        calibrator=calibrator,
+        splitter=IdSplitter(X_fit, y_fit, X_calib, y_calib),
+    )
+
+    conformal_predictor.fit(
+        np.vstack([X_fit, X_calib]), np.concatenate([y_fit, y_calib])
+    )
+
+    np.testing.assert_allclose(
+        conformal_predictor._cv_cp_agg._calibrators[0].get_norm_weights(),
+        np.array([1 / 3, 1 / 3, 1 / 3]),
+    )

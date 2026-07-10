@@ -20,91 +20,117 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""This module provides experimental features. Use cautiously."""
+"""
+This module provides experimental features. Use cautiously.
+"""
 
-import importlib.util
+from deel.puncc.api.backend import copy_model
 
-if importlib.util.find_spec("torch") is not None:
+try:
     import torch
+except ImportError:  # pragma: no cover
+    torch = None
 
-    class TorchPredictor:
-        """Wrapper of a torch prediction model $\\hat{f}$. Enables to
-                standardize the interface of torch predictors and to expose generic `fit`,
-                `predict` and `copy` methods.
 
-        Args:
-            model (Any): torch prediction model $\\hat{f}$
-            is_trained (bool): boolean flag that informs if the model is pre-trained. If True, the call to `fit` will be skipped
-            optimizer (torch.optim.Optimizer): torch optimizer. Defaults to `torch.optim.Adam`.
-            criterion (torch.nn.modules.loss): criterion that measures the distance between predictions and outputs. Default to  `torch.nn.MSELoss`.
-            compile_kwargs: keyword arguments to be used if needed during the call `model.compile` on the underlying model
+class TorchPredictor:
+    """Wrapper of a torch prediction model :math:`\hat{f}`. Enables to
+    standardize the interface of torch predictors and to expose generic :func:`fit`,
+    :func:`predict` and :func:`copy` methods.
 
-        Note:
+    :param Any model: torch prediction model :math:`\hat{f}`
+    :param bool is_trained: boolean flag that informs if the model is
+        pre-trained. If True, the call to :func:`fit` will be skipped
+    :param torch.optim.Optimizer optimizer: torch optimizer.
+        Defaults to `torch.optim.Adam`.
+    :param torch.nn.modules.loss criterion: criterion that measures the distance
+        between predictions and outputs. Default to  `torch.nn.MSELoss`.
+    :param compile_kwargs: keyword arguments passed to the optimizer
+        constructor when creating the optimizer in :func:`fit`.
 
-            The `model` constructor has to take as argument both
-            `input_feat`:int and `output_feat`:int, corresponding to the number
-            of features (or channels) for each input and output, respectively."""
+    """
 
-        def __init__(
-            self,
-            model,
-            is_trained=False,
-            optimizer=torch.optim.Adam,
-            criterion=torch.nn.MSELoss(reduction="sum"),
-            **compile_kwargs,
-        ):
-            self.model = model
-            self.is_trained = is_trained
-            self.compile_kwargs = compile_kwargs
-            self.optimizer = optimizer
-            self.criterion = criterion
+    def __init__(
+        self,
+        model,
+        is_trained=False,
+        optimizer=None,
+        criterion=None,
+        **compile_kwargs,
+    ):
+        if torch is None:  # pragma: no cover
+            raise ImportError("TorchPredictor requires torch to be installed.")
 
-        def fit(self, X, y, **kwargs):
-            """Fit model to the training data.
+        if optimizer is None:  # pragma: no cover
+            optimizer = torch.optim.Adam
+        if criterion is None:  # pragma: no cover
+            criterion = torch.nn.MSELoss(reduction="sum")
 
-            Args:
-                X (torch.Tensor): train features.
-                y (torch.Tensor): train labels.
-                kwargs: keyword arguments to configure the training."""
+        self.model = model
+        self.is_trained = is_trained
+        self.compile_kwargs = compile_kwargs
+        self.optimizer = optimizer
+        self.criterion = criterion
+
+    def fit(self, X, y, **kwargs):
+        """Fit model to the training data.
+
+        :param torch.Tensor X: train features.
+        :param torch.Tensor y: train labels.
+        :param kwargs: keyword arguments to configure the training.
+
+        """
+        was_training = self.model.training
+        self.model.train()
+        try:
             if "epochs" in kwargs.keys():
                 epochs = kwargs["epochs"]
             else:
                 epochs = 1
 
-            optimizer = self.optimizer(self.model.parameters(), **self.compile_kwargs)
+            optimizer = self.optimizer(
+                self.model.parameters(), **self.compile_kwargs
+            )
             for _ in range(epochs):
                 y_pred = self.model(X)
                 loss = self.criterion(y_pred, y)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+        finally:
+            self.model.train(was_training)
 
-        def predict(self, X):
-            """Compute predictions on new examples.
+    def predict(self, X):
+        """Compute predictions on new examples.
 
-            Args:
-                X (torch.Tensor): new examples' features.
+        :param torch.Tensor X: new examples' features.
 
-            Returns:
-                torch.Tensor: predictions $\\hat{f}(X)$ associated to the new examples X.
-            """
-            return self.model(X)
+        :returns: predictions :math:`\hat{f}(X)` associated to the new
+            examples X.
+        :rtype: torch.Tensor
 
-        def copy(self):
-            """Returns a copy of the predictor.
+        """
+        was_training = self.model.training
+        self.model.eval()
+        try:
+            with torch.no_grad():
+                return self.model(X)
+        finally:
+            self.model.train(was_training)
 
-            Returns:
-                TorchPredictor: copy of the predictor."""
-            input_feat = (self.model.state_dict()).popitem(last=False)[1].shape[-1]
-            output_feat = (self.model.state_dict()).popitem(last=True)[1].shape[-1]
-            model = type(self.model)(input_feat=input_feat, output_feat=output_feat)
-            model.load_state_dict(self.model.state_dict())
-            predictor_copy = TorchPredictor(
-                model=model,
-                is_trained=self.is_trained,
-                optimizer=self.optimizer,
-                criterion=self.criterion,
-                **self.compile_kwargs,
-            )
+    def copy(self):
+        """Returns a copy of the predictor.
 
-            return predictor_copy
+        :returns: copy of the predictor.
+        :rtype: TorchPredictor
+
+        """
+        model = copy_model(self.model)
+        predictor_copy = TorchPredictor(
+            model=model,
+            is_trained=self.is_trained,
+            optimizer=self.optimizer,
+            criterion=self.criterion,
+            **self.compile_kwargs,
+        )
+
+        return predictor_copy

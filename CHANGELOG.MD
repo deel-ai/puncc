@@ -4,6 +4,74 @@ This file documents main changes across releases of **PUNCC**.
 
 ---
 
+## [0.9.3] - 2026-06-23
+
+### Changed
+- Updated `deel.puncc.classification.RAPS` to subclass `SplitConformalPredictor`. This enable substantial code factorization
+- Updated `deel.puncc.classification.ClasswiseLAC` to pass `ClasswiseCalibrator` directly to the `SplitConformalPredictor`'s constructor
+
+### Fixed
+- Documentation typos
+
+### CI / Maintenance
+- Updated branching tests following the changes of RAPS and ClasswiseLAC
+---
+
+## [0.9.2] - 2026-06-20
+
+### Added 
+- Backend-level model copy abstraction supporting sklearn, JAX, TensorFlow/Keras, and PyTorch models through a unified `copy_model` entrypoint
+- Added tutorial on how to use native tensorflow/keras models with puncc
+- Added tutorial on how to use puncc with custom nonconformity scores and calibration workflows.
+- Added `column_stack(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
+- Added `normalize_backend_inputs(...)` to infer a backend and normalize user-provided inputs once at API boundaries
+- Added `empty_like(...)` support across NumPy, pandas, PyTorch, JAX, and TensorFlow backend implementations
+- Added optional `like` support to backend `asarray(...)` methods to place auxiliary arrays on the same backend device as a reference object when supported
+- Implemented `take(...)` for all registered backends to support splitting data across multiple data types.
+
+
+### Changed
+- Refactored predictor wrappers to delegate model cloning to the backend abstraction 
+- Updated `TorchPredictor` experimental wrapper to reuse the shared backend copy mechanism
+- Revised the PyTorch tutorial to use native torch models directly, removing the dependency on Skorch
+- Updated CV conformalization to support GPU acceleration
+- Avoid eager import (e.g. tensorflow) from prediction wrappers by detecting loaded frameworks through runtime module inspection
+- Clarified the backend normalization contract in `backend.py` docstrings and helper utilities
+- Updated `nonconformity_scores.py` and `prediction_sets.py` to reuse the shared backend normalization helper where backend inference semantics are preserved
+- Updated the conformalization module so it no longer assumes NumPy arrays for inputs or outputs
+- Updated `prediction_sets.py` to convert `scores_quantile` with `b.asarray(..., like=...)`, ensuring quantiles are placed on the same device as predictions for backend operations
+- Updated `BasePredictor` and `DualPredictor` to support GPU acceleration   
+- Updated `scaled_interval` to convert weights into the prediction backend before interval arithmetic
+- Updated `CvPlusCalibrator` to convert nonconformity scores to NumPy before shape handling
+- Updated weighted CV+ to append an inf block using the existing array rank instead of a 1-D scalar append
+- Replaced the local splitter indexing fallback with backend delegation in `splitting` module, so splits now use backend-aware indexing instead of producing Python lists of row tensors
+- Updated conformal prediction with tensorflow tutorial to use native TensorFlow data structures instead of numpy arrays
+
+
+### Fixed
+- Improved framework-agnostic model copy compatibility across predictor wrappers
+- Corrected the definition of the prediction set for RAPS in theory overview 
+- Completed backend `empty_like(...)` coverage and preserved pandas index/column structure for `empty_like` outputs
+- Fixed mixed-device prediction set operations by aligning NumPy-derived `scores_quantile` values with the prediction tensor device for PyTorch, JAX, and TensorFlow backends
+- Fixed `BasePredictor.predict` to use the backend abstraction for squeezing instead of calling `np.squeeze` directly
+- Fixed TensorFlow asarray(..., like=...) in the backend so it aligns dtype with `like.dtype` in addition to device placement. This prevents for example float32/float64 interval arithmetic failures at prediction time.
+
+
+### CI / Maintenance
+- Expanded API test coverage for backend-driven model copying and predictor wrapper copy behavior.
+- Added backend tests for `normalize_backend_inputs(...)` and `empty_like(...)`, plus regression 
+coverage for updated nonconformity score and prediction set helpers
+- Added backend tests covering `asarray(..., like=...)` behavior across NumPy, pandas, PyTorch, JAX, and TensorFlow, including JAX device compatibility paths and optional CUDA coverage for PyTorch
+- Raised the minimum supported scikit-learn version to 1.5.0 to address security vulnerabilities in older releases.
+- Added alternative expected seed results in conformal regression tests for newer scikit-learn versions.
+- Removed py38 from tox envlist
+- Added backend regression tests for torch/tensorflow same-device identity and torch device-move coverage.
+- Added regression tests for torch weight handling, mixed torch/NumPy classwise LAC, and CV+ weight concatenation across folds.
+- Added a backend regression test for row selection across backends
+- Added a regression test for mixed NumPy/TensorFlow calibration inputs 
+- Added TensorFlow, PyTorch and jax regression tests for dtype alignment in
+---
+
 ## [0.9.1] - 2026-04-09
 
 ### Added

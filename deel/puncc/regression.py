@@ -21,7 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements usual conformal regression wrappers."""
+This module implements usual conformal regression wrappers.
+"""
 
 from copy import deepcopy
 from typing import Any
@@ -37,7 +38,10 @@ from sklearn.utils import resample
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
 from deel.puncc.api.calibration import BaseCalibrator, LeveragedCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor, SplitConformalPredictor
+from deel.puncc.api.conformalization import (
+    ConformalPredictor,
+    SplitConformalPredictor,
+)
 from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.api.prediction import DualPredictor
 from deel.puncc.api.prediction import MeanVarPredictor
@@ -47,22 +51,21 @@ from deel.puncc.api.utils import generate_leverage_func
 
 class SplitCP(SplitConformalPredictor):
     """Split conformal prediction method. For more details, we refer the user to
-    the theory overview page.
+    the :ref:`theory overview page <theory splitcp>`.
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        train (bool): if False, prediction model(s) will not be (re)trained.
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-        random_state (int): random seed used when the user does not
+    :param int random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
-        weight_func (callable): function that takes as argument an array of
+    :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
 
-    Examples:
-        Basic usage:
+    .. _example splitcp:
 
-        ```python
+    Example::
+
         from deel.puncc.regression import SplitCP
         from deel.puncc.api.prediction import BasePredictor
 
@@ -109,8 +112,7 @@ class SplitCP(SplitConformalPredictor):
                                      y_pred_upper=y_pred_upper)
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average width: {np.round(width, 2)}")
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -132,23 +134,22 @@ class SplitCP(SplitConformalPredictor):
 
 class LocallyAdaptiveCP(SplitConformalPredictor):
     """Locally adaptive conformal prediction method. For more details, we refer the user to
-    the theory overview page
+    the :ref:`theory overview page <theory lacp>`
 
-    Args:
-        predictor (MeanVarPredictor): a predictor implementing fit and predict.
+    :param MeanVarPredictor predictor: a predictor implementing fit and predict.
         Must embed two models for point and dispersion estimations respectively.
-        train (bool): if False, prediction model(s) will not be (re)trained.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-        random_state (float): random seed used when the user does not
+    :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
-        weight_func (callable): function that takes as argument an array of
+    :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
 
-    Examples:
-        Basic usage:
+    .. _example lacp:
 
-        ```python
+    Example::
+
         from deel.puncc.regression import LocallyAdaptiveCP
         from deel.puncc.api.prediction import MeanVarPredictor
 
@@ -197,8 +198,7 @@ class LocallyAdaptiveCP(SplitConformalPredictor):
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average width: {np.round(width, 2)}")
 
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -220,20 +220,20 @@ class LocallyAdaptiveCP(SplitConformalPredictor):
 
 class LeverageWeightedCP(SplitConformalPredictor):
     """Leverage-weighted conformal prediction method. For more details, we refer the user to
-    the theory overview page
+    the :ref:`theory overview page <theory lwcp>`
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        train (bool): if False, prediction model(s) will not be (re)trained.
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-        random_state (float): random seed used when the user does not
+    :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
-        weight_func (Callable): function that weights the leverage scores.
+    :param Callable weight_func: function that weights the leverage scores.
         Defaults to None for uniform weighting.
-    Examples:
-        Basic usage:
 
-        ```python
+    .. _example lwcp:
+
+    Example::
+
         from deel.puncc.regression import LeverageWeightedCP
         from deel.puncc.api.prediction import BasePredictor
         from sklearn.datasets import make_regression
@@ -290,8 +290,7 @@ class LeverageWeightedCP(SplitConformalPredictor):
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average width: {np.round(width, 2)}")
 
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -322,12 +321,11 @@ class LeverageWeightedCP(SplitConformalPredictor):
         """This method fits the underlying model on (X_fit, y_fit) and computes
         the leverage-weighted nonconformity scores on (X_calib, y_calib).
 
-        Args:
-            X_fit (Iterable): features from the fit dataset.
-            y_fit (Iterable): labels from the fit dataset.
-            X_calib (Iterable): features from the calibration dataset.
-            y_calib (Iterable): labels from the calibration dataset.
-            kwargs (dict): predict configuration to be passed to the model's
+        :param Iterable X_fit: features from the fit dataset.
+        :param Iterable y_fit: labels from the fit dataset.
+        :param Iterable X_calib: features from the calibration dataset.
+        :param Iterable y_calib: labels from the calibration dataset.
+        :param dict kwargs: predict configuration to be passed to the model's
             predict method.
         """
         if X_fit is None:
@@ -346,22 +344,22 @@ class LeverageWeightedCP(SplitConformalPredictor):
 
 class CQR(SplitConformalPredictor):
     """Conformalized quantile regression method. For more details, we refer the
-    user to the theory overview page.
+    user to the :ref:`theory overview page <theory cqr>`.
 
-    Args:
-        predictor (DualPredictor): a predictor implementing fit and predict.
+    :param DualPredictor predictor: a predictor implementing fit and predict.
         Must embed two models for lower and upper quantiles estimations
         respectively.
-        train (bool): if False, prediction model(s) will not be (re)trained.
+    :param bool train: if False, prediction model(s) will not be (re)trained.
         Defaults to True.
-        weight_func (callable): function that takes as argument an array of
+    :param callable weight_func: function that takes as argument an array of
         features X and returns associated "conformality" weights, defaults to
         None.
 
-    Examples:
-        Basic usage:
 
-        ```python
+    .. _example cqr:
+
+    Example::
+
         from deel.puncc.regression import CQR
         from deel.puncc.api.prediction import DualPredictor
 
@@ -416,8 +414,7 @@ class CQR(SplitConformalPredictor):
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average width: {np.round(width, 2)}")
 
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -439,18 +436,15 @@ class CQR(SplitConformalPredictor):
 
 class CVPlus:
     """Cross-validation plus method. For more details, we refer the user to
-    the theory overview page.
+    the :ref:`theory overview page <theory cvplus>`.
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        K (int): number of training/calibration folds.
-        random_state (int): seed to control random folds.
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param int K: number of training/calibration folds.
+    :param int random_state: seed to control random folds.
 
 
-    Examples:
-        Basic usage:
+    Example::
 
-        ```python
         from deel.puncc.regression import CVPlus
         from deel.puncc.api.prediction import BasePredictor
 
@@ -493,8 +487,7 @@ class CVPlus:
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average width: {np.round(width, 2)}")
 
-
-        ```"""
+    """
 
     def __init__(self, predictor: BasePredictor, *, K: int, random_state=None):
         self.predictor = predictor
@@ -522,14 +515,13 @@ class CVPlus:
         """This method fits the ensemble models based on the K-fold scheme.
         The out-of-bag folds are used to computes residuals on (X_calib, y_calib).
 
-        Args:
-            X (Iterable): features from the train dataset.
-            y (Iterable): labels from the train dataset.
-            use_cached (bool): if set, enables to add the previously computed
+        :param Iterable X: features from the train dataset.
+        :param Iterable y: labels from the train dataset.
+        :param bool use_cached: if set, enables to add the previously computed
             nonconformity scores (if any) to the pool estimated in the current
             call to `fit`. The aggregation follows the CV+
             procedure.
-            kwargs (dict): predict configuration to be passed to the model's
+        :param dict kwargs: predict configuration to be passed to the model's
             predict method.
 
         """
@@ -539,12 +531,11 @@ class CVPlus:
         """Conformal interval predictions (w.r.t target miscoverage alpha)
         for new samples.
 
-        Args:
-            X_test (Iterable): features of new samples.
-            alpha (float): target maximum miscoverage.
+        :param Iterable X_test: features of new samples.
+        :param float alpha: target maximum miscoverage.
 
-        Returns:
-            : y_pred, y_lower, y_higher
+        :returns: y_pred, y_lower, y_higher
+        :rtype: Tuple[ndarray]
 
         """
 
@@ -562,8 +553,8 @@ class CVPlus:
     def get_nonconformity_scores(self) -> dict:
         """Get computed nonconformity scores per kfold.
 
-        Returns:
-            : computed nonconfomity scores per kfold.
+        :returns: computed nonconfomity scores per kfold.
+        :rtype: dict
 
         """
 
@@ -584,24 +575,22 @@ of the exchangeability assumption.
 class EnbPI:
     """Ensemble batch prediction intervals method
 
-    Args:
-        predictor (BasePredictor): object implementing '.fit()' and
+    :param BasePredictor predictor: object implementing '.fit()' and
         '.predict()' methods
-        B (int): number of bootstrap models
-        agg_func_loo (func): aggregation function of LOO estimators.
-        random_state (int): determines random generation.
+    :param int B: number of bootstrap models
+    :param func agg_func_loo: aggregation function of LOO estimators.
+    :param int random_state: determines random generation.
 
-    !!! note
+    .. NOTE::
+
         *Xu et al.* defined two aggregation functions of leave-one-out estimators:
 
             - For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_:
-              `lambda x, *args: np.quantile(x, alpha, *args)`
-            - For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: `np.mean`
+              :code:`lambda x, *args: np.quantile(x, alpha, *args)`
+            - For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
 
-    Examples:
-        Basic usage:
+    Example::
 
-        ```python
         import numpy as np
 
         from deel.puncc.regression import EnbPI
@@ -650,10 +639,11 @@ class EnbPI:
         coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
         width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
 
+    """
 
-        ```"""
-
-    def __init__(self, predictor, B: int, agg_func_loo=np.mean, random_state=None):
+    def __init__(
+        self, predictor, B: int, agg_func_loo=np.mean, random_state=None
+    ):
         self.predictor = predictor
         self.B = B
         # Aggregation function of LOO predictions
@@ -673,25 +663,23 @@ class EnbPI:
     def _compute_residuals(self, y_pred, y_true):
         """Residual computation formula.
 
-        Args:
-            y_pred (ndarray): predicted values.
-            y_true (ndarray): true values.
-            sigma_pred (ndarray): predicted variability.
+        :param ndarray y_pred: predicted values.
+        :param ndarray y_true: true values.
+        :param ndarray sigma_pred: predicted variability.
 
-        Returns:
-            : residuals.
+        :returns: residuals.
+        :rtype: ndarray
         """
         return nonconformity_scores.absolute_difference(y_pred, y_true)
 
     def _compute_pi(self, y_pred, w):
         """Compute prediction intervals.
 
-        Args:
-            y_pred (ndarray): predicted values.
-            w (ndarray): residuals' quantiles.
+        :param ndarray y_pred: predicted values.
+        :param ndarray w: residuals' quantiles.
 
-        Returns:
-            : prediction intervals.
+        :returns: prediction intervals.
+        :rtype: Tuple[ndarray]
 
         """
 
@@ -700,12 +688,11 @@ class EnbPI:
     def _compute_boot_residuals(self, boot_pred, y_true):
         """Compute residuals w.r.t the boostrap aggregation.
 
-        Args:
-            boot_pred (ndarray): bootstrapped predicted values.
-            y_true (ndarray): true targets.
+        :param ndarray boot_pred: bootstrapped predicted values.
+        :param ndarray y_true: true targets.
 
-        Returns:
-            : residuals.
+        :returns: residuals.
+        :rtype: list[ndarray]
 
         """
         # Approximation of LOO predictions:
@@ -720,11 +707,10 @@ class EnbPI:
     def _compute_loo_predictions(self, boot_pred):
         """Compute Leave-One-Out (LOO) predictions from bootstrapped predicitons.
 
-        Args:
-            boot_pred (ndarray): bootstrapped predicted values.
+        :param ndarray boot_pred: bootstrapped predicted values.
 
-        Returns:
-            : LOO prediction.
+        :returns: LOO prediction.
+        :rtype: ndarray
 
         """
         return np.matmul(self._oob_matrix, boot_pred)
@@ -733,13 +719,11 @@ class EnbPI:
         """Fit B bootstrap models on the bootstrap bags and respectively
         compute/store residuals on out-of-bag samples.
 
-        Args:
-            X (ndarray): training feature set
-            y (ndarray): training label set
-            kwargs (dict): fit arguments for the underlying model
+        :param ndarray X: training feature set
+        :param ndarray y: training label set
+        :param dict kwargs: fit arguments for the underlying model
 
-        Raises:
-            RuntimeError: empty out-of-bag.
+        :raises RuntimeError: empty out-of-bag.
 
         """
         self._oob_dict = {}  # Key: b. Value: out of bag weighted index
@@ -818,25 +802,28 @@ class EnbPI:
         # === (3) === Residuals computation
         # print(" === step 2/2: computing nonconformity scores ...")
         # Predictions on X by each bootstrap estimator
-        boot_preds = [self._boot_predictors[b].predict(X) for b in range(self.B)]
+        boot_preds = [
+            self._boot_predictors[b].predict(X) for b in range(self.B)
+        ]
         boot_preds = np.array(boot_preds)
         residuals = self._compute_boot_residuals(boot_preds, y)
         self.residuals += residuals
 
-    def predict(self, X_test, alpha=0.1, y_true=None, s=None) -> Tuple[np.ndarray]:
+    def predict(
+        self, X_test, alpha=0.1, y_true=None, s=None
+    ) -> Tuple[np.ndarray]:
         """Estimate conditional mean and interval prediction.
 
-        Args:
-            X_test (ndarray): features of new samples.
-            y_true (ndarray): if not None, residuals update based on
+        :param ndarray X_test: features of new samples.
+        :param ndarray y_true: if not None, residuals update based on
             seasonality is performed.
-            alpha (float): target maximum miscoverage.
-            s (int): Number of online samples necessary to update the
+        :param float alpha: target maximum miscoverage.
+        :param int s: Number of online samples necessary to update the
             residuals sequence.
 
-        Returns:
-            : A tuple composed of y_pred (conditional mean), y_pred_lower
+        :returns: A tuple composed of y_pred (conditional mean), y_pred_lower
             (lower PI bound) and y_pred_upper (upper PI bound).
+        :rtype: Tuple[ndarray]
 
         """
         y_pred_upper_list = []
@@ -882,7 +869,10 @@ class EnbPI:
                 )
             # Matrix containing batch predictions of each bootstrap model
             boot_preds = np.array(
-                [self._boot_predictors[b].predict(X_batch) for b in range(self.B)]
+                [
+                    self._boot_predictors[b].predict(X_batch)
+                    for b in range(self.B)
+                ]
             )
             # Approximation of LOO predictions
             loo_preds = self._compute_loo_predictions(boot_preds)
@@ -915,24 +905,22 @@ class EnbPI:
 class AdaptiveEnbPI(EnbPI):
     """Locally adaptive version ensemble batch prediction intervals method.
 
-    Args:
-        predictor (MeanVarPredictor): object implementing '.fit()' and
+    :param MeanVarPredictor predictor: object implementing '.fit()' and
         '.predict()' methods
-        B (int): number of bootstrap models
-        agg_func_loo (func): aggregation function of LOO estimators.
-        random_state (int): determines random generation.
+    :param int B: number of bootstrap models
+    :param func agg_func_loo: aggregation function of LOO estimators.
+    :param int random_state: determines random generation.
 
-    !!! note
+    .. note::
+
         *Xu et al.* defined two aggregation functions of leave-one-out estimators:
 
             - For `EnbPI v1 <http://proceedings.mlr.press/v139/xu21h.html>`_:
-              `lambda x, *args: np.quantile(x, alpha, *args)`
-            - For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: `np.mean`
+              :code:`lambda x, *args: np.quantile(x, alpha, *args)`
+            - For `EnbPI v2 <https://arxiv.org/abs/2010.09107v12>`_: :code:`np.mean`
 
-    Examples:
-        Basic usage:
+    Example::
 
-        ```python
         from deel.puncc.regression import AdaptiveEnbPI
         from deel.puncc.api.prediction import MeanVarPredictor
 
@@ -982,18 +970,16 @@ class AdaptiveEnbPI(EnbPI):
         coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
         width = regression_sharpness(y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper)
 
-
-        ```"""
+    """
 
     def _compute_pi(self, y_pred, w) -> Tuple[np.ndarray]:
         """Compute prediction intervals.
 
-        Args:
-            y_pred (ndarray): predicted values and variabilities.
-            w (ndarray): residuals' quantiles.
+        :param ndarray y_pred: predicted values and variabilities.
+        :param ndarray w: residuals' quantiles.
 
-        Returns:
-            : prediction intervals.
+        :returns: prediction intervals.
+        :rtype: Tuple[ndarray]
 
         """
 
@@ -1002,13 +988,12 @@ class AdaptiveEnbPI(EnbPI):
     def _compute_residuals(self, y_pred, y_true):
         """Residual computation formula.
 
-        Args:
-            y_pred (ndarray): predicted values.
-            y_true (ndarray): true values.
-            sigma_pred (ndarray): predicted variability.
+        :param ndarray y_pred: predicted values.
+        :param ndarray y_true: true values.
+        :param ndarray sigma_pred: predicted variability.
 
-        Returns:
-            : residuals.
+        :returns: residuals.
+        :rtype: ndarray
 
         """
         return nonconformity_scores.scaled_ad(y_pred, y_true)
@@ -1023,11 +1008,10 @@ class AdaptiveEnbPI(EnbPI):
     def _compute_loo_predictions(self, boot_pred):
         """Compute Leave-One-Out (LOO) predictions from bootstrapped predicitons.
 
-        Args:
-            boot_pred (ndarray): bootstrapped predicted values.
+        :param ndarray boot_pred: bootstrapped predicted values.
 
-        Returns:
-            : LOO prediction.
+        :returns: LOO prediction.
+        :rtype: ndarray
 
         """
         loo_mean = np.matmul(self._oob_matrix, boot_pred[:, :, 0])

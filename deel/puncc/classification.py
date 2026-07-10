@@ -21,40 +21,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements conformal classification procedures."""
+This module implements conformal classification procedures.
+"""
 
 from typing import Any
-from typing import Iterable
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
-import numpy as np
 
 from deel.puncc.api import nonconformity_scores
 from deel.puncc.api import prediction_sets
-from deel.puncc.api.calibration import BaseCalibrator
 from deel.puncc.api.calibration import ClasswiseCalibrator
-from deel.puncc.api.conformalization import ConformalPredictor, SplitConformalPredictor
+from deel.puncc.api.conformalization import SplitConformalPredictor
 from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.api.splitting import IdSplitter
-from deel.puncc.api.splitting import RandomSplitter
 
 
 class LAC(SplitConformalPredictor):
     """Implementation of the Least Ambiguous Set-Valued Classifier (LAC).
     For more details, we refer the user to the
-    theory overview page.
+    :ref:`theory overview page <theory lac>`.
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        train (bool): if False, prediction model(s) will not be trained and
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
 
-    Examples:
-        Basic usage:
+    .. _example lac:
 
-        ```python
+    Example::
+
         from deel.puncc.classification import LAC
         from deel.puncc.api.prediction import BasePredictor
 
@@ -116,8 +110,7 @@ class LAC(SplitConformalPredictor):
 
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average prediction set size: {np.round(size, 2)}")
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -145,17 +138,14 @@ class ClasswiseLAC(SplitConformalPredictor):
     Ding et al. "Class-Conditional Conformal Prediction with Many Classes"
     https://arxiv.org/abs/2306.09335
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        train (bool): if False, prediction model(s) will not be trained and
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
-        random_state (float): random seed used when the user does not
+    :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
 
-    Examples:
-        Basic usage:
+    Example::
 
-        ```python
         from deel.puncc.classification import ClasswiseLAC
         from deel.puncc.api.prediction import BasePredictor
 
@@ -213,8 +203,7 @@ class ClasswiseLAC(SplitConformalPredictor):
 
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average prediction set size: {np.round(size, 2)}")
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -224,58 +213,45 @@ class ClasswiseLAC(SplitConformalPredictor):
     ):
         super().__init__(
             predictor=predictor,
-            nonconf_score_func=None,
-            pred_set_func=None,
-            train=train,
-            random_state=random_state,
-        )
-
-        # Redefine calibrator as classwise calibrator
-        self.calibrator = ClasswiseCalibrator(
             nonconf_score_func=nonconformity_scores.classwise_lac_score,
             pred_set_func=prediction_sets.classwise_lac_set,
-            weight_func=None,
-        )
-        # Update conformal predictor
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
             train=train,
+            random_state=random_state,
+            CalibratorClass=ClasswiseCalibrator,
         )
 
 
-class RAPS:
+class RAPS(SplitConformalPredictor):
     """Implementation of Regularized Adaptive Prediction Sets (RAPS).
-    The hyperparameters $\\lambda$ and $k_{reg}$ are used to
+    The hyperparameters :math:`\\lambda` and :math:`k_{reg}` are used to
     encourage small prediction sets. For more details, we refer the user to the
-    theory overview page.
+    :ref:`theory overview page <theory raps>`.
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        train (bool): if False, prediction model(s) will not be trained and
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
-        random_state (float): random seed used when the user does not
+    :param float random_state: random seed used when the user does not
         provide a custom fit/calibration split in `fit` method.
-        lambd (float): positive weight associated to the regularization term
-        that encourages small set sizes. If $\\lambda = 0$, there is no
+    :param float lambd: positive weight associated to the regularization term
+        that encourages small set sizes. If :math:`\\lambda = 0`, there is no
         regularization and the implementation identifies with **APS**.
-        k_reg (float): class rank (ordered by descending probability) starting
+    :param float k_reg: class rank (ordered by descending probability) starting
         from which the regularization is applied. For example,
-        if $k_{reg} = 3$, then the fourth most likely estimated class has
-        an extra penalty of size $\\lambda$.
-        rand (bool): turn on or off randomization used in raps algorithm.
+        if :math:`k_{reg} = 3`, then the fourth most likely estimated class has
+        an extra penalty of size :math:`\\lambda`.
+    :param bool rand: turn on or off randomization used in raps algorithm.
         One consequence of turning off randomization is avoiding empty
         prediction sets.
 
-    !!! note
-        If $\\lambda = 0$, there is no regularization and the
+    .. note::
+
+        If :math:`\\lambda = 0`, there is no regularization and the
         implementation identifies with **APS**.
 
-    Examples:
-        Basic usage:
+    .. _example raps:
 
-        ```python
+    Example::
+
         from deel.puncc.classification import RAPS
         from deel.puncc.api.prediction import BasePredictor
 
@@ -339,8 +315,7 @@ class RAPS:
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average prediction set size: {np.round(size, 2)}")
 
-
-        ```"""
+    """
 
     def __init__(
         self,
@@ -351,144 +326,36 @@ class RAPS:
         k_reg: int = 1,
         rand: bool = True,
     ):
-        self.predictor = predictor
-        self.calibrator = BaseCalibrator(
+
+        super().__init__(
+            predictor=predictor,
             nonconf_score_func=nonconformity_scores.raps_score_builder(
                 lambd=lambd, k_reg=k_reg, rand=rand
             ),
             pred_set_func=prediction_sets.raps_set_builder(
                 lambd=lambd, k_reg=k_reg, rand=rand
             ),
-            weight_func=None,
+            train=train,
+            random_state=random_state,
         )
-
-        self.train = train
-
-        self.random_state = random_state
-
-        self.conformal_predictor = ConformalPredictor(
-            predictor=self.predictor,
-            calibrator=self.calibrator,
-            splitter=object(),
-            train=self.train,
-        )
-
-    def fit(
-        self,
-        *,
-        X: Optional[Iterable] = None,
-        y: Optional[Iterable] = None,
-        fit_ratio: float = 0.8,
-        X_fit: Optional[Iterable] = None,
-        y_fit: Optional[Iterable] = None,
-        X_calib: Optional[Iterable] = None,
-        y_calib: Optional[Iterable] = None,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the models on the fit data
-        and computes nonconformity scores on calibration data.
-        If (X, y) are provided, randomly split data into
-        fit and calib subsets w.r.t to the fit_ratio.
-        In case (X_fit, y_fit) and (X_calib, y_calib) are provided,
-        the conformalization is performed on the given user defined
-        fit and calibration sets.
-
-        !!! note
-            If X and y are provided, `fit` ignores
-            any user-defined fit/calib split.
-
-
-        Args:
-            X (Iterable): features from the training dataset.
-            y (Iterable): labels from the training dataset.
-            fit_ratio (float): the proportion of samples assigned to the
-            fit subset.
-            X_fit (Iterable): features from the fit dataset.
-            y_fit (Iterable): labels from the fit dataset.
-            X_calib (Iterable): features from the calibration dataset.
-            y_calib (Iterable): labels from the calibration dataset.
-            kwargs (dict): predict configuration to be passed to the model's
-            fit method.
-
-        Raises:
-            RuntimeError: no dataset provided.
-
-        """
-
-        # Check if predictor is trained. Suppose that it is trained if the
-        # predictor has not "is_trained" attribute
-        is_trained = not hasattr(self.predictor, "is_trained") or (
-            hasattr(self.predictor, "is_trained") and self.predictor.is_trained
-        )
-
-        if X is not None and y is not None:
-            splitter = RandomSplitter(ratio=fit_ratio, random_state=self.random_state)
-
-        elif (
-            X_fit is not None
-            and y_fit is not None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            splitter = IdSplitter(X_fit, y_fit, X_calib, y_calib)
-
-        elif (
-            is_trained
-            and X_fit is None
-            and y_fit is None
-            and X_calib is not None
-            and y_calib is not None
-        ):
-            splitter = IdSplitter(
-                np.empty_like(X_calib), np.empty_like(y_calib), X_calib, y_calib
-            )
-
-        else:
-            raise RuntimeError("No dataset provided.")
-
-        # Update splitter
-        self.conformal_predictor.splitter = splitter
-
-        self.conformal_predictor.fit(X=X, y=y, **kwargs)
-
-    def predict(self, X_test: Iterable, alpha: float) -> Tuple:
-        """Conformal set predictions (w.r.t target miscoverage alpha)
-        for new samples.
-
-        Args:
-            X_test (Iterable): features of new samples.
-            alpha (float): target maximum miscoverage.
-
-        Returns:
-            : Tuple composed of the model estimate y_pred and the
-            prediction set set_pred
-        """
-
-        if self.conformal_predictor is None:
-            raise RuntimeError("Fit method should be called before predict.")
-
-        y_pred, set_pred = self.conformal_predictor.predict(X_test, alpha=alpha)
-
-        return y_pred, set_pred
 
 
 class APS(RAPS):
     """Implementation of Adaptive Prediction Sets (APS).
     For more details, we refer the user to the
-    theory overview page.
+    :ref:`theory overview page <theory aps>`.
 
-    Args:
-        predictor (BasePredictor): a predictor implementing fit and predict.
-        train (bool): if False, prediction model(s) will not be trained and
+    :param BasePredictor predictor: a predictor implementing fit and predict.
+    :param bool train: if False, prediction model(s) will not be trained and
         will be used as is. Defaults to True.
-        rand (bool): turn on or off randomization used in aps algorithm.
+    :param bool rand: turn on or off randomization used in aps algorithm.
         One consequence of turning off randomization is avoiding empty
         prediction sets.
 
-    Examples:
-        Basic usage:
+    .. _example aps:
 
-        ```python
+    Example::
+
         from deel.puncc.classification import APS
         from deel.puncc.api.prediction import BasePredictor
 
@@ -537,7 +404,7 @@ class APS(RAPS):
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
-        aps_cp.(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+        aps_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
 
         # The predict method infers prediction sets with respect to
         # the significance level alpha = 20%
@@ -550,8 +417,7 @@ class APS(RAPS):
         print(f"Marginal coverage: {np.round(coverage, 2)}")
         print(f"Average prediction set size: {np.round(size, 2)}")
 
-
-        ```"""
+    """
 
     def __init__(self, predictor, train=True, rand=True):
         super().__init__(predictor=predictor, train=train, lambd=0, rand=rand)
