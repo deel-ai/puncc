@@ -75,12 +75,12 @@ class ConformalPrediction(Generic[TSet]):
 
 class ConformalMethod(ABC):
     """
-    Asbtract base class for conformal prediction methods.
+    Abstract base class for conformal prediction methods.
     Any conformal prediction method should inherit from this class and implement the `calibrate` and `predict` methods.
     """
 
     # Any conformal method should have a model attribute.
-    __slots__ = ("model",)
+    __slots__ = ("model", "fit_function")
     def __init__(self, model:Predictor|PredictorLike,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         self.model = make_predictor(model)
@@ -98,7 +98,7 @@ class ConformalMethod(ABC):
         ...
 
     @abstractmethod
-    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike)->ConformalPrediction:
+    def predict(self, X_test:Iterable[Any], alpha:float)->ConformalPrediction:
         """
         Perform a conformal prediction using the calibrated model.
 
@@ -109,6 +109,7 @@ class ConformalMethod(ABC):
         Returns:
             ConformalPrediction: A container for the conformal prediction result, containing the base (non-conformal) prediction and the conformal prediction set.
         """
+        # TODO : support TensorLike for alpha
         ...
 
     def fit(self,

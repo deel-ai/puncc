@@ -29,7 +29,7 @@ from pathlib import Path
 from collections.abc import Sequence, Iterable
 from typing import Any, Callable, Self
 import pickle
-from deel.puncc.typing import Predictor, PredictorLike, TensorLike, NCScoreFunction, PredSetFunction
+from deel.puncc.typing import Predictor, PredictorLike, TensorLike, NCScoreFunction, PredSetFunction, make_predictor
 from deel.puncc import ops
 from deel.puncc.api.conformalization import ConformalMethod, ConformalPrediction
 
@@ -93,13 +93,20 @@ class ConformalPredictor(ConformalMethod):
 
     def predict(self,
                 X_test:Iterable[Any],
-                alpha:TensorLike|float,
+                alpha:float,
                 correction:Callable|None = None)->ConformalPrediction:
+        # TODO : support TensorLike for alpha
+
+        # Make predictions on the test set
         prediction = self.model(X_test)
+
+        # Size of the calibration set
         n = self.len_calibr
-        weights = None
+
         if correction is not None:
             alpha = correction(alpha) # TODO : add kwargs and other stuff that may be impacted by the correction?
+
+        weights = None
         if self.weight_function is not None:
             weights = self.weight_function(self._x_calib)
         quantile = ops.weighted_quantile(self.nc_scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
@@ -132,11 +139,12 @@ class ConformalPredictor(ConformalMethod):
             pickle.dump(self.__getstate__(), f)
 
     @classmethod
-    def load(cls, path:Path|str)->ConformalPredictor:
+    def load(cls, path:Path|str, model:Predictor |PredictorLike)->Self:
         with open(path, "rb") as f:
             state = pickle.load(f)
         obj = cls.__new__(cls)
         obj.__setstate__(state)
+        obj.model = make_predictor(model)
         return obj
 
 class StaticConformalPredictor(ConformalPredictor):
@@ -170,8 +178,10 @@ class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
 
     def predict(self,
                 X_test:Iterable[Any],
-                alpha:TensorLike|float,
+                alpha:float,
                 correction:Callable|None = None)->ConformalPrediction:
+        # TODO : support TensorLike for alpha
+
         prediction = self.model(X_test)
 
         if correction is not None:
@@ -186,19 +196,18 @@ class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
 
         nb_classes = int(ops.shape(prediction)[-1])
         n = self.len_calibr
-        q_global = None#ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
+        q_global = None
         qs = []
         for k in range(nb_classes):
             mask = ops.equal(y_calib, k)
             s_k = scores[mask]
             n_k = len(s_k)
-            # TODO : check that
             if n_k == 0:
                 if q_global is None:
-                    q_global = ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights[mask] if weights is not None else None)
+                    q_global = ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
                 qs.append(q_global)
             else:
-                qs.append(ops.weighted_quantile(s_k, (1 - alpha) * (n_k + 1) / n, axis=0, weights=weights[mask] if weights is not None else None))
+                qs.append(ops.weighted_quantile(s_k, (1 - alpha) * (n_k + 1) / n_k, axis=0, weights=weights[mask] if weights is not None else None))
         q = ops.stack(qs, axis=0)
         y_set = self.pred_set_function(prediction, q)
         return ConformalPrediction(prediction, y_set)
