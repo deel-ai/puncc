@@ -214,7 +214,7 @@ class SplitCAD:
         of underlying anomaly detection scores.
 
         :param Iterable z_test: new data points.
-        :param float alpha: target maximum FDR.
+        :param float alpha: target bound on the per-point false positive rate.
 
         :returns: outlier tag. True if outlier, False otherwise.
         :rtype: Iterables[bool]
