@@ -30,6 +30,7 @@
 from __future__ import annotations
 
 import copy
+import inspect
 import warnings
 from typing import Any
 
@@ -99,8 +100,28 @@ class ModelCannotBeClonedError(RuntimeError):
         But today, dear coder, you must concede,
         Some models are wild, they cannot be freed.
         """
-    def __init__(self):
-        super().__init__(self.poem)
+    
+    def __init__(
+        self,
+        model,
+        strategy: str | None = None,
+    ):
+        model_type = (
+            f"{type(model).__module__}."
+            f"{type(model).__qualname__}"
+        )
+
+        msg = f"Could not clone model of type {model_type}."
+
+        if strategy is not None:
+            msg += f" Cloning strategy: {strategy}."
+
+        msg += (
+            " Consider providing a custom cloning implementation "
+            "for this model."
+        )
+
+        super().__init__(msg)
 
 
 def clone_model(
@@ -112,19 +133,24 @@ def clone_model(
         Clone a model across popular ML frameworks.
 
         Strategy:
-        1) If the object exposes `.clone()` or `.copy()`, use it.
+        1) If the object exposes `.clone()`, use it.
         2) Try a cloner matching the configured backend.
         3) Try a cloner matching the model's inferred origin.
         4) Try remaining cloners.
         5) Fallback to deepcopy (restricted for ML frameworks).
     """
     # Check if model has a "clone" or a "copy" method:
-    if hasattr(model, "clone") and callable(getattr(model, "clone")):
-        return model.clone()
-    if hasattr(model, "copy") and callable(getattr(model, "copy")):
-        return model.copy()
+    clone_method = getattr(model, "clone", None)
 
-    available_cloners = {
+    if callable(clone_method):
+        try:
+            signature = inspect.signature(clone_method)
+            if "clone_weights" in signature.parameters:
+                return clone_method(clone_weights=clone_weights)
+        except (TypeError, ValueError):
+            pass
+
+        available_cloners = {
         "sklearn": _clone_sklearn,
         "torch": _clone_torch,
         "keras": _clone_keras,
@@ -165,25 +191,32 @@ def clone_model(
 
     # if model is from a known ML library but no cloner worked, raise an error instead of silently falling back to deepcopy
     if origin_guess in {"torch", "tensorflow", "keras", "transformers", "jax"}:
-        raise ModelCannotBeClonedError()
+        raise ModelCannotBeClonedError(model, clone_weights=clone_weights, attempted_strategies=order)
 
     try:
         # Fallback to deepcopy if no specific cloner worked
         return copy.deepcopy(model)
     except Exception as e:
         # If even deepcopy fails, raise a custom error
-        raise ModelCannotBeClonedError() from e
+        raise ModelCannotBeClonedError(model, clone_weights=clone_weights, attempted_strategies=order) from e
 
 def _clone_sklearn(model: Any, *, clone_weights:bool=False) -> Any | None:
     try:
         import sklearn.base
     except ImportError:
         return None
-    if isinstance(model, getattr(sklearn.base, "BaseEstimator", ())):
+    
+    if not isinstance(model, getattr(sklearn.base, "BaseEstimator", ())):
+        return None
+    try:
         if clone_weights:
             return copy.deepcopy(model)
         return sklearn.base.clone(model)
-    return None
+    except Exception as e:
+        raise ModelCannotBeClonedError(
+            model,
+            strategy="sklearn",
+        ) from e
 
 def _clone_keras(model: Any, *, clone_weights:bool=False) -> Any | None:
     """
@@ -194,13 +227,24 @@ def _clone_keras(model: Any, *, clone_weights:bool=False) -> Any | None:
     except ImportError:
         return None
 
-    if isinstance(model, getattr(keras, "Model", ())):
+    if not isinstance(model, keras.Model):
+        return None
+    try:
         cloned = keras.models.clone_model(model)
         if clone_weights:
             cloned.set_weights(model.get_weights())
-        # TODO : eventually add compilation (optimizer/loss/metrics) of the freshly cloned model
+        ### Compilation should be done in the "fit_function" (compile + fit given to the conformalize)
+        ### Complexe and custom compilations cannot be handled here
+        # if getattr(model, "compiled", False):
+        #     compile_config = model.get_compile_config()
+        #     cloned.compile_from_config(compile_config)
         return cloned
-    return None
+
+    except Exception as e:
+        raise ModelCannotBeClonedError(
+            model,
+            strategy="keras",
+        ) from e
 
 def _torch_device(model):
     import torch
@@ -238,44 +282,52 @@ def _clone_torch(model, *, clone_weights: bool = False):
     if not isinstance(model, getattr(torch.nn, "Module", ())):
         return None
 
-    with torch.no_grad():
-        cloned = copy.deepcopy(model)
-        cloned = cloned.to(_torch_device(model))
-        cloned.train(model.training)
+    try:
+        with torch.no_grad():
+            cloned = copy.deepcopy(model)
+            cloned = cloned.to(_torch_device(model))
+            cloned.train(model.training)
 
-        if not clone_weights:
-            # Best-effort reinit
-            missing = []
-            for m in cloned.modules():
-                if callable(getattr(m, "reset_parameters", None)):
-                    _reinit_torch_module_(m)
-                else:
-                    # Not every submodule needs reset_parameters, but if a leaf has params
-                    # and no reset_parameters, we can't safely reinit it.
-                    has_params = any(p is not None for p in m.parameters(recurse=False))
-                    if has_params:
-                        missing.append(type(m).__name__)
+            if not clone_weights:
+                # Best-effort reinit
+                missing = []
+                for m in cloned.modules():
+                    if callable(getattr(m, "reset_parameters", None)):
+                        _reinit_torch_module_(m)
+                    else:
+                        # Not every submodule needs reset_parameters, but if a leaf has params
+                        # and no reset_parameters, we can't safely reinit it.
+                        has_params = any(p is not None for p in m.parameters(recurse=False))
+                        if has_params:
+                            missing.append(type(m).__name__)
 
-            if missing:
-                warnings.warn(
-                    "Torch model cloned then best-effort reinitialized, but some "
-                    f"parameterized modules lack reset_parameters(): {sorted(set(missing))}. "
-                    "Weights for these modules may still be copied. For a correct clone "
-                    "without weights, implement `.clone()`/factory reconstruction.",
-                    RuntimeWarning,
-                )
+                if missing:
+                    warnings.warn(
+                        "Torch model cloned then best-effort reinitialized, but some "
+                        f"parameterized modules lack reset_parameters(): {sorted(set(missing))}. "
+                        "Weights for these modules may still be copied. For a correct clone "
+                        "without weights, implement `.clone()`/factory reconstruction.",
+                        RuntimeWarning,
+                    )
 
-    return cloned
+        return cloned
+    except Exception as e:
+        raise ModelCannotBeClonedError(
+            model,
+            strategy="torch",
+        ) from e
 
 def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
     try:
         import transformers
     except ImportError:
         return None
+    
 
     # PyTorch HF
     if isinstance(model, getattr(transformers, "PreTrainedModel", ())):
-        new_m = model.__class__(model.config)
+        new_m = model.__class__(copy.deepcopy(model.config))
+        new_m = new_m.to(_torch_device(model))
         if clone_weights:
             try:
                 import torch
@@ -288,7 +340,7 @@ def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
 
     # TensorFlow HF
     if isinstance(model, getattr(transformers, "TFPreTrainedModel", ())):
-        new_m = model.__class__(model.config)
+        new_m = model.__class__(copy.deepcopy(model.config))
         if clone_weights:
             new_m.set_weights(model.get_weights())
         return new_m
@@ -296,7 +348,7 @@ def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
     # Flax HF
     if isinstance(model, getattr(transformers, "FlaxPreTrainedModel", ())):
         dtype = getattr(model, "dtype", None)
-        new_m = model.__class__(model.config, dtype=dtype)
+        new_m = model.__class__(copy.deepcopy(model.config), dtype=dtype)
         if clone_weights:
             new_m.params = copy.deepcopy(model.params)
         return new_m

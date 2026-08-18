@@ -23,6 +23,7 @@
 """
 Basic definitions of type aliases and protocols used by conformal prediction methods
 """
+from __future__ import annotations
 from typing import Any, Union, TypeAlias, Protocol, runtime_checkable, Callable
 from collections.abc import Iterable, Sequence
 from deel.puncc.cloning import clone_model
@@ -76,8 +77,8 @@ class _PredictorAdapter:
         else:
             setattr(self._model, name, value)
 
-    def clone(self):
-        return _PredictorAdapter(clone_model(self._model))
+    def clone(self, clone_weights: bool = True) -> _PredictorAdapter:
+        return _PredictorAdapter(clone_model(self._model, clone_weights=clone_weights))
 
 def make_predictor(model: Union[Predictor, PredictorLike]) -> Predictor:
     if callable(model):
@@ -88,7 +89,12 @@ def make_predictor(model: Union[Predictor, PredictorLike]) -> Predictor:
     raise TypeError("The provided model neither have __call__ nor predict method.")
 
 # A nonconformity score function takes as input the true labels and the model's predictions, and outputs a sequence of nonconformity scores.
-NCScoreFunction:TypeAlias = Callable[[TensorLike, TensorLike], Sequence[float]]
-
+NCScoreFunction: TypeAlias = Callable[
+    [TensorLike, TensorLike],
+    TensorLike,
+]
 # A prediction set function takes as input the model's predictions and a threshold (float or tensor), and outputs a sequence of prediction sets (e.g., list of sets of labels for classification, list of intervals for regression).
-PredSetFunction:TypeAlias = Callable[[TensorLike, float|TensorLike], Sequence[Any]]
+PredSetFunction: TypeAlias = Callable[
+    [TensorLike, float | TensorLike],
+    Any,
+]

@@ -25,24 +25,21 @@ Definitions of some specific perdictor structures
 """
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Generic, Iterator, TypeVar, overload
+from abc import ABC
 from collections.abc import Iterable
-import warnings
+from typing import Any
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike, make_predictor
 from deel.puncc import ops
 from deel.puncc.cloning import clone_model
 
 class MultiPredictorStack(ABC):
-    def __init__(self, models:Iterable[Predictor|PredictorLike],
-                 *,
+    def __init__(self, *models:Predictor|PredictorLike,
                  expand_1d:bool=True):
         self.models = [make_predictor(m) for m in models]
         self.expand_1d = expand_1d
 
     def clone(self, clone_weights:bool=True)->MultiPredictorStack:
-        return self.__class__(models=[clone_model(model, clone_weights=clone_weights) for model in self.models])
+        return self.__class__(*[clone_model(model, clone_weights=clone_weights) for model in self.models], expand_1d=self.expand_1d)
 
     def __call__(self, X:Iterable[Any])->TensorLike:
         predictions = [model(X) for model in self.models]
@@ -58,20 +55,21 @@ class MultiPredictorStack(ABC):
         for model in self.models:
             if callable(getattr(model, "fit", None)):
                 model.fit(X_train, y_train)
-                continue
-            warnings.warn("One of the models does not have a fit method. Please provide pretrained models or expose a fit method.")
+            else:
+                raise NotImplementedError("One of the models does not have a fit method. Please provide pretrained models or expose a fit method.")
         return self
 
 def stack_predictors(*models:Predictor|PredictorLike)->MultiPredictorStack:
-    return MultiPredictorStack(models=models)
+    return MultiPredictorStack(*models)
 
 class MeanVarPredictor(MultiPredictorStack):
     def __init__(self, mean_model:Predictor|PredictorLike,
-                 dispersion_model:Predictor|PredictorLike):
-        super().__init__(models=[mean_model, dispersion_model])
+                 dispersion_model:Predictor|PredictorLike,
+                 expand_1d:bool=True):
+        super().__init__(mean_model, dispersion_model, expand_1d=expand_1d)
 
     #@abstractmethod
-    def dispertion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
+    def dispersion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
         #...
         return ops.abs(mu - y)
 
@@ -84,15 +82,15 @@ class MeanVarPredictor(MultiPredictorStack):
                 raise NotImplementedError("One of the models does not have a fit method. Please provide pretrained models or expose a fit method.")
         self.models[0].fit(X_train, y_train)
         mu_pred = self.models[0](X_train)
-        self.models[1].fit(X_train, self.dispertion_estimation(mu_pred, y_train) )
+        self.models[1].fit(X_train, self.dispersion_estimation(mu_pred, y_train) )
         return self
 
-# class MeanScalePredictor(MeanDispertionPredictor):
-#     def dispertion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
+# class MeanScalePredictor(MeanDispersionPredictor):
+#     def dispersion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
 #         return ops.abs(mu - y)
 
-# class MeanVarPredictor(MeanDispertionPredictor):
-#     def dispertion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
+# class MeanVarPredictor(MeanDispersionPredictor):
+#     def dispersion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
 #         return ops.square(mu - y)
 
 class IDPredictor():
@@ -119,7 +117,43 @@ class LookupTablePredictor():
         self.y = ops.asarray(y_train)
         return self
     
-    def predict(self, X:Iterable[Any])->TensorLike:
+    def predict(
+        self,
+        X: Iterable[Any],
+    ) -> TensorLike:
+        if self.X is None or self.y is None:
+            raise RuntimeError(
+                "LookupTablePredictor must be fitted before prediction."
+            )
+
         X = ops.asarray(X)
-        indices = ops.argwhere(ops.isin(self.X, X)).squeeze()
-        return self.y[indices]
+
+        predictions = []
+
+        for x in X:
+            matches = ops.all(
+                ops.equal(self.X, x),
+                axis=-1,
+            )
+
+            indices = ops.where_1d(matches)
+
+            if len(indices) == 0:
+                raise ValueError(
+                    "At least one requested sample was not found "
+                    "in the lookup table."
+                )
+
+            if len(indices) > 1:
+                raise ValueError(
+                    "A requested sample appears multiple times "
+                    "in the lookup table."
+                )
+
+            predictions.append(
+                ops.take(self.y, indices[0], axis=0)
+            )
+
+        return ops.stack(predictions, axis=0)
+
+    __call__ = predict

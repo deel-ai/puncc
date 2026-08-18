@@ -35,8 +35,6 @@ from typing import TypeAlias
 from deel.puncc import ops
 from deel.puncc._keras import random
 
-from deel.puncc.api.utils import features_len_check
-from deel.puncc.api.utils import sample_len_check
 from deel.puncc.typing import TensorLike
 
 
@@ -111,10 +109,10 @@ class IdSplitter(BaseSplitter):
     ):
         super().__init__(random_state=None)
 
-        # Checks
-        sample_len_check(X_fit, y_fit)
-        sample_len_check(X_calib, y_calib)
-        features_len_check(X_fit, X_calib)
+        # TODO : Check again
+        #sample_len_check(X_fit, y_fit)
+        #sample_len_check(X_calib, y_calib)
+        #features_len_check(X_fit, X_calib)
 
         self._split = [(X_fit, y_fit, X_calib, y_calib)]
 
@@ -169,20 +167,31 @@ class RandomSplitter(BaseSplitter):
             Split: A single-element list containing
                 (X_train, y_train, X_calib, y_calib).
         """
-        # Checks
-        sample_len_check(X, y)
+        # TODO : checks
+        # sample_len_check(X, y)
+
+        n_samples = len(X)
+
+        if n_samples < 2:
+            raise ValueError(
+                "RandomSplitter requires at least 2 samples."
+            )
 
 
-        u = random.uniform((len(X),), seed=self.random_state)
+        idxs = ops.arange(n_samples)
+        idxs = random.shuffle(
+            idxs,
+            axis=0,
+            seed=self.random_state,
+        )
 
-        fit_mask = ops.less(u, self.ratio)
-        cal_mask = ops.logical_not(fit_mask)
+        n_fit = int(self.ratio * n_samples)
+        n_fit = max(1, min(n_fit, n_samples - 1))
 
-        fit_idxs = ops.where_1d(fit_mask)
-        cal_idxs = ops.where_1d(cal_mask)
+        fit_idxs = idxs[:n_fit]
+        cal_idxs = idxs[n_fit:]
 
         return [_take(X, y, fit_idxs, cal_idxs)]
-
 
 class KFoldSplitter(BaseSplitter):
     """
@@ -223,10 +232,14 @@ class KFoldSplitter(BaseSplitter):
             Split: A list of K tuples, each tuple being
                 (X_train, y_train, X_calib, y_calib).
         """
-        # Checks
-        sample_len_check(X, y)
+        # TODO : checks
+        # sample_len_check(X, y)
 
         n_samples = len(X)
+
+        if self.K > n_samples:
+            raise ValueError(f"K must be <= number of samples. Provided K: {self.K}, number of samples: {n_samples}.")
+
         idxs = ops.arange(n_samples)
 
         if self.shuffle:

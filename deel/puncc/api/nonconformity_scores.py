@@ -26,7 +26,6 @@ when building a ConformalPredictor
 """
 from collections.abc import Sequence
 import warnings
-from deel.puncc.api.utils import logit_normalization_check, supported_types_check
 from deel.puncc.typing import TensorLike, NCScoreFunction
 from deel.puncc import ops
 from deel.puncc._keras import random
@@ -47,14 +46,13 @@ def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
     def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
         mean_pred = ops.take(y_pred, 0, axis=-1)
         var_pred = ops.take(y_pred, 1, axis=-1)
-        mean_abs_dev = ops.abs(mean_pred - y_true)
         if ops.any(var_pred + eps <= 0):
-            warnings.warn("Warning: calibration points with MAD predictions below -eps won't be used for calibration.",
-                RuntimeWarning,
-                stacklevel=2,
+            raise ValueError(
+                "The predicted dispersion must be strictly greater "
+                "than -eps for all samples."
             )
-        nonneg = var_pred + eps > 0
-        return mean_abs_dev[nonneg] / (var_pred[nonneg] + eps)
+        mean_abs_dev = ops.abs(mean_pred - y_true)
+        return mean_abs_dev / (var_pred + eps)
     return _scaled_ad
 
 def _cqr_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
@@ -81,6 +79,10 @@ def lac_score()->NCScoreFunction:
     return _lac_score
 
 def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
+    if lambd < 0:
+        raise ValueError(f"`lambd` must be >= 0, got {lambd}")
+    if k_reg < 0:
+        raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
     def _raps_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
         condition = y_pred>=ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
         s = ops.sum(ops.where(condition, y_pred, 0), axis=-1)
@@ -94,5 +96,5 @@ def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
         return s + regul - rand_correction
     return _raps_score
 
-def aps_score(rand:bool=True)->NCScoreFunction:
+def aps_score(rand:bool=False)->NCScoreFunction:
     return raps_score(lambd=1, k_reg=1, rand=rand)

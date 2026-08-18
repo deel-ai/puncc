@@ -25,7 +25,6 @@ This module provides prediction sets for conformal prediction. To be used when
 building a ConformalPredictor.
 """
 from typing import Any
-from deel.puncc.api.utils import logit_normalization_check
 from deel.puncc.typing import TensorLike, PredSetFunction
 from deel.puncc import ops
 from deel.puncc._keras import random
@@ -43,16 +42,19 @@ def scaled_interval(eps:float=1e-12)->PredSetFunction:
     def _scaled_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
         mean_pred = ops.take(y_pred, 0, axis=-1)
         var_pred = ops.take(y_pred, 1, axis=-1)
-        
-        y_low = ops.zeros_like(mean_pred)
-        y_high = ops.zeros_like(mean_pred)
-
         nonneg = var_pred + eps > 0
 
-        y_low[nonneg] = mean_pred[nonneg] - quantile * (var_pred[nonneg] + eps)
-        y_high[nonneg] = mean_pred[nonneg] + quantile * (var_pred[nonneg] + eps)
-        y_low[~nonneg] = ops.ninf
-        y_high[~nonneg] = ops.inf
+        y_low = ops.where(
+            nonneg,
+            mean_pred - quantile * (var_pred + eps),
+            ops.ninf,
+        )
+
+        y_high = ops.where(
+            nonneg,
+            mean_pred + quantile * (var_pred + eps),
+            ops.inf,
+        )
         return ops.stack([y_low, y_high], axis=-1)
     return _scaled_interval
 
@@ -86,7 +88,6 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=False)->PredSetFunction:
         sorted_p = ops.take_along_axis(y_pred, sorted_index, axis=-1)
         cs = ops.cumsum(sorted_p, axis=-1)
 
-        # FIXME : lol, i completely forgot to add the regularization term here
         K = ops.shape(y_pred)[-1]
         ranks = ops.arange(1, K + 1, dtype=cs.dtype)
         penalty = lambd * ops.maximum(ranks - k_reg, 0)
@@ -163,5 +164,5 @@ def _scaled_bbox(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
 
     return ops.stack([Y_pred_inner, Y_pred_outer], axis=-1)
 
-def scaled_bbox():
+def scaled_bbox()->PredSetFunction:
     return _scaled_bbox
