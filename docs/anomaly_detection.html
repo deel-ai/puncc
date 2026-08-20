@@ -128,11 +128,13 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS"><code class="docutils literal notranslate"><span class="pre">RAPS</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.fit"><code class="docutils literal notranslate"><span class="pre">RAPS.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">RAPS.get_nonconformity_scores()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.RAPS.predict"><code class="docutils literal notranslate"><span class="pre">RAPS.predict()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="classification.html#deel.puncc.classification.APS"><code class="docutils literal notranslate"><span class="pre">APS</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.fit"><code class="docutils literal notranslate"><span class="pre">APS.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.get_nonconformity_scores"><code class="docutils literal notranslate"><span class="pre">APS.get_nonconformity_scores()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="classification.html#deel.puncc.classification.APS.predict"><code class="docutils literal notranslate"><span class="pre">APS.predict()</span></code></a></li>
 </ul>
 </li>
@@ -461,7 +463,7 @@ of underlying anomaly detection scores.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>z_test</strong> (<em>Iterable</em>) – new data points.</p></li>
-<li><p><strong>alpha</strong> (<em>float</em>) – target maximum FDR.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – target bound on the false positive rate.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
