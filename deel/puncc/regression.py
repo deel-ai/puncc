@@ -45,12 +45,14 @@ class CQR(StaticConformalPredictor):
 class LocallyAdaptiveCP(ConformalPredictor):
     def __init__(self, model,
                  weight_function=None,
+                 fit_function=None,
                  eps:float=1e-12):
         super().__init__(
             model=model,
             nc_score_function=scaled_ad(eps=eps),
             pred_set_function=scaled_interval(eps=eps),
             weight_function=weight_function,
+            fit_function=fit_function
         )
 
 """

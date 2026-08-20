@@ -50,7 +50,8 @@ def classification_mean_coverage(
         float: average coverage, indicating the proportion of instances that are
         correctly covered.
     """
-    return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
+    return sum([y in s for y, s in zip(y_true, set_pred)]) / len(y_true)
+    #return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
 
 def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
     """
@@ -62,7 +63,8 @@ def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
     Returns:
         float: Average size of the prediction sets
     """
-    return ops.mean(ops.array([len(s) for s in set_pred]))
+    return sum([len(s) for s in set_pred]) / len(set_pred)
+    #return ops.mean(ops.array([len(s) for s in set_pred]))
 
 def regression_mean_coverage(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike) -> float:
     """

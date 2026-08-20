@@ -38,7 +38,7 @@ def get_backend() -> str|None:
     val = _BACKEND or os.environ.get("KERAS_BACKEND")
     return val.strip().lower() if val else None
 
-def is_backend_set() -> bool:
+def is_backend_frozen() -> bool:
     """
     Return whether the PUNCC backend has been selected.
     """

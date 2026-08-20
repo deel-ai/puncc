@@ -121,6 +121,6 @@ class APS(ClassificationConformalPredictor):
 class RAPS(ConformalPredictor):
     # TODO : add random state propagation to control randomized tie breaking
     def __init__(self, model, lambd:float=0, k_reg:int=1, rand:bool=False, weight_function=None, fit_function=None):
-        nc_score_function = raps_score(lambd=lambd, k_reg=k_reg)
+        nc_score_function = raps_score(lambd=lambd, k_reg=k_reg, rand=rand)
         pred_set_function = raps_set(lambd=lambd, k_reg=k_reg, rand=rand)
         super().__init__(model, nc_score_function, pred_set_function, weight_function=weight_function, fit_function=fit_function)

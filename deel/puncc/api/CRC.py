@@ -30,21 +30,28 @@ from typing import Any, Callable
 from collections.abc import Iterable
 from deel.puncc.api.conformalization import ConformalMethod
 from deel.puncc.typing import TensorLike, LambdaPredictor
-from scipy.optimize import brentq
+from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
 
 
 class CRC(ConformalMethod):
     def __init__(self, model:LambdaPredictor,
                  loss_function:Callable[[Iterable, Iterable], Iterable[float]],
-                 loss_function_upper_bound:int=1,
-                 root_finder:Callable=brentq):
+                 loss_function_upper_bound:float=1,
+                 optimizer:ScalarOptimizer=BinarySearchOptimizer(),
+                 lambda_bounds:tuple[float, float]=(0.0, 1.0),
+                 search_tol:float=1e-4,
+                 max_iter:int=25):
         super().__init__(model)
         self.loss_function = loss_function
         self.B = loss_function_upper_bound
-        self.root_finder = root_finder
+        self.optimizer = optimizer
+        self.lambda_bounds = lambda_bounds
+        self.search_tol = search_tol
+        self.max_iter = max_iter
 
         self._x_calib = []
         self._y_calib = []
+        self._lambda_cache = {}
 
     @property
     def len_calib(self):
@@ -61,23 +68,28 @@ class CRC(ConformalMethod):
     def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
         self._x_calib = X_calib
         self._y_calib = y_calib
+        self._lambda_cache.clear()
         return self
 
-    # TODO : use a better cache that functools cache to avoid storing self references
-    @lru_cache(maxsize=8)
     def __get_lambda_from_alpha(self, alpha:float)->float:
-        n = self.len_calib
-        def _lambda_loss(lambda_:float)->float:
-            return n/(n+1) * self._r_hat(lambda_) + self.B / (n + 1) - alpha
-        try:
-            # TODO : define lambda search space
-            # TODO : allow user to give its hyper parameters for the RF algorithm
-            lambda_hat = self.root_finder(_lambda_loss, 0.0, 1.0, xtol=1e-4, maxiter=20) 
-        except ValueError as e:
-            raise ValueError("Could not find a valid lambda for the given alpha. "
-                             "This may be due to the loss function upper bound being too low "
-                             "or the calibration set not being representative enough.") from e
-        return lambda_hat
+        if alpha >= self.B:
+            raise ValueError(
+                f"alpha must be smaller than the loss upper bound B={self.B}."
+            )
+        if alpha not in self._lambda_cache:
+            n = self.len_calib
+            def _lambda_loss(lambda_:float)->float:
+                return n/(n+1) * self._r_hat(lambda_) + self.B / (n + 1) - alpha
+            try:
+                # TODO : define lambda search space
+                # TODO : allow user to give its hyper parameters for the RF algorithm
+                lambda_hat = self.optimizer(_lambda_loss, *self.lambda_bounds, xtol=1e-4, maxiter=20) 
+            except ValueError as e:
+                raise ValueError("Could not find a valid lambda for the given alpha. "
+                                "This may be due to the loss function upper bound being too low "
+                                "or the calibration set not being representative enough.") from e
+            self._lambda_cache[alpha] = lambda_hat
+        return self._lambda_cache[alpha]
 
     def predict(self, X_test:Iterable[Any], alpha:float|TensorLike):
         if not isinstance(alpha, float):

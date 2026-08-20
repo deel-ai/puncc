@@ -43,8 +43,6 @@ class SplitBoxWise(ConformalPredictor):
         None.
     :param str method: chose between "additive" or "multiplicative" box-wise
         conformalization.
-    :param int random_state: random seed used when the user does not
-        provide a custom fit/calibration split in `fit` method.
 
     :raises ValueError: if method is not 'additive' or 'multiplicative'.
 
@@ -93,7 +91,7 @@ class SplitBoxWise(ConformalPredictor):
         rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
 
         # CP method initialization
-        od_cp = SplitBoxWise(rf_model, method="multiplicative", train=True)
+        od_cp = SplitBoxWise(rf_model, method="multiplicative")
 
         # The call to `fit` trains the model and computes the nonconformity
         # scores on the calibration set
@@ -129,6 +127,6 @@ class SplitBoxWise(ConformalPredictor):
 
     def predict(self,
                 X_test:Iterable[Any],
-                alpha:float|TensorLike,
+                alpha:float,
                 correction:Callable|None = bonferroni(4))->tuple[TensorLike, Any]:
         return super().predict(X_test, alpha, correction)

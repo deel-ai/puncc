@@ -25,8 +25,9 @@ This define gestion of interaction with keras (and its backends) for the whole l
 """
 from functools import wraps
 from typing import Callable
-from deel.puncc.config import is_backend_set, set_backend
+from deel.puncc.config import is_backend_frozen, set_backend
 import sys
+import numpy as np
 from packaging.version import Version
 
 # Requires keras >= 3.3 for numpy backend support
@@ -78,13 +79,13 @@ class BackendManager():
         if "keras" in sys.modules:
             keras = sys.modules["keras"]
             check_keras_version(keras)
-            if not is_backend_set():
+            if not is_backend_frozen():
                 set_backend(keras.backend.backend())
             
             self._keras = keras
             return
 
-        if not is_backend_set():
+        if not is_backend_frozen():
             raise RuntimeError(
                 "PUNCC backend has not been initialized. "
                 "Call deel.puncc.config.set_backend(...) first."
@@ -120,7 +121,7 @@ def check_keras_version(keras):
 def set_backend_on_first_call(f:Callable):
     @wraps(f)
     def _f(self, *args, **kwargs):
-        if not is_backend_set() and "keras" not in sys.modules:
+        if not is_backend_frozen() and "keras" not in sys.modules:
             x = get_x_arg(args, kwargs)
             if x is None:
                 raise TypeError(
@@ -150,14 +151,25 @@ class RandomBackendManager(BackendManager):
         return self._keras.random
 
 class OpsBackendManager(BackendManager):
+    inf = float("inf")
+    ninf = float("-inf")
+
     @property
     def module(self):
         return self._keras.ops
+    
+    # @property
+    # def inf(self):
+    #     return self.convert_to_tensor(np.inf)
+    
+    # @property
+    # def ninf(self):
+    #     return self.convert_to_tensor(-np.inf)
 
     def __getattr__(self, name):
         if (
             self._keras is None
-            and not is_backend_set()
+            and not is_backend_frozen()
             and "keras" not in sys.modules
         ):
             return BackendEstimationCallback(
@@ -245,11 +257,41 @@ class OpsBackendManager(BackendManager):
         return self.take(a, idx)
 
     @set_backend_on_first_call
-    def weighted_quantile(self, x, q, weights=None, axis=None, keepdims=False):
+    def weighted_quantile(self, 
+                          x,
+                          q,
+                          weights=None,
+                          axis=None,
+                          keepdims=False):
         q = self.cast(q, x.dtype)
-        weights = self.cast(weights, x.dtype) if weights is not None else None
-        if weights is None or self.all(weights == 0):
+        q = self.convert_to_tensor(q)
+
+        if weights is None:
             weights = self.ones_like(x)
+        else:
+            if self.any(weights < 0):
+                raise ValueError("Weights must be non-negative.")
+            if self.all(weights == 0):
+                raise ValueError("All weights are zero. At least one weight must be positive.")
+
+            weights = self.cast(weights, x.dtype)
+
+            if axis is None:
+                if tuple(weights.shape) != tuple(x.shape):
+                    raise ValueError("Weights must have the same shape as x when axis is None.")
+            elif len(weights.shape) == 1:
+                if weights.shape[0] != x.shape[axis]:
+                    raise ValueError(
+                        "1D weights must have the same length as "
+                        "x along the quantile axis."
+                    )
+
+                shape = [1] * len(x.shape)
+                shape[axis] = x.shape[axis]
+
+                weights = self.reshape(weights, shape)
+                weights = self.broadcast_to(weights, self.shape(x))
+
 
         if axis is None:
             x = self.flatten(x)

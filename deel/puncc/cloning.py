@@ -150,7 +150,7 @@ def clone_model(
         except (TypeError, ValueError):
             pass
 
-        available_cloners = {
+    available_cloners = {
         "sklearn": _clone_sklearn,
         "torch": _clone_torch,
         "keras": _clone_keras,
@@ -191,14 +191,14 @@ def clone_model(
 
     # if model is from a known ML library but no cloner worked, raise an error instead of silently falling back to deepcopy
     if origin_guess in {"torch", "tensorflow", "keras", "transformers", "jax"}:
-        raise ModelCannotBeClonedError(model, clone_weights=clone_weights, attempted_strategies=order)
+        raise ModelCannotBeClonedError(model, strategy=None)
 
     try:
         # Fallback to deepcopy if no specific cloner worked
         return copy.deepcopy(model)
     except Exception as e:
         # If even deepcopy fails, raise a custom error
-        raise ModelCannotBeClonedError(model, clone_weights=clone_weights, attempted_strategies=order) from e
+        raise ModelCannotBeClonedError(model, strategy="deepcopy") from e
 
 def _clone_sklearn(model: Any, *, clone_weights:bool=False) -> Any | None:
     try:
@@ -222,10 +222,10 @@ def _clone_keras(model: Any, *, clone_weights:bool=False) -> Any | None:
     """
     Clone Keras models with optional recompilation that mirrors optimizer/loss/metrics.
     """
-    try:
-        import keras
-    except ImportError:
+    if "keras" not in sys.modules:
         return None
+    
+    keras = sys.modules["keras"]
 
     if not isinstance(model, keras.Model):
         return None
