@@ -25,13 +25,23 @@ Basic components for split conformal prediction
 """
 
 from __future__ import annotations
-from pathlib import Path
-from collections.abc import Sequence, Iterable
-from typing import Any, Callable, Self
+
 import pickle
-from deel.puncc.typing import Predictor, PredictorLike, TensorLike, NCScoreFunction, PredSetFunction, make_predictor
+from collections.abc import Iterable, Sequence
+from pathlib import Path
+from typing import Any, Callable, Self
+
 from deel.puncc import ops
+from deel.puncc.api.calibration_context import CalibrationContext
 from deel.puncc.api.conformalization import ConformalMethod, ConformalPrediction
+from deel.puncc.typing import (
+    NCScoreFunction,
+    Predictor,
+    PredictorLike,
+    PredSetFunction,
+    TensorLike,
+    make_predictor,
+)
 
 class NoModel(Predictor):
     """
@@ -51,6 +61,7 @@ class ConformalPredictor(ConformalMethod):
         weight_function (Callable[[Iterable[Any]], Iterable[float]], optional): Optional function to allocate different weights to the calibration samples when computing the quantile of the non conformity scores. Defaults to None, which corresponds to the standard unweighted conformal prediction method.
         fit_function (Callable[[Predictor, Iterable[Any], TensorLike], Predictor], optional): Optional function that trains the model. Defaults to None.
     """
+    __slots__ = ("nc_score_function", "pred_set_function", "weight_function")
     def __init__(self,
                  model:Predictor|PredictorLike,
                  nc_score_function:NCScoreFunction,
@@ -62,34 +73,34 @@ class ConformalPredictor(ConformalMethod):
         super().__init__(model=model, fit_function = fit_function)
         self.nc_score_function = nc_score_function
         self.pred_set_function = pred_set_function
-
         self.weight_function = weight_function
 
-        # Utilities for the calibration procedure :
-        self._x_calib = None
-        self._nc_scores = None
-
     @property
-    def len_calibr(self):
-        """
-        Size of the calibration set
-        """
-        if self._nc_scores is None:
-            return 0
-        return len(self._nc_scores)
+    def len_calibr(self) -> int:
+        return len(self.nc_scores)
 
     @property
     def nc_scores(self) -> Sequence[float]:
-        if self._nc_scores is None:
-            raise RuntimeError("The conformal predictor has not been calibrated yet. Please use `my_predictor.calibrate(X, y)` before performing a prediction or accessing the non conformity scores.")
-        return self._nc_scores
+        if not hasattr(
+            self.calibration_context,
+            "nc_scores",
+        ):
+            raise RuntimeError(
+                "The conformal predictor has not been calibrated yet."
+            )
+        return self.calibration_context.nc_scores
 
-    def calibrate(self, X_calib:Iterable[Any],
-                  y_calib:TensorLike):
-        predictions = self.model(X_calib)
-        self._x_calib = X_calib
-        self._nc_scores = self.nc_score_function(predictions, y_calib)
-        return self
+    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+        calibration_context.nc_scores = (
+            self.nc_score_function(
+                calibration_context.y_pred,
+                calibration_context.y_calib)
+        )
+        ###TODO : le contexte pourrait être allégé :
+        #del calibration_context.y_pred
+        #del calibration_context.y_calib
+        return calibration_context
+
 
     def predict(self,
                 X_test:Iterable[Any],
@@ -108,7 +119,7 @@ class ConformalPredictor(ConformalMethod):
 
         weights = None
         if self.weight_function is not None:
-            weights = self.weight_function(self._x_calib)
+            weights = self.weight_function(self.calibration_context.X_calib)
         quantile = ops.weighted_quantile(self.nc_scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
         prediction_sets = self.pred_set_function(prediction, quantile)
         return ConformalPrediction(prediction, prediction_sets)
@@ -117,12 +128,13 @@ class ConformalPredictor(ConformalMethod):
         state = {}
         if getattr(self, "__dict__", None):
             state = self.__dict__.copy()
+
         for cls in type(self).mro():
             slots = getattr(cls, "__slots__", ())
             if isinstance(slots, str):
                 slots = (slots,)
             for name in slots:
-                if name == "__dict__":
+                if name in ("__dict__", "__weakref__", "model"):
                     continue
                 if hasattr(self, name):
                     state[name] = getattr(self, name)

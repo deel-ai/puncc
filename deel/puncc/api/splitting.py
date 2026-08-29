@@ -30,10 +30,12 @@ This module defines splitters that partition a dataset into:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TypeAlias
+from collections.abc import Callable
+from typing import Any, TypeAlias
 
 from deel.puncc import ops
-from deel.puncc._keras import random
+from deel.puncc.api.calibration_context import CalibrationContext
+from deel.puncc.keras import random
 
 from deel.puncc.typing import TensorLike
 
@@ -42,10 +44,23 @@ from deel.puncc.typing import TensorLike
 # if importlib.util.find_spec("pandas") is not None:
 #     import pandas as pd
 
-Split: TypeAlias = list[tuple[TensorLike, TensorLike, TensorLike, TensorLike]]
+DatasetGroup: TypeAlias = tuple[Any, ...]
+Split: TypeAlias = tuple[DatasetGroup, ...]
+Splits: TypeAlias = list[Split]
 IndexTensor: TypeAlias = TensorLike
+GroupFunction = Callable[..., TensorLike]
 
-def _take(X:TensorLike, y:TensorLike, fit_idxs:IndexTensor, cal_idxs:IndexTensor)->tuple[TensorLike, TensorLike, TensorLike, TensorLike]:
+
+FitCalSplit: TypeAlias = tuple[
+    DatasetGroup,
+    DatasetGroup,
+]
+
+FitCalSplits: TypeAlias = list[
+    FitCalSplit
+]
+
+def _take(datasets:DatasetGroup, *group_idxs: IndexTensor,)->Split:
     """
     Materialize one split from index tensors.
 
@@ -58,10 +73,13 @@ def _take(X:TensorLike, y:TensorLike, fit_idxs:IndexTensor, cal_idxs:IndexTensor
     Returns:
         tuple[TensorLike, TensorLike, TensorLike, TensorLike]: subsets for train and calibration : X_train, y_train, X_calib, y_calib
     """
-    return (ops.take(X, fit_idxs, axis=0),
-                ops.take(y, fit_idxs, axis=0),
-                ops.take(X, cal_idxs, axis=0),
-                ops.take(y, cal_idxs, axis=0))
+    return tuple(
+        tuple(
+            dataset[idxs]
+            for dataset in datasets
+        )
+        for idxs in group_idxs
+    )
 
 
 class BaseSplitter(ABC):
@@ -80,14 +98,82 @@ class BaseSplitter(ABC):
         self.random_state = random_state
 
     @abstractmethod
-    def split(self, X:TensorLike, y:TensorLike)->Split:
+    def split(self, *datasets:Any)->Splits:
         ...
 
-    def __call__(self, *args, **kwargs) -> Split:
-        return self.split(*args, **kwargs)
+    def __call__(self, *datasets: Any) -> Splits:
+        if isinstance(datasets[0], CalibrationContext):
+            return self.split_context(*datasets)
+        return self.split(*datasets)
 
 
-class IdSplitter(BaseSplitter):
+    def split_context(
+        self,
+        context: CalibrationContext,
+    ) -> list[tuple[CalibrationContext, ...]]:
+        return [
+            tuple(
+                context.from_values(group)
+                for group in split
+            )
+            for split in self.split(*context)
+        ]
+    
+class FunctionalSplitter(BaseSplitter):
+    def __init__(
+        self,
+        group_function: GroupFunction,
+    ) -> None:
+        super().__init__(random_state=None)
+        self.group_function = group_function
+
+    def split(
+        self,
+        *datasets: Any,
+    ) -> Splits:
+        group_ids = self.group_function(
+            *datasets
+        )
+        group_ids = ops.reshape(group_ids, (-1,))
+        
+        groups = ops.convert_to_numpy(
+            group_ids
+        )
+
+        unique_groups = dict.fromkeys(
+            groups.tolist()
+        )
+
+        group_idxs = [
+            ops.where_1d(
+                group_ids == group
+            )
+            for group in unique_groups
+        ]
+
+        return [
+            _take(
+                datasets,
+                *group_idxs,
+            )
+        ]
+
+class ClasswiseSplitter(FunctionalSplitter):
+    def __init__(self):
+        super().__init__(
+            group_function=lambda y_pred, y_calib, *args, **kwargs: y_calib
+        )
+
+class FitCalSplitter(BaseSplitter):
+    @abstractmethod
+    def split(
+        self,
+        *datasets: Any,
+    ) -> FitCalSplits:
+        ...
+
+#TODO : refaire le IDSplitter
+class IdSplitter(FitCalSplitter):
     """
     Identity splitter.
 
@@ -102,10 +188,10 @@ class IdSplitter(BaseSplitter):
     """
     def __init__(
         self,
-        X_fit: TensorLike,
-        y_fit: TensorLike,
-        X_calib: TensorLike,
-        y_calib: TensorLike,
+        X_fit,
+        y_fit,
+        X_calib,
+        y_calib,
     ):
         super().__init__(random_state=None)
 
@@ -114,9 +200,14 @@ class IdSplitter(BaseSplitter):
         #sample_len_check(X_calib, y_calib)
         #features_len_check(X_fit, X_calib)
 
-        self._split = [(X_fit, y_fit, X_calib, y_calib)]
+        self._split = [
+            (
+                (X_fit, y_fit),
+                (X_calib, y_calib),
+            )
+        ]
 
-    def split(self, X:TensorLike|None=None, y:TensorLike|None=None) -> Split:
+    def split(self, *datasets) -> Splits:
         """
         Return the stored training and calibration subsets.
 
@@ -131,7 +222,7 @@ class IdSplitter(BaseSplitter):
         return self._split
 
 
-class RandomSplitter(BaseSplitter):
+class RandomSplitter(FitCalSplitter):
     """
     Random train/calibration splitter.
 
@@ -153,9 +244,8 @@ class RandomSplitter(BaseSplitter):
 
     def split(
         self,
-        X: TensorLike,
-        y: TensorLike,
-    ) -> Split:
+        *datasets: Any,
+    ) -> Splits:
         """
         Split the dataset randomly into training and calibration subsets.
 
@@ -167,10 +257,9 @@ class RandomSplitter(BaseSplitter):
             Split: A single-element list containing
                 (X_train, y_train, X_calib, y_calib).
         """
-        # TODO : checks
-        # sample_len_check(X, y)
+        # TODO : checks length of datasets
 
-        n_samples = len(X)
+        n_samples = len(datasets[0])
 
         if n_samples < 2:
             raise ValueError(
@@ -191,9 +280,15 @@ class RandomSplitter(BaseSplitter):
         fit_idxs = idxs[:n_fit]
         cal_idxs = idxs[n_fit:]
 
-        return [_take(X, y, fit_idxs, cal_idxs)]
+        return [
+            _take(
+                datasets,
+                fit_idxs,
+                cal_idxs,
+            )
+        ]
 
-class KFoldSplitter(BaseSplitter):
+class KFoldSplitter(FitCalSplitter):
     """
     K-fold splitter.
 
@@ -218,9 +313,8 @@ class KFoldSplitter(BaseSplitter):
 
     def split(
         self,
-        X: TensorLike,
-        y: TensorLike,
-    ) -> Split:
+        *datasets:Any
+    ) -> Splits:
         """
         Split the dataset into K training/calibration folds.
 
@@ -235,7 +329,7 @@ class KFoldSplitter(BaseSplitter):
         # TODO : checks
         # sample_len_check(X, y)
 
-        n_samples = len(X)
+        n_samples = len(datasets[0])
 
         if self.K > n_samples:
             raise ValueError(f"K must be <= number of samples. Provided K: {self.K}, number of samples: {n_samples}.")
@@ -249,11 +343,12 @@ class KFoldSplitter(BaseSplitter):
         r = n_samples % self.K
         fold_sizes = [n_min + 1] * r + [n_min] * (self.K - r)
 
-        folds:Split = []
+        folds: Splits = []
+
         start = 0
         for size in fold_sizes:
             calib_idx = idxs[start : start + size]
             fit_idx = ops.concatenate([idxs[:start], idxs[start + size :]], axis=0)
-            folds.append(_take(X, y, fit_idx, calib_idx))
+            folds.append(_take(datasets, fit_idx, calib_idx))
             start += size
         return folds

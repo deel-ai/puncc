@@ -1,11 +1,15 @@
 from __future__ import annotations
 from collections import UserList
-from collections.abc import Iterable
-from dataclasses import dataclass
-from typing import Any, Generator, Literal, Protocol, Sequence, Union, overload, runtime_checkable
+from dataclasses import dataclass, replace
+from enum import StrEnum
+from typing import ClassVar, Literal, Self
 from deel.puncc import ops
-from deel.puncc.cloning import clone_model
+from deel.puncc.od.utils import IndexableUserList, IterableDataclassMixin
 from deel.puncc.typing import TensorLike
+
+class BoxExtensionMode(StrEnum):
+    ADDITIVE = "additive"
+    MULTIPLICATIVE = "multiplicative"
 
 @dataclass(slots=True)
 class Box():
@@ -48,7 +52,6 @@ class Box():
             ops.logical_and(x1 <= ox1, y1 <= oy1),
             ops.logical_and(x2 >= ox2, y2 >= oy2),
         )
-
 
     def intersection(self, other_box: Box) -> Box:
         x1, y1, x2, y2 = self.xyxy
@@ -119,7 +122,7 @@ class Box():
     def __len__(self) -> int:
         return 4
 
-    def __getitem__(self, idx:int) -> TensorLike:
+    def __getitem__(self, idx) -> TensorLike:
         return self.xyxy[idx]
 
     def __iter__(self):
@@ -130,22 +133,65 @@ class Box():
 
     def __str__(self) -> str:
         return f"Box(xyxy={self.xyxy})"
+        
+    def extend(
+        self,
+        value: float,
+        mode: BoxExtensionMode = BoxExtensionMode.ADDITIVE,
+        *,
+        inplace: bool = False,
+    ) -> Box:
+        if mode == BoxExtensionMode.ADDITIVE:
+            xyxy = self.xyxy + ops.array([-value, -value, value, value])
+        elif mode == BoxExtensionMode.MULTIPLICATIVE:
+            w = self.width
+            h = self.height
+            margin = value * ops.array([-w, -h, w, h])
+            xyxy = self.xyxy + margin
+        else:
+            raise ValueError(f"Invalid mode: {mode}. Must be one of {list(BoxExtensionMode)}")
+        if inplace:
+            self.xyxy = xyxy
+            return self
+        return replace(self, xyxy=xyxy)
 
 @dataclass(slots=True)
-class BoxSequence():
+class BoxSequence(IterableDataclassMixin[Box]):
+    item_type: ClassVar[type[Box]] = Box
+
     boxes: TensorLike # n, x1, y1, x2, y2
     def __post_init__(self):
         shape = ops.shape(self.boxes)
         assert len(shape) == 2 and shape[-1] == 4, f"boxes must be of shape (n, 4), got {shape}"
 
-    def __getitem__(self, idx:int|slice) -> Box:
-        if isinstance(idx, slice):
-            return BoxSequence(self.boxes[idx])
-        return Box(self.boxes[idx])
-    
-    def __len__(self) -> int:
-        return ops.shape(self.boxes)[0]
-    
+    @property
+    def x1(self) -> TensorLike:
+        return self.boxes[:, 0]
+
+    @property
+    def y1(self) -> TensorLike:
+        return self.boxes[:, 1]
+
+    @property
+    def x2(self) -> TensorLike:
+        return self.boxes[:, 2]
+
+    @property
+    def y2(self) -> TensorLike:
+        return self.boxes[:, 3]
+
+    @property
+    def widths(self) -> TensorLike:
+        return self.x2 - self.x1
+
+    @property
+    def heights(self) -> TensorLike:
+        return self.y2 - self.y1
+
+    @property
+    def areas(self) -> TensorLike:
+        return self.widths * self.heights
+
     def pairwise_iou(
         self,
         other: BoxSequence,
@@ -204,76 +250,96 @@ class BoxSequence():
         )
 
         union = area1 + area2 - intersection
+        return intersection / ops.maximum(union, 1e-12)
+    
+    def extend_boxes(
+        self,
+        value: float,
+        mode: BoxExtensionMode = BoxExtensionMode.ADDITIVE,
+        *,
+        inplace: bool = False,
+    ) -> Self:
+        mode = BoxExtensionMode(mode)
 
-        return intersection / ops.maximum(
-            union,
-            1e-12,
+        if mode == BoxExtensionMode.ADDITIVE:
+            margins = ops.stack(
+                (-value, -value, value, value)
+            )
+            boxes = self.boxes + margins
+
+        elif mode == BoxExtensionMode.MULTIPLICATIVE:
+            boxes = self.boxes + ops.stack(
+                (
+                    -value * self.widths,
+                    -value * self.heights,
+                    value * self.widths,
+                    value * self.heights,
+                ),
+                axis=-1,
+            )
+        else:
+            raise ValueError(f"Invalid extension mode: {mode}.")
+        if inplace:
+            self.boxes = boxes
+            return self
+        return replace(
+            self,
+            boxes=boxes,
         )
 
 @dataclass(slots=True)
 class BoxPrediction(Box):
     class_scores: TensorLike
     confidence:TensorLike
+    class_set: TensorLike | None = None
 
     def __post_init__(self):
         super(BoxPrediction, self).__post_init__()
-        assert self.class_scores.ndim == 1
-        assert self.confidence >= 0 and self.confidence <= 1
+        if ops.ndim(self.class_scores) != 1:
+            raise ValueError("class_scores must be 1D.")
 
     @property
-    def predicted_class(self)->int:
-        return int(ops.argmax(self.class_scores))
+    def predicted_class(self) -> TensorLike:
+        return ops.argmax(self.class_scores)
+
+    @property
+    def prediction_set(self) -> TensorLike:
+        if self.class_set is not None:
+            return self.class_set
+
+        return ops.expand_dims(
+            self.predicted_class,
+            axis=0,
+        )
 
     def __iter__(self):
         yield self.xyxy
         yield self.class_scores
         yield self.confidence
 
+class PredictionSetSequence(
+    IndexableUserList[TensorLike]
+):
+    ...
+
 @dataclass(slots=True)
 class ODPrediction(BoxSequence):
+    item_type: ClassVar[type[BoxPrediction]] = BoxPrediction
+
     class_scores:TensorLike # (n, n_classes)
     confidences:TensorLike #(n,)
+    class_sets: PredictionSetSequence[TensorLike] | None = None
 
     def __post_init__(self):
-        super().__post_init__()
+        super(ODPrediction, self).__post_init__()
         assert ops.shape(self.class_scores)[0] == ops.shape(self.boxes)[0], "class_scores and boxes must have the same length"
         assert ops.shape(self.confidences)[0] == ops.shape(self.boxes)[0], "confidence and boxes must have the same length"
         assert self.class_scores.ndim == 2, "class_scores must be 2D"
-        self.confidence = ops.squeeze(self.confidences)
-        assert self.confidence.ndim == 1, "confidence must be 1D"
-
-    def __getitem__(self, idx):
-        if isinstance(idx, slice):
-            return ODPrediction(
-                boxes=self.boxes[idx],
-                class_scores=self.class_scores[idx],
-                confidences=self.confidences[idx],
-            )
-
-        return BoxPrediction(
-            xyxy=self.boxes[idx],
-            class_scores=self.class_scores[idx],
-            confidence=self.confidences[idx],
-        )
-    
-    def __iter__(self)->Generator[BoxPrediction]:
-        for box, smx, conf in zip(self.boxes, self.class_scores, self.confidences):
-            yield BoxPrediction(box, smx, conf)
-
-    def __len__(self)->int:
-        return self.boxes.shape[0]
+        assert self.confidences.ndim == 1, "confidence must be 1D"
 
     @property
     def num_classes(self) -> int:
         return self.class_scores.shape[1]
-
-    @classmethod
-    def empty(cls, num_classes:int):
-        return cls(
-            boxes=ops.zeros((0, 4)),
-            class_scores=ops.zeros((0, num_classes)),
-            confidence=ops.zeros((0,))
-        )
     
     def __add__(self, other:ODPrediction):
         assert ops.shape(self.class_scores)[1] == ops.shape(other.class_scores)[1], "Cannot add ODResults with different number of classes"
@@ -294,24 +360,38 @@ class ODPrediction(BoxSequence):
         *,
         inplace: bool = False,
     ) -> ODPrediction:
-        mask = self.confidences >= threshold
-        indices = ops.where_1d(mask)
-
-        boxes = ops.take(self.boxes, indices, axis=0)
-        softmaxs = ops.take(self.softmaxs, indices, axis=0)
-        confidences = ops.take(self.confidences, indices, axis=0)
+        indices = ops.where_1d(
+            self.confidences >= threshold
+        )
+        filtered = self[indices]
 
         if inplace:
-            self.boxes = boxes
-            self.softmaxs = softmaxs
-            self.confidences = confidences
+            self.boxes = filtered.boxes
+            self.class_scores = filtered.class_scores
+            self.confidences = filtered.confidences
+            self.class_sets = filtered.class_sets
             return self
-
-        return ODPrediction(
-            boxes=boxes,
-            softmaxs=softmaxs,
-            confidences=confidences,
+        return filtered
+    
+    @property
+    def predicted_classes(self) -> TensorLike:
+        return ops.argmax(
+            self.class_scores,
+            axis=-1,
         )
+
+    @property
+    def prediction_sets(self) -> list[TensorLike]:
+        if self.class_sets is not None:
+            return list(self.class_sets)
+
+        return [
+            ops.expand_dims(
+                self.predicted_classes[i],
+                axis=0,
+            )
+            for i in range(len(self))
+        ]
 
 @dataclass(slots=True)
 class BoxTarget(Box):
@@ -319,32 +399,20 @@ class BoxTarget(Box):
 
 @dataclass(slots=True)
 class ODTarget(BoxSequence):
+    item_type: ClassVar[type[BoxTarget]] = BoxTarget
+
     labels: TensorLike      # (n_true,)
 
-
-    @overload
-    def __getitem__(self, idx: int) -> BoxTarget: ...
-
-    @overload
-    def __getitem__(self, idx: slice) -> ODTarget: ...
-
-    def __getitem__(self, idx:int|slice) -> BoxTarget|ODTarget:
-        if isinstance(idx, slice):
-            return ODTarget(
-                boxes=self.boxes[idx],
-                labels=self.labels[idx],
-            )
-        return BoxTarget(
-            xyxy=self.boxes[idx],
-            label=self.labels[idx],
-        )
-
-class ODTargetSequence(UserList[ODTarget]):
+class ODTargetSequence(IndexableUserList[ODTarget]):
     @property
     def boxes(self):
-        return [res.boxes for res in self.data]
+        return [target.boxes for target in self.data]
+
+    @property
+    def labels(self):
+        return [target.labels for target in self.data]
     
-class ODPredictionSequence(UserList[ODPrediction]):
+class ODPredictionSequence(IndexableUserList[ODPrediction]):
     def filter_by_confidence(
         self,
         threshold: float,
@@ -381,30 +449,3 @@ class ODPredictionSequence(UserList[ODPrediction]):
     def confidences(self):
         return [res.confidences for res in self.data]
 
-@runtime_checkable
-class ODPredictor(Protocol):
-    def __call__(self, X: Iterable[Any], *args, **kwargs) -> Sequence[tuple[TensorLike, TensorLike, TensorLike]]:
-        ...
-
-class ODModel():
-    def __init__(self, predictor:ODPredictor):
-        self.predictor = predictor
-
-    def __call__(self, X: Iterable[Any], *args, **kwargs) -> ODPrediction:
-        predictions = self.predictor(
-            X,
-            *args,
-            **kwargs,
-        )
-
-        return ODPredictionSequence(
-            [
-                ODPrediction(
-                    boxes=boxes,
-                    class_scores=class_scores,
-                    confidences=confidences,
-                )
-                for boxes, class_scores, confidences
-                in predictions
-            ]
-        )

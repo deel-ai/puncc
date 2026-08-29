@@ -22,7 +22,7 @@
 # SOFTWARE.
 """Initialization of puncc."""
 import logging
-from deel.puncc._keras import ops
+from deel.puncc.keras import ops, random
 
 # Create the Logger
 logging.basicConfig(

@@ -25,16 +25,18 @@ This module proposes implementation of Conformal Risk Control method as describe
 """
 from __future__ import annotations
 from typing_extensions import Self
-from functools import lru_cache
 from typing import Any, Callable
 from collections.abc import Iterable
+from deel.puncc.api.calibration_context import CalibrationContext
 from deel.puncc.api.conformalization import ConformalMethod
-from deel.puncc.typing import TensorLike, LambdaPredictor
+from deel.puncc.typing import TensorLike, Predictor, PredictorLike
 from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
 
 
 class CRC(ConformalMethod):
-    def __init__(self, model:LambdaPredictor,
+    __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds", "search_tol", "max_iter", "_lambda_cache")
+    def __init__(self, model:Predictor|PredictorLike,
+                 postprocessor:Callable[[Iterable, float], Iterable],
                  loss_function:Callable[[Iterable, Iterable], Iterable[float]],
                  loss_function_upper_bound:float=1,
                  optimizer:ScalarOptimizer=BinarySearchOptimizer(),
@@ -42,36 +44,34 @@ class CRC(ConformalMethod):
                  search_tol:float=1e-4,
                  max_iter:int=25):
         super().__init__(model)
+        self.postprocessor = postprocessor
         self.loss_function = loss_function
-        self.B = loss_function_upper_bound
+        self.B = loss_function_upper_bound or getattr(loss_function, "upper_bound", 1.0)
         self.optimizer = optimizer
         self.lambda_bounds = lambda_bounds
         self.search_tol = search_tol
         self.max_iter = max_iter
 
-        self._x_calib = []
-        self._y_calib = []
         self._lambda_cache = {}
 
     @property
     def len_calib(self):
-        return len(self._y_calib)
+        return len(self.calibration_context)
     
-    def is_calibrated(self)->bool:
-        return self.len_calib > 0
 
     def _r_hat(self, lambd):
-        if not self.is_calibrated():
+        if len(self.calibration_context) == 0:
             raise ValueError("The model must be calibrated before computing r_hat.")
-        return sum(self.loss_function(self.model(self._x_calib, lambd), self._y_calib)) / self.len_calib
+        return sum(self.loss_function(self.postprocessor(self.calibration_context.y_pred, lambd), self.calibration_context.y_calib)) / self.len_calib
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
-        self._x_calib = X_calib
-        self._y_calib = y_calib
+    def compute_calibration_state(
+        self,
+        calibration_context: CalibrationContext,
+    ) -> CalibrationContext:
         self._lambda_cache.clear()
-        return self
+        return calibration_context
 
-    def __get_lambda_from_alpha(self, alpha:float)->float:
+    def _get_lambda_from_alpha(self, alpha:float)->float:
         if alpha >= self.B:
             raise ValueError(
                 f"alpha must be smaller than the loss upper bound B={self.B}."
@@ -81,9 +81,7 @@ class CRC(ConformalMethod):
             def _lambda_loss(lambda_:float)->float:
                 return n/(n+1) * self._r_hat(lambda_) + self.B / (n + 1) - alpha
             try:
-                # TODO : define lambda search space
-                # TODO : allow user to give its hyper parameters for the RF algorithm
-                lambda_hat = self.optimizer(_lambda_loss, *self.lambda_bounds, xtol=1e-4, maxiter=20) 
+                lambda_hat = self.optimizer(_lambda_loss, *self.lambda_bounds, xtol=self.search_tol, maxiter=self.max_iter) 
             except ValueError as e:
                 raise ValueError("Could not find a valid lambda for the given alpha. "
                                 "This may be due to the loss function upper bound being too low "
@@ -94,8 +92,8 @@ class CRC(ConformalMethod):
     def predict(self, X_test:Iterable[Any], alpha:float|TensorLike):
         if not isinstance(alpha, float):
             raise NotImplementedError("Vectorized alpha is not implemented yet.")
-        if not self.is_calibrated():
+        if len(self) == 0:
             raise ValueError("The model must be calibrated before prediction.")
-        lambda_hat = self.__get_lambda_from_alpha(alpha)
+        lambda_hat = self._get_lambda_from_alpha(alpha)
         c_lambda_pred = self.model(X_test, lambda_hat)
         return c_lambda_pred

@@ -28,7 +28,7 @@ from collections.abc import Sequence
 import warnings
 from deel.puncc.typing import TensorLike, NCScoreFunction
 from deel.puncc import ops
-from deel.puncc._keras import random
+from deel.puncc.keras import random
 
 def _difference(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
     return y_pred - y_true
@@ -97,4 +97,4 @@ def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
     return _raps_score
 
 def aps_score(rand:bool=False)->NCScoreFunction:
-    return raps_score(lambd=1, k_reg=1, rand=rand)
+    return raps_score(lambd=0, k_reg=1, rand=rand)

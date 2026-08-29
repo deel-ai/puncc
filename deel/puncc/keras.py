@@ -23,7 +23,7 @@
 """
 This define gestion of interaction with keras (and its backends) for the whole library.
 """
-from functools import wraps
+from functools import cached_property, wraps
 from typing import Callable
 from deel.puncc.config import is_backend_frozen, set_backend
 import sys
@@ -39,6 +39,13 @@ _BACKEND_INFERENCE_ARG_NAMES = (
     "a",
     "mask",
 )
+
+class NoBackendSpecifiedError(RuntimeError):
+    def __init__(self):
+        super().__init__(
+            "PUNCC backend has not been initialized and could not be infered from context. "
+            "Call deel.puncc.config.set_backend(...) first."
+        )
 
 def infer_backend_from_var(x) -> str:
     module = type(x).__module__
@@ -86,16 +93,11 @@ class BackendManager():
             return
 
         if not is_backend_frozen():
-            raise RuntimeError(
-                "PUNCC backend has not been initialized. "
-                "Call deel.puncc.config.set_backend(...) first."
-            )
+            raise NoBackendSpecifiedError()
 
         import keras
         check_keras_version(keras)
         self._keras = keras
-        
-
 
     def __getattr__(self, name):
         self._load_keras()
@@ -124,12 +126,7 @@ def set_backend_on_first_call(f:Callable):
         if not is_backend_frozen() and "keras" not in sys.modules:
             x = get_x_arg(args, kwargs)
             if x is None:
-                raise TypeError(
-                    f"Cannot infer backend for function call {f.__name__!r} "
-                    f"with kwargs {kwargs}. "
-                    "Please use deel.puncc.config.set_backend(...) "
-                    "to specify the backend that should be used."
-                )
+                raise NoBackendSpecifiedError()
             backend = infer_backend_from_var(x)
             set_backend(backend)
         return f(self, *args, **kwargs)
@@ -155,16 +152,14 @@ class OpsBackendManager(BackendManager):
     ninf = float("-inf")
 
     @property
+    def tensor_type(self) -> type:
+        if not self.is_backend_set():
+            raise NoBackendSpecifiedError()
+        return type(self.array(0.0))
+
+    @property
     def module(self):
         return self._keras.ops
-    
-    # @property
-    # def inf(self):
-    #     return self.convert_to_tensor(np.inf)
-    
-    # @property
-    # def ninf(self):
-    #     return self.convert_to_tensor(-np.inf)
 
     def __getattr__(self, name):
         if (

@@ -16,6 +16,13 @@ from deel.puncc.typing import TensorLike
 
 from .base import ODPrediction, ODTarget
 
+class MatchingDirection(StrEnum):
+    """
+    Direction of the assignment
+    """
+    TRUE_TO_PRED = "true_to_pred"
+    PRED_TO_TRUE = "pred_to_true"
+
 @dataclass(slots=True)
 class AssignmentResult:
     """
@@ -23,6 +30,7 @@ class AssignmentResult:
     """
     source_to_target_index: list[int | None]
     unassigned_target_indices: list[int]
+    matching_direction:MatchingDirection = MatchingDirection.TRUE_TO_PRED
 
     def get(self, source_index: int) -> int | None:
         return self.source_to_target_index[source_index]
@@ -45,12 +53,6 @@ class AssignmentResult:
             if target_index is None
         ]
 
-class MatchingDirection(StrEnum):
-    """
-    Direction of the assignment
-    """
-    TRUE_TO_PRED = "true_to_pred"
-    PRED_TO_TRUE = "pred_to_true"
 
 @runtime_checkable
 class AssignmentMethod(Protocol):
@@ -61,8 +63,6 @@ class AssignmentMethod(Protocol):
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-        *,
-        direction: MatchingDirection = MatchingDirection.TRUE_TO_PRED,
     ) -> AssignmentResult:
         ...
 
@@ -251,6 +251,7 @@ class ArgminMatcher:
             for i in range(n_source)
             if valid_sources[i]
         ]
+
 class HungarianMatcher:
     """One-to-one assignment minimizing the global cost."""
 
@@ -339,11 +340,13 @@ class AssignmentStrategy:
         distance_metric: DistanceMetric = IoUDistance(),
         matcher: CostMatrixMatcher = ArgminMatcher(),
         *,
+        direction: MatchingDirection = MatchingDirection.TRUE_TO_PRED,
         iou_threshold: float | None = None,
         class_matching: bool = False,
     ):
         self.distance_metric = distance_metric
         self.matcher = matcher
+        self.direction = MatchingDirection(direction)
         self.iou_threshold = iou_threshold
         self.class_matching = class_matching
 
@@ -383,14 +386,11 @@ class AssignmentStrategy:
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-        *,
-        direction: MatchingDirection = MatchingDirection.TRUE_TO_PRED,
     ) -> AssignmentResult:
         n_true = len(y_true)
         n_pred = len(y_pred)
 
-        direction = MatchingDirection(direction)
-        reverse = direction == MatchingDirection.PRED_TO_TRUE
+        reverse = self.direction == MatchingDirection.PRED_TO_TRUE
 
         n_source, n_target = (
             (n_pred, n_true)
@@ -402,6 +402,7 @@ class AssignmentStrategy:
             return AssignmentResult(
                 source_to_target_index=[None] * n_source,
                 unassigned_target_indices=list(range(n_target)),
+                matching_direction=self.direction,
             )
 
         costs = self.distance_metric.cost_matrix(
@@ -441,6 +442,7 @@ class AssignmentStrategy:
                 for target in range(n_target)
                 if target not in assigned_targets
             ],
+            matching_direction=self.direction,
         )
     
 

@@ -27,7 +27,7 @@ building a ConformalPredictor.
 from typing import Any
 from deel.puncc.typing import TensorLike, PredSetFunction
 from deel.puncc import ops
-from deel.puncc._keras import random
+from deel.puncc.keras import random
 
 def _constant_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
     # TODO : deal with multidim regression
@@ -120,7 +120,7 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=False)->PredSetFunction:
     return _raps_set
 
 def aps_set(rand:bool=False)->PredSetFunction:
-    return raps_set(lambd=1, k_reg=1, rand=rand)
+    return raps_set(lambd=0, k_reg=1, rand=rand)
 
 def _constant_bbox(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)

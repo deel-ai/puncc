@@ -30,14 +30,16 @@ from typing import Any, Callable, Generic, Iterator, TypeVar, overload
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from deel.puncc.typing import Predictor, PredictorLike, make_predictor, TensorLike
+from deel.puncc.api.calibration_context import CalibrationContext
+from deel.puncc.typing import Predictor, PredictorLike, make_predictor
 
 
 # To be defined more precisely in the future.
+TPrediction = TypeVar("TPrediction")
 TSet = TypeVar("TSet")
 
 @dataclass(frozen=True, slots=True)
-class ConformalPrediction(Generic[TSet]):
+class ConformalPrediction(Generic[TPrediction, TSet]):
     """
     Container for a conformal prediction result.
 
@@ -49,10 +51,10 @@ class ConformalPrediction(Generic[TSet]):
             The conformal prediction set (interval, label set, bounding boxes, etc.).
     """
 
-    prediction: TensorLike
+    prediction: TPrediction
     prediction_set: TSet
 
-    def __iter__(self) -> Iterator[TensorLike | TSet]:
+    def __iter__(self) -> Iterator[TPrediction | TSet]:
         yield self.prediction
         yield self.prediction_set
 
@@ -60,9 +62,10 @@ class ConformalPrediction(Generic[TSet]):
         return 2
 
     @overload
-    def __getitem__(self, index: int) -> TensorLike | TSet: ...
+    def __getitem__(self, index: int) -> TPrediction | TSet: ...
+
     @overload
-    def __getitem__(self, index: slice) -> tuple[TensorLike | TSet, ...]: ...
+    def __getitem__(self, index: slice) -> tuple[TPrediction | TSet, ...]: ...
 
     def __getitem__(self, index):
         if isinstance(index, slice):
@@ -78,23 +81,35 @@ class ConformalMethod(ABC):
     Abstract base class for conformal prediction methods.
     Any conformal prediction method should inherit from this class and implement the `calibrate` and `predict` methods.
     """
+    __slots__ = ("model", "fit_function", "calibration_context")
 
     # Any conformal method should have a model attribute.
-    __slots__ = ("model", "fit_function")
     def __init__(self, model:Predictor|PredictorLike,
-                 fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
+                 fit_function:Callable[[Predictor, Iterable[Any], Iterable[Any]], Predictor]|None = None):
         self.model = make_predictor(model)
         self.fit_function = fit_function
+        self.calibration_context = CalibrationContext()
 
-    @abstractmethod
-    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
+    def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any])->Self:
         """
         Calibration step of the conformal method.
+        This method may be overloaded by subclasses to implement specific pré-calibration procedures.
        
         Args:
             X_calib (Iterable[Any]): Features of calibration dataset
             y_calib (TensorLike): Labels of calibration dataset
         """
+        self.calibration_context.clear()
+        self.calibration_context.update(
+            X_calib=X_calib,
+            y_calib=y_calib,
+            y_pred = self.model(X_calib)
+        )
+        self.calibration_context = self.compute_calibration_state(self.calibration_context)
+        return self
+    
+    @abstractmethod
+    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
         ...
 
     @abstractmethod
@@ -110,11 +125,10 @@ class ConformalMethod(ABC):
             ConformalPrediction: A container for the conformal prediction result, containing the base (non-conformal) prediction and the conformal prediction set.
         """
         # TODO : support TensorLike for alpha
-        ...
 
     def fit(self,
             X:Iterable[Any],
-            y:TensorLike,
+            y:Iterable[Any],
             *args, 
             **kwargs
             ):
