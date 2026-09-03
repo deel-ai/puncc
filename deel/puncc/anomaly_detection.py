@@ -30,7 +30,7 @@ from typing import Tuple
 
 import numpy as np
 
-from deel.puncc.api.conformal_predictor import ScoreCalibrator
+from deel.puncc.api.split_conformal_prediction import ScoreCalibrator
 from deel.puncc.api.splitting import IdSplitter
 from deel.puncc.api.splitting import RandomSplitter
 

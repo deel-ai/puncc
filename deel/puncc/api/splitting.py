@@ -30,7 +30,7 @@ This module defines splitters that partition a dataset into:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, TypeAlias
 
 from deel.puncc import ops
@@ -60,27 +60,17 @@ FitCalSplits: TypeAlias = list[
     FitCalSplit
 ]
 
-def _take(datasets:DatasetGroup, *group_idxs: IndexTensor,)->Split:
-    """
-    Materialize one split from index tensors.
-
-    Args:
-        X (TensorLike), : Input features
-        y (TensorLike): Labels
-        fit_idxs (IndexTensor): 1D integer index tensors specifying rows/items to pick for train dataset
-        cal_idxs (IndexTensor): 1D integer index tensors specifying rows/items to pick for calibration dataset
-
-    Returns:
-        tuple[TensorLike, TensorLike, TensorLike, TensorLike]: subsets for train and calibration : X_train, y_train, X_calib, y_calib
-    """
+def _take(
+    datasets: dict[str, Any],
+    *group_idxs: IndexTensor,
+) -> Split:
     return tuple(
         tuple(
             dataset[idxs]
-            for dataset in datasets
+            for dataset in datasets.values()
         )
         for idxs in group_idxs
     )
-
 
 class BaseSplitter(ABC):
     """
@@ -98,13 +88,11 @@ class BaseSplitter(ABC):
         self.random_state = random_state
 
     @abstractmethod
-    def split(self, *datasets:Any)->Splits:
+    def split(self, **datasets:Any)->Splits:
         ...
 
-    def __call__(self, *datasets: Any) -> Splits:
-        if isinstance(datasets[0], CalibrationContext):
-            return self.split_context(*datasets)
-        return self.split(*datasets)
+    def __call__(self, **datasets: Any) -> Splits:
+        return self.split(**datasets)
 
 
     def split_context(
@@ -116,59 +104,96 @@ class BaseSplitter(ABC):
                 context.from_values(group)
                 for group in split
             )
-            for split in self.split(*context)
+            for split in self.split(
+                **dict(context.items())
+            )
         ]
     
 class FunctionalSplitter(BaseSplitter):
     def __init__(
         self,
         group_function: GroupFunction,
+        groups:Sequence[Any]|None = None,
     ) -> None:
         super().__init__(random_state=None)
         self.group_function = group_function
+        self.groups = groups
+
+    def group_indices(
+        self,
+        **datasets: Any,
+    ) -> list[tuple[Any, IndexTensor]]:
+        group_ids = ops.reshape(
+            self.group_function(**datasets),
+            (-1,),
+        )
+
+        groups = self.groups
+
+        if groups is None:
+            groups = dict.fromkeys(
+                ops.convert_to_numpy(
+                    group_ids
+                ).tolist()
+            )
+
+        return [
+            (
+                group,
+                ops.where_1d(
+                    group_ids == group
+                ),
+            )
+            for group in groups
+        ]
 
     def split(
         self,
-        *datasets: Any,
+        **datasets: Any,
     ) -> Splits:
-        group_ids = self.group_function(
-            *datasets
+        grouped_indices = self.group_indices(
+            **datasets
         )
-        group_ids = ops.reshape(group_ids, (-1,))
-        
-        groups = ops.convert_to_numpy(
-            group_ids
-        )
-
-        unique_groups = dict.fromkeys(
-            groups.tolist()
-        )
-
-        group_idxs = [
-            ops.where_1d(
-                group_ids == group
-            )
-            for group in unique_groups
-        ]
-
         return [
             _take(
                 datasets,
-                *group_idxs,
+                *(
+                    indices
+                    for _, indices
+                    in grouped_indices
+                ),
             )
         ]
+    
+    def split_context_by_group(
+        self,
+        context: CalibrationContext,
+    ) -> dict[Any, CalibrationContext]:
+        grouped_indices = self.group_indices(
+            **dict(context.items())
+        )
+
+        return {
+            group: context[indices]
+            for group, indices
+            in grouped_indices
+        }
 
 class ClasswiseSplitter(FunctionalSplitter):
-    def __init__(self):
+    def __init__(
+        self,
+        classes: Sequence[int]|None=None,
+    ) -> None:
         super().__init__(
-            group_function=lambda y_pred, y_calib, *args, **kwargs: y_calib
+            group_function=lambda y_calib, **_: y_calib,
+            groups=classes,
         )
 
 class FitCalSplitter(BaseSplitter):
     @abstractmethod
     def split(
         self,
-        *datasets: Any,
+        **datasets: Any,
     ) -> FitCalSplits:
         ...
 
@@ -188,10 +213,10 @@ class IdSplitter(FitCalSplitter):
     """
     def __init__(
         self,
-        X_fit,
-        y_fit,
-        X_calib,
-        y_calib,
+        X_fit:Sequence[Any],
+        y_fit:Sequence[Any],
+        X_calib:Sequence[Any],
+        y_calib:Sequence[Any],
     ):
         super().__init__(random_state=None)
 
@@ -207,7 +232,7 @@ class IdSplitter(FitCalSplitter):
             )
         ]
 
-    def split(self, *datasets) -> Splits:
+    def split(self, **datasets:Any) -> FitCalSplits:
         """
         Return the stored training and calibration subsets.
 
@@ -244,8 +269,8 @@ class RandomSplitter(FitCalSplitter):
 
     def split(
         self,
-        *datasets: Any,
-    ) -> Splits:
+        **datasets: Any,
+    ) -> FitCalSplits:
         """
         Split the dataset randomly into training and calibration subsets.
 
@@ -259,7 +284,9 @@ class RandomSplitter(FitCalSplitter):
         """
         # TODO : checks length of datasets
 
-        n_samples = len(datasets[0])
+        n_samples = len(
+            next(iter(datasets.values()))
+        )
 
         if n_samples < 2:
             raise ValueError(
@@ -313,8 +340,8 @@ class KFoldSplitter(FitCalSplitter):
 
     def split(
         self,
-        *datasets:Any
-    ) -> Splits:
+        **datasets:Any
+    ) -> FitCalSplits:
         """
         Split the dataset into K training/calibration folds.
 
@@ -329,7 +356,9 @@ class KFoldSplitter(FitCalSplitter):
         # TODO : checks
         # sample_len_check(X, y)
 
-        n_samples = len(datasets[0])
+        n_samples = len(
+            next(iter(datasets.values()))
+        )
 
         if self.K > n_samples:
             raise ValueError(f"K must be <= number of samples. Provided K: {self.K}, number of samples: {n_samples}.")

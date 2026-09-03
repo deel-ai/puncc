@@ -1,5 +1,4 @@
 from __future__ import annotations
-from collections import UserList
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import ClassVar, Literal, Self
@@ -122,7 +121,7 @@ class Box():
     def __len__(self) -> int:
         return 4
 
-    def __getitem__(self, idx) -> TensorLike:
+    def __getitem__(self, idx:int|slice) -> TensorLike:
         return self.xyxy[idx]
 
     def __iter__(self):
@@ -324,11 +323,11 @@ class PredictionSetSequence(
 
 @dataclass(slots=True)
 class ODPrediction(BoxSequence):
-    item_type: ClassVar[type[BoxPrediction]] = BoxPrediction
+    item_type: ClassVar[type[Box]] = BoxPrediction
 
     class_scores:TensorLike # (n, n_classes)
     confidences:TensorLike #(n,)
-    class_sets: PredictionSetSequence[TensorLike] | None = None
+    class_sets: PredictionSetSequence | None = None
 
     def __post_init__(self):
         super(ODPrediction, self).__post_init__()
@@ -399,7 +398,7 @@ class BoxTarget(Box):
 
 @dataclass(slots=True)
 class ODTarget(BoxSequence):
-    item_type: ClassVar[type[BoxTarget]] = BoxTarget
+    item_type: ClassVar[type[Box]] = BoxTarget
 
     labels: TensorLike      # (n_true,)
 

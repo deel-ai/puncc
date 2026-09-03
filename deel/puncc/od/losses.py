@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import singledispatchmethod
+from typing import Any
 
 from deel.puncc import ops
 from deel.puncc.typing import TensorLike
@@ -40,9 +41,9 @@ class ODLoss(ABC):
     @singledispatchmethod
     def __call__(
         self,
-        y_pred,
-        y_true,
-        assignment=None,
+        y_pred:ODPrediction|Sequence[ODPrediction],
+        y_true:ODTarget|Sequence[ODTarget],
+        assignment:AssignmentResult|None=None,
     ) -> TensorLike:
         raise TypeError(
             f"Unsupported prediction type: {type(y_pred).__name__}"
@@ -64,8 +65,8 @@ class ODLoss(ABC):
     @__call__.register
     def _(
         self,
-        y_pred: Sequence,
-        y_true: Sequence,
+        y_pred: Sequence[ODPrediction],
+        y_true: Sequence[ODTarget],
         assignment: Sequence[AssignmentResult | None] | None = None,
     ) -> TensorLike:
         if len(y_pred) != len(y_true):
@@ -101,6 +102,7 @@ class ODLoss(ABC):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> TensorLike:
+        ...
 
 
 class ConfidenceLoss(ODLoss):

@@ -23,7 +23,7 @@
 """
 This module implements conformal anomaly detection procedures.
 """
-from deel.puncc.api.conformal_predictor import ConformalPredictor
+from deel.puncc.api.split_conformal_prediction import ConformalPredictor
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike
 from typing import Callable, Any, Literal
 from collections.abc import Iterable

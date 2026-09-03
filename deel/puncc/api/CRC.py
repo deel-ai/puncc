@@ -24,26 +24,26 @@
 This module proposes implementation of Conformal Risk Control method as described in [paper]
 """
 from __future__ import annotations
-from typing_extensions import Self
 from typing import Any, Callable
 from collections.abc import Iterable
 from deel.puncc.api.calibration_context import CalibrationContext
-from deel.puncc.api.conformalization import ConformalMethod
-from deel.puncc.typing import TensorLike, Predictor, PredictorLike
+from deel.puncc.api.conformal_prediction import ConformalPrediction, ConformalPredictor
+from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
+from deel.puncc.keras import ops
 
-
-class CRC(ConformalMethod):
+class CRC(ConformalPredictor):
     __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds", "search_tol", "max_iter", "_lambda_cache")
     def __init__(self, model:Predictor|PredictorLike,
                  postprocessor:Callable[[Iterable, float], Iterable],
                  loss_function:Callable[[Iterable, Iterable], Iterable[float]],
-                 loss_function_upper_bound:float=1,
+                 loss_function_upper_bound:float|None = None,
+                 fit_function:FitFunction|None = None,
                  optimizer:ScalarOptimizer=BinarySearchOptimizer(),
                  lambda_bounds:tuple[float, float]=(0.0, 1.0),
                  search_tol:float=1e-4,
                  max_iter:int=25):
-        super().__init__(model)
+        super().__init__(model, fit_function=fit_function)
         self.postprocessor = postprocessor
         self.loss_function = loss_function
         self.B = loss_function_upper_bound or getattr(loss_function, "upper_bound", 1.0)
@@ -52,17 +52,31 @@ class CRC(ConformalMethod):
         self.search_tol = search_tol
         self.max_iter = max_iter
 
-        self._lambda_cache = {}
+        # cache dict that maps alpha to already calculated lambdas
+        self._lambda_cache: dict[
+            tuple[CalibrationContext, float],
+            float,
+        ] = {}
 
     @property
-    def len_calib(self):
-        return len(self.calibration_context)
-    
+    def len_calib(self)->int:
+        return self.calibration_context.size
 
-    def _r_hat(self, lambd):
-        if len(self.calibration_context) == 0:
-            raise ValueError("The model must be calibrated before computing r_hat.")
-        return sum(self.loss_function(self.postprocessor(self.calibration_context.y_pred, lambd), self.calibration_context.y_calib)) / self.len_calib
+    def _r_hat(
+        self,
+        lambd: float,
+        calibration_context: CalibrationContext,
+    ) -> float:
+        losses = self.loss_function(
+            self.postprocessor(
+                calibration_context.y_pred,
+                lambd,
+            ),
+            calibration_context.y_calib,
+        )
+
+        return ops.mean(losses)
+
 
     def compute_calibration_state(
         self,
@@ -71,29 +85,73 @@ class CRC(ConformalMethod):
         self._lambda_cache.clear()
         return calibration_context
 
-    def _get_lambda_from_alpha(self, alpha:float)->float:
+    def _get_lambda_from_alpha(
+        self,
+        alpha: float|TensorLike,
+        calibration_context: CalibrationContext,
+    ) -> float:
         if alpha >= self.B:
             raise ValueError(
                 f"alpha must be smaller than the loss upper bound B={self.B}."
             )
-        if alpha not in self._lambda_cache:
-            n = self.len_calib
-            def _lambda_loss(lambda_:float)->float:
-                return n/(n+1) * self._r_hat(lambda_) + self.B / (n + 1) - alpha
+
+        cache_key = (
+            calibration_context,
+            alpha,
+        )
+
+        if cache_key not in self._lambda_cache:
+            n = calibration_context.size
+
+            def _lambda_loss(
+                lambd: float,
+            ) -> float:
+                return (
+                    n / (n + 1)
+                    * self._r_hat(
+                        lambd,
+                        calibration_context,
+                    )
+                    + self.B / (n + 1)
+                    - alpha
+                )
+
             try:
-                lambda_hat = self.optimizer(_lambda_loss, *self.lambda_bounds, xtol=self.search_tol, maxiter=self.max_iter) 
+                lambda_hat = self.optimizer(
+                    _lambda_loss,
+                    *self.lambda_bounds,
+                    xtol=self.search_tol,
+                    maxiter=self.max_iter,
+                )
+
             except ValueError as e:
                 raise ValueError("Could not find a valid lambda for the given alpha. "
                                 "This may be due to the loss function upper bound being too low "
                                 "or the calibration set not being representative enough.") from e
-            self._lambda_cache[alpha] = lambda_hat
-        return self._lambda_cache[alpha]
 
-    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike):
-        if not isinstance(alpha, float):
-            raise NotImplementedError("Vectorized alpha is not implemented yet.")
-        if len(self) == 0:
-            raise ValueError("The model must be calibrated before prediction.")
-        lambda_hat = self._get_lambda_from_alpha(alpha)
-        c_lambda_pred = self.model(X_test, lambda_hat)
-        return c_lambda_pred
+            self._lambda_cache[
+                cache_key
+            ] = lambda_hat
+
+        return self._lambda_cache[cache_key]
+
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float,
+        calibration_context: CalibrationContext,
+    ) -> ConformalPrediction[Any, Any]:
+        lambda_hat = self._get_lambda_from_alpha(
+            alpha,
+            calibration_context,
+        )
+
+        conformal_prediction = self.postprocessor(
+            prediction,
+            lambda_hat,
+        )
+
+        return ConformalPrediction(
+            prediction,
+            conformal_prediction,
+        )

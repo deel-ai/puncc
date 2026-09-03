@@ -33,8 +33,10 @@ from typing import Any, Callable, Self
 
 from deel.puncc import ops
 from deel.puncc.api.calibration_context import CalibrationContext
-from deel.puncc.api.conformalization import ConformalMethod, ConformalPrediction
+from deel.puncc.api.conformal_prediction import ConformalPredictor, ConformalPrediction
+from deel.puncc.api.splitting import ClasswiseSplitter
 from deel.puncc.typing import (
+    FitFunction,
     NCScoreFunction,
     Predictor,
     PredictorLike,
@@ -43,14 +45,7 @@ from deel.puncc.typing import (
     make_predictor,
 )
 
-class NoModel(Predictor):
-    """
-    Empty model class used as a placeholder when loading a ConformalPredictor without a model.
-    """
-    def __call__(self, *args, **kwargs):
-        raise RuntimeError("When loading a ConformalPredictor, the model must be set manually after loading. The model was not saved to avoid issues with model serialization. Please set the model attribute of the loaded ConformalPredictor instance to a valid model before using it.")
-
-class ConformalPredictor(ConformalMethod):
+class SplitConformalPredictor(ConformalPredictor):
     """
     Base class for split conformal prediction methods
 
@@ -61,19 +56,29 @@ class ConformalPredictor(ConformalMethod):
         weight_function (Callable[[Iterable[Any]], Iterable[float]], optional): Optional function to allocate different weights to the calibration samples when computing the quantile of the non conformity scores. Defaults to None, which corresponds to the standard unweighted conformal prediction method.
         fit_function (Callable[[Predictor, Iterable[Any], TensorLike], Predictor], optional): Optional function that trains the model. Defaults to None.
     """
-    __slots__ = ("nc_score_function", "pred_set_function", "weight_function")
+    __slots__ = (
+        "nc_score_function",
+        "pred_set_function",
+        "weight_function",
+        "_quantile_cache",
+    )
+
     def __init__(self,
                  model:Predictor|PredictorLike,
                  nc_score_function:NCScoreFunction,
                  pred_set_function: PredSetFunction,
                  *,
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
-                 fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
+                 fit_function:FitFunction|None = None):
         # Definition of conformal predictor components :
-        super().__init__(model=model, fit_function = fit_function)
+        super().__init__(model=model, fit_function=fit_function)
         self.nc_score_function = nc_score_function
         self.pred_set_function = pred_set_function
         self.weight_function = weight_function
+        self._quantile_cache: dict[
+            tuple[CalibrationContext, float],
+            Any,
+        ] = {}
 
     @property
     def len_calibr(self) -> int:
@@ -91,6 +96,7 @@ class ConformalPredictor(ConformalMethod):
         return self.calibration_context.nc_scores
 
     def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+        self._quantile_cache.clear()
         calibration_context.nc_scores = (
             self.nc_score_function(
                 calibration_context.y_pred,
@@ -101,28 +107,49 @@ class ConformalPredictor(ConformalMethod):
         #del calibration_context.y_calib
         return calibration_context
 
+    def conformalize(self,
+                    prediction:Any,
+                    alpha:float,
+                    calibration_context:CalibrationContext|None = None)->ConformalPrediction[Any, Any]:
 
-    def predict(self,
-                X_test:Iterable[Any],
-                alpha:float,
-                correction:Callable|None = None)->ConformalPrediction:
-        # TODO : support TensorLike for alpha
+        if calibration_context is None:
+            calibration_context = self.calibration_context
 
-        # Make predictions on the test set
-        prediction = self.model(X_test)
+        quantile = self._compute_quantile(
+            alpha,
+            calibration_context,
+        )
 
-        # Size of the calibration set
-        n = self.len_calibr
-
-        if correction is not None:
-            alpha = correction(alpha) # TODO : add kwargs and other stuff that may be impacted by the correction?
-
-        weights = None
-        if self.weight_function is not None:
-            weights = self.weight_function(self.calibration_context.X_calib)
-        quantile = ops.weighted_quantile(self.nc_scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
         prediction_sets = self.pred_set_function(prediction, quantile)
         return ConformalPrediction(prediction, prediction_sets)
+
+    def _compute_quantile(
+        self,
+        alpha: float|TensorLike,
+        calibration_context: CalibrationContext,
+    )->float|TensorLike:
+        cache_key = (
+            calibration_context,
+            alpha,
+        )
+        if cache_key not in self._quantile_cache:
+            scores = calibration_context.nc_scores
+            n = len(scores)
+
+            weights = None
+            if self.weight_function is not None:
+                weights = self.weight_function(
+                    calibration_context.X_calib
+                )
+
+            self._quantile_cache[cache_key] = ops.weighted_quantile(
+                scores,
+                (1 - alpha) * (n + 1) / n,
+                axis=0,
+                weights=weights,
+            )
+        
+        return self._quantile_cache[cache_key]
 
     def __getstate__(self):
         state = {}
@@ -134,12 +161,11 @@ class ConformalPredictor(ConformalMethod):
             if isinstance(slots, str):
                 slots = (slots,)
             for name in slots:
-                if name in ("__dict__", "__weakref__", "model"):
+                if name in ("__dict__", "__weakref__", "model", "_quantile_cache"):
                     continue
                 if hasattr(self, name):
                     state[name] = getattr(self, name)
         # Remove the model from the state to avoid serialization issues
-        state["model"] = NoModel()
         return state
 
     def __setstate__(self, state):
@@ -156,10 +182,11 @@ class ConformalPredictor(ConformalMethod):
             state = pickle.load(f)
         obj = cls.__new__(cls)
         obj.__setstate__(state)
+        obj._quantile_cache = {}
         obj.model = make_predictor(model)
         return obj
 
-class StaticConformalPredictor(ConformalPredictor):
+class StaticSplitConformalPredictor(SplitConformalPredictor):
     nc_score_function:NCScoreFunction
     pred_set_function:PredSetFunction
     def __init__(self, model, weight_function=None, fit_function=None):
@@ -171,7 +198,7 @@ class StaticConformalPredictor(ConformalPredictor):
             fit_function=fit_function,
         )
 
-class ClassificationConformalPredictor(StaticConformalPredictor):
+class ClassificationSplitConformalPredictor(StaticSplitConformalPredictor):
     @classmethod
     def pred_set_function(cls, y_pred:TensorLike, quantile:float|TensorLike):
         n, K = y_pred.shape[0], y_pred.shape[1]
@@ -182,46 +209,50 @@ class ClassificationConformalPredictor(StaticConformalPredictor):
         mask = scores <= quantile
         return [ops.where_1d(mask[i]) for i in range(n)]
 
-class ClasswiseConformalPredictorMixin(ClassificationConformalPredictor):
-    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Self:
+
+class ClasswiseConformalPredictorMixin(SplitConformalPredictor):#(ClassificationConformalPredictor):
+    __slots__ = ("classwise_calibration_contexts",)
+    splitter = ClasswiseSplitter()
+
+    def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any])->Self:
         super().calibrate(X_calib, y_calib)
-        self._y_calib = y_calib
+        self.classwise_calibration_contexts = self.splitter.split_context_by_group(self.calibration_context)
         return self
 
-    def predict(self,
-                X_test:Iterable[Any],
-                alpha:float,
-                correction:Callable|None = None)->ConformalPrediction:
-        # TODO : support TensorLike for alpha
+    def conformalize(self,
+                    prediction:Any,
+                    alpha:float,
+                    calibration_context:CalibrationContext|None = None)->ConformalPrediction[Any, Any]:
+        if calibration_context is None:
+            calibration_context = self.calibration_context
 
-        prediction = self.model(X_test)
+        if calibration_context is self.calibration_context:
+            classwise_contexts = self.classwise_calibration_contexts
+        else:
+            classwise_contexts = (
+                self.splitter.split_context_by_group(
+                    calibration_context
+                )
+            )
 
-        if correction is not None:
-            alpha = correction(alpha)
+        n_classes = int(ops.shape(prediction)[-1])
+        global_quantile = None
+        quantiles = []
 
-        weights = None
-        if self.weight_function is not None:
-            weights = self.weight_function(self._x_calib)
-
-        scores = self.nc_scores
-        y_calib = self._y_calib
-
-        nb_classes = int(ops.shape(prediction)[-1])
-        n = self.len_calibr
-        q_global = None
-        qs = []
-        for k in range(nb_classes):
-            mask = ops.equal(y_calib, k)
-            s_k = scores[mask]
-            n_k = len(s_k)
-            if n_k == 0:
-                if q_global is None:
-                    q_global = ops.weighted_quantile(scores, (1 - alpha) * (n + 1) / n, axis=0, weights=weights)
-                qs.append(q_global)
+        for k in range(n_classes):
+            if k in classwise_contexts:
+                calib_context_k = classwise_contexts[k]
+                quantile_k = self._compute_quantile(alpha, calib_context_k)
+                quantiles.append(quantile_k)
             else:
-                qs.append(ops.weighted_quantile(s_k, (1 - alpha) * (n_k + 1) / n_k, axis=0, weights=weights[mask] if weights is not None else None))
-        q = ops.stack(qs, axis=0)
-        y_set = self.pred_set_function(prediction, q)
+                if global_quantile is None:
+                    # TODO:
+                    # Define the fallback strategy for classes absent from the calibration set.
+                    # Using the global quantile is pragmatic but does not provide the
+                    # class-conditional guarantee for the missing class.
+                    global_quantile = self._compute_quantile(alpha, calibration_context)
+                quantiles.append(global_quantile)
+        y_set = self.pred_set_function(prediction, ops.stack(quantiles, axis=0))
         return ConformalPrediction(prediction, y_set)
 
 class ScoreCalibrator:

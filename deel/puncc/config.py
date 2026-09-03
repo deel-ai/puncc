@@ -2,17 +2,17 @@ import os
 import sys
 
 _VALID = {"torch", "tensorflow", "jax", "numpy"}
-_BACKEND = None
+_backend = None
 
 def set_backend(name: str) -> None:
-    global _BACKEND
+    global _backend
 
     name = (name or "").strip().lower()
 
     if name not in _VALID:
         raise ValueError(f"Invalid backend: {name!r}. Choose one of: {_VALID}.")
 
-    if _BACKEND and name!=_BACKEND:
+    if _backend and name!=_backend:
         raise RuntimeError(
             "Backend already initialized. Call set_backend() before importing submodules that use Puncc."
         )
@@ -28,18 +28,18 @@ def set_backend(name: str) -> None:
             )
 
     os.environ["KERAS_BACKEND"] = name
-    _BACKEND = name
+    _backend = name
     
 def get_backend() -> str|None:
     """
     Returns:
         str|None: keras backend env var
     """
-    val = _BACKEND or os.environ.get("KERAS_BACKEND")
+    val = _backend or os.environ.get("KERAS_BACKEND")
     return val.strip().lower() if val else None
 
 def is_backend_frozen() -> bool:
     """
     Return whether the PUNCC backend has been selected.
     """
-    return _BACKEND is not None
+    return _backend is not None

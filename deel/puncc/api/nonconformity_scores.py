@@ -73,7 +73,8 @@ def scaled_bbox_difference()->NCScoreFunction:
     return _scaled_bbox_difference
 
 def _lac_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
-    return 1 - y_pred[ops.arange(ops.shape(y_true)[0]), y_true]
+    true_scores = ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
+    return 1 - ops.squeeze(true_scores, axis=-1,)
 
 def lac_score()->NCScoreFunction:
     return _lac_score
@@ -96,5 +97,5 @@ def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
         return s + regul - rand_correction
     return _raps_score
 
-def aps_score(rand:bool=False)->NCScoreFunction:
+def aps_score(rand:bool=True)->NCScoreFunction:
     return raps_score(lambd=0, k_reg=1, rand=rand)

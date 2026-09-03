@@ -25,9 +25,9 @@ This module implements conformal classification procedures.
 """
 from deel.puncc.api.nonconformity_scores import lac_score, aps_score, raps_score
 from deel.puncc.api.prediction_sets import lac_set, aps_set, raps_set
-from deel.puncc.api.conformal_predictor import ClasswiseConformalPredictorMixin, ClassificationConformalPredictor, ConformalPredictor
+from deel.puncc.api.split_conformal_prediction import ClasswiseConformalPredictorMixin, SplitConformalPredictor
 
-class LAC(ClassificationConformalPredictor):
+class LAC(SplitConformalPredictor):
     nc_score_function=lac_score()
     pred_set_function=lac_set()
 
@@ -114,11 +114,11 @@ class ClasswiseLAC(ClasswiseConformalPredictorMixin, LAC):
         print(f"Average prediction set size: {np.round(size, 2)}")
     """
 
-class APS(ClassificationConformalPredictor):
+class APS(SplitConformalPredictor):
     nc_score_function = aps_score()
     pred_set_function = aps_set(rand=True)
 
-class RAPS(ConformalPredictor):
+class RAPS(SplitConformalPredictor):
     # TODO : add random state propagation to control randomized tie breaking
     def __init__(self, model, lambd:float=0, k_reg:int=1, rand:bool=False, weight_function=None, fit_function=None):
         nc_score_function = raps_score(lambd=lambd, k_reg=k_reg, rand=rand)

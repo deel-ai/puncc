@@ -23,16 +23,21 @@
 """
 This define gestion of interaction with keras (and its backends) for the whole library.
 """
-from functools import cached_property, wraps
-from typing import Callable
-from deel.puncc.config import is_backend_frozen, set_backend
+from functools import wraps
+from types import ModuleType
+from typing import Any, Callable
+
+from deel.puncc.config import get_backend, is_backend_frozen, set_backend
 import sys
-import numpy as np
 from packaging.version import Version
+
+from deel.puncc.typing import TensorLike
 
 # Requires keras >= 3.3 for numpy backend support
 _MIN_KERAS = (3, 3, 0)
 
+# arg names for tensor valued parameters given to ops methods
+# Used for backend inference in case of bad configuration
 _BACKEND_INFERENCE_ARG_NAMES = (
     "x",
     "x1",
@@ -41,13 +46,22 @@ _BACKEND_INFERENCE_ARG_NAMES = (
 )
 
 class NoBackendSpecifiedError(RuntimeError):
+    """
+    Basic error raised if the backend has not been set by the user and cannot be guessed at runtime with usual tools.
+    """
     def __init__(self):
         super().__init__(
             "PUNCC backend has not been initialized and could not be infered from context. "
             "Call deel.puncc.config.set_backend(...) first."
         )
 
-def infer_backend_from_var(x) -> str:
+def infer_backend_from_var(x:TensorLike) -> str|None:
+    """
+    Infer the backend from a tensor-like object given by the user.
+
+    Returns:
+        str: name of the guessed backend
+    """
     module = type(x).__module__
 
     if module.startswith("numpy"):
@@ -61,13 +75,11 @@ def infer_backend_from_var(x) -> str:
 
     if module.startswith("jax"):# or module.startswith("jaxlib"):
         return "jax"
+    return None
 
-    raise TypeError(
-        f"Cannot infer backend from object of type "
-        f"{type(x).__module__}.{type(x).__qualname__}. "
-        "Please use deel.puncc.config.set_backend(...) "
-        "to specify the backend that should be used."
-    )
+def infer_backend_from_modules():
+    # TODO
+    return None
 
 class BackendManager():
     __slots__ = ("_keras")
@@ -99,11 +111,11 @@ class BackendManager():
         check_keras_version(keras)
         self._keras = keras
 
-    def __getattr__(self, name):
+    def __getattr__(self, name:str):
         self._load_keras()
         return getattr(self.module, name)
 
-def get_x_arg(args, kwargs):
+def get_tensor_arg(args:Any, kwargs:Any):
     if len(args) > 0:
         return args[0]
     for name in _BACKEND_INFERENCE_ARG_NAMES:
@@ -111,7 +123,7 @@ def get_x_arg(args, kwargs):
             return kwargs[name]
     return None
 
-def check_keras_version(keras):
+def check_keras_version(keras:ModuleType):
     if Version(keras.__version__) < Version("3.3.0"):
         raise RuntimeError(
             f"Keras {keras.__version__} detected. "
@@ -120,14 +132,18 @@ def check_keras_version(keras):
             "Upgrade with: pip install -U keras"
         )
 
-def set_backend_on_first_call(f:Callable):
+def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
     @wraps(f)
-    def _f(self, *args, **kwargs):
+    def _f(self:object, *args:Any, **kwargs:Any):
         if not is_backend_frozen() and "keras" not in sys.modules:
-            x = get_x_arg(args, kwargs)
-            if x is None:
+            x = get_tensor_arg(args, kwargs)
+            backend = None
+            if x is not None:
+                backend = infer_backend_from_var(x)
+            if backend is None:
+                backend = infer_backend_from_modules()
+            if backend is None:
                 raise NoBackendSpecifiedError()
-            backend = infer_backend_from_var(x)
             set_backend(backend)
         return f(self, *args, **kwargs)
     return _f
@@ -139,7 +155,7 @@ class BackendEstimationCallback():
         self.backend_manager = backend_manager
 
     @set_backend_on_first_call
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args:Any, **kwargs:Any):
         return getattr(self.backend_manager, self.name)(*args, **kwargs)
     
 class RandomBackendManager(BackendManager):
@@ -152,8 +168,8 @@ class OpsBackendManager(BackendManager):
     ninf = float("-inf")
 
     @property
-    def tensor_type(self) -> type:
-        if not self.is_backend_set():
+    def tensor_type(self) -> type[TensorLike]:
+        if get_backend() is None:
             raise NoBackendSpecifiedError()
         return type(self.array(0.0))
 
@@ -161,7 +177,7 @@ class OpsBackendManager(BackendManager):
     def module(self):
         return self._keras.ops
 
-    def __getattr__(self, name):
+    def __getattr__(self, name:str):
         if (
             self._keras is None
             and not is_backend_frozen()
@@ -175,7 +191,7 @@ class OpsBackendManager(BackendManager):
         return super().__getattr__(name)
 
     @set_backend_on_first_call
-    def flatten(self, x):
+    def flatten(self, x:TensorLike):
         """
         Flatten a tensor to 1D.
 
@@ -190,12 +206,12 @@ class OpsBackendManager(BackendManager):
         return self.reshape(x, (-1,))
 
     @set_backend_on_first_call
-    def _unique_sorted(self, x):
+    def _unique_sorted(self, x:TensorLike):
         x = self.sort(x)
         return self.concatenate([x[:1], x[1:][self.not_equal(x[1:], x[:-1])]])
 
     @set_backend_on_first_call
-    def where_1d(self, mask):
+    def where_1d(self, mask:TensorLike):
         """Backend-agnostic: return 1D indices where mask is True (mask must be rank-1)."""
         idx = self.where(mask)
 
@@ -209,7 +225,7 @@ class OpsBackendManager(BackendManager):
         return self.reshape(idx, (-1,))
 
     @set_backend_on_first_call
-    def where_nd(self, mask):
+    def where_nd(self, mask:TensorLike):
         """Backend-agnostic: return indices as a 2D tensor of shape (n_true, rank(mask))."""
         idx = self.where(mask)
         if isinstance(idx, tuple):
@@ -217,7 +233,7 @@ class OpsBackendManager(BackendManager):
         return idx
 
     @set_backend_on_first_call
-    def setdiff1d(self, a, b, assume_unique=False):
+    def setdiff1d(self, a:TensorLike, b:TensorLike, assume_unique:bool=False):
         """
         Find the set difference of two tensors.
 
@@ -253,11 +269,11 @@ class OpsBackendManager(BackendManager):
 
     @set_backend_on_first_call
     def weighted_quantile(self, 
-                          x,
-                          q,
-                          weights=None,
-                          axis=None,
-                          keepdims=False):
+                          x:TensorLike,
+                          q:float|TensorLike,
+                          weights:TensorLike=None,
+                          axis:int|None=None,
+                          keepdims:bool=False):
         q = self.cast(q, x.dtype)
         q = self.convert_to_tensor(q)
 

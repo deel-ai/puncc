@@ -30,18 +30,19 @@ from typing import Any, Callable
 from collections.abc import Iterable
 from typing_extensions import Self
 from collections.abc import Sequence
-from deel.puncc.api.conformal_predictor import ConformalPredictor
-from deel.puncc.api.conformalization import ConformalMethod, ConformalPrediction
+from deel.puncc.api.calibration_context import CalibrationContext
+from deel.puncc.api.split_conformal_prediction import SplitConformalPredictor
+from deel.puncc.api.conformal_prediction import ConformalPredictor, ConformalPrediction
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike
 from deel.puncc.api.splitting import KFoldSplitter, BaseSplitter
 from deel.puncc.cloning import clone_model
 from deel.puncc.regression import SplitCP
 from deel.puncc import ops
 
-class CrossConformalPredictor(ConformalMethod):
+class CrossConformalPredictor(ConformalPredictor):
     def __init__(self,
                  model:Predictor|PredictorLike,
-                 conformal_predictor_class:Callable[..., ConformalPredictor],
+                 conformal_predictor_class:Callable[..., SplitConformalPredictor],
                  splitter:BaseSplitter,
                  random_state:int|None=None,
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
@@ -79,9 +80,19 @@ class CrossConformalPredictor(ConformalMethod):
     def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike):
         raise RuntimeError("Cross-conformal predictors do not require a separate calibration step. Please use the `fit` method to train and calibrate the model.")
 
+    def compute_calibration_state(
+        self,
+        calibration_context:CalibrationContext,
+    )->CalibrationContext:
+        raise NotImplementedError(
+            "Cross-conformal predictors do not use "
+            "the standard calibration workflow."
+        )
+
+
     def fit(self, X:Iterable[Any], y:TensorLike)->Self:
         self._conformal_predictors = []
-        for X_fit, y_fit, X_calib, y_calib in self.splitter(X, y):
+        for ((X_fit, y_fit),(X_calib, y_calib)) in self.splitter(X=X, y=y):
             self._conformal_predictors.append(self.conformal_predictor_class(clone_model(self.model), weight_function=self.weight_function, fit_function=self.fit_function))
             self._conformal_predictors[-1].fit(X_fit, y_fit)
             self._conformal_predictors[-1].calibrate(X_calib, y_calib)
@@ -91,8 +102,19 @@ class CrossConformalPredictor(ConformalMethod):
     def predict(self,
                 X_test:Iterable[Any],
                 alpha:float,
-                correction:Callable|None = None)->ConformalPrediction:
+                correction:Callable|None = None)->ConformalPrediction[Any, Any]:
         pass
+
+    def conformalize(
+        self,
+        prediction:Any,
+        alpha:float,
+        calibration_context:CalibrationContext,
+    )->ConformalPrediction[Any, Any]:
+        raise NotImplementedError(
+            "Cross-conformal predictors implement "
+            "their own prediction procedure."
+        )
 
 class CVPlusRegressor(CrossConformalPredictor):
     def __init__(self,

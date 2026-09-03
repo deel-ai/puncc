@@ -8,21 +8,20 @@ from deel.puncc.api.splitting import BaseSplitter, RandomSplitter
 from deel.puncc.od.losses import ClassificationLoss, ConfidenceLoss, LocalizationLoss, ODLoss
 from deel.puncc.od.matching import AssignmentMethod
 from deel.puncc.od.utils import IndexableUserList
-from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
 from deel.puncc.typing import PredSetFunction, TensorLike
 from deel.puncc.od.base import BoxExtensionMode, ODPrediction, ODPredictionSequence, ODTarget, ODTargetSequence
 
 
 @runtime_checkable
 class ODModel(Protocol):
-    def __call__(self, X: Iterable[Any], *args, **kwargs) -> Sequence[tuple[TensorLike, TensorLike, TensorLike]]:
+    def __call__(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> Sequence[tuple[TensorLike, TensorLike, TensorLike]]:
         ...
 
 class ODPredictor():
     def __init__(self, model:ODModel):
         self.model = model
 
-    def __call__(self, X: Iterable[Any], *args, **kwargs) -> ODPredictionSequence:
+    def __call__(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> ODPredictionSequence:
         predictions = self.model(
             X,
             *args,
@@ -116,13 +115,11 @@ class ODCRC(CRC):
         loss: ODLoss,
         postprocessor: ODPostProcessing,
         *,
-        assignment_method=None,
-        **kwargs,
+        assignment_method:AssignmentMethod|None=None,
+        **kwargs:Any,
     ):
         self.od_loss = loss
-        self.assignment_method = (
-            assignment_method
-        )
+        self.assignment_method = assignment_method
 
         super().__init__(
             model=model,

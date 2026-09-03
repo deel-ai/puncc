@@ -30,19 +30,19 @@ from sklearn.utils import resample
 
 from deel.puncc.api.nonconformity_scores import absolute_difference, scaled_ad, cqr_score
 from deel.puncc.api.prediction_sets import constant_interval, scaled_interval, cqr_interval
-from deel.puncc.api.conformal_predictor import ConformalPredictor, StaticConformalPredictor
+from deel.puncc.api.split_conformal_prediction import SplitConformalPredictor, StaticSplitConformalPredictor
 
 
-class SplitCP(StaticConformalPredictor):
+class SplitCP(StaticSplitConformalPredictor):
     nc_score_function=absolute_difference()
     pred_set_function=constant_interval()
 
-class CQR(StaticConformalPredictor):
+class CQR(StaticSplitConformalPredictor):
     nc_score_function=cqr_score()
     pred_set_function=cqr_interval()
 
 # TODO : put the eps somewhere else
-class LocallyAdaptiveCP(ConformalPredictor):
+class LocallyAdaptiveCP(SplitConformalPredictor):
     def __init__(self, model,
                  weight_function=None,
                  fit_function=None,

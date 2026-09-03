@@ -103,7 +103,7 @@ class LACDistance:
     ) -> TensorLike:
         # (n_pred, n_classes) -> (n_classes, n_pred)
         scores_by_class = ops.transpose(
-            y_pred.softmaxs,
+            y_pred.class_scores,
         )
 
         # Select, for each GT, the scores corresponding to its true class.
@@ -181,8 +181,8 @@ class MixedDistance:
 
     def cost_matrix(
         self,
-        y_pred,
-        y_true,
+        y_pred:ODPrediction,
+        y_true:ODTarget,
     ):
         loc = self.localization_distance.cost_matrix(
             y_pred,
@@ -365,7 +365,7 @@ class AssignmentStrategy:
 
         if self.class_matching:
             predicted_labels = ops.argmax(
-                y_pred.softmaxs,
+                y_pred.class_scores,
                 axis=1,
             )
 

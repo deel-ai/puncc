@@ -46,11 +46,6 @@ class Predictor(Protocol):
         ...
 
 @runtime_checkable
-class LambdaPredictor(Predictor, Protocol):
-    def __call__(self, X:Iterable[Any], lambd:float, *args, **kwargs) -> Any:
-        ...
-
-@runtime_checkable
 class Fitable(Protocol):
     def fit(self, X: Iterable[Any], y: TensorLike, *args, **kwargs) -> Any:
         ...
@@ -98,3 +93,6 @@ PredSetFunction: TypeAlias = Callable[
     [TensorLike, float | TensorLike],
     Any,
 ]
+
+# A fit function takes as input a model, features and targets and returns a predictor fitted to given dataset
+FitFunction: TypeAlias = Callable[[Predictor, Iterable[Any], Iterable[Any]], Predictor]
