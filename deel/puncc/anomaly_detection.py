@@ -23,20 +23,19 @@
 """
 This module implements conformal anomaly detection procedures.
 """
-import logging
-from typing import Iterable
-from typing import Optional
-from typing import Tuple
-
-import numpy as np
-
-from deel.puncc.api.split_conformal_prediction import ScoreCalibrator
-from deel.puncc.api.splitting import IdSplitter
-from deel.puncc.api.splitting import RandomSplitter
-
-logger = logging.getLogger(__name__)
+from collections.abc import Callable
+from typing import Any, Iterable, Self
 
 
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.conformal import CacheKey
+from deel.puncc.core.predictors import make_predictor
+from deel.puncc.typing import Predictor, PredictorLike, TensorLike
+from deel.puncc.backend.keras import ops
+
+
+
+# TODO : should inherit from ConformalPredictor in a way or another, but need rethinking to overload correctly basic methods
 class SplitCAD:
     """Split conformal anomaly detection method based on Laxhammar's algorithm.
     The anomaly detection is based on the calibrated threshold (through
@@ -122,94 +121,72 @@ class SplitCAD:
         plt.yticks(())
         plt.legend()
     """
+    __slots__ = ("model", "fit_function", "calibration_context", "conformalization_cache")
 
-    def __init__(self, predictor, *, train=True, random_state: float = None):
-        self.predictor = predictor
-        self.calibrator = ScoreCalibrator(nc_score_function=predictor.predict)
+    # Any conformal method should have a model attribute.
+    def __init__(self, model:Predictor|PredictorLike,
+                 fit_function:Callable[..., Predictor] | None|None = None):
+        self.model = make_predictor(model)
+        self.fit_function = fit_function
+        self.calibration_context = CalibrationContext()
+        # TODO : cache is not used here. uniformize with other methods
+        self.conformalization_cache:dict[CacheKey, Any] = {}
 
-        self.train = train
-
-        self.random_state = random_state
-
-        self.__is_fit = False
-
-    def fit(
-        self,
-        *,
-        z: Optional[Iterable] = None,
-        fit_ratio: float = 0.8,
-        z_fit: Optional[Iterable] = None,
-        z_calib: Optional[Iterable] = None,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the models on the fit data
-        and computes nonconformity scores on calibration data.
-        If z are provided, randomly split data into
-        fit and calib subsets w.r.t to the fit_ratio.
-        In case z_fit and z_calib are provided,
-        the conformalization is performed on the given user defined
-        fit and calibration sets.
-
-        .. NOTE::
-
-            If z is provided, `fit` ignores
-            any user-defined fit/calib split.
-
-
-        :param Iterable z: data points from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
-            fit subset.
-        :param Iterable z_fit: data points from the fit dataset.
-        :param Iterable z_calib: data points from the calibration dataset.
-        :param dict kwargs: predict configuration to be passed to the model's
-            fit method.
-
-        :raises RuntimeError: no dataset provided.
-
+    def fit(self,
+            z:Iterable[Any],
+            *args:Any, 
+            **kwargs:Any
+            )->Self:
         """
+        Fit the underlying predictive model.
 
-        if z is not None:
-            splitter = RandomSplitter(
-                ratio=fit_ratio, random_state=self.random_state
+        The custom fit_function is used when provided. Otherwise the predictor's own fit method is called.
+
+        Args:
+            X:
+                Training inputs.
+
+            y:
+                Training targets.
+
+            *args:
+                Additional positional arguments forwarded to the fitting function.
+
+            **kwargs:
+                Additional keyword arguments forwarded to the fitting function.
+
+        Returns:
+            The predictor with its underlying model fitted.
+        """
+        if self.fit_function is not None:
+            self.model = self.fit_function(self.model, z, *args, **kwargs)
+            return self
+        
+        fit_method = getattr(
+            self.model,
+            "fit",
+            None,
+        )
+        if callable(fit_method):
+            fit_method(
+                z,
+                *args,
+                **kwargs,
             )
+            return self
+        raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
 
-        elif z_fit is not None and z_calib is not None:
-            splitter = IdSplitter(z_fit, z_fit, z_calib, z_calib)
+    def calibrate(self,
+                  z_calib:Iterable[Any])->Self:
+        self.conformalization_cache.clear()
+        self.calibration_context.clear()
+        self.calibration_context.update(
+            z_calib=z_calib,
+            nc_scores=self.model(z_calib)
+        )
+        return self
 
-        elif (
-            self.predictor.is_trained and z_fit is None and z_calib is not None
-        ):
-            splitter = IdSplitter(
-                np.empty_like(z_calib), np.empty_like(z_calib), z_calib, z_calib
-            )
-
-        else:
-            raise RuntimeError("No dataset provided.")
-
-        # Apply splitter
-        z_fit, _, z_calib, _ = splitter(z, z)[0]
-
-
-        # Fit underlying model and calibrator
-        if self.train:
-            logger.info("Fitting model")
-            self.predictor.fit(z_fit, **kwargs)
-
-        # Make sure that predictor is already trained if train arg is False
-        elif self.train is False and self.predictor.is_trained is False:
-            raise RuntimeError(
-                "'train' argument is set to 'False' but model is not pre-trained"
-            )
-
-        else:  # Skipping training
-            logger.info("Skipping training.")
-
-        # Fitting calibrator
-        self.calibrator.calibrate(z_calib)
-
-        self.__is_fit = True
-
-    def predict(self, z_test: Iterable, alpha) -> Tuple[np.ndarray]:
+    def predict(self, z_test: Iterable, alpha) -> TensorLike:
         """Predict whether each example is an anomaly or not. The decision is
         taken based on the calibrated threshold (through conformal prediction)
         of underlying anomaly detection scores.
@@ -221,12 +198,10 @@ class SplitCAD:
         :rtype: Iterables[bool]
 
         """
-
-        if self.__is_fit is None:
-            raise RuntimeError("Fit method should be called before predict.")
-
-        anomaly_pred = np.invert(
-            self.calibrator.is_conformal(z_test, alpha=alpha)
-        )
-
+        n_calib = self.calibration_context.size
+        # TODO : separate the quantile computation to allow usage of weighting mixin
+        quantile = ops.weighted_quantile(self.calibration_context.nc_scores, (1 - alpha) * (n_calib + 1) / n_calib, axis=0) 
+        test_nonconf_scores = self.model(z_test)
+        anomaly_pred = ops.logical_not(test_nonconf_scores <= quantile)
+        # TODO : maybe uniformize the output type with others methods
         return anomaly_pred

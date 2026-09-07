@@ -26,10 +26,7 @@ CalibrationContext : Container for calibration data
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
-from typing import Any, Self
-
-from deel.puncc.typing import TensorLike
-
+from typing import Any, KeysView, Self, ValuesView, ItemsView
 
 
 class CalibrationContext:
@@ -100,13 +97,13 @@ class CalibrationContext:
     def __delitem__(self, key: str) -> None:
         del self.__dict__[key]
 
-    def keys(self):
+    def keys(self)->KeysView[str]:
         return self.__dict__.keys()
 
-    def values(self):
+    def values(self)->ValuesView[Any]:
         return self.__dict__.values()
 
-    def items(self):
+    def items(self)->ItemsView[str, Any]:
         return self.__dict__.items()
 
     def __repr__(self) -> str:

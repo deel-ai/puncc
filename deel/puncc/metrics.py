@@ -87,7 +87,7 @@ def regression_mean_coverage(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_
         float: average coverage, indicating the proportion of instances that are
         correctly covered.
     """
-    return ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper))
+    return float(ops.convert_to_numpy(ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper))))
 
 def regression_ace(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike, alpha:float) -> float:
     """
@@ -169,6 +169,7 @@ def object_detection_mean_area(y_pred: TensorLike)->float:
     return ops.mean((x_max - x_min) * (y_max - y_min))
 
 
+# pairwise iou
 def iou(bboxes1: TensorLike, bboxes2: TensorLike) -> TensorLike:
     """
     Calculates the Intersection over Union (IoU) between two sets of 

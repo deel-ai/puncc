@@ -30,13 +30,16 @@ from typing import Any, Callable
 from collections.abc import Iterable
 from typing_extensions import Self
 from collections.abc import Sequence
-from deel.puncc.api.calibration_context import CalibrationContext
-from deel.puncc.api.split_conformal_prediction import SplitConformalPredictor
-from deel.puncc.api.conformal_prediction import ConformalPredictor, ConformalPrediction
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.split import SplitConformalPredictor
+from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
+from deel.puncc.corrections import AlphaCorrection
+
+
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike
-from deel.puncc.api.splitting import KFoldSplitter, BaseSplitter
+from deel.puncc.core.splitters import KFoldSplitter, BaseSplitter
 from deel.puncc.cloning import clone_model
-from deel.puncc.regression import SplitCP
+from deel.puncc.regression.split import SplitConformalRegression
 from deel.puncc import ops
 
 class CrossConformalPredictor(ConformalPredictor):
@@ -44,7 +47,6 @@ class CrossConformalPredictor(ConformalPredictor):
                  model:Predictor|PredictorLike,
                  conformal_predictor_class:Callable[..., SplitConformalPredictor],
                  splitter:BaseSplitter,
-                 random_state:int|None=None,
                  weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         # TODO : implement WCV+
@@ -57,9 +59,7 @@ class CrossConformalPredictor(ConformalPredictor):
             fit_function=fit_function,
         )
         self.splitter = splitter
-        self.random_state = random_state
         # Reserved for future WCV+ support.
-        self.weight_function = weight_function
         self._conformal_predictors = []
         self.conformal_predictor_class = conformal_predictor_class
 
@@ -93,16 +93,18 @@ class CrossConformalPredictor(ConformalPredictor):
     def fit(self, X:Iterable[Any], y:TensorLike)->Self:
         self._conformal_predictors = []
         for ((X_fit, y_fit),(X_calib, y_calib)) in self.splitter(X=X, y=y):
-            self._conformal_predictors.append(self.conformal_predictor_class(clone_model(self.model), weight_function=self.weight_function, fit_function=self.fit_function))
-            self._conformal_predictors[-1].fit(X_fit, y_fit)
-            self._conformal_predictors[-1].calibrate(X_calib, y_calib)
+            cp = self.conformal_predictor_class(clone_model(self.model), fit_function=self.fit_function)
+            cp.fit(X_fit, y_fit)
+            cp.calibrate(X_calib, y_calib)
+            self._conformal_predictors.append(cp)
         return self
     
     @abstractmethod
     def predict(self,
                 X_test:Iterable[Any],
-                alpha:float,
-                correction:Callable|None = None)->ConformalPrediction[Any, Any]:
+                alpha:float|TensorLike,
+                *,
+                alpha_correction: Callable[[float|TensorLike], float|TensorLike] | None = None,)->ConformalPrediction[Any, Any]:
         pass
 
     def conformalize(
@@ -125,14 +127,13 @@ class CVPlusRegressor(CrossConformalPredictor):
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         super().__init__(model,
                          splitter = KFoldSplitter(K=K, shuffle=True, random_state=random_state),
-                         conformal_predictor_class=SplitCP,
-                         random_state = random_state,
+                         conformal_predictor_class=SplitConformalRegression,
                          weight_function = weight_function,
                          fit_function = fit_function
                          )
 
     # TODO : see what can be moved to the parent class Here
-    def predict(self, X_test:Iterable[Any], alpha:float, correction:Callable|None = None)->ConformalPrediction:
+    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, correction:AlphaCorrection|None = None)->ConformalPrediction:
         n = self.len_calibr
         r_l = []
         r_u = []

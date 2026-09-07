@@ -28,9 +28,9 @@ from deel.puncc.typing import TensorLike
 from deel.puncc import ops
 from typing import TypeAlias, Callable
 
-CorrectionFunction:TypeAlias = Callable[[float|TensorLike], float|TensorLike]
+AlphaCorrection:TypeAlias = Callable[[float|TensorLike], float|TensorLike]
 
-def bonferroni(nvars:int=1)->CorrectionFunction:
+def bonferroni(nvars:int=1)->AlphaCorrection:
     """
     Bonferroni correction for multiple comparisons.
 
@@ -38,24 +38,26 @@ def bonferroni(nvars:int=1)->CorrectionFunction:
         nvars (int, optional): Number of output features.. Defaults to 1.
 
     Returns:
-        CorrectionFunction: Bonferonni correction function
+        AlphaCorrection: Bonferroni correction function
     """
+    if nvars < 1:
+        raise ValueError("nvars must be a positive integer.")
     def _bonferroni(alpha: float | TensorLike) -> float | TensorLike:
         """
-        Bonferonni Correction function
+        Bonferroni Correction function
 
         Args:
-            alpha (float | TensorLike): nominal coverage level.
+            alpha (float | TensorLike): nominal miscoverage level.
 
         Returns:
-            float | TensorLike: corrected coverage level.
+            float | TensorLike: corrected miscoverage level.
         """
         if nvars == 1:
             return alpha
-        return ops.ones(nvars) * alpha / nvars
+        return ops.ones((nvars,)) * alpha / nvars
     return _bonferroni
 
-def weighted_bonferroni(weights: TensorLike) -> CorrectionFunction:
+def weighted_bonferroni(weights: TensorLike) -> AlphaCorrection:
     """
     Weighted Bonferroni correction for multiple comparisons.
 
@@ -63,24 +65,24 @@ def weighted_bonferroni(weights: TensorLike) -> CorrectionFunction:
         weights (TensorLike): weights associated to each output feature.
 
     Returns:
-        CorrectionFunction: Weighted Bonferonni correction function
+        AlphaCorrection: Weighted Bonferroni correction function
     """
     def _weighted_bonferroni(alpha: float | TensorLike) -> float | TensorLike:
         """
-        Weighted Bonferonni correction function.
+        Weighted Bonferroni correction function.
 
         Args:
-            alpha (float | TensorLike): Nominal coverage level.
+            alpha (float | TensorLike): Nominal miscoverage level.
 
         Returns:
-            float | TensorLike: Corrected featurewise coverage levels.
+            float | TensorLike: Corrected featurewise miscoverage levels.
         """
         # normalization of weights
         w = weights / ops.sum(weights)
         return alpha * w
     return _weighted_bonferroni
 
-def sidak(nvars:int=1)->CorrectionFunction:
+def sidak(nvars:int=1)->AlphaCorrection:
     """
     Sidak correction for multiple comparisons.
 
@@ -88,19 +90,21 @@ def sidak(nvars:int=1)->CorrectionFunction:
         nvars (int, optional): Number of output features.. Defaults to 1.
 
     Returns:
-        CorrectionFunction: Correction function implementing the Sidak correction.
+        AlphaCorrection: Correction function implementing the Sidak correction.
     """
+    if nvars < 1:
+        raise ValueError("nvars must be a positive integer.")
     def _sidak(alpha: float | TensorLike) -> float | TensorLike:
         """
         Sidak correction function.
 
         Args:
-            alpha (float | TensorLike): Nominal coverage level.
+            alpha (float | TensorLike): Nominal miscoverage level.
 
         Returns:
-            float | TensorLike: Corrected coverage level.
+            float | TensorLike: Corrected miscoverage level.
         """
         if nvars == 1:
             return alpha
-        return ops.ones(nvars) * (1 - (1 - alpha) ** (1 / nvars))
+        return ops.ones((nvars,)) * (1 - (1 - alpha) ** (1 / nvars))
     return _sidak

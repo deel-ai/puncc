@@ -27,10 +27,9 @@ building a ConformalPredictor.
 from typing import Any
 from deel.puncc.typing import TensorLike, PredSetFunction
 from deel.puncc import ops
-from deel.puncc.keras import random
+from deel.puncc.backend.keras import random
 
-def _constant_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
-    # TODO : deal with multidim regression
+def _constant_interval(y_pred:TensorLike, quantile:float|TensorLike) -> TensorLike:
     lower_bounds = y_pred - quantile
     upper_bounds = y_pred + quantile
     return ops.stack([lower_bounds, upper_bounds], axis=-1)
@@ -39,7 +38,7 @@ def constant_interval()->PredSetFunction:
     return _constant_interval
 
 def scaled_interval(eps:float=1e-12)->PredSetFunction:
-    def _scaled_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
+    def _scaled_interval(y_pred:TensorLike, quantile:float|TensorLike) -> TensorLike:
         mean_pred = ops.take(y_pred, 0, axis=-1)
         var_pred = ops.take(y_pred, 1, axis=-1)
         nonneg = var_pred + eps > 0
@@ -58,9 +57,9 @@ def scaled_interval(eps:float=1e-12)->PredSetFunction:
         return ops.stack([y_low, y_high], axis=-1)
     return _scaled_interval
 
-def _cqr_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
-    lower_pred = y_pred[:, 0]
-    upper_pred = y_pred[:, 1]
+def _cqr_interval(y_pred:TensorLike, quantile:float|TensorLike) -> TensorLike:
+    lower_pred = ops.take(y_pred, 0, axis=-1)
+    upper_pred = ops.take(y_pred, 1, axis=-1)
     y_low = lower_pred - quantile
     y_high = upper_pred + quantile
     return ops.stack([y_low, y_high], axis=-1)
@@ -68,22 +67,22 @@ def _cqr_interval(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
 def cqr_interval()->PredSetFunction:
     return _cqr_interval
 
-def _lac_set(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
+def _lac_set(y_pred:TensorLike, quantile:float|TensorLike) -> list[TensorLike]:
     # TODO : 
     mask = y_pred >= (1 - quantile)
-    n = ops.shape(y_pred)[0]
-    return [ops.where_1d(mask[i]) for i in range(n)]
+    n_samples = len(y_pred)
+    return [ops.where_1d(mask[i]) for i in range(n_samples)]
 
 def lac_set()->PredSetFunction:
     return _lac_set
 
-def raps_set(lambd:float=0, k_reg:int=1, rand:bool=False)->PredSetFunction:
+def raps_set(lambd:float=0, k_reg:int=1, rand:bool=True)->PredSetFunction:
     # TODO : I think this implementation is clearly suboptimal, see if it can be improved
     if lambd < 0:
         raise ValueError(f"`lambd` must be >= 0, got {lambd}")
     if k_reg < 0:
         raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
-    def _raps_set(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
+    def _raps_set(y_pred:TensorLike, quantile:float|TensorLike) -> list[TensorLike]:
         sorted_index = ops.argsort(-y_pred, axis=-1)
         sorted_p = ops.take_along_axis(y_pred, sorted_index, axis=-1)
         cs = ops.cumsum(sorted_p, axis=-1)
@@ -122,7 +121,7 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=False)->PredSetFunction:
 def aps_set(rand:bool=False)->PredSetFunction:
     return raps_set(lambd=0, k_reg=1, rand=rand)
 
-def _constant_bbox(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
+def _constant_bbox(y_pred:TensorLike, quantile:TensorLike) -> TensorLike:
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
     # Coordinates of covering bbox (upperbounds)
     x_min_lo, y_min_lo = x_min - quantile[0], y_min - quantile[1]

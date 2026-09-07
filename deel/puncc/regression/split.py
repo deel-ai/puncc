@@ -20,3 +20,30 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements usual conformal regression wrappers.
+"""
+from deel.puncc.nonconformity_scores import absolute_difference, scaled_ad, cqr_score
+from deel.puncc.prediction_sets import constant_interval, scaled_interval, cqr_interval
+from deel.puncc.core.split import SplitConformalPredictor, PresetSplitConformalPredictor
+
+
+class SplitConformalRegression(PresetSplitConformalPredictor):
+    nc_score_function=absolute_difference()
+    pred_set_function=constant_interval()
+
+class CQR(PresetSplitConformalPredictor):
+    nc_score_function=cqr_score()
+    pred_set_function=cqr_interval()
+
+# TODO : put the eps somewhere else
+class LocallyAdaptiveCP(SplitConformalPredictor):
+    def __init__(self, model,
+                 fit_function=None,
+                 eps:float=1e-12):
+        super().__init__(
+            model=model,
+            nc_score_function=scaled_ad(eps=eps),
+            pred_set_function=scaled_interval(eps=eps),
+            fit_function=fit_function
+        )

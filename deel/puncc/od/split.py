@@ -23,15 +23,18 @@
 """
 This module implements conformal anomaly detection procedures.
 """
-from deel.puncc.api.split_conformal_prediction import ConformalPredictor
-from deel.puncc.typing import Predictor, PredictorLike, TensorLike
-from typing import Callable, Any, Literal
 from collections.abc import Iterable
-from deel.puncc.api.nonconformity_scores import difference, scaled_bbox_difference
-from deel.puncc.api.prediction_sets import constant_bbox, scaled_bbox
-from deel.puncc.api.corrections import bonferroni
+from typing import Any
+from deel.puncc.core.conformal import ConformalPrediction
+from deel.puncc.core.split import SplitConformalPredictor
+from deel.puncc.od.base import BoxExtensionMode
+from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
+from deel.puncc.nonconformity_scores import difference, scaled_bbox_difference
+from deel.puncc.prediction_sets import constant_bbox, scaled_bbox
+from deel.puncc.corrections import AlphaCorrection, bonferroni
 
-class SplitBoxWise(ConformalPredictor):
+# TODO : passer d'une conformalization de regression 4D à une conformalization d'OD localization
+class SplitBoxWise(SplitConformalPredictor):
     """Implementation of box-wise conformal object detection. For more info,
     we refer the user to the :ref:`theory overview page <theory splitboxwise>`
 
@@ -108,25 +111,35 @@ class SplitBoxWise(ConformalPredictor):
     """
     def __init__(self,
                  model:Predictor|PredictorLike,
-                 method:Literal["additive", "multiplicative"]="additive",
-                 weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
-                 fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
-        if method == "additive":
+                 box_extenstion_mode: BoxExtensionMode|str = BoxExtensionMode.ADDITIVE,
+                 *,
+                 fit_function:FitFunction|None = None):
+        box_extenstion_mode = BoxExtensionMode(box_extenstion_mode)
+        if box_extenstion_mode ==  BoxExtensionMode.ADDITIVE:
             nc_score_function = difference()
             pred_set_function = constant_bbox()
-        elif method == "multiplicative":
+        elif box_extenstion_mode == BoxExtensionMode.MULTIPLICATIVE:
             nc_score_function = scaled_bbox_difference()
             pred_set_function = scaled_bbox()
         else:
-            raise ValueError(f"Unknown method '{method} for SplitBoxWise'. Supported methods are 'additive' and 'multiplicative'.")
+            raise ValueError(f"Unknown method '{method}' for SplitBoxWise. Supported methods are 'additive' and 'multiplicative'.")
         super().__init__(model=model,
                             nc_score_function=nc_score_function,
                             pred_set_function=pred_set_function,
-                            weight_function=weight_function,
                             fit_function=fit_function)
 
-    def predict(self,
-                X_test:Iterable[Any],
-                alpha:float,
-                correction:Callable|None = bonferroni(4))->tuple[TensorLike, Any]:
-        return super().predict(X_test, alpha, correction)
+    def predict(
+        self,
+        X_test: Iterable[Any],
+        alpha: float|TensorLike,
+        *,
+        alpha_correction: AlphaCorrection | None = bonferroni(4),
+    ) -> ConformalPrediction[
+        TensorLike,
+        TensorLike,
+    ]:
+        return super().predict(
+            X_test,
+            alpha,
+            alpha_correction=alpha_correction,
+        )

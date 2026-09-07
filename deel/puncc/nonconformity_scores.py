@@ -24,29 +24,27 @@
 This module provides nonconformity scores for conformal prediction. To be used
 when building a ConformalPredictor
 """
-from collections.abc import Sequence
-import warnings
 from deel.puncc.typing import TensorLike, NCScoreFunction
 from deel.puncc import ops
-from deel.puncc.keras import random
+from deel.puncc.backend.keras import random
 
-def _difference(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+def _difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     return y_pred - y_true
 
 def difference()->NCScoreFunction:
     return _difference
 
-def _absolute_difference(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+def _absolute_difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     return ops.abs(y_pred - y_true)
 
 def absolute_difference()->NCScoreFunction:
     return _absolute_difference
 
 def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
-    def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+    def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
         mean_pred = ops.take(y_pred, 0, axis=-1)
         var_pred = ops.take(y_pred, 1, axis=-1)
-        if ops.any(var_pred + eps <= 0):
+        if bool(ops.convert_to_numpy(ops.any(var_pred + eps <= 0))):
             raise ValueError(
                 "The predicted dispersion must be strictly greater "
                 "than -eps for all samples."
@@ -55,7 +53,7 @@ def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
         return mean_abs_dev / (var_pred + eps)
     return _scaled_ad
 
-def _cqr_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+def _cqr_score(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     lower_pred = ops.take(y_pred, 0, axis=-1)
     upper_pred = ops.take(y_pred, 1, axis=-1)
     return ops.maximum(lower_pred - y_true, y_true - upper_pred)
@@ -63,7 +61,7 @@ def _cqr_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
 def cqr_score()->NCScoreFunction:
     return _cqr_score
 
-def _scaled_bbox_difference(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+def _scaled_bbox_difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
     dx = ops.abs(x_max - x_min)
     dy = ops.abs(y_max - y_min)
@@ -72,7 +70,7 @@ def _scaled_bbox_difference(y_pred:TensorLike, y_true:TensorLike) -> Sequence[fl
 def scaled_bbox_difference()->NCScoreFunction:
     return _scaled_bbox_difference
 
-def _lac_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+def _lac_score(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     true_scores = ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
     return 1 - ops.squeeze(true_scores, axis=-1,)
 
@@ -84,7 +82,7 @@ def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
         raise ValueError(f"`lambd` must be >= 0, got {lambd}")
     if k_reg < 0:
         raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
-    def _raps_score(y_pred:TensorLike, y_true:TensorLike) -> Sequence[float]:
+    def _raps_score(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
         condition = y_pred>=ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
         s = ops.sum(ops.where(condition, y_pred, 0), axis=-1)
         nb_cum_elems = ops.sum(condition, axis=-1)

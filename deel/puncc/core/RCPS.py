@@ -26,7 +26,7 @@ This module implements Risk Controlling Prediction Sets method as described in [
 
 from __future__ import annotations
 
-from deel.puncc.api.conformal_prediction import ConformalPredictor
+from deel.puncc.core.conformal import ConformalPredictor
 
 
 class RCPS(ConformalPredictor):

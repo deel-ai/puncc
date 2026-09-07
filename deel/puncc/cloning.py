@@ -88,7 +88,7 @@ def get_origin_from_model(obj)->str|None:
     return None
 
 
-class ModelCannotBeClonedError(RuntimeError):
+class ModelCloningError(RuntimeError):
     poem = """
         Oh weary dev, take heart, take rest,
         This model resists your cloning quest.
@@ -144,11 +144,23 @@ def clone_model(
 
     if callable(clone_method):
         try:
-            signature = inspect.signature(clone_method)
-            if "clone_weights" in signature.parameters:
-                return clone_method(clone_weights=clone_weights)
+            signature = inspect.signature(
+                clone_method
+            )
         except (TypeError, ValueError):
-            pass
+            signature = None
+
+        if (
+            signature is not None
+            and "clone_weights"
+            in signature.parameters
+        ):
+            return clone_method(
+                clone_weights=clone_weights
+            )
+
+        if not clone_weights:
+            return clone_method()
 
     available_cloners = {
         "sklearn": _clone_sklearn,
@@ -191,14 +203,14 @@ def clone_model(
 
     # if model is from a known ML library but no cloner worked, raise an error instead of silently falling back to deepcopy
     if origin_guess in {"torch", "tensorflow", "keras", "transformers", "jax"}:
-        raise ModelCannotBeClonedError(model, strategy=None)
+        raise ModelCloningError(model, strategy=None)
 
     try:
         # Fallback to deepcopy if no specific cloner worked
         return copy.deepcopy(model)
     except Exception as e:
         # If even deepcopy fails, raise a custom error
-        raise ModelCannotBeClonedError(model, strategy="deepcopy") from e
+        raise ModelCloningError(model, strategy="deepcopy") from e
 
 def _clone_sklearn(model: Any, *, clone_weights:bool=False) -> Any | None:
     try:
@@ -213,7 +225,7 @@ def _clone_sklearn(model: Any, *, clone_weights:bool=False) -> Any | None:
             return copy.deepcopy(model)
         return sklearn.base.clone(model)
     except Exception as e:
-        raise ModelCannotBeClonedError(
+        raise ModelCloningError(
             model,
             strategy="sklearn",
         ) from e
@@ -241,7 +253,7 @@ def _clone_keras(model: Any, *, clone_weights:bool=False) -> Any | None:
         return cloned
 
     except Exception as e:
-        raise ModelCannotBeClonedError(
+        raise ModelCloningError(
             model,
             strategy="keras",
         ) from e
@@ -312,7 +324,7 @@ def _clone_torch(model, *, clone_weights: bool = False):
 
         return cloned
     except Exception as e:
-        raise ModelCannotBeClonedError(
+        raise ModelCloningError(
             model,
             strategy="torch",
         ) from e

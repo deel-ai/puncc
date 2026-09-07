@@ -25,14 +25,42 @@ Definitions of some specific perdictor structures
 """
 
 from __future__ import annotations
-from abc import ABC
 from collections.abc import Iterable
 from typing import Any
-from deel.puncc.typing import Predictor, PredictorLike, TensorLike, make_predictor
+from deel.puncc.typing import Predictor, PredictorLike, TensorLike
 from deel.puncc import ops
 from deel.puncc.cloning import clone_model
 
-class MultiPredictorStack(ABC):
+
+class _PredictorAdapter:
+    """Wraps a .predict(...) provider into a callable."""
+    def __init__(self, model: PredictorLike) -> None:
+        self._model = model
+
+    def __call__(self, X: Iterable[Any], *args: Any, **kwargs: Any) -> Any:
+        return self._model.predict(X, *args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._model, name)
+
+    def __setattr__(self, name:str, value:Any):
+        if name == "_model":
+            super().__setattr__(name, value)
+        else:
+            setattr(self._model, name, value)
+
+    def clone(self, clone_weights: bool = True) -> _PredictorAdapter:
+        return _PredictorAdapter(clone_model(self._model, clone_weights=clone_weights))
+
+def make_predictor(model: Predictor|PredictorLike) -> Predictor:
+    if callable(model):
+        return model
+    if hasattr(model, "predict") and callable(model.predict):
+        predictor = _PredictorAdapter(model)
+        return predictor
+    raise TypeError("The provided model neither have __call__ nor predict method.")
+
+class MultiPredictorStack():
     def __init__(self, *models:Predictor|PredictorLike,
                  expand_1d:bool=True):
         self.models = [make_predictor(m) for m in models]
@@ -53,8 +81,9 @@ class MultiPredictorStack(ABC):
             X_train:Iterable[Any],
             y_train:TensorLike):
         for model in self.models:
-            if callable(getattr(model, "fit", None)):
-                model.fit(X_train, y_train)
+            fit_method = getattr(model, "fit", None)
+            if callable(fit_method):
+                fit_method(X_train, y_train)
             else:
                 raise NotImplementedError("One of the models does not have a fit method. Please provide pretrained models or expose a fit method.")
         return self
@@ -80,9 +109,12 @@ class MeanVarPredictor(MultiPredictorStack):
         for model in self.models:
             if not callable(getattr(model, "fit", None)):
                 raise NotImplementedError("One of the models does not have a fit method. Please provide pretrained models or expose a fit method.")
-        self.models[0].fit(X_train, y_train)
+        fit_method_0 = getattr(self.models[0], "fit")
+        fit_method_1 = getattr(self.models[1], "fit")
+        
+        fit_method_0(X_train, y_train)
         mu_pred = self.models[0](X_train)
-        self.models[1].fit(X_train, self.dispersion_estimation(mu_pred, y_train) )
+        fit_method_1(X_train, self.dispersion_estimation(mu_pred, y_train) )
         return self
 
 # class MeanScalePredictor(MeanDispersionPredictor):

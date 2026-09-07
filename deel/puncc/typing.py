@@ -24,8 +24,8 @@
 Basic definitions of type aliases and protocols used by conformal prediction methods
 """
 from __future__ import annotations
-from typing import Any, Union, TypeAlias, Protocol, runtime_checkable, Callable
-from collections.abc import Iterable, Sequence
+from typing import Any, Union, TypeAlias, Protocol, runtime_checkable
+from collections.abc import Iterable, Callable
 from deel.puncc.cloning import clone_model
 
 # from typing import TYPE_CHECKING
@@ -42,46 +42,18 @@ TensorLike:TypeAlias = Any
 
 @runtime_checkable
 class Predictor(Protocol):
-    def __call__(self, X: Iterable[Any], *args, **kwargs) -> TensorLike:
+    def __call__(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> TensorLike:
         ...
 
 @runtime_checkable
-class Fitable(Protocol):
-    def fit(self, X: Iterable[Any], y: TensorLike, *args, **kwargs) -> Any:
+class Fittable(Protocol):
+    def fit(self, X: Iterable[Any], y: TensorLike, *args:Any, **kwargs:Any) -> Any:
         ...
 
 @runtime_checkable
 class PredictorLike(Protocol):
-    def predict(self, X: Iterable[Any], *args, **kwargs) -> TensorLike:
+    def predict(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> TensorLike:
         ...
-
-class _PredictorAdapter:
-    """Wraps a .predict(...) provider into a callable."""
-    def __init__(self, model: PredictorLike) -> None:
-        self._model = model
-
-    def __call__(self, X: Iterable[Any], *args: Any, **kwargs: Any) -> Any:
-        return self._model.predict(X, *args, **kwargs)
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._model, name)
-
-    def __setattr__(self, name, value):
-        if name == "_model":
-            super().__setattr__(name, value)
-        else:
-            setattr(self._model, name, value)
-
-    def clone(self, clone_weights: bool = True) -> _PredictorAdapter:
-        return _PredictorAdapter(clone_model(self._model, clone_weights=clone_weights))
-
-def make_predictor(model: Union[Predictor, PredictorLike]) -> Predictor:
-    if callable(model):
-        return model
-    if hasattr(model, "predict") and callable(model.predict):
-        predictor = _PredictorAdapter(model)
-        return predictor
-    raise TypeError("The provided model neither have __call__ nor predict method.")
 
 # A nonconformity score function takes as input the true labels and the model's predictions, and outputs a sequence of nonconformity scores.
 NCScoreFunction: TypeAlias = Callable[
@@ -92,6 +64,12 @@ NCScoreFunction: TypeAlias = Callable[
 PredSetFunction: TypeAlias = Callable[
     [TensorLike, float | TensorLike],
     Any,
+]
+
+# A weight function takes as input a sequence of features and outputs a sequence of weights (float or tensor) for each instance in the input sequence.
+WeightFunction = Callable[
+    [Iterable[Any]],
+    TensorLike,
 ]
 
 # A fit function takes as input a model, features and targets and returns a predictor fitted to given dataset

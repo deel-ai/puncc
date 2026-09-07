@@ -24,39 +24,55 @@
 This module proposes implementation of Conformal Risk Control method as described in [paper]
 """
 from __future__ import annotations
-from typing import Any, Callable
+from typing import Any, Callable, Generic, TypeAlias, TypeVar
 from collections.abc import Iterable
-from deel.puncc.api.calibration_context import CalibrationContext
-from deel.puncc.api.conformal_prediction import ConformalPrediction, ConformalPredictor
+
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
-from deel.puncc.keras import ops
+from deel.puncc.backend.keras import ops
 
-class CRC(ConformalPredictor):
-    __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds", "search_tol", "max_iter", "_lambda_cache")
+TPrediction = TypeVar("TPrediction")
+TTarget = TypeVar("TTarget")
+TConformalPrediction = TypeVar(
+    "TConformalPrediction"
+)
+
+Postprocessor: TypeAlias = Callable[
+    [TPrediction, float],
+    TConformalPrediction,
+]
+
+RiskLossFunction: TypeAlias = Callable[
+    [
+        TConformalPrediction,
+        TTarget,
+    ],
+    TensorLike,
+]
+
+class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]):
+    __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds", "search_tol", "max_iter")
     def __init__(self, model:Predictor|PredictorLike,
-                 postprocessor:Callable[[Iterable, float], Iterable],
-                 loss_function:Callable[[Iterable, Iterable], Iterable[float]],
+                postprocessor: Callable[[TPrediction, float], TConformalPrediction],
+                loss_function: Callable[[TConformalPrediction, TTarget], TensorLike],
+                *,
                  loss_function_upper_bound:float|None = None,
                  fit_function:FitFunction|None = None,
-                 optimizer:ScalarOptimizer=BinarySearchOptimizer(),
+                 optimizer:ScalarOptimizer|None = None,
                  lambda_bounds:tuple[float, float]=(0.0, 1.0),
                  search_tol:float=1e-4,
                  max_iter:int=25):
         super().__init__(model, fit_function=fit_function)
         self.postprocessor = postprocessor
         self.loss_function = loss_function
-        self.B = loss_function_upper_bound or getattr(loss_function, "upper_bound", 1.0)
-        self.optimizer = optimizer
+        self.B = loss_function_upper_bound if loss_function_upper_bound is not None else getattr(loss_function, "upper_bound", 1.0)
+
+        self.optimizer = optimizer if optimizer is not None else BinarySearchOptimizer()
         self.lambda_bounds = lambda_bounds
         self.search_tol = search_tol
         self.max_iter = max_iter
-
-        # cache dict that maps alpha to already calculated lambdas
-        self._lambda_cache: dict[
-            tuple[CalibrationContext, float],
-            float,
-        ] = {}
 
     @property
     def len_calib(self)->int:
@@ -75,14 +91,17 @@ class CRC(ConformalPredictor):
             calibration_context.y_calib,
         )
 
-        return ops.mean(losses)
+        return float(
+            ops.convert_to_numpy(
+                ops.mean(losses)
+            )
+        )
 
 
     def compute_calibration_state(
         self,
         calibration_context: CalibrationContext,
     ) -> CalibrationContext:
-        self._lambda_cache.clear()
         return calibration_context
 
     def _get_lambda_from_alpha(
@@ -95,12 +114,9 @@ class CRC(ConformalPredictor):
                 f"alpha must be smaller than the loss upper bound B={self.B}."
             )
 
-        cache_key = (
-            calibration_context,
-            alpha,
-        )
-
-        if cache_key not in self._lambda_cache:
+        key = self._make_cache_key(alpha, calibration_context)
+        
+        if key not in self.conformalization_cache:
             n = calibration_context.size
 
             def _lambda_loss(
@@ -129,11 +145,9 @@ class CRC(ConformalPredictor):
                                 "This may be due to the loss function upper bound being too low "
                                 "or the calibration set not being representative enough.") from e
 
-            self._lambda_cache[
-                cache_key
-            ] = lambda_hat
+            self.conformalization_cache[key] = lambda_hat
 
-        return self._lambda_cache[cache_key]
+        return self.conformalization_cache[key]
 
     def conformalize(
         self,

@@ -20,14 +20,5 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""Initialization of puncc."""
-import logging
-from deel.puncc.backend.keras import ops, random
 
-# Create the Logger
-logging.basicConfig(
-    format="%(asctime)s === %(name)s [%(funcName)s()] | %(levelname)s | - %(message)s",
-    datefmt="%d-%b-%y %H:%M:%S",
-    level=logging.ERROR,
-)
-loggers = logging.getLogger(__name__)
+from deel.puncc.backend import ops, random

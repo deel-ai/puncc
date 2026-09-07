@@ -23,6 +23,7 @@
 """
 This define gestion of interaction with keras (and its backends) for the whole library.
 """
+from collections.abc import Set
 from functools import wraps
 from types import ModuleType
 from typing import Any, Callable
@@ -55,7 +56,7 @@ class NoBackendSpecifiedError(RuntimeError):
             "Call deel.puncc.config.set_backend(...) first."
         )
 
-def infer_backend_from_var(x:TensorLike) -> str|None:
+def infer_backend_from_tensor(x:TensorLike) -> str|None:
     """
     Infer the backend from a tensor-like object given by the user.
 
@@ -77,8 +78,21 @@ def infer_backend_from_var(x:TensorLike) -> str|None:
         return "jax"
     return None
 
-def infer_backend_from_modules():
-    # TODO
+def infer_backend_from_modules()->str|None:
+    imported_modules = {
+        name.split(".", 1)[0]
+        for name in sys.modules
+    }
+    detected_backends:Set[str] = set.intersection({"torch", "tensorflow", "jax"}, imported_modules)
+
+    if "jaxlib" in imported_modules:
+        detected_backends.add("jax")
+
+    if len(detected_backends) == 1:
+        return detected_backends.pop()
+    elif len(detected_backends) == 0 and "numpy" in imported_modules:
+        return "numpy"
+
     return None
 
 class BackendManager():
@@ -139,7 +153,7 @@ def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
             x = get_tensor_arg(args, kwargs)
             backend = None
             if x is not None:
-                backend = infer_backend_from_var(x)
+                backend = infer_backend_from_tensor(x)
             if backend is None:
                 backend = infer_backend_from_modules()
             if backend is None:
@@ -148,7 +162,7 @@ def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
         return f(self, *args, **kwargs)
     return _f
 
-class BackendEstimationCallback():
+class _DeferredBackendOperation():
     __slots__ = ("name","backend_manager")
     def __init__(self, name:str, backend_manager:BackendManager):
         self.name = name
@@ -183,7 +197,7 @@ class OpsBackendManager(BackendManager):
             and not is_backend_frozen()
             and "keras" not in sys.modules
         ):
-            return BackendEstimationCallback(
+            return _DeferredBackendOperation(
                 name=name,
                 backend_manager=self,
             )

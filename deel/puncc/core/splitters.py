@@ -31,18 +31,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, cast
 
 from deel.puncc import ops
-from deel.puncc.api.calibration_context import CalibrationContext
-from deel.puncc.keras import random
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.backend.keras import random
 
 from deel.puncc.typing import TensorLike
-
-
-### TODO : deal with pandas series
-# if importlib.util.find_spec("pandas") is not None:
-#     import pandas as pd
 
 DatasetGroup: TypeAlias = tuple[Any, ...]
 Split: TypeAlias = tuple[DatasetGroup, ...]
@@ -122,61 +117,43 @@ class FunctionalSplitter(BaseSplitter):
     def group_indices(
         self,
         **datasets: Any,
-    ) -> list[tuple[Any, IndexTensor]]:
+    ) -> dict[Any, IndexTensor]:
         group_ids = ops.reshape(
             self.group_function(**datasets),
             (-1,),
         )
 
-        groups = self.groups
-
-        if groups is None:
-            groups = dict.fromkeys(
-                ops.convert_to_numpy(
-                    group_ids
-                ).tolist()
+        if self.groups is None:
+            groups: Sequence[Any] = list(
+                dict.fromkeys(
+                    ops.convert_to_numpy(
+                        group_ids
+                    ).tolist()
+                )
             )
+        else:
+            groups = self.groups
 
-        return [
-            (
-                group,
-                ops.where_1d(
-                    group_ids == group
-                ),
-            )
-            for group in groups
-        ]
+        return {group: ops.where_1d(group_ids == group) for group in groups}
+
 
     def split(
         self,
         **datasets: Any,
     ) -> Splits:
-        grouped_indices = self.group_indices(
-            **datasets
-        )
-        return [
-            _take(
-                datasets,
-                *(
-                    indices
-                    for _, indices
-                    in grouped_indices
-                ),
-            )
-        ]
+        grouped_indices = self.group_indices(**datasets)
+        return [_take(datasets, *grouped_indices.values())]
     
     def split_context_by_group(
         self,
         context: CalibrationContext,
     ) -> dict[Any, CalibrationContext]:
-        grouped_indices = self.group_indices(
-            **dict(context.items())
-        )
+        grouped_indices = self.group_indices(**dict(context.items()))
 
         return {
             group: context[indices]
             for group, indices
-            in grouped_indices
+            in grouped_indices.items()
         }
 
 class ClasswiseSplitter(FunctionalSplitter):
@@ -251,9 +228,7 @@ class RandomSplitter(FitCalSplitter):
     """
     Random train/calibration splitter.
 
-    Each sample is independently assigned to:
-    - the training set with probability ratio,
-    - the calibration set with probability 1 - ratio.
+    Samples are randomly permuted, then the first ratio fraction is assigned to the fitting subset and the remainder to calibration.
 
     Args:
         ratio (float): Fraction of samples assigned to the training set.
@@ -308,11 +283,11 @@ class RandomSplitter(FitCalSplitter):
         cal_idxs = idxs[n_fit:]
 
         return [
-            _take(
+            cast(FitCalSplit, _take(
                 datasets,
                 fit_idxs,
                 cal_idxs,
-            )
+            ))
         ]
 
 class KFoldSplitter(FitCalSplitter):
@@ -380,4 +355,4 @@ class KFoldSplitter(FitCalSplitter):
             fit_idx = ops.concatenate([idxs[:start], idxs[start + size :]], axis=0)
             folds.append(_take(datasets, fit_idx, calib_idx))
             start += size
-        return folds
+        return cast(FitCalSplits, folds)
