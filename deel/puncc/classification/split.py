@@ -26,16 +26,15 @@ Basic components for split conformal classification
 
 from __future__ import annotations
 from collections.abc import Iterable
-from typing import Any, ClassVar, Self
+from typing import Any, Self
 
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.core.splitters import ClasswiseSplitter
-from deel.puncc.typing import FitFunction, NCScoreFunction, Predictor, PredictorLike, TensorLike
+from deel.puncc.typing import TensorLike
 from deel.puncc.backend.keras import ops
 from deel.puncc.nonconformity_scores import lac_score, aps_score, raps_score
 from deel.puncc.prediction_sets import lac_set, aps_set, raps_set
-from deel.puncc.classification.split import ClassConditionalSplitConformalMixin
 from deel.puncc.core.split import PresetSplitConformalPredictor, SplitConformalPredictor
 
 # class ClassificationSplitConformalPredictor(SplitConformalPredictor):

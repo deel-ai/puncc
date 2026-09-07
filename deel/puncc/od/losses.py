@@ -25,6 +25,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import singledispatchmethod
+from typing import overload
 
 from deel.puncc.backend.keras import ops
 from deel.puncc.typing import TensorLike
@@ -52,69 +53,71 @@ def check_assignment(
             f"This loss requires a {direction.value} assignment, "
             f"got {assignment.matching_direction.value}."
         )
-
     return assignment
 
 
 class ODLoss(ABC):
     upper_bound: float = 1.0
 
-    @singledispatchmethod
+    @overload
     def __call__(
-        self,
-        y_pred:ODPrediction|Sequence[ODPrediction],
-        y_true:ODTarget|Sequence[ODTarget],
-        assignment:AssignmentResult|None=None,
-    ) -> TensorLike:
-        raise TypeError(
-            f"Unsupported prediction type: {type(y_pred).__name__}"
-        )
-
-    @__call__.register
-    def _(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> TensorLike:
-        return self.compute(
-            y_pred,
-            y_true,
-            assignment,
-        )
+        ...
 
-    @__call__.register
-    def _(
+    @overload
+    def __call__(
         self,
         y_pred: Sequence[ODPrediction],
         y_true: Sequence[ODTarget],
         assignment: Sequence[AssignmentResult | None] | None = None,
     ) -> TensorLike:
-        if len(y_pred) != len(y_true):
-            raise ValueError(
-                "y_pred and y_true must have the same length."
+        ...
+
+    def __call__(
+        self,
+        y_pred: ODPrediction | Sequence[ODPrediction],
+        y_true: ODTarget | Sequence[ODTarget],
+        assignment: (
+            AssignmentResult
+            | Sequence[AssignmentResult | None]
+            | None
+        ) = None,
+    ) -> TensorLike:
+        if isinstance(y_pred, ODPrediction) and isinstance(y_true, ODTarget) and isinstance(assignment, (AssignmentResult, type(None))):
+            return self.compute(
+                y_pred,
+                y_true,
+                assignment,
             )
-
-        assignments = (
-            [None] * len(y_pred)
-            if assignment is None
-            else assignment
-        )
-
-        return ops.stack(
-            [
-                self.compute(
-                    pred,
-                    target,
-                    assign,
+        if isinstance(y_pred, Sequence) and isinstance(y_true, Sequence) and isinstance(assignment, (Sequence, type(None))):
+            assignment = (
+                [None] * len(y_pred)
+                if assignment is None
+                else assignment
+            )
+            if len(y_pred) == len(y_true) == len(assignment):
+                return ops.stack(
+                    [
+                        self.compute(
+                            pred,
+                            target,
+                            assign,
+                        )
+                        for pred, target, assign in zip(
+                            y_pred,
+                            y_true,
+                            assignment,
+                        )
+                    ]
                 )
-                for pred, target, assign in zip(
-                    y_pred,
-                    y_true,
-                    assignments,
-                )
-            ]
-        )
+            raise ValueError(
+                "y_pred, y_true and assignment must have the same length."
+            )
+        raise ValueError("Incompatible input types for loss calculation.")
 
     @abstractmethod
     def compute(

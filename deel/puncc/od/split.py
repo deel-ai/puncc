@@ -111,14 +111,14 @@ class SplitBoxWise(SplitConformalPredictor):
     """
     def __init__(self,
                  model:Predictor|PredictorLike,
-                 box_extenstion_mode: BoxExtensionMode|str = BoxExtensionMode.ADDITIVE,
+                 box_extension_mode: BoxExtensionMode|str = BoxExtensionMode.ADDITIVE,
                  *,
                  fit_function:FitFunction|None = None):
-        box_extenstion_mode = BoxExtensionMode(box_extenstion_mode)
-        if box_extenstion_mode ==  BoxExtensionMode.ADDITIVE:
+        box_extension_mode = BoxExtensionMode(box_extension_mode)
+        if box_extension_mode ==  BoxExtensionMode.ADDITIVE:
             nc_score_function = difference()
             pred_set_function = constant_bbox()
-        elif box_extenstion_mode == BoxExtensionMode.MULTIPLICATIVE:
+        elif box_extension_mode == BoxExtensionMode.MULTIPLICATIVE:
             nc_score_function = scaled_bbox_difference()
             pred_set_function = scaled_bbox()
         else:

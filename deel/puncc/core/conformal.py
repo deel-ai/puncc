@@ -289,6 +289,7 @@ class ConformalPredictor(ABC):
                 *args,
                 **kwargs,
             )
+            return self
         raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
 
 class GroupConditionalMixin(ConformalPredictor):

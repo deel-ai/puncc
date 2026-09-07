@@ -34,14 +34,13 @@ from deel.puncc.core.splitters import BaseSplitter, RandomSplitter
 from deel.puncc.od.losses import ClassificationLoss, ConfidenceLoss, LocalizationLoss, ODLoss
 from deel.puncc.od.matching import AssignmentMethod
 from deel.puncc.od.utils import IndexableUserList
-from deel.puncc.typing import PredSetFunction, TensorLike
+from deel.puncc.typing import PredSetFunction, Predictor, TensorLike
 from deel.puncc.od.base import BoxExtensionMode, ODPrediction, ODPredictionSequence, ODTarget, ODTargetSequence
 
 
 @runtime_checkable
-class ODModel(Protocol):
-    def __call__(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> Sequence[tuple[TensorLike, TensorLike, TensorLike]]:
-        ...
+class ODModel(Predictor[Sequence[tuple[TensorLike, TensorLike, TensorLike]]]):
+    ...
 
 class ODPredictor():
     def __init__(self, model:ODModel):

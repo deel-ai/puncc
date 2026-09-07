@@ -26,9 +26,8 @@ To be used when building a conformal predictor for multivariate regression or ob
 """
 from deel.puncc.typing import TensorLike
 from deel.puncc import ops
-from typing import TypeAlias, Callable
+from deel.puncc.typing import AlphaCorrection
 
-AlphaCorrection:TypeAlias = Callable[[float|TensorLike], float|TensorLike]
 
 def bonferroni(nvars:int=1)->AlphaCorrection:
     """
