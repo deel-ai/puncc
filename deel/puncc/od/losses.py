@@ -111,6 +111,7 @@ class ODLoss(ABC):
                             y_pred,
                             y_true,
                             assignment,
+                            strict=True
                         )
                     ]
                 )
