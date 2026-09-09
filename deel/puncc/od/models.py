@@ -39,7 +39,7 @@ from deel.puncc.od.base import BoxExtensionMode, ODPrediction, ODPredictionSeque
 
 
 @runtime_checkable
-class ODModel(Predictor[Sequence[tuple[TensorLike, TensorLike, TensorLike]]]):
+class ODModel(Predictor[Sequence[tuple[TensorLike, TensorLike, TensorLike]]], Protocol):
     ...
 
 class ODPredictor():

@@ -25,16 +25,16 @@ This module gives basic tools for Cross Conformal Prediction
 """
 
 from __future__ import annotations
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Any, Callable
 from collections.abc import Iterable
 from typing_extensions import Self
 from collections.abc import Sequence
 from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.predictors import make_predictor
 from deel.puncc.core.split import SplitConformalPredictor
-from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
+from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.corrections import AlphaCorrection
-
 
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike
 from deel.puncc.core.splitters import KFoldSplitter, BaseSplitter
@@ -42,56 +42,30 @@ from deel.puncc.cloning import clone_model
 from deel.puncc.regression.split import SplitConformalRegression
 from deel.puncc import ops
 
-class CrossConformalPredictor(ConformalPredictor):
+class CrossConformalPredictor(ABC):
     def __init__(self,
                  model:Predictor|PredictorLike,
                  conformal_predictor_class:Callable[..., SplitConformalPredictor],
                  splitter:BaseSplitter,
-                 weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         # TODO : implement WCV+
-        if weight_function is not None:
-            raise NotImplementedError(
-                "Weighted CV+ is not supported yet. "
-            )
-        super().__init__(
-            model=model,
-            fit_function=fit_function,
-        )
+        self.model = make_predictor(model)
+        self.fit_function = fit_function
         self.splitter = splitter
-        # Reserved for future WCV+ support.
-        self._conformal_predictors = []
+
+        self._conformal_predictors: list[SplitConformalPredictor] = []
         self.conformal_predictor_class = conformal_predictor_class
 
     @property
     def len_calibr(self)->int:
         return sum(cp.len_calibr for cp in self._conformal_predictors)
-    
-    @property
-    def nc_scores(self) -> Sequence[float]:
-        all_scores = []
-        for n, cp in enumerate(self._conformal_predictors):
-            try:
-                all_scores.extend(cp.nc_scores)
-            except RuntimeError as e:
-                raise RuntimeError(f"The conformal predictor number {n} has not been calibrated yet. Please use `my_predictor.fit(X, y)` before performing a prediction or accessing the non conformity scores.") from e
-        return all_scores
 
     def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike):
         raise RuntimeError("Cross-conformal predictors do not require a separate calibration step. Please use the `fit` method to train and calibrate the model.")
 
-    def compute_calibration_state(
-        self,
-        calibration_context:CalibrationContext,
-    )->CalibrationContext:
-        raise NotImplementedError(
-            "Cross-conformal predictors do not use "
-            "the standard calibration workflow."
-        )
-
-
     def fit(self, X:Iterable[Any], y:TensorLike)->Self:
-        self._conformal_predictors = []
+        self._conformal_predictors.clear()
+
         for ((X_fit, y_fit),(X_calib, y_calib)) in self.splitter(X=X, y=y):
             cp = self.conformal_predictor_class(clone_model(self.model), fit_function=self.fit_function)
             cp.fit(X_fit, y_fit)
@@ -104,57 +78,50 @@ class CrossConformalPredictor(ConformalPredictor):
                 X_test:Iterable[Any],
                 alpha:float|TensorLike,
                 *,
-                alpha_correction: Callable[[float|TensorLike], float|TensorLike] | None = None,)->ConformalPrediction[Any, Any]:
+                alpha_correction: AlphaCorrection | None = None,)->ConformalPrediction[Any, Any]:
         pass
-
-    def conformalize(
-        self,
-        prediction:Any,
-        alpha:float,
-        calibration_context:CalibrationContext,
-    )->ConformalPrediction[Any, Any]:
-        raise NotImplementedError(
-            "Cross-conformal predictors implement "
-            "their own prediction procedure."
-        )
 
 class CVPlusRegressor(CrossConformalPredictor):
     def __init__(self,
                  model:Predictor|PredictorLike,
                  K:int=5,
                  random_state:int|None=None,
-                 weight_function:Callable[[Iterable[Any]], Iterable[float]]|None = None,
                  fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
         super().__init__(model,
                          splitter = KFoldSplitter(K=K, shuffle=True, random_state=random_state),
                          conformal_predictor_class=SplitConformalRegression,
-                         weight_function = weight_function,
                          fit_function = fit_function
                          )
 
     # TODO : see what can be moved to the parent class Here
-    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, correction:AlphaCorrection|None = None)->ConformalPrediction:
+    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, *, alpha_correction:AlphaCorrection|None = None)->ConformalPrediction[Any, Any]:
+        # TODO : deal with different tensor alpha
         n = self.len_calibr
-        r_l = []
-        r_u = []
-        if correction is not None:
-            alpha = correction(alpha)
-        # TODO : avoid double loop ? vectorize ? force nc_scores to be more than a simple iterable ?
+
+        if alpha_correction is not None:
+            alpha = alpha_correction(alpha)
+        # TODO : avoid double loop ? vectorize ?
 
         predictions = []
+        lower_candidates  = []
+        upper_candidates  = []
         for cp in self._conformal_predictors:
             prediction = cp.model(X_test)
             predictions.append(prediction)
-            for ricv in cp.nc_scores:
-                r_l.append(prediction - ricv)
-                r_u.append(prediction + ricv)
-        l_stack = ops.stack(r_l, axis=0) # dim (n, b, 1)
-        u_stack = ops.stack(r_u, axis=0) # dim (n, b, 1)
-        l_stack = ops.sort(l_stack, axis=0)
-        u_stack = ops.sort(u_stack, axis=0)
+            scores = ops.reshape(cp.nc_scores, (-1,))
+            prediction = ops.expand_dims(prediction,axis=0)
+            scores = ops.expand_dims(scores,axis=1)
+            lower_candidates.append(prediction - scores)
+            upper_candidates .append(prediction + scores)
+            # for ricv in cp.nc_scores:
+            #     r_l.append(prediction - ricv)
+            #     r_u.append(prediction + ricv)
+        lower_candidates = ops.sort(ops.concatenate(lower_candidates, axis=0), axis=0)
+        upper_candidates = ops.sort(ops.concatenate(upper_candidates, axis=0), axis=0)
+
         # TODO : revoir les formules des indices ici
-        l_alpha = l_stack[ops.cast(ops.ceil(alpha * (n+1)), int)]
-        u_alpha = u_stack[ops.cast(ops.ceil((1 - alpha) * (n+1)), int)]
+        l_alpha = lower_candidates[ops.cast(ops.floor(alpha * (n+1)) - 1, int)]
+        u_alpha = upper_candidates[ops.cast(ops.ceil((1 - alpha) * (n+1)) - 1, int)]
 
         # TODO : See if mean is the best aggregation here
         point_prediction = ops.mean(

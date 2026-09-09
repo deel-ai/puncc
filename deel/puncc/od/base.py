@@ -23,7 +23,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import StrEnum
-from typing import ClassVar, Literal, Self
+from typing import ClassVar, Generic, Literal, Self, TypeVar
 from deel.puncc.backend.keras import ops
 from deel.puncc.od.utils import IndexableUserList, IterableDataclassMixin
 from deel.puncc.typing import TensorLike
@@ -176,8 +176,10 @@ class Box():
             return self
         return replace(self, xyxy=xyxy)
 
+TBox = TypeVar("TBox", bound=Box)
+
 @dataclass(slots=True)
-class BoxSequence(IterableDataclassMixin[Box]):
+class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
     item_type: ClassVar[type[Box]] = Box
 
     boxes: TensorLike # n, x1, y1, x2, y2
@@ -344,7 +346,7 @@ class PredictionSetSequence(
     ...
 
 @dataclass(slots=True)
-class ODPrediction(BoxSequence):
+class ODPrediction(BoxSequence[BoxPrediction]):
     item_type: ClassVar[type[Box]] = BoxPrediction
 
     class_scores:TensorLike # (n, n_classes)
@@ -419,7 +421,7 @@ class BoxTarget(Box):
     label:TensorLike
 
 @dataclass(slots=True)
-class ODTarget(BoxSequence):
+class ODTarget(BoxSequence[BoxTarget]):
     item_type: ClassVar[type[Box]] = BoxTarget
 
     labels: TensorLike      # (n_true,)

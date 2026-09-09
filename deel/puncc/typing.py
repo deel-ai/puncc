@@ -47,7 +47,7 @@ TPrediction_co = TypeVar(
 
 @runtime_checkable
 class Predictor(Protocol[TPrediction_co]):
-    def __call__(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> TPrediction_co:
+    def __call__(self, X: Any, *args:Any, **kwargs:Any) -> TPrediction_co:
         ...
 
 @runtime_checkable
@@ -56,8 +56,8 @@ class Fittable(Protocol):
         ...
 
 @runtime_checkable
-class PredictorLike(Protocol):
-    def predict(self, X: Iterable[Any], *args:Any, **kwargs:Any) -> TensorLike:
+class PredictorLike(Protocol[TPrediction_co]):
+    def predict(self, X: Any, *args:Any, **kwargs:Any) -> TPrediction_co:
         ...
 
 # A nonconformity score function takes as input the true labels and the model's predictions, and outputs a sequence of nonconformity scores.

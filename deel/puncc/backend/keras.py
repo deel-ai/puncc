@@ -21,9 +21,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This define gestion of interaction with keras (and its backends) for the whole library.
+Keras backend integration for PUNCC.
+
+This module provides the backend-agnostic numerical interface used throughout PUNCC.
+It exposes Keras 3 operations while delaying the import and initialization of Keras until a backend can be selected.
+
+PUNCC relies on Keras 3 as a common numerical abstraction over the NumPy, PyTorch, TensorFlow, and JAX backends.
+Since the Keras backend must normally be selected before Keras is imported, this module avoids importing Keras eagerly.
+
+The module exposes two backend managers:
+- ``ops``
+    Provides access to :mod:`keras.ops` together with a small number
+    of PUNCC-specific backend-agnostic operations such as
+    :meth:`OpsBackendManager.weighted_quantile`,
+    :meth:`OpsBackendManager.setdiff1d`, and
+    :meth:`OpsBackendManager.where_1d`.
+
+- ``random``
+    Provides delayed access to :mod:`keras.random` using the same
+    backend initialization mechanism.
+
+The indirection implemented here is intentionally transparent to the rest of PUNCC: numerical code can use ``ops`` and ``random`` without importing a specific tensor framework or importing Keras directly.
+
+Notes :
+    Keras >= 3.3 is required. In particular, this version is required for support of the NumPy backend.
+
+    Backend inference is intended as a convenience.
+    Applications that use multiple numerical frameworks in the same process should explicitly configure the desired backend with :func:`deel.puncc.config.set_backend` before performing numerical operations.
 """
-from collections.abc import Set
 from functools import wraps
 from types import ModuleType
 from typing import Any, Callable
@@ -48,7 +73,9 @@ _BACKEND_INFERENCE_ARG_NAMES = (
 
 class NoBackendSpecifiedError(RuntimeError):
     """
-    Basic error raised if the backend has not been set by the user and cannot be guessed at runtime with usual tools.
+    Error raised when no numerical backend can be selected.
+
+    This exception is raised when PUNCC requires a numerical operation but no backend has been explicitly configured and backend inference from the current runtime context is unsuccessful.
     """
     def __init__(self):
         super().__init__(
@@ -58,10 +85,21 @@ class NoBackendSpecifiedError(RuntimeError):
 
 def infer_backend_from_tensor(x:TensorLike) -> str|None:
     """
-    Infer the backend from a tensor-like object given by the user.
+    Infer a Keras backend from a tensor-like object.
+
+    The backend is inferred from the Python module defining the type of x.
+    NumPy arrays, PyTorch tensors, TensorFlow tensors, and JAX arrays are recognized.
+
+    Args:
+        x: Tensor-like object from which to infer the numerical backend.
 
     Returns:
-        str: name of the guessed backend
+        The inferred Keras backend name among ``"numpy"``, ``"torch"``, ``"tensorflow"``, and ``"jax"``.
+        Returns ``None`` if the object cannot be associated with a supported backend.
+
+    Note:
+        This function only performs inference. It does not modify the
+        PUNCC backend configuration.
     """
     module = type(x).__module__
 
@@ -79,11 +117,23 @@ def infer_backend_from_tensor(x:TensorLike) -> str|None:
     return None
 
 def infer_backend_from_modules()->str|None:
+    """
+    Infer a Keras backend from frameworks already imported.
+
+    A non-NumPy backend is inferred only when exactly one of PyTorch, TensorFlow, or JAX is detected.
+    NumPy is used as a fallback only when none of these frameworks is present.
+
+    Returns:
+        The inferred backend name, or ``None`` if no supported backend can be inferred unambiguously.
+
+    Note:
+        Explicit backend configuration is preferable in applications that import several numerical frameworks.
+    """
     imported_modules = {
         name.split(".", 1)[0]
         for name in sys.modules
     }
-    detected_backends:Set[str] = set.intersection({"torch", "tensorflow", "jax"}, imported_modules)
+    detected_backends:set[str] = set.intersection({"torch", "tensorflow", "jax"}, imported_modules)
 
     if "jaxlib" in imported_modules:
         detected_backends.add("jax")
@@ -96,6 +146,16 @@ def infer_backend_from_modules()->str|None:
     return None
 
 class BackendManager():
+    """
+    Lazily load and proxy a Keras backend module.
+
+    ``BackendManager`` delays importing Keras until an attribute of the managed module is actually required.
+    This allows PUNCC to select a Keras backend before Keras initialization occurs.
+
+    If Keras has already been imported, its active backend is reused when compatible with the current PUNCC configuration.
+
+    Subclasses can override ``module`` to expose a Keras submodule such as ``keras.ops`` or ``keras.random``.
+    """
     __slots__ = ("_keras")
 
     def __init__(self):
@@ -106,6 +166,9 @@ class BackendManager():
         return self._keras
 
     def _load_keras(self):
+        """
+        Load Keras after ensuring that its backend is configured.
+        """
         if self._keras is not None:
             return
 
@@ -114,7 +177,10 @@ class BackendManager():
             check_keras_version(keras)
             if not is_backend_frozen():
                 set_backend(keras.backend.backend())
-            
+            elif get_backend() != keras.backend.backend():
+                raise RuntimeError(
+                    f"Keras backend ({keras.backend.backend()}) does not match the frozen backend ({get_backend()})."
+                )
             self._keras = keras
             return
 
@@ -130,6 +196,18 @@ class BackendManager():
         return getattr(self.module, name)
 
 def get_tensor_arg(args:Any, kwargs:Any):
+    """
+    Extract the tensor argument used for backend inference.
+
+    Positional arguments take precedence. If no positional argument is available, a small set of conventional tensor parameter names is searched in ``kwargs``.
+
+    Args:
+        args: Positional arguments passed to a numerical operation.
+        kwargs: Keyword arguments passed to a numerical operation.
+
+    Returns:
+        A candidate tensor argument, or ``None`` if none can be found.
+    """
     if len(args) > 0:
         return args[0]
     for name in _BACKEND_INFERENCE_ARG_NAMES:
@@ -138,6 +216,15 @@ def get_tensor_arg(args:Any, kwargs:Any):
     return None
 
 def check_keras_version(keras:ModuleType):
+    """
+    Check that the installed Keras version is supported.
+
+    Args:
+        keras: Imported Keras module.
+
+    Raises:
+        RuntimeError: If the installed Keras version is older than the minimum version required by PUNCC.
+    """
     if Version(keras.__version__) < Version("3.3.0"):
         raise RuntimeError(
             f"Keras {keras.__version__} detected. "
@@ -147,6 +234,23 @@ def check_keras_version(keras:ModuleType):
         )
 
 def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
+    """
+    Ensure that a backend is selected before an operation runs.
+
+    If the backend has already been configured, or if Keras has already been imported, the operation is executed directly.
+
+    Otherwise, PUNCC first attempts to infer the backend from the operation's tensor argument.
+    If this fails, it falls back to inspecting numerical frameworks already imported in the process.
+
+    Args:
+        f: Backend-dependent operation to decorate.
+
+    Returns:
+        A wrapped callable that ensures backend initialization before executing ``f``.
+
+    Raises:
+        NoBackendSpecifiedError: If no backend was configured and backend inference fails.
+    """
     @wraps(f)
     def _f(self:object, *args:Any, **kwargs:Any):
         if not is_backend_frozen() and "keras" not in sys.modules:
@@ -163,6 +267,12 @@ def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
     return _f
 
 class _DeferredBackendOperation():
+    """
+    Proxy an operation until the numerical backend is known.
+
+    Instances are returned when an ``ops`` attribute is accessed before Keras can safely be initialized.
+    The underlying Keras operation is resolved when the proxy is called.
+    """
     __slots__ = ("name","backend_manager")
     def __init__(self, name:str, backend_manager:BackendManager):
         self.name = name
@@ -173,22 +283,48 @@ class _DeferredBackendOperation():
         return getattr(self.backend_manager, self.name)(*args, **kwargs)
     
 class RandomBackendManager(BackendManager):
+    """
+    Provide lazily initialized access to ``keras.random``.
+    """
     @property
     def module(self):
+        if self._keras is None:
+            raise RuntimeError("Keras has not been loaded.")
         return self._keras.random
 
 class OpsBackendManager(BackendManager):
+    """
+    Provide backend-agnostic tensor operations for PUNCC.
+
+    The manager exposes operations from ``keras.ops`` through lazy attribute resolution,
+    allowing PUNCC to postpone Keras initialization until the numerical backend is known.
+
+    In addition to native Keras operations, this class implements a small set of backend-independent utilities required by PUNCC when no directly suitable ``keras.ops`` equivalent is available.
+
+    Attributes:
+        inf: Positive infinity.
+        ninf: Negative infinity.
+    """
     inf = float("inf")
     ninf = float("-inf")
 
     @property
     def tensor_type(self) -> type[TensorLike]:
+        """
+        Returns:
+            The concrete tensor class associated with the currently active Keras backend.
+
+        Raises:
+            NoBackendSpecifiedError: If no backend has been selected yet.
+        """
         if get_backend() is None:
             raise NoBackendSpecifiedError()
         return type(self.array(0.0))
 
     @property
     def module(self):
+        if self._keras is None:
+            raise RuntimeError("Keras has not been loaded.")
         return self._keras.ops
 
     def __getattr__(self, name:str):
@@ -208,7 +344,6 @@ class OpsBackendManager(BackendManager):
     def flatten(self, x:TensorLike):
         """
         Flatten a tensor to 1D.
-
         Backend-agnostic equivalent of np.flatten(x).
 
         Args:
@@ -226,7 +361,17 @@ class OpsBackendManager(BackendManager):
 
     @set_backend_on_first_call
     def where_1d(self, mask:TensorLike):
-        """Backend-agnostic: return 1D indices where mask is True (mask must be rank-1)."""
+        """
+        Return indices of true values in a one-dimensional mask.
+
+        This helper normalizes the different output conventions of ``keras.ops.where`` across supported backends.
+
+        Args:
+            mask: One-dimensional boolean tensor.
+
+        Returns:
+            A one-dimensional tensor containing the indices for which ``mask`` is true.
+        """
         idx = self.where(mask)
 
         # numpy/jax/torch: tuple of arrays
@@ -240,7 +385,15 @@ class OpsBackendManager(BackendManager):
 
     @set_backend_on_first_call
     def where_nd(self, mask:TensorLike):
-        """Backend-agnostic: return indices as a 2D tensor of shape (n_true, rank(mask))."""
+        """
+        Return coordinates of true values in a boolean tensor.
+
+        Args:
+            mask: Boolean tensor of arbitrary rank.
+
+        Returns:
+            A two-dimensional tensor of shape ``(n_true, rank(mask))``, where each row contains the coordinates of one true element.
+        """
         idx = self.where(mask)
         if isinstance(idx, tuple):
             return self.transpose(self.stack(idx, axis=0))
@@ -249,19 +402,23 @@ class OpsBackendManager(BackendManager):
     @set_backend_on_first_call
     def setdiff1d(self, a:TensorLike, b:TensorLike, assume_unique:bool=False):
         """
-        Find the set difference of two tensors.
+        Return values present in ``a`` and absent from ``b``.
 
-        Return the unique values in a that are not in b.
+        Both inputs are flattened before the set difference is computed.
+        Unless ``assume_unique`` is true, duplicate values are removed
+        before comparison.
 
         Backend-agnostic equivalent of np.setdiff1d(a, b).
 
         Args:
-            a (TensorLike): Input tensor.
-            b (TensorLike): Input comparison tensor.
-        
+            a: Input tensor.
+            b: Tensor containing values to remove from ``a``.
+            assume_unique: Whether to assume that both inputs already
+                contain unique values.
+
         Returns:
-            TensorLike: 1D tensor of values in a that are not in b.
-        
+            A one-dimensional tensor containing values from ``a`` that are
+            not present in ``b``.
         """
         # TODO : this implementation has suboptimal complexity. It should be improved later.
         # Ensure both are 1D tensors
@@ -288,7 +445,33 @@ class OpsBackendManager(BackendManager):
                           weights:TensorLike=None,
                           axis:int|None=None,
                           keepdims:bool=False):
-        q = self.cast(q, x.dtype)
+        """
+        Compute weighted empirical quantiles.
+
+        Values are sorted along the requested axis together with their associated weights.
+        The returned quantile is the first sorted value whose normalized cumulative weight is greater than or equal to the requested quantile level.
+
+        If ``weights`` is ``None``, all observations receive equal weight.
+
+        Args:
+            x: Input values.
+            q: Quantile level or tensor of quantile levels.
+                Values are clipped to ``[0, 1]``.
+            weights: Non-negative observation weights.
+                If one-dimensional and ``axis`` is specified, weights are interpreted along that axis and broadcast over the remaining dimensions.
+                If ``axis`` is ``None``, weights must have the same shape as ``x``.
+            axis: Axis along which to compute the quantile. If ``None``, both ``x`` and ``weights`` are flattened.
+            keepdims: Whether to retain the reduced axis with length one.
+
+        Returns:
+            The weighted empirical quantile values.
+
+        Raises:
+            ValueError: If weights contain negative values, if all weights are zero, or if their shape is incompatible with ``x``.
+
+        Note:
+            This function computes an inverse weighted empirical cumulative distribution function and does not interpolate between adjacent observations.
+        """
         q = self.convert_to_tensor(q)
 
         if weights is None:
@@ -317,7 +500,6 @@ class OpsBackendManager(BackendManager):
                 weights = self.reshape(weights, shape)
                 weights = self.broadcast_to(weights, self.shape(x))
 
-
         if axis is None:
             x = self.flatten(x)
             weights = self.flatten(weights)
@@ -329,12 +511,13 @@ class OpsBackendManager(BackendManager):
         weights = weights / self.sum(weights, axis=axis, keepdims=True)
         sorted_indices = self.argsort(x, axis=axis)
         sorted_cumsum_weights = self.cumsum(self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis)
-        idx = self.sum(sorted_cumsum_weights < q, axis=axis, keepdims=keepdims)
-        sorted_a = self.take_along_axis(x, sorted_indices, axis=axis)
-        res = self.take_along_axis(sorted_a, self.expand_dims(idx, axis=axis), axis=axis)
-        return self.squeeze(res, axis=axis)
-
-
+        idx = self.sum(sorted_cumsum_weights < q, axis=axis, keepdims=True)
+        idx = self.minimum(idx,self.shape(x)[axis] - 1)
+        sorted_x = self.take_along_axis(x, sorted_indices, axis=axis)
+        res = self.take_along_axis(sorted_x, idx, axis=axis)
+        if not keepdims:
+            res = self.squeeze(res,axis=axis)
+        return res
 
 ops = OpsBackendManager()
 random = RandomBackendManager()
