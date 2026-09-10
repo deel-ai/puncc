@@ -34,7 +34,9 @@ from collections.abc import (
     Sequence,
 )
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Generic, TypeAlias, TypeVar, Self
+import pickle
 
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.splitters import FunctionalSplitter
@@ -291,6 +293,61 @@ class ConformalPredictor(ABC):
             )
             return self
         raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
+
+    def __getstate__(self):
+        state = {}
+        if getattr(self, "__dict__", None):
+            state = self.__dict__.copy()
+
+        for cls in type(self).mro():
+            slots = getattr(cls, "__slots__", ())
+            if isinstance(slots, str):
+                slots = (slots,)
+            for name in slots:
+                # The predictive model and conformalization cache are intentionally not serialized.
+                if name in ("__dict__", "__weakref__", "model", "conformalization_cache"):
+                    continue
+                if hasattr(self, name):
+                    state[name] = getattr(self, name)
+        return state
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            setattr(self, key, value)
+
+    def save(self, path:Path|str)->None:
+        """
+        Save the conformal predictor state to disk.
+
+        The predictive model and conformalization cache are not serialized.
+
+        Args:
+            path: Path of the file in which the predictor state is stored.
+        """
+        with open(path, "wb") as f:
+            pickle.dump(self.__getstate__(), f)
+
+    @classmethod
+    def load(cls, path:Path|str, model:Predictor |PredictorLike)->Self:
+        """
+        Load a conformal predictor state from disk.
+
+        The predictive model is not part of the serialized state and must be provided explicitly.
+
+        Args:
+            path: Path of the serialized conformal predictor state.
+            model: Predictive model associated with the restored predictor.
+
+        Returns:
+            The restored conformal predictor.
+        """
+        with open(path, "rb") as f:
+            state = pickle.load(f)
+        obj = cls.__new__(cls)
+        obj.__setstate__(state)
+        obj.conformalization_cache = {}
+        obj.model = make_predictor(model)
+        return obj
 
 class GroupConditionalMixin(ConformalPredictor):
     """

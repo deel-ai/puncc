@@ -21,19 +21,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Basic components for split conformal prediction
+Core components for split conformal prediction.
+
+This module defines the base split conformal predictor, support for weighted quantile computation,
+and a convenience base class for predictors with predefined nonconformity score and prediction-set functions.
 """
 
 from __future__ import annotations
 
-import pickle
-from pathlib import Path
-from typing import Any, Self
+
+from typing import Any
 
 from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
-from deel.puncc.core.predictors import make_predictor
 from deel.puncc.typing import (
     FitFunction,
     NCScoreFunction,
@@ -47,6 +48,7 @@ from deel.puncc.typing import (
 class SplitConformalPredictor(ConformalPredictor):
     """
     Base class for split conformal prediction methods
+    The predictor computes nonconformity scores from a calibration dataset and uses their empirical quantile to construct conformal prediction sets.
 
     Args:
         model (Predictor | PredictorLike): underlying model
@@ -72,10 +74,22 @@ class SplitConformalPredictor(ConformalPredictor):
 
     @property
     def len_calibr(self) -> int:
+        """
+        Size of the calibration set used to compute nonconformity scores.
+        """
         return len(self.nc_scores)
 
     @property
     def nc_scores(self) -> TensorLike:
+        """
+        Nonconformity scores computed on the calibration dataset.
+
+        Returns:
+            Calibration nonconformity scores.
+
+        Raises:
+            RuntimeError: If the predictor has not been calibrated.
+        """
         if not hasattr(
             self.calibration_context,
             "nc_scores",
@@ -86,6 +100,16 @@ class SplitConformalPredictor(ConformalPredictor):
         return self.calibration_context.nc_scores
 
     def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+        """
+        Compute the nonconformity scores associated with a calibration context.
+        The scores are computed from the stored model predictions and calibration targets and added to the provided context.
+
+        Args:
+            calibration_context: Context containing calibration predictions and targets.
+
+        Returns:
+            The updated calibration context containing nonconformity scores.
+        """
         calibration_context.nc_scores = (
             self.nc_score_function(
                 calibration_context.y_pred,
@@ -95,8 +119,21 @@ class SplitConformalPredictor(ConformalPredictor):
 
     def conformalize(self,
                     prediction:Any,
-                    alpha:float,
+                    alpha:float|TensorLike,
                     calibration_context:CalibrationContext)->ConformalPrediction[Any, Any]:
+        """
+        Conformalize model predictions.
+
+        The conformal quantile is computed from the provided calibration context and used to construct prediction sets.
+
+        Args:
+            prediction: Base predictions to conformalize.
+            alpha: Target miscoverage level.
+            calibration_context: Calibration state used for conformalization.
+
+        Returns:
+            The base predictions and their associated conformal prediction sets.
+        """
         quantile = self._get_quantile(
             alpha,
             calibration_context,
@@ -110,6 +147,17 @@ class SplitConformalPredictor(ConformalPredictor):
         alpha: float|TensorLike,
         calibration_context: CalibrationContext,
     )->TensorLike:
+        """
+        Return the conformal quantile associated with a miscoverage level.
+        Previously computed quantiles may be retrieved from the conformalization cache.
+
+        Args:
+            alpha: Target miscoverage level.
+            calibration_context: Calibration context providing nonconformity scores.
+
+        Returns:
+            Conformal nonconformity threshold.
+        """
         key = self._make_cache_key(alpha, calibration_context)
 
         if key not in self.conformalization_cache:
@@ -128,49 +176,38 @@ class SplitConformalPredictor(ConformalPredictor):
         level: float|TensorLike,
         calibration_context: CalibrationContext,
     ) -> TensorLike:
+        """
+        Compute an empirical quantile of nonconformity scores.
+
+        This default implementation uses uniform weights.
+        Subclasses may override this method to implement alternative quantile computations.
+
+        Args:
+            scores: Calibration nonconformity scores.
+            level: Quantile level.
+            calibration_context: Calibration context associated with the scores.
+
+        Returns:
+            Empirical quantile of the nonconformity scores.
+        """
         return ops.weighted_quantile(
-                        scores,
-                        level,
-                        axis=0,
-                        weights=None,
-                    )
+            scores,
+            level,
+            axis=0,
+            weights=None,
+        )
 
-    def __getstate__(self):
-        state = {}
-        if getattr(self, "__dict__", None):
-            state = self.__dict__.copy()
 
-        for cls in type(self).mro():
-            slots = getattr(cls, "__slots__", ())
-            if isinstance(slots, str):
-                slots = (slots,)
-            for name in slots:
-                if name in ("__dict__", "__weakref__", "model", "conformalization_cache"):
-                    continue
-                if hasattr(self, name):
-                    state[name] = getattr(self, name)
-        # Remove the model from the state to avoid serialization issues
-        return state
-
-    def __setstate__(self, state):
-        for key, value in state.items():
-            setattr(self, key, value)
-
-    def save(self, path:Path|str)->None:
-        with open(path, "wb") as f:
-            pickle.dump(self.__getstate__(), f)
-
-    @classmethod
-    def load(cls, path:Path|str, model:Predictor |PredictorLike)->Self:
-        with open(path, "rb") as f:
-            state = pickle.load(f)
-        obj = cls.__new__(cls)
-        obj.__setstate__(state)
-        obj.conformalization_cache = {}
-        obj.model = make_predictor(model)
-        return obj
     
 class WeightedQuantileMixin(SplitConformalPredictor):
+    """
+    Add sample-weighted quantile computation to split conformal prediction.
+
+    The provided weight function is evaluated on the calibration inputs and its output is used when computing conformal quantiles.
+
+    Args:
+        weight_function: Function assigning a weight to each calibration sample.
+    """
     def __init__(self, *args:Any, weight_function:WeightFunction, **kwargs:Any)->None:
         super().__init__(*args, **kwargs)
         self.weight_function = weight_function
@@ -181,6 +218,17 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         level: float|TensorLike,
         calibration_context: CalibrationContext,
     ) -> TensorLike:
+        """
+        Compute a weighted empirical quantile of nonconformity scores.
+
+        Args:
+            scores: Calibration nonconformity scores.
+            level: Quantile level.
+            calibration_context: Calibration context containing the inputs used to compute sample weights.
+
+        Returns:
+            Weighted empirical quantile of the nonconformity scores.
+        """
         weights = self.weight_function(
             calibration_context.X_calib
         )
@@ -193,6 +241,17 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         )
 
 class PresetSplitConformalPredictor(SplitConformalPredictor):
+    """
+    Base class for split conformal methods with predefined score functions.
+
+    Subclasses define ``nc_score_function`` and ``pred_set_function`` as class attributes.
+    Instances therefore only require the predictive model and, optionally, a custom fitting function.
+
+    Args:
+        model: Underlying predictive model.
+        fit_function: Optional custom function used to fit the predictive model.
+    """
+    __slots__ = ()
     nc_score_function:NCScoreFunction
     pred_set_function:PredSetFunction
     def __init__(self, model:Predictor|PredictorLike, fit_function:FitFunction|None=None):
@@ -202,4 +261,3 @@ class PresetSplitConformalPredictor(SplitConformalPredictor):
             pred_set_function=type(self).pred_set_function,
             fit_function=fit_function,
         )
-

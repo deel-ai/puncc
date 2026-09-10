@@ -21,7 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module proposes implementation of Conformal Risk Control method as described in [paper]
+Conformal Risk Control components.
+
+This module implements the generic machinery required to calibrate postprocessing parameters according to a bounded empirical risk.
 """
 from __future__ import annotations
 from typing import Any, Callable, Generic, TypeAlias, TypeVar
@@ -30,7 +32,7 @@ from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
-from deel.puncc.backend.keras import ops
+from deel.puncc.backend import ops
 
 TPrediction = TypeVar("TPrediction")
 TTarget = TypeVar("TTarget")
@@ -52,10 +54,28 @@ RiskLossFunction: TypeAlias = Callable[
 ]
 
 class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]):
+    """
+    Generic Conformal Risk Control predictor.
+
+    CRC calibrates a scalar postprocessing parameter so that an upper bound on
+    the empirical risk satisfies a requested risk level.
+
+    Args:
+        model: Underlying predictive model.
+        postprocessor: Function applying a scalar calibration parameter to base predictions.
+        loss_function: Bounded loss used to evaluate the risk of conformalized predictions.
+        loss_function_upper_bound: Upper bound of the loss function.
+            If omitted, the ``upper_bound`` attribute of ``loss_function`` is used when available, and defaults to ``1.0`` otherwise.
+        fit_function: Optional custom function used to fit the predictive model.
+        optimizer: Scalar optimizer used to calibrate the postprocessing parameter. Defaults to :class:`BinarySearchOptimizer`.
+        lambda_bounds: Lower and upper bounds of the parameter search interval.
+        search_tol: Tolerance used by the scalar optimizer.
+        max_iter: Maximum number of optimizer iterations.
+    """
     __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds", "search_tol", "max_iter")
-    def __init__(self, model:Predictor|PredictorLike,
-                postprocessor: Callable[[TPrediction, float], TConformalPrediction],
-                loss_function: Callable[[TConformalPrediction, TTarget], TensorLike],
+    def __init__(self, model: Predictor[TPrediction] | PredictorLike[TPrediction],
+                postprocessor: Postprocessor[TPrediction, TConformalPrediction],
+                loss_function: RiskLossFunction[TConformalPrediction, TTarget],
                 *,
                  loss_function_upper_bound:float|None = None,
                  fit_function:FitFunction|None = None,
@@ -82,6 +102,16 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         lambd: float,
         calibration_context: CalibrationContext,
     ) -> float:
+        """
+        Compute the empirical risk for a postprocessing parameter.
+
+        Args:
+            lambd: Postprocessing parameter at which the empirical risk is evaluated.
+            calibration_context: Calibration context containing model predictions and targets.
+
+        Returns:
+            Mean empirical loss over the calibration samples.
+        """
         losses = self.loss_function(
             self.postprocessor(
                 calibration_context.y_pred,
@@ -101,10 +131,26 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         alpha: float|TensorLike,
         calibration_context: CalibrationContext,
     ) -> float:
+        """
+        Compute the calibrated postprocessing parameter.
+
+        The parameter is selected so that the finite-sample corrected empirical risk is below the requested risk level.
+        Previously computed values may be retrieved from the conformalization cache.
+
+        Args:
+            alpha: Requested risk level.
+            calibration_context: Calibration context used to estimate the risk.
+
+        Returns:
+            Calibrated postprocessing parameter.
+
+        Raises:
+            ValueError: If ``alpha`` is not smaller than the loss upper bound, or if no feasible parameter can be found within ``lambda_bounds``.
+        """
+        alpha = float(ops.convert_to_numpy(alpha))
+
         if alpha >= self.B:
-            raise ValueError(
-                f"alpha must be smaller than the loss upper bound B={self.B}."
-            )
+            raise ValueError(f"alpha must be smaller than the loss upper bound B={self.B}.")
 
         key = self._make_cache_key(alpha, calibration_context)
         
@@ -144,9 +190,20 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
     def conformalize(
         self,
         prediction: Any,
-        alpha: float,
+        alpha: float | TensorLike,
         calibration_context: CalibrationContext,
     ) -> ConformalPrediction[Any, Any]:
+        """
+        Conformalize model predictions.
+
+        Args:
+            prediction: Base predictions to conformalize.
+            alpha: Requested risk level.
+            calibration_context: Calibration context used to calibrate the postprocessing parameter.
+
+        Returns:
+            Base predictions and their conformalized counterpart.
+        """
         lambda_hat = self._get_lambda_from_alpha(
             alpha,
             calibration_context,

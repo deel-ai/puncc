@@ -29,8 +29,6 @@ from abc import abstractmethod, ABC
 from typing import Any, Callable
 from collections.abc import Iterable
 from typing_extensions import Self
-from collections.abc import Sequence
-from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.predictors import make_predictor
 from deel.puncc.core.split import SplitConformalPredictor
 from deel.puncc.core.conformal import ConformalPrediction
