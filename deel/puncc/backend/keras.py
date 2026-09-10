@@ -507,10 +507,12 @@ class OpsBackendManager(BackendManager):
 
         q = self.convert_to_tensor(q)
         q = self.clip(q, 0.0, 1.0)
-
+        
         weights = weights / self.sum(weights, axis=axis, keepdims=True)
         sorted_indices = self.argsort(x, axis=axis)
         sorted_cumsum_weights = self.cumsum(self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis)
+
+        q = self.cast(q, sorted_cumsum_weights.dtype)
         idx = self.sum(sorted_cumsum_weights < q, axis=axis, keepdims=True)
         idx = self.minimum(idx,self.shape(x)[axis] - 1)
         sorted_x = self.take_along_axis(x, sorted_indices, axis=axis)

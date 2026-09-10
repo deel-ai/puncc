@@ -43,6 +43,7 @@ from collections.abc import Iterable, Iterator
 from typing import Any, KeysView, Self, ValuesView, ItemsView
 
 from deel.puncc.typing import TensorLike
+from deel.puncc.backend.keras import ops
 
 
 class CalibrationContext:
@@ -136,14 +137,28 @@ class CalibrationContext:
         """
         if isinstance(key, str):
             return self.__dict__[key]
+        
+        if isinstance(key, (int, slice)):
+            return type(self)(
+                **{
+                    name: value[key]
+                    for name, value in self.__dict__.items()
+                }
+            )
 
         return type(self)(
             **{
-                name: value[key]
-                for name, value
-                in self.__dict__.items()
+                name: ops.take(value, key, axis=0)
+                for name, value in self.__dict__.items()
             }
         )
+        # return type(self)(
+        #     **{
+        #         name: value[key]
+        #         for name, value
+        #         in self.__dict__.items()
+        #     }
+        # )
     
     def __contains__(self, key: str) -> bool:
         """
