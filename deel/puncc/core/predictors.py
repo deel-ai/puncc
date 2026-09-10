@@ -61,20 +61,14 @@ def make_predictor(model: Predictor|PredictorLike) -> Predictor:
     raise TypeError("The provided model neither have __call__ nor predict method.")
 
 class MultiPredictorStack():
-    def __init__(self, *models:Predictor|PredictorLike,
-                 expand_1d:bool=True):
+    def __init__(self, *models:Predictor|PredictorLike):
         self.models = [make_predictor(m) for m in models]
-        self.expand_1d = expand_1d
 
     def clone(self, clone_weights:bool=True)->MultiPredictorStack:
-        return self.__class__(*[clone_model(model, clone_weights=clone_weights) for model in self.models], expand_1d=self.expand_1d)
+        return self.__class__(*[clone_model(model, clone_weights=clone_weights) for model in self.models])
 
     def __call__(self, X:Iterable[Any])->TensorLike:
         predictions = [model(X) for model in self.models]
-
-        if self.expand_1d:
-            predictions = [pred if len(ops.shape(pred)) != 1 else ops.expand_dims(pred, axis=-1) for pred in predictions]
-
         return ops.stack(predictions, axis=-1)
     
     def fit(self,
@@ -93,9 +87,8 @@ def stack_predictors(*models:Predictor|PredictorLike)->MultiPredictorStack:
 
 class MeanVarPredictor(MultiPredictorStack):
     def __init__(self, mean_model:Predictor|PredictorLike,
-                 dispersion_model:Predictor|PredictorLike,
-                 expand_1d:bool=True):
-        super().__init__(mean_model, dispersion_model, expand_1d=expand_1d)
+                 dispersion_model:Predictor|PredictorLike):
+        super().__init__(mean_model, dispersion_model)
 
     #@abstractmethod
     def dispersion_estimation(self, mu:TensorLike, y:TensorLike)->TensorLike:
