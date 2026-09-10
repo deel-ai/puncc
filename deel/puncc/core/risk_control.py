@@ -25,7 +25,6 @@ This module proposes implementation of Conformal Risk Control method as describe
 """
 from __future__ import annotations
 from typing import Any, Callable, Generic, TypeAlias, TypeVar
-from collections.abc import Iterable
 
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor
@@ -96,13 +95,6 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
                 ops.mean(losses)
             )
         )
-
-
-    def compute_calibration_state(
-        self,
-        calibration_context: CalibrationContext,
-    ) -> CalibrationContext:
-        return calibration_context
 
     def _get_lambda_from_alpha(
         self,

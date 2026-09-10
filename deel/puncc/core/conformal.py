@@ -178,7 +178,6 @@ class ConformalPredictor(ABC):
         self.calibration_context = self.compute_calibration_state(self.calibration_context)
         return self
 
-    @abstractmethod
     def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
         """
         Compute method-specific calibration state.
@@ -195,6 +194,7 @@ class ConformalPredictor(ABC):
         Returns:
             The context containing the state required by conformalize.
         """
+        return calibration_context
 
     def predict(self, X_test:Iterable[Any],
                 alpha:float|TensorLike,
