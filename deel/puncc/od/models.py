@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from typing import Any, Iterable, Self, Sequence, Protocol, runtime_checkable
+from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.core.risk_control import CRC
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.prediction_sets import lac_set
@@ -36,7 +37,7 @@ from deel.puncc.od.matching import AssignmentMethod
 from deel.puncc.od.utils import IndexableUserList
 from deel.puncc.typing import PredSetFunction, Predictor, TensorLike
 from deel.puncc.od.base import BoxExtensionMode, ODPrediction, ODPredictionSequence, ODTarget, ODTargetSequence
-
+from deel.puncc.backend import ops
 
 @runtime_checkable
 class ODModel(Predictor[Sequence[tuple[TensorLike, TensorLike, TensorLike]]], Protocol):
@@ -64,6 +65,13 @@ class ODPredictor():
                 in predictions
             ]
         )
+
+def make_od_predictor(model:Any) -> ODPredictor:
+    if isinstance(model, ODPredictor):
+        return model
+    if isinstance(model, ODModel):
+        return ODPredictor(model)
+    raise ValueError(f"Model of type {type(model)} is not compatible with ODPredictor. Please provide an ODModel or an ODPredictor instance.")
 
 class ODPostProcessing(Protocol):
     def __call__(self, predictions:ODPredictionSequence, lambd:float) -> ODPredictionSequence:
@@ -104,35 +112,8 @@ class ClassificationPredSetPostProcessing(ODPostProcessing):
 
 class ODCRC(CRC[ODPredictionSequence, Sequence[ODTarget], ODPredictionSequence]):
     __slots__ = (
-        "od_loss",
         "assignment_method",
     )
-
-    def _loss_function(
-        self,
-        predictions: Sequence[ODPrediction],
-        targets: Sequence[ODTarget],
-    ) -> TensorLike:
-        if self.assignment_method is None:
-            return self.od_loss(
-                predictions,
-                targets,
-            )
-
-        assignments = [
-            self.assignment_method.assign(
-                prediction,
-                target,
-            )
-            for prediction, target
-            in zip(predictions, targets)
-        ]
-
-        return self.od_loss(
-            predictions,
-            targets,
-            assignments,
-        )
 
     def __init__(
         self,
@@ -143,12 +124,11 @@ class ODCRC(CRC[ODPredictionSequence, Sequence[ODTarget], ODPredictionSequence])
         assignment_method:AssignmentMethod|None=None,
         **kwargs:Any,
     ):
-        self.od_loss = loss
         self.assignment_method = assignment_method
 
         super().__init__(
             model=model,
-            loss_function=self._loss_function,
+            loss_function=loss,
             postprocessor=postprocessor,
             loss_function_upper_bound=getattr(
                 loss,
@@ -157,6 +137,26 @@ class ODCRC(CRC[ODPredictionSequence, Sequence[ODTarget], ODPredictionSequence])
             ),
             **kwargs,
         )
+
+    def compute_calibration_state(
+        self,
+        calibration_context: CalibrationContext,
+    ) -> CalibrationContext:
+        calibration_context = super().compute_calibration_state(calibration_context)
+
+        if (self.assignment_method is not None and "assignments" not in calibration_context):
+            calibration_context.update(
+                assignments=IndexableUserList([self.assignment_method.assign(prediction, target) 
+                                            for prediction, target in zip(calibration_context.y_pred, calibration_context.y_calib, strict=True)])
+            )
+        return calibration_context
+
+    def _r_hat(self, lambd: float, calibration_context: CalibrationContext) -> float:
+        predictions = self.postprocessor(calibration_context.y_pred, lambd)
+        assignments = calibration_context.assignments if "assignments" in calibration_context else None
+        losses = self.loss_function(predictions, calibration_context.y_calib, assignments)
+        return ops.item(ops.mean(losses))
+
 
 class ODConfidenceCRC(ODCRC):
     def __init__(
@@ -218,6 +218,7 @@ class TripleCRC:
         confidence_loss:ConfidenceLoss,
         localization_loss:LocalizationLoss,
         classification_loss:ClassificationLoss,
+        assignment_method: AssignmentMethod | None = None,
         splitter: BaseSplitter|None = None,
         box_extension_mode: BoxExtensionMode = BoxExtensionMode.ADDITIVE,
         pred_set_function: PredSetFunction = lac_set(),
@@ -226,12 +227,10 @@ class TripleCRC:
         classification_kwargs: dict | None = None,
     ):
         self.model = model
+        self.assignment_method = assignment_method
+        self.splitter = splitter if splitter is not None else RandomSplitter(ratio=0.5)
 
-        self.confidence_calibrator = ODConfidenceCRC(
-            model=model,
-            loss=confidence_loss,
-            **(confidence_kwargs or {}),
-        )
+        self.confidence_calibrator = ODConfidenceCRC(model=model, loss=confidence_loss, **(confidence_kwargs or {}),)
         self.localization_calibrator = ODLocalizationCRC(
             model=model,
             loss=localization_loss,
@@ -244,45 +243,74 @@ class TripleCRC:
             pred_set_function=pred_set_function,
             **(classification_kwargs or {}),
         )
-        self.splitter = splitter if splitter is not None else RandomSplitter(ratio=0.5)
+        self._loc_class_context: CalibrationContext | None = None
+        self._loc_class_context_cache: dict[float, CalibrationContext] = {}
 
-    def calibrate(
-        self,
-        X_calib: Iterable[Any],
-        y_calib: ODTargetSequence,
-    ) -> Self:
-        calibration_context = CalibrationContext(
-            X_calib=X_calib,
-            y_calib=y_calib,
-            y_pred=self.model(X_calib),
-        )
+    def calibrate(self, X_calib: Iterable[Any], y_calib: ODTargetSequence) -> Self:
+        context = CalibrationContext(X_calib=X_calib, y_calib=y_calib, y_pred=self.model(X_calib))
+        confidence_context, self._loc_class_context = self.splitter.split_context(context)[0]
 
-        (
-            confidence_context,
-            loc_class_context,
-        ) = self.splitter.split_context(
-            calibration_context
-        )[0]
-
-        self.confidence_calibrator.calibration_context = (
-            self.confidence_calibrator.compute_calibration_state(
-                confidence_context
-            )
-        )
-
-        loc_context = loc_class_context.copy()
-        class_context = loc_class_context.copy()
-
-        self.localization_calibrator.calibration_context = (
-            self.localization_calibrator.compute_calibration_state(
-                loc_context
-            )
-        )
-
-        self.classification_calibrator.calibration_context = (
-            self.classification_calibrator.compute_calibration_state(
-                class_context
-            )
-        )
-
+        self.confidence_calibrator.calibration_context = self.confidence_calibrator.compute_calibration_state(confidence_context)
+        self._loc_class_context_cache.clear()
         return self
+
+    def _get_loc_class_context(self, alpha_conf: float) -> CalibrationContext:
+        if self._loc_class_context is None:
+            raise RuntimeError("TripleCRC must be calibrated before prediction.")
+
+        if alpha_conf not in self._loc_class_context_cache:
+            predictions = self.confidence_calibrator.conformalize(
+                self._loc_class_context.y_pred, alpha_conf, self.confidence_calibrator.calibration_context
+            ).prediction_set
+
+            context = self._loc_class_context.copy().update(y_pred=predictions)
+
+            if self.assignment_method is not None:
+                context.update(assignments=IndexableUserList([
+                    self.assignment_method.assign(prediction, target)
+                    for prediction, target in zip(context.y_pred, context.y_calib, strict=True)
+                ]))
+
+            context = self.localization_calibrator.compute_calibration_state(context)
+            context = self.classification_calibrator.compute_calibration_state(context)
+
+            self._loc_class_context_cache[alpha_conf] = context
+
+        return self._loc_class_context_cache[alpha_conf]
+
+    def conformalize(
+        self,
+        prediction: ODPredictionSequence,
+        alpha_conf: float,
+        alpha_loc: float,
+        alpha_class: float,
+    ) -> ConformalPrediction[ODPredictionSequence, ODPredictionSequence]:
+        confidence_prediction = self.confidence_calibrator.conformalize(
+            prediction, alpha_conf, self.confidence_calibrator.calibration_context
+        ).prediction_set
+
+        loc_class_context = self._get_loc_class_context(alpha_conf)
+
+        localization_prediction = self.localization_calibrator.conformalize(
+            confidence_prediction, alpha_loc, loc_class_context
+        ).prediction_set
+
+        classification_prediction = self.classification_calibrator.conformalize(
+            confidence_prediction, alpha_class, loc_class_context
+        ).prediction_set
+
+        prediction_set = ODPredictionSequence([
+            replace(loc_pred, class_sets=class_pred.class_sets)
+            for loc_pred, class_pred in zip(localization_prediction, classification_prediction, strict=True)
+        ])
+
+        return ConformalPrediction(prediction, prediction_set)
+
+    def predict(
+        self,
+        X: Iterable[Any],
+        alpha_conf: float,
+        alpha_loc: float,
+        alpha_class: float,
+    ) -> ConformalPrediction[ODPredictionSequence, ODPredictionSequence]:
+        return self.conformalize(self.model(X), alpha_conf, alpha_loc, alpha_class)

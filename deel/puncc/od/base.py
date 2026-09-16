@@ -222,59 +222,45 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
         boxes1 = ops.expand_dims(self.boxes, axis=1)
         boxes2 = ops.expand_dims(other.boxes, axis=0)
 
-        inter_x1 = ops.maximum(
-            boxes1[..., 0],
-            boxes2[..., 0],
-        )
-        inter_y1 = ops.maximum(
-            boxes1[..., 1],
-            boxes2[..., 1],
-        )
-        inter_x2 = ops.minimum(
-            boxes1[..., 2],
-            boxes2[..., 2],
-        )
-        inter_y2 = ops.minimum(
-            boxes1[..., 3],
-            boxes2[..., 3],
-        )
+        inter_x1 = ops.maximum(boxes1[..., 0], boxes2[..., 0])
+        inter_y1 = ops.maximum(boxes1[..., 1], boxes2[..., 1])
+        inter_x2 = ops.minimum(boxes1[..., 2], boxes2[..., 2])
+        inter_y2 = ops.minimum(boxes1[..., 3], boxes2[..., 3])
 
-        inter_width = ops.maximum(
-            inter_x2 - inter_x1,
-            0.0,
-        )
-        inter_height = ops.maximum(
-            inter_y2 - inter_y1,
-            0.0,
-        )
+        inter_width = ops.maximum(inter_x2 - inter_x1, 0.0)
+        inter_height = ops.maximum(inter_y2 - inter_y1, 0.0)
 
         intersection = inter_width * inter_height
 
-        area1 = (
-            ops.maximum(
-                boxes1[..., 2] - boxes1[..., 0],
-                0.0,
-            )
-            * ops.maximum(
-                boxes1[..., 3] - boxes1[..., 1],
-                0.0,
-            )
-        )
-
-        area2 = (
-            ops.maximum(
-                boxes2[..., 2] - boxes2[..., 0],
-                0.0,
-            )
-            * ops.maximum(
-                boxes2[..., 3] - boxes2[..., 1],
-                0.0,
-            )
-        )
-
+        area1 = (ops.maximum(boxes1[..., 2] - boxes1[..., 0], 0.0) * ops.maximum(boxes1[..., 3] - boxes1[..., 1], 0.0))
+        area2 = (ops.maximum(boxes2[..., 2] - boxes2[..., 0], 0.0) * ops.maximum(boxes2[..., 3] - boxes2[..., 1], 0.0))
         union = area1 + area2 - intersection
         return intersection / ops.maximum(union, 1e-12)
     
+    def pairwise_ioa(
+        self,
+        other: BoxSequence,
+    ) -> TensorLike:
+        boxes1 = ops.expand_dims(self.boxes, axis=1)
+        boxes2 = ops.expand_dims(other.boxes, axis=0)
+
+        inter_x1 = ops.maximum(boxes1[..., 0], boxes2[..., 0])
+        inter_y1 = ops.maximum(boxes1[..., 1], boxes2[..., 1])
+        inter_x2 = ops.minimum(boxes1[..., 2], boxes2[..., 2])
+        inter_y2 = ops.minimum(boxes1[..., 3], boxes2[..., 3])
+
+        inter_width = ops.maximum(inter_x2 - inter_x1, 0.0)
+        inter_height = ops.maximum(inter_y2 - inter_y1, 0.0)
+
+        intersection = inter_width * inter_height
+
+        other_area = (
+            ops.maximum(boxes2[..., 2] - boxes2[..., 0], 0.0)
+            * ops.maximum(boxes2[..., 3] - boxes2[..., 1], 0.0)
+        )
+
+        return intersection / ops.maximum(other_area, 1e-12)
+
     def extend_boxes(
         self,
         value: float,

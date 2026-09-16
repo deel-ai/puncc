@@ -87,7 +87,7 @@ def regression_mean_coverage(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_
         float: average coverage, indicating the proportion of instances that are
         correctly covered.
     """
-    return float(ops.convert_to_numpy(ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper))))
+    return ops.item(ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper)))
 
 def regression_ace(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike, alpha:float) -> float:
     """

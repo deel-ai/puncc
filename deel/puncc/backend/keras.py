@@ -520,6 +520,9 @@ class OpsBackendManager(BackendManager):
         if not keepdims:
             res = self.squeeze(res,axis=axis)
         return res
+    
+    def item(self, x:TensorLike):
+        return self.convert_to_numpy(x).item()
 
 ops = OpsBackendManager()
 random = RandomBackendManager()

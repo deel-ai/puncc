@@ -120,11 +120,7 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
             calibration_context.y_calib,
         )
 
-        return float(
-            ops.convert_to_numpy(
-                ops.mean(losses)
-            )
-        )
+        return ops.item(ops.mean(losses))
 
     def _get_lambda_from_alpha(
         self,
@@ -147,7 +143,7 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         Raises:
             ValueError: If ``alpha`` is not smaller than the loss upper bound, or if no feasible parameter can be found within ``lambda_bounds``.
         """
-        alpha = float(ops.convert_to_numpy(alpha))
+        alpha =ops.item(alpha)
 
         if alpha >= self.B:
             raise ValueError(f"alpha must be smaller than the loss upper bound B={self.B}.")

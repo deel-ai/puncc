@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from functools import singledispatchmethod
 from typing import overload
 
 from deel.puncc.backend.keras import ops
@@ -35,25 +34,10 @@ from deel.puncc.od.matching import (
     AsymmetricHausdorffDistance,
     DistanceMetric,
     MatchingDirection,
+    check_assignment
 )
 
 
-def check_assignment(
-    assignment: AssignmentResult | None,
-    *,
-    direction: MatchingDirection | None = None,
-) -> AssignmentResult:
-    if assignment is None:
-        raise ValueError(
-            "This loss requires an AssignmentResult."
-        )
-
-    if direction is not None and assignment.matching_direction != direction:
-        raise ValueError(
-            f"This loss requires a {direction.value} assignment, "
-            f"got {assignment.matching_direction.value}."
-        )
-    return assignment
 
 
 class ODLoss(ABC):
