@@ -407,9 +407,6 @@ class GroupConditionalMixin(ConformalPredictor):
             in raw_group_contexts.items()
             if context.size > 0
         }
-
-        # Fallback calibration context
-        self.calibration_context = (compute_calib_state(raw_context))
         return self
 
     def predict(
@@ -432,26 +429,15 @@ class GroupConditionalMixin(ConformalPredictor):
         for group, indices in grouped_indices.items():
             if len(indices) == 0:
                 continue
+            group_prediction = ops.take(prediction, indices, axis=0)
+            group_context = self.group_calibration_contexts.get(group)
 
-            # TODO: validate the theoretical guarantees of this fallback.
-            # Until then, groups unseen during calibration use the global calibration context.
-            group_context = self.group_calibration_contexts.get(group, self.calibration_context)
+            if group_context is None:
+                group_prediction_set = self.pred_set_function(group_prediction, ops.array(float("inf")))
+            else:
+                group_prediction_set = super().conformalize(group_prediction, alpha, group_context).prediction_set
 
-            group_prediction = ops.take(
-                prediction,
-                indices,
-                axis=0,
-            )
-
-            group_result = super().conformalize(
-                group_prediction,
-                alpha,
-                group_context,
-            )
-
-            grouped_prediction_sets.append(
-                group_result.prediction_set
-            )
+            grouped_prediction_sets.append(group_prediction_set)
             non_empty_indices.append(indices)
 
         first_prediction_set = grouped_prediction_sets[0]

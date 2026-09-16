@@ -22,4 +22,4 @@
 # SOFTWARE.
 
 
-from deel.puncc.classification.split import LAC, APS, RAPS
+from deel.puncc.classification.split import LAC, APS, RAPS, ClassConditionalLAC

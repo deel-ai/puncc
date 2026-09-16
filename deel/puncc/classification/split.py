@@ -83,39 +83,24 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):#(Classificat
             alpha_is_scalar = True
         else:
             alpha_array = ops.array(alpha)
-            alpha_is_scalar = (
-                ops.ndim(alpha_array) == 0
-            )
+            alpha_is_scalar = ops.ndim(alpha_array) == 0
 
         if calibration_context is self.calibration_context:
             classwise_contexts = self.classwise_calibration_contexts
         else:
-            classwise_contexts = (
-                self.splitter.split_context_by_group(
-                    calibration_context
-                )
-            )
+            classwise_contexts = self.splitter.split_context_by_group(calibration_context)
 
         n_classes = int(ops.shape(prediction)[-1])
         quantiles = []
 
         for k in range(n_classes):
-            alpha_k = (
-                alpha
-                if alpha_is_scalar
-                else alpha[k]
-            )
-
+            alpha_k = alpha if alpha_is_scalar else alpha[k]
             class_context = classwise_contexts.get(k)
 
             if class_context is not None and class_context.size > 0:
                 quantile_k = self._get_quantile(alpha_k, class_context)
             else:
-                    # TODO:
-                    # Define the fallback strategy for classes absent from the calibration set.
-                    # Using the global quantile is pragmatic but does not provide the
-                    # class-conditional guarantee for the missing class.
-                quantile_k = self._get_quantile(alpha_k, calibration_context)
+                quantile_k = ops.array(float("inf"))
             quantiles.append(quantile_k)
         y_set = self.pred_set_function(prediction, ops.stack(quantiles, axis=0))
         return ConformalPrediction(prediction, y_set)
