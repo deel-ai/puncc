@@ -40,18 +40,18 @@ def _absolute_difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
 def absolute_difference()->NCScoreFunction:
     return _absolute_difference
 
-def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
-    def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
-        mean_pred = ops.take(y_pred, 0, axis=-1)
-        var_pred = ops.take(y_pred, 1, axis=-1)
-        if bool(ops.convert_to_numpy(ops.any(var_pred + eps <= 0))):
-            raise ValueError(
-                "The predicted dispersion must be strictly greater "
-                "than -eps for all samples."
-            )
-        mean_abs_dev = ops.abs(mean_pred - y_true)
-        return mean_abs_dev / (var_pred + eps)
-    return _scaled_ad
+# def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
+#     def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
+#         mean_pred = ops.take(y_pred, 0, axis=-1)
+#         var_pred = ops.take(y_pred, 1, axis=-1)
+#         if bool(ops.convert_to_numpy(ops.any(var_pred + eps <= 0))):
+#             raise ValueError(
+#                 "The predicted dispersion must be strictly greater "
+#                 "than -eps for all samples."
+#             )
+#         mean_abs_dev = ops.abs(mean_pred - y_true)
+#         return mean_abs_dev / (var_pred + eps)
+#     return _scaled_ad
 
 def _cqr_score(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     lower_pred = ops.take(y_pred, 0, axis=-1)

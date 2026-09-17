@@ -260,7 +260,7 @@ class TripleCRC:
 
         if alpha_conf not in self._loc_class_context_cache:
             predictions = self.confidence_calibrator.conformalize(
-                self._loc_class_context.y_pred, alpha_conf, self.confidence_calibrator.calibration_context
+                self._loc_class_context.y_pred, alpha_conf, self.confidence_calibrator.calibration_context, X=self._loc_class_context.X_calib,
             ).prediction_set
 
             context = self._loc_class_context.copy().update(y_pred=predictions)
@@ -284,19 +284,21 @@ class TripleCRC:
         alpha_conf: float,
         alpha_loc: float,
         alpha_class: float,
+        *,
+        X:Any|None = None
     ) -> ConformalPrediction[ODPredictionSequence, ODPredictionSequence]:
         confidence_prediction = self.confidence_calibrator.conformalize(
-            prediction, alpha_conf, self.confidence_calibrator.calibration_context
+            prediction, alpha_conf, self.confidence_calibrator.calibration_context, X=X
         ).prediction_set
 
         loc_class_context = self._get_loc_class_context(alpha_conf)
 
         localization_prediction = self.localization_calibrator.conformalize(
-            confidence_prediction, alpha_loc, loc_class_context
+            confidence_prediction, alpha_loc, loc_class_context, X=X
         ).prediction_set
 
         classification_prediction = self.classification_calibrator.conformalize(
-            confidence_prediction, alpha_class, loc_class_context
+            confidence_prediction, alpha_class, loc_class_context, X=X
         ).prediction_set
 
         prediction_set = ODPredictionSequence([
@@ -313,4 +315,4 @@ class TripleCRC:
         alpha_loc: float,
         alpha_class: float,
     ) -> ConformalPrediction[ODPredictionSequence, ODPredictionSequence]:
-        return self.conformalize(self.model(X), alpha_conf, alpha_loc, alpha_class)
+        return self.conformalize(self.model(X), alpha_conf, alpha_loc, alpha_class, X=X)

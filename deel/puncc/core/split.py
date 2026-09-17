@@ -30,11 +30,13 @@ and a convenience base class for predictors with predefined nonconformity score 
 from __future__ import annotations
 
 
-from typing import Any
+from typing import Any, Iterable, Self, TypeAlias
+from collections.abc import Callable
 
 from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
+from deel.puncc.core.predictors import make_predictor
 from deel.puncc.typing import (
     FitFunction,
     NCScoreFunction,
@@ -120,7 +122,9 @@ class SplitConformalPredictor(ConformalPredictor):
     def conformalize(self,
                     prediction:Any,
                     alpha:float|TensorLike,
-                    calibration_context:CalibrationContext)->ConformalPrediction[Any, Any]:
+                    calibration_context:CalibrationContext,
+                    *,
+                    X:Any|None=None)->ConformalPrediction[Any, Any]:
         """
         Conformalize model predictions.
 
@@ -261,3 +265,96 @@ class PresetSplitConformalPredictor(SplitConformalPredictor):
             pred_set_function=type(self).pred_set_function,
             fit_function=fit_function,
         )
+
+LocalScaleFunction:TypeAlias = Callable[[Any], tuple[Any, TensorLike]]
+
+class LocallyScaledMixin(SplitConformalPredictor):
+    eps:float = 1e-12
+    def __init__(self, *args, scale_function:LocalScaleFunction, **kwargs):
+        self.scale_function = scale_function
+        super().__init__(*args, **kwargs)
+
+    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+        calibration_context = super().compute_calibration_state(calibration_context)
+        scale = self.scale_function(calibration_context.X_calib)
+        calibration_context.nc_scores = calibration_context.nc_scores / (scale + self.eps)
+        return calibration_context
+
+    def conformalize(self, prediction, alpha, calibration_context=None, *, X=None):
+        if X is None:
+            raise ValueError("X is required for locally scaled conformal prediction.")
+
+        quantile = self._get_quantile(alpha, calibration_context)
+        quantile = quantile * (self.scale_function(X) + self.eps)
+        return ConformalPrediction(prediction, self.pred_set_function(prediction, quantile))
+
+class LocallyAdaptiveMixin(LocallyScaledMixin):
+    def __init__(self, *args, 
+                 dispertion_estimator:Predictor|PredictorLike,
+                 dispertion_estimation_function:Callable[[TensorLike, TensorLike], TensorLike] = lambda mu, y: ops.abs(mu - y),
+                 **kwargs):
+        self.dispertion_estimator = make_predictor(dispertion_estimator)
+        self.dispertion_estimation_function = dispertion_estimation_function
+        super().__init__(*args, scale_function=self.dispertion_estimator, **kwargs)
+
+    def fit(self,
+            X:Iterable[Any],
+            y:Iterable[Any],
+            *args:Any, 
+            **kwargs:Any
+            )->Self:
+        super().fit(X, y, *args, **kwargs)
+        mu_pred = self.model(X)
+        self.dispertion_estimator.fit(X, self.dispertion_estimation_function(mu_pred, y))
+
+def inverse_root_leverage_weight(h: TensorLike) -> TensorLike:
+    return 1 / ops.sqrt(1 + h)
+
+class LeverageWeightedMixin(LocallyScaledMixin):
+
+    def __init__(
+        self,
+        *args,
+        leverage_weight_function: Callable[[TensorLike], TensorLike] = inverse_root_leverage_weight,
+        **kwargs,
+    ):
+        self.leverage_weight_function = leverage_weight_function
+        self._feature_mean = None
+        self._feature_scale = None
+        self._gram_inv = None
+
+        super().__init__(
+            *args,
+            scale_function=self._leverage_scale,
+            **kwargs,
+        )
+
+    def fit(self, X, y, *args, **kwargs) -> Self:
+        super().fit(X, y, *args, **kwargs)
+        return self.fit_leverage(X)
+
+    def fit_leverage(self, X) -> Self:
+        X = ops.array(X)
+
+        if ops.shape(X)[0] <= ops.shape(X)[1]:
+            raise ValueError("LeverageWeightedCP requires more training samples than features.")
+
+        self._feature_mean = ops.mean(X, axis=0)
+        self._feature_scale = ops.std(X, axis=0)
+
+        if ops.item(ops.any(self._feature_scale == 0)):
+            raise ValueError("LeverageWeightedCP requires non-constant features.")
+
+        X = (X - self._feature_mean) / self._feature_scale
+        self._gram_inv = ops.linalg.inv(ops.transpose(X) @ X)
+        return self
+
+    def _leverage(self, X):
+        if self._gram_inv is None:
+            raise RuntimeError("Call fit() or fit_leverage() before calibration.")
+
+        X = (ops.array(X) - self._feature_mean) / self._feature_scale
+        return ops.sum((X @ self._gram_inv) * X, axis=-1)
+
+    def _leverage_scale(self, X):
+        return 1 / self.leverage_weight_function(self._leverage(X))

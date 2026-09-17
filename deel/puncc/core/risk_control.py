@@ -188,6 +188,8 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         prediction: Any,
         alpha: float | TensorLike,
         calibration_context: CalibrationContext,
+        *,
+        X:Any|None=None
     ) -> ConformalPrediction[Any, Any]:
         """
         Conformalize model predictions.

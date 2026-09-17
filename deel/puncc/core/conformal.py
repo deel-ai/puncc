@@ -224,10 +224,10 @@ class ConformalPredictor(ABC):
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
 
-        return self.conformalize(prediction, alpha, self.calibration_context)
+        return self.conformalize(prediction, alpha, self.calibration_context, X=X_test)
 
     @abstractmethod
-    def conformalize(self, prediction:Any, alpha:float|TensorLike, calibration_context:CalibrationContext)->ConformalPrediction[Any, Any]:
+    def conformalize(self, prediction:Any, alpha:float|TensorLike, calibration_context:CalibrationContext, *, X:Any|None = None)->ConformalPrediction[Any, Any]:
         """
         Conformalize already-computed model predictions.
 
@@ -435,7 +435,7 @@ class GroupConditionalMixin(ConformalPredictor):
             if group_context is None:
                 group_prediction_set = self.pred_set_function(group_prediction, ops.array(float("inf")))
             else:
-                group_prediction_set = super().conformalize(group_prediction, alpha, group_context).prediction_set
+                group_prediction_set = super().conformalize(group_prediction, alpha, group_context, X=ops.take(X_test, indices, axis=0)).prediction_set
 
             grouped_prediction_sets.append(group_prediction_set)
             non_empty_indices.append(indices)
