@@ -396,8 +396,7 @@ class GroupConditionalMixin(ConformalPredictor):
             y_pred=self.model(X_calib),
         )
 
-        raw_group_contexts = (self.group_splitter.split_context_by_group(raw_context))
-
+        raw_group_contexts = self.group_splitter.split_context_by_group(raw_context)
 
         compute_calib_state = super().compute_calibration_state
 

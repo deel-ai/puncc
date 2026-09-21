@@ -55,13 +55,21 @@ FitCalSplits: TypeAlias = list[
     FitCalSplit
 ]
 
+# TODO : revoir ça
+def tensor_indexing(item:Any, indices:IndexTensor) -> Any:
+    if isinstance(item, list):
+        return [item[i] for i in ops.convert_to_numpy(indices).tolist()]
+    elif isinstance(item, tuple):
+        return tuple(item[i] for i in ops.convert_to_numpy(indices).tolist())
+    return item[indices]
+
 def _take(
     datasets: dict[str, Any],
     *group_idxs: IndexTensor,
 ) -> Split:
     return tuple(
         tuple(
-            dataset[idxs]
+            tensor_indexing(dataset, idxs)
             for dataset in datasets.values()
         )
         for idxs in group_idxs

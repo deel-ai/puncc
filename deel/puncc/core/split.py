@@ -37,6 +37,7 @@ from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
 from deel.puncc.core.predictors import make_predictor
+from deel.puncc.nonconformity_scores import absolute_difference
 from deel.puncc.typing import (
     FitFunction,
     NCScoreFunction,
@@ -291,7 +292,7 @@ class LocallyScaledMixin(SplitConformalPredictor):
 class LocallyAdaptiveMixin(LocallyScaledMixin):
     def __init__(self, *args, 
                  dispertion_estimator:Predictor|PredictorLike,
-                 dispertion_estimation_function:Callable[[TensorLike, TensorLike], TensorLike] = lambda mu, y: ops.abs(mu - y),
+                 dispertion_estimation_function:Callable[[TensorLike, TensorLike], TensorLike] = absolute_difference,
                  **kwargs):
         self.dispertion_estimator = make_predictor(dispertion_estimator)
         self.dispertion_estimation_function = dispertion_estimation_function

@@ -86,7 +86,9 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         super().__init__(model, fit_function=fit_function)
         self.postprocessor = postprocessor
         self.loss_function = loss_function
-        self.B = loss_function_upper_bound if loss_function_upper_bound is not None else getattr(loss_function, "upper_bound", 1.0)
+        self.B = loss_function_upper_bound if loss_function_upper_bound is not None else getattr(loss_function, "upper_bound", None)
+        if self.B is None:
+            raise ValueError("loss_function_upper_bound must be provided or loss_function must have an 'upper_bound' attribute.")
 
         self.optimizer = optimizer if optimizer is not None else BinarySearchOptimizer()
         self.lambda_bounds = lambda_bounds
@@ -174,10 +176,11 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
                     maxiter=self.max_iter,
                 )
 
-            except ValueError as e:
-                raise ValueError("Could not find a valid lambda for the given alpha. "
-                                "This may be due to the loss function upper bound being too low "
-                                "or the calibration set not being representative enough.") from e
+            except ValueError:
+                # TODO : tmp print, use logging and warining
+                print("Warning: No feasible lambda found within bounds. Using upper bound.")
+
+                lambda_hat = self.lambda_bounds[1]
 
             self.conformalization_cache[key] = lambda_hat
 
