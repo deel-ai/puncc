@@ -24,3 +24,5 @@
 This module implements EnbPI and Adaptive EnbPI regression wrappers for sequential data.
 """
 
+class EnbPIRegressor(ABC):
+    pass
