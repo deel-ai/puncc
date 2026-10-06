@@ -52,12 +52,15 @@ Notes :
 from functools import wraps
 from types import ModuleType
 from typing import Any, Callable
+import logging
 
-from deel.puncc.config import get_backend, is_backend_frozen, set_backend
+from deel.puncc.config import get_backend, is_backend_locked, lock_backend, set_inferred_backend, is_backend_explicitly_set
 import sys
 from packaging.version import Version
 
 from deel.puncc.typing import TensorLike
+
+logger = logging.getLogger(__name__)
 
 # Requires keras >= 3.3 for numpy backend support
 _MIN_KERAS = (3, 3, 0)
@@ -165,6 +168,13 @@ class BackendManager():
     def module(self):
         return self._keras
 
+    def __getattr__(self, name:str):
+        if self._keras is None:
+            if not is_backend_locked() and "keras" not in sys.modules:
+                return _DeferredBackendOperation(name=name, backend_manager=self)
+            self._load_keras()
+        return getattr(self.module, name)
+
     def _load_keras(self):
         """
         Load Keras after ensuring that its backend is configured.
@@ -174,26 +184,41 @@ class BackendManager():
 
         if "keras" in sys.modules:
             keras = sys.modules["keras"]
+            keras_backend = keras.backend.backend()
             check_keras_version(keras)
-            if not is_backend_frozen():
-                set_backend(keras.backend.backend())
-            elif get_backend() != keras.backend.backend():
-                raise RuntimeError(
-                    f"Keras backend ({keras.backend.backend()}) does not match the frozen backend ({get_backend()})."
-                )
+            if is_backend_explicitly_set():
+                if get_backend() != keras_backend:
+                    raise RuntimeError(
+                        f"PUNCC backend was explicitly configured as "
+                        f"'{get_backend()}', but Keras is already loaded "
+                        f"with backend '{keras_backend}'. "
+                        "The Keras backend cannot be changed after import."
+                    )
+            set_inferred_backend(keras_backend)
             self._keras = keras
+            lock_backend()
+            logger.debug("Using already loaded Keras version=%s with backend=%s.", keras.__version__, keras_backend)
             return
 
-        if not is_backend_frozen():
+        if get_backend() is None:
             raise NoBackendSpecifiedError()
 
         import keras
         check_keras_version(keras)
-        self._keras = keras
+        keras_backend = keras.backend.backend()
+        expected_backend = get_backend()
 
-    def __getattr__(self, name:str):
-        self._load_keras()
-        return getattr(self.module, name)
+        if keras_backend != expected_backend:
+            raise RuntimeError(
+                f"PUNCC configured backend '{expected_backend}', "
+                f"but Keras initialized with backend '{keras_backend}'."
+                f"Make sure no other processes modifies the keras backend environment variable."
+            )
+
+        lock_backend()
+
+        logger.debug("Loaded Keras version=%s with backend=%s.", keras.__version__, keras.backend.backend())
+        self._keras = keras
 
 def get_tensor_arg(args:Any, kwargs:Any):
     """
@@ -253,16 +278,21 @@ def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
     """
     @wraps(f)
     def _f(self:object, *args:Any, **kwargs:Any):
-        if not is_backend_frozen() and "keras" not in sys.modules:
+        if get_backend() is None and "keras" not in sys.modules:
+        #if not is_backend_locked() and "keras" not in sys.modules and not is_backend_explicitly_set():
             x = get_tensor_arg(args, kwargs)
             backend = None
+            inference_source = None
             if x is not None:
                 backend = infer_backend_from_tensor(x)
+                inference_source = "tensor"
             if backend is None:
                 backend = infer_backend_from_modules()
+                inference_source = "modules"
             if backend is None:
                 raise NoBackendSpecifiedError()
-            set_backend(backend)
+            logger.debug("Automatically inferred PUNCC backend=%s from %s.", backend, inference_source)
+            set_inferred_backend(backend)
         return f(self, *args, **kwargs)
     return _f
 
@@ -280,6 +310,7 @@ class _DeferredBackendOperation():
 
     @set_backend_on_first_call
     def __call__(self, *args:Any, **kwargs:Any):
+        self.backend_manager._load_keras()
         return getattr(self.backend_manager, self.name)(*args, **kwargs)
     
 class RandomBackendManager(BackendManager):
@@ -327,18 +358,7 @@ class OpsBackendManager(BackendManager):
             raise RuntimeError("Keras has not been loaded.")
         return self._keras.ops
 
-    def __getattr__(self, name:str):
-        if (
-            self._keras is None
-            and not is_backend_frozen()
-            and "keras" not in sys.modules
-        ):
-            return _DeferredBackendOperation(
-                name=name,
-                backend_manager=self,
-            )
 
-        return super().__getattr__(name)
 
     @set_backend_on_first_call
     def flatten(self, x:TensorLike):
@@ -473,46 +493,63 @@ class OpsBackendManager(BackendManager):
             This function computes an inverse weighted empirical cumulative distribution function and does not interpolate between adjacent observations.
         """
         q = self.convert_to_tensor(q)
-
-        if weights is None:
-            weights = self.ones_like(x)
-        else:
-            if self.any(weights < 0):
-                raise ValueError("Weights must be non-negative.")
-            if self.all(weights == 0):
-                raise ValueError("All weights are zero. At least one weight must be positive.")
-
-            weights = self.cast(weights, x.dtype)
-
-            if axis is None:
-                if tuple(weights.shape) != tuple(x.shape):
-                    raise ValueError("Weights must have the same shape as x when axis is None.")
-            elif len(weights.shape) == 1:
-                if weights.shape[0] != x.shape[axis]:
-                    raise ValueError(
-                        "1D weights must have the same length as "
-                        "x along the quantile axis."
-                    )
-
-                shape = [1] * len(x.shape)
-                shape[axis] = x.shape[axis]
-
-                weights = self.reshape(weights, shape)
-                weights = self.broadcast_to(weights, self.shape(x))
-
+        q = self.clip(q, 0.0, 1.0)
+        
         if axis is None:
             x = self.flatten(x)
-            weights = self.flatten(weights)
+            if weights is not None:
+                weights = self.flatten(weights)
             axis = 0
+            # Uniform empirical quantile.
+            # For n observations, the inverse empirical CDF is x_(ceil(n q)).
+        if weights is None:
+            sorted_x = self.sort(x, axis=axis)
+            n = self.shape(x)[axis]
 
-        q = self.convert_to_tensor(q)
-        q = self.clip(q, 0.0, 1.0)
+            cdf = self.arange(1, n + 1, dtype=q.dtype) / self.cast(n, q.dtype)
+            idx = self.searchsorted(cdf, q, side="left")
+            idx = self.clip(idx, 0, n - 1)
+            if len(q.shape) == 0:
+                res = self.take(sorted_x, idx, axis=axis)
+                if keepdims:
+                    res = self.expand_dims(res, axis=axis)
+                return res
+            idx = self.expand_dims(idx, axis=axis)
+            res = self.take_along_axis(sorted_x, idx, axis=axis)
+            if not keepdims:
+                res = self.squeeze(res, axis=axis)
+            return res
+
+        if self.any(weights < 0):
+            raise ValueError("Weights must be non-negative.")
+        if self.all(weights == 0):
+            raise ValueError("All weights are zero. At least one weight must be positive.")
+
+        weights = self.cast(weights, "float32")
+
+        if len(weights.shape) == 1:
+            if weights.shape[0] != x.shape[axis]:
+                raise ValueError("1D weights must have the same length as x along the quantile axis.")
+
+            shape = [1] * len(x.shape)
+            shape[axis] = x.shape[axis]
+
+            weights = self.reshape(weights, shape)
+            weights = self.broadcast_to(weights, self.shape(x))
+        elif tuple(weights.shape) != tuple(x.shape):
+            raise ValueError(
+                "Weights must either be one-dimensional along "
+                "the quantile axis or have the same shape as x."
+            )
         
         weights = weights / self.sum(weights, axis=axis, keepdims=True)
         sorted_indices = self.argsort(x, axis=axis)
         sorted_cumsum_weights = self.cumsum(self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis)
 
+        q = self.convert_to_tensor(q)
         q = self.cast(q, sorted_cumsum_weights.dtype)
+        q = self.clip(q, 0.0, 1.0)
+
         idx = self.sum(sorted_cumsum_weights < q, axis=axis, keepdims=True)
         idx = self.minimum(idx,self.shape(x)[axis] - 1)
         sorted_x = self.take_along_axis(x, sorted_indices, axis=axis)
@@ -523,6 +560,11 @@ class OpsBackendManager(BackendManager):
     
     def item(self, x:TensorLike):
         return self.convert_to_numpy(x).item()
+    
+    def tolist(self, x:TensorLike)->list:
+        return self.convert_to_numpy(x).tolist()
+    
+
 
 ops = OpsBackendManager()
 random = RandomBackendManager()

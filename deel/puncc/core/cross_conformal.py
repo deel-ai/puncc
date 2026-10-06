@@ -29,24 +29,20 @@ This module provides the common machinery for fitting conformal predictors acros
 from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections.abc import Iterable
-from typing import Any, Callable, Never
-from typing_extensions import Self
+from typing import Any, Callable, Never, Self
+import logging
 
 from deel.puncc.core.predictors import make_predictor
 from deel.puncc.core.split import SplitConformalPredictor
 from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.core.splitters import KFoldSplitter, BaseSplitter
 from deel.puncc.corrections import AlphaCorrection
-from deel.puncc.typing import Predictor, PredictorLike, TensorLike
+from deel.puncc.typing import Predictor, PredictorLike, TensorLike, FitFunction
 from deel.puncc.cloning import clone_model
 from deel.puncc.regression.split import SplitConformalRegression
 from deel.puncc import ops
-from deel.puncc.typing import (
-    FitFunction,
-    Predictor,
-    PredictorLike,
-    TensorLike,
-)
+
+logger = logging.getLogger(__name__)
 
 class CrossConformalPredictor(ABC):
     """
@@ -81,7 +77,7 @@ class CrossConformalPredictor(ABC):
         """
         return sum(cp.len_calibr for cp in self._conformal_predictors)
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike)->Never:
+    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike|None=None)->Never:
         """
         Raises:
             RuntimeError: the calibration step is not required for cross-conformal predictors, only the `fit` method should be used to train and calibrate the model.
@@ -103,11 +99,15 @@ class CrossConformalPredictor(ABC):
         """
         self._conformal_predictors.clear()
 
-        for ((X_fit, y_fit),(X_calib, y_calib)) in self.splitter(X=X, y=y):
+        for fold_idx, ((X_fit, y_fit),(X_calib, y_calib)) in enumerate(self.splitter(X=X, y=y)):
+            logger.debug("Fitting %s fold=%d: n_fit=%d, n_calib=%d.", type(self).__name__, fold_idx, len(y_fit), len(y_calib))
             cp = self.conformal_predictor_class(clone_model(self.model), fit_function=self.fit_function)
             cp.fit(X_fit, y_fit)
             cp.calibrate(X_calib, y_calib)
+            if ops.ndim(cp.nc_scores) != 1:
+                raise ValueError("CVPlusRegressor currently supports scalar nonconformity scores only.")
             self._conformal_predictors.append(cp)
+        logger.debug("%s fitted with %d folds and %d total calibration samples.", type(self).__name__, len(self._conformal_predictors), self.len_calibr)
         return self
     
     @abstractmethod
@@ -190,17 +190,23 @@ class CVPlusRegressor(CrossConformalPredictor):
         for cp in self._conformal_predictors:
             prediction = cp.model(X_test)
             predictions.append(prediction)
-            scores = ops.reshape(cp.nc_scores, (-1,))
             prediction = ops.expand_dims(prediction,axis=0)
-            scores = ops.expand_dims(scores,axis=1)
+            scores = ops.expand_dims(cp.nc_scores, axis=1)
             lower_candidates.append(prediction - scores)
             upper_candidates .append(prediction + scores)
 
         lower_candidates = ops.sort(ops.concatenate(lower_candidates, axis=0), axis=0)
         upper_candidates = ops.sort(ops.concatenate(upper_candidates, axis=0), axis=0)
+        
+        if "float" not in ops.dtype(lower_candidates): # same type for upper_candidate
+            lower_candidates = ops.cast(lower_candidates, "float32")
+            upper_candidates = ops.cast(upper_candidates, "float32")
+
+        lower_candidates = ops.concatenate([ops.full_like(lower_candidates[:1], float("-inf")), lower_candidates], axis=0)
+        upper_candidates = ops.concatenate([upper_candidates, ops.full_like(upper_candidates[:1], float("inf"))], axis=0)
 
         # TODO : revoir les formules des indices ici
-        l_alpha = lower_candidates[ops.cast(ops.floor(alpha * (n+1)) - 1, int)]
+        l_alpha = lower_candidates[ops.cast(ops.floor(alpha * (n+1)), int)]
         u_alpha = upper_candidates[ops.cast(ops.ceil((1 - alpha) * (n+1)) - 1, int)]
 
         # TODO : See if mean is the best aggregation here

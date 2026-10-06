@@ -25,20 +25,18 @@
 """
 
 from collections import UserList
-from dataclasses import fields, replace, Field
-from typing import Any, ClassVar, Generic, Iterator, Self, SupportsIndex, TypeVar, overload
+from dataclasses import Field, fields, replace
+from numbers import Integral
+from typing import Any, ClassVar, Generic, Iterator, Self, TypeVar, overload
 
-from deel.puncc.backend.keras import ops
 from deel.puncc.typing import TensorLike
-
+from deel.puncc.backend import ops
 
 T = TypeVar("T")
 
-class IterableDataclassMixin(Generic[T]):
-    __dataclass_fields__: ClassVar[
-        dict[str, Field[Any]]
-    ]
 
+class IterableDataclassMixin(Generic[T]):
+    __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
     item_type: ClassVar[type]
 
     def __len__(self) -> int:
@@ -46,62 +44,58 @@ class IterableDataclassMixin(Generic[T]):
         return len(getattr(self, field.name))
 
     @overload
-    def __getitem__( # type: ignore
-        self,
-        idx: int,
-    ) -> T:
+    def __getitem__(self, idx: Integral) -> T:
         ...
 
     @overload
-    def __getitem__(
-        self,
-        idx: slice | TensorLike,
-    ) -> Self:
+    def __getitem__(self, idx: slice | TensorLike) -> Self:
         ...
 
     def __getitem__(self, idx) -> T | Self:
+        if isinstance(idx, Integral) and not isinstance(idx, bool):
+            values = {
+                item_field.name: value[idx]
+                for field, item_field in zip(
+                    fields(self), fields(self.item_type), strict=True
+                )
+                if (value := getattr(self, field.name)) is not None
+            }
+            return self.item_type(**values)
+
         values = {
             field.name: value[idx]
             for field in fields(self)
             if (value := getattr(self, field.name)) is not None
         }
-
-        if isinstance(idx, int):
-            return self.item_type(
-                *values.values()
-            )
-
-        return replace(
-            self,
-            **values,
-        )
+        return replace(self, **values)
 
     def __iter__(self) -> Iterator[T]:
         for i in range(len(self)):
             yield self[i]
 
+
 class IndexableUserList(UserList[T]):
     @overload
-    def __getitem__( # type: ignore
-        self,
-        idx: SupportsIndex,
-    ) -> T:
+    def __getitem__(self, idx: Integral) -> T:
         ...
 
     @overload
     def __getitem__(
         self,
-        idx: list[int] | tuple[int, ...] | slice | TensorLike,
+        idx: list[Integral] | tuple[Integral, ...] | slice | TensorLike,
     ) -> Self:
         ...
 
-    def __getitem__(self, idx:SupportsIndex|slice|list[int]|tuple[int,...]|TensorLike) -> T|Self:
+    def __getitem__(
+        self,
+        idx: Integral | slice | list[Integral] | tuple[Integral, ...] | TensorLike,
+    ) -> T | Self:
         if isinstance(idx, ops.tensor_type):
-            idx = ops.convert_to_numpy(idx).tolist()
-
-        if isinstance(idx, (list, tuple)):
-            return type(self)(
-                [self.data[i] for i in idx]
-            )
-
-        return super().__getitem__(idx)
+            idx = ops.tolist(idx)
+        if isinstance(idx, Integral) and not isinstance(idx, bool):
+            return self.data[idx]
+        if isinstance(idx, slice):
+            return type(self)(self.data[idx])
+        if all(isinstance(i, bool) for i in idx):
+            idx = [i for i, b in enumerate(idx) if b]
+        return type(self)([self.data[i] for i in idx])

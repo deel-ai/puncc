@@ -71,7 +71,7 @@ PredSetFunction: TypeAlias = Callable[
     Any,
 ]
 
-# A weight function takes as input a sequence of features and outputs a sequence of weights (float or tensor) for each instance in the input sequence.
+# A weight function takes as input a sequence of features and outputs a sequence of positive weights (float or tensor) for each instance in the input sequence.
 WeightFunction = Callable[
     [Iterable[Any]],
     TensorLike,

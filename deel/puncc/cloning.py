@@ -32,10 +32,14 @@ from __future__ import annotations
 import copy
 import inspect
 import warnings
+import logging
 from typing import Any
 
+from deel.puncc.warnings import ModelCloningWarning
 from deel.puncc.config import get_backend
 import sys
+
+logger = logging.getLogger(__name__)
 
 # TODO : improve this whole module (preferably before it achieves self-awareness) !
 # TODO : add better torch model cloning
@@ -52,7 +56,7 @@ import sys
 # TODO : make the module emit confetti on successful clone
 # TODO : add few more TODOs
 
-ML_MODULES = {"torch", "tensorflow", "keras", "sklearn", "transformers", "jax"}
+ML_MODULES = {"keras", "torch", "tensorflow", "sklearn", "transformers", "jax"}
 
 def get_imported_modules() -> set[str]:
     """
@@ -72,7 +76,6 @@ def get_imported_ml_modules() -> set[str]:
 def get_origin_from_model(obj)->str|None:
     cls = obj.__class__
     module = getattr(cls, "__module__", "") or ""
-    name = getattr(cls, "__name__", "") or ""
     mro = getattr(cls, "__mro__", ()) or ()
 
     def mro_has(prefix: str):
@@ -83,7 +86,7 @@ def get_origin_from_model(obj)->str|None:
         return False
 
     for orig in ML_MODULES:
-        if module.startswith(orig) or name.startswith(orig) or mro_has(orig):
+        if module.startswith(orig) or mro_has(orig):
             return orig
     return None
 
@@ -144,23 +147,33 @@ def clone_model(
 
     if callable(clone_method):
         try:
-            signature = inspect.signature(
-                clone_method
-            )
+            signature = inspect.signature(clone_method)
         except (TypeError, ValueError):
             signature = None
 
-        if (
-            signature is not None
-            and "clone_weights"
-            in signature.parameters
-        ):
-            return clone_method(
-                clone_weights=clone_weights
-            )
-
-        if not clone_weights:
-            return clone_method()
+        if signature is not None and "clone_weights" in signature.parameters:
+            try:
+                clone = clone_method(clone_weights=clone_weights)
+                if clone is model:
+                    raise ModelCloningError(model, strategy="model.clone() returned the original object")
+                return clone
+            except Exception as e:
+                raise ModelCloningError(model, strategy="model.clone()") from e
+        if clone_weights:
+            clone = clone_method()
+            if clone is model:
+                raise ModelCloningError(model, strategy="model.clone() returned the original object")
+            return clone
+        warnings.warn(
+            (
+                f"{type(model).__name__}.clone() does not expose a "
+                "'clone_weights' argument. PUNCC cannot verify whether "
+                "learned state is preserved. Trying framework-specific "
+                "cloning strategies instead."
+            ),
+            ModelCloningWarning,
+            stacklevel=2,
+        )
 
     available_cloners = {
         "sklearn": _clone_sklearn,
@@ -174,31 +187,51 @@ def clone_model(
     # Try cloner associated to the actually used backend
     backend_guess = get_backend()
     if backend_guess == "numpy":
-        backend_guess = "sklearn"
+        backend_guess =  None #"sklearn"
 
     origin_guess = get_origin_from_model(model)
-
+    logger.debug(
+        "Cloning model type=%s.%s, backend=%s, origin=%s, "
+        "clone_weights=%s.",
+        type(model).__module__,
+        type(model).__qualname__,
+        backend_guess,
+        origin_guess,
+        clone_weights,
+    )
     # most probable cloning strategies
     order = []
-    if backend_guess is not None :
-        order = [backend_guess]
 
-    if origin_guess is not None and origin_guess != backend_guess:
-        order += [origin_guess]
+    if origin_guess is not None :
+        order = [origin_guess]
+
+    if backend_guess is not None and origin_guess != backend_guess:
+        order += [backend_guess]
 
     # Possible cloning strategies
     order += [k for k in get_imported_ml_modules() if k not in order]
 
-    # add remaining cloners at the end of the list
-    order += [k for k in available_cloners.keys() if k not in order]
+    # # add remaining cloners at the end of the list
+    # order += [k for k in available_cloners.keys() if k not in order]
 
     # try cloners
     for guess in order:
         cloner = available_cloners.get(guess)
         if cloner is None:
             continue
-        cloned = cloner(model, clone_weights=clone_weights)
+        try:
+            cloned = cloner(model, clone_weights=clone_weights)
+        except ModelCloningError as e:
+            logger.debug(
+                "Cloning strategy %s failed with ModelCloningError: %s",
+                guess,
+                str(e),
+            )
+            continue
         if cloned is not None:
+            logger.debug("Model cloned successfully using strategy=%s.", guess)
+            if cloned is model:
+                raise ModelCloningError(model, strategy=f"{guess} cloner returned the original object")
             return cloned
 
     # if model is from a known ML library but no cloner worked, raise an error instead of silently falling back to deepcopy
@@ -207,7 +240,25 @@ def clone_model(
 
     try:
         # Fallback to deepcopy if no specific cloner worked
-        return copy.deepcopy(model)
+        if not clone_weights:
+            warnings.warn(
+                (
+                    f"No dedicated cloning strategy was found for model type {type(model).__module__}.{type(model).__qualname__}. "
+                    "Falling back to deepcopy. PUNCC cannot guarantee that learned model state has been reset."
+                    "Please expose a `clone()` method or provide a custom cloning implementation for this model."
+                ),
+                ModelCloningWarning,
+                stacklevel=2,
+            )
+        logger.debug(
+            "Falling back to deepcopy for model type=%s.%s.",
+            type(model).__module__,
+            type(model).__qualname__,
+        )
+        clone = copy.deepcopy(model)
+        if clone is model:
+            raise ModelCloningError(model, strategy="deepcopy returned the original object")
+        return clone
     except Exception as e:
         # If even deepcopy fails, raise a custom error
         raise ModelCloningError(model, strategy="deepcopy") from e
@@ -274,6 +325,14 @@ def _reinit_torch_module_(m):
     reset = getattr(m, "reset_parameters", None)
     if callable(reset):
         reset()
+        return True
+    
+    reset_stats = getattr(m, "reset_running_stats", None)
+    if callable(reset_stats):
+        reset_stats()
+        return True
+
+    return False
 
     # Handle common buffer-like state (BatchNorm running stats)
     # Most BN layers handle it in reset_parameters, but not all custom ones.
@@ -297,29 +356,28 @@ def _clone_torch(model, *, clone_weights: bool = False):
     try:
         with torch.no_grad():
             cloned = copy.deepcopy(model)
-            cloned = cloned.to(_torch_device(model))
             cloned.train(model.training)
 
             if not clone_weights:
                 # Best-effort reinit
                 missing = []
                 for m in cloned.modules():
-                    if callable(getattr(m, "reset_parameters", None)):
-                        _reinit_torch_module_(m)
-                    else:
-                        # Not every submodule needs reset_parameters, but if a leaf has params
-                        # and no reset_parameters, we can't safely reinit it.
-                        has_params = any(p is not None for p in m.parameters(recurse=False))
-                        if has_params:
-                            missing.append(type(m).__name__)
+                    if _reinit_torch_module_(m):
+                        continue
+                    has_state = (any(True for _ in m.parameters(recurse=False))) or any(True for _ in m.buffers(recurse=False))
+                    if has_state:
+                        missing.append(type(m).__name__)
 
                 if missing:
                     warnings.warn(
-                        "Torch model cloned then best-effort reinitialized, but some "
-                        f"parameterized modules lack reset_parameters(): {sorted(set(missing))}. "
-                        "Weights for these modules may still be copied. For a correct clone "
-                        "without weights, implement `.clone()`/factory reconstruction.",
-                        RuntimeWarning,
+                        (
+                            "Torch model was cloned and reinitialized on a best-effort "
+                            "basis, but some parameterized modules do not expose "
+                            f"reset_parameters(): {sorted(set(missing))}. "
+                            "Some learned weights may therefore have been preserved."
+                        ),
+                        ModelCloningWarning,
+                        stacklevel=2,
                     )
 
         return cloned
@@ -335,37 +393,43 @@ def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
     except ImportError:
         return None
     
-
-    # PyTorch HF
-    if isinstance(model, getattr(transformers, "PreTrainedModel", ())):
-        new_m = model.__class__(copy.deepcopy(model.config))
-        new_m = new_m.to(_torch_device(model))
-        if clone_weights:
-            try:
-                import torch
-                with torch.no_grad():
+    try:
+        # PyTorch HF
+        if isinstance(model, getattr(transformers, "PreTrainedModel", ())):
+            new_m = model.__class__(copy.deepcopy(model.config))
+            new_m = new_m.to(_torch_device(model))
+            if clone_weights:
+                try:
+                    import torch
+                    with torch.no_grad():
+                        new_m.load_state_dict(model.state_dict())
+                except ImportError:
                     new_m.load_state_dict(model.state_dict())
-            except ImportError:
-                new_m.load_state_dict(model.state_dict())
-        new_m.train(model.training)
-        return new_m
+            new_m.train(model.training)
+            return new_m
 
-    # TensorFlow HF
-    if isinstance(model, getattr(transformers, "TFPreTrainedModel", ())):
-        new_m = model.__class__(copy.deepcopy(model.config))
-        if clone_weights:
-            new_m.set_weights(model.get_weights())
-        return new_m
+        # TensorFlow HF
+        if isinstance(model, getattr(transformers, "TFPreTrainedModel", ())):
+            new_m = model.__class__(copy.deepcopy(model.config))
+            if clone_weights:
+                new_m.set_weights(model.get_weights())
+            return new_m
 
-    # Flax HF
-    if isinstance(model, getattr(transformers, "FlaxPreTrainedModel", ())):
-        dtype = getattr(model, "dtype", None)
-        new_m = model.__class__(copy.deepcopy(model.config), dtype=dtype)
-        if clone_weights:
-            new_m.params = copy.deepcopy(model.params)
-        return new_m
-    return None
-
+        # Flax HF
+        if isinstance(model, getattr(transformers, "FlaxPreTrainedModel", ())):
+            dtype = getattr(model, "dtype", None)
+            new_m = model.__class__(copy.deepcopy(model.config), dtype=dtype)
+            if clone_weights:
+                new_m.params = copy.deepcopy(model.params)
+            return new_m
+        return None
+    except Exception as e:
+        raise ModelCloningError(
+            model,
+            strategy="transformers",
+        ) from e
+        
 def _clone_jax(model: Any, *, clone_weights:bool = False) -> Any | None:
+    """Generic JAX cloning is not supported yet."""
     return None
     #raise NotImplementedError("JAX model cloning is not yet implemented, please expose a 'clone' method or use non cross conformal methods.")

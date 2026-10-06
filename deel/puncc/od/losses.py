@@ -22,9 +22,8 @@
 # SOFTWARE.
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Sequence
-from typing import overload
 
 from deel.puncc.backend.keras import ops
 from deel.puncc.typing import TensorLike
@@ -37,313 +36,239 @@ from deel.puncc.od.matching import (
     check_assignment
 )
 
-
-
-
 class ODLoss(ABC):
+    """
+    Base class for object-detection losses.
+
+    An OD loss can operate at two granularities:
+    - image-wise:
+        one scalar loss is returned for each image;
+    - box-wise:
+        one scalar loss is returned for each statistical box unit.
+
+    For assignment-based box-wise losses, unmatched source boxes may either
+    be ignored or penalized with ``upper_bound``.
+
+    Args:
+        boxwise:
+            Whether the loss should return one value per box instead of one
+            value per image.
+
+        penalize_unmatched_boxes:
+            Whether unmatched boxes belonging to the population evaluated by the loss are penalized.
+    """
     upper_bound: float = 1.0
+    matching_direction: MatchingDirection | None = None
 
-    @overload
-    def __call__(
+    def __init__(
         self,
-        y_pred: ODPrediction,
-        y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        ...
+        *,
+        boxwise: bool = False,# if false : imagewise
+        penalize_unmatched_boxes: bool = True, 
+    ):
+        self.boxwise = boxwise
+        self.penalize_unmatched_boxes = penalize_unmatched_boxes
 
-    @overload
     def __call__(
         self,
         y_pred: Sequence[ODPrediction],
         y_true: Sequence[ODTarget],
-        assignment: Sequence[AssignmentResult | None] | None = None,
+        assignments: Sequence[AssignmentResult | None] | None = None,
     ) -> TensorLike:
-        ...
+        assignments = [None] * len(y_pred) if assignments is None else assignments
 
-    def __call__(
-        self,
-        y_pred: ODPrediction | Sequence[ODPrediction],
-        y_true: ODTarget | Sequence[ODTarget],
-        assignment: (
-            AssignmentResult
-            | Sequence[AssignmentResult | None]
-            | None
-        ) = None,
-    ) -> TensorLike:
-        if isinstance(y_pred, ODPrediction) and isinstance(y_true, ODTarget) and isinstance(assignment, (AssignmentResult, type(None))):
-            return self.compute(
-                y_pred,
-                y_true,
-                assignment,
-            )
-        if isinstance(y_pred, Sequence) and isinstance(y_true, Sequence) and isinstance(assignment, (Sequence, type(None))):
-            assignment = (
-                [None] * len(y_pred)
-                if assignment is None
-                else assignment
-            )
-            if len(y_pred) == len(y_true) == len(assignment):
-                return ops.stack(
-                    [
-                        self.compute(
-                            pred,
-                            target,
-                            assign,
-                        )
-                        for pred, target, assign in zip(
-                            y_pred,
-                            y_true,
-                            assignment,
-                            strict=True
-                        )
-                    ]
-                )
-            raise ValueError(
-                "y_pred, y_true and assignment must have the same length."
-            )
-        raise ValueError("Incompatible input types for loss calculation.")
+        if self.boxwise:
+            losses: list[TensorLike] = []
+            for prediction, target, assignment in zip(y_pred, y_true, assignments, strict=True):
+                losses.extend(self.compute_boxwise(prediction, target, assignment))
+        else:
+            losses = [self.compute_imagewise(prediction, target, assignment)
+                for prediction, target, assignment in zip(y_pred, y_true, assignments, strict=True)]
+        if not losses:
+            return ops.zeros((0,), dtype="float32")
+        return ops.stack(losses)
 
-    @abstractmethod
-    def compute(
-        self,
+    def compute_imagewise(self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        ...
+        assignment: AssignmentResult | None = None) -> TensorLike:
+        """
+        Compute the image-wise loss.
 
+        For box-decomposable losses, the default implementation simply
+        averages the elementary box-wise losses.
+        """
+        losses = self.compute_boxwise(y_pred, y_true, assignment)
+        if not losses:
+            return ops.array(0.0)
+        return ops.mean(ops.stack(losses))
+
+    def compute_boxwise(self,
+        y_pred: ODPrediction,
+        y_true: ODTarget,
+        assignment: AssignmentResult | None = None) -> list[TensorLike]:
+        """
+        Compute elementary box-wise losses for one image.
+
+        Losses that are intrinsically image-wise should override
+        ``compute_imagewise`` only.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support box-wise computation.")
+    
+    def matched_pairs(self, assignment: AssignmentResult) -> zip[tuple[int, int]]:
+        return zip(*assignment.matched_indices(), strict=True)
+
+    def _add_unmatched_penalties(self,
+        losses: list[TensorLike],
+        unmatched_indices: Sequence[int]) -> list[TensorLike]:
+        if not self.penalize_unmatched_boxes:
+            return losses
+
+        losses.extend(ops.array(self.upper_bound) for _ in unmatched_indices)
+        return losses
 
 class ConfidenceLoss(ODLoss):
-    pass
-
+    ...
 
 class LocalizationLoss(ODLoss):
-    pass
-
+    ...
 
 class ClassificationLoss(ODLoss):
-    pass
-
+    ...
 
 class BoxCountThresholdLoss(ConfidenceLoss):
-    """
-    Binary loss indicating whether fewer boxes are predicted than expected.
-    """
+    def __init__(self):
+        super().__init__(boxwise=False, penalize_unmatched_boxes=False)
 
-    def compute(
-        self,
-        y_pred: ODPrediction,
-        y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        return ops.array(
-            float(len(y_pred) < len(y_true))
-        )
+    def compute_imagewise(self, y_pred, y_true, assignment=None):
+        return ops.array(float(len(y_pred) < len(y_true)))
 
+class BoxCountRecallLoss(ConfidenceLoss):
+    """
+    Count-based approximation of detection recall.
+    """
+    def __init__(self):
+        super().__init__(boxwise=False, penalize_unmatched_boxes=False)
+
+    def compute_imagewise(self, y_pred, y_true, assignment=None)->TensorLike:
+        if len(y_true) == 0:
+            return ops.array(0.0)
+        return ops.array(max(0.0, (len(y_true) - len(y_pred)) / len(y_true)))
 
 class BoxCountTwoSidedLoss(ConfidenceLoss):
     """
     Binary loss based on the difference between the number of predicted
     and target boxes.
     """
-
-    def __init__(
-        self,
-        threshold: int = 3,
-    ):
+    def __init__(self, threshold: int = 3):
+        super().__init__(boxwise=False, penalize_unmatched_boxes=False)
         self.threshold = threshold
 
-    def compute(
-        self,
-        y_pred: ODPrediction,
-        y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
+    def compute_imagewise(self, y_pred: ODPrediction, y_true: ODTarget, assignment: AssignmentResult | None = None) -> TensorLike:
         if len(y_true) == 0:
             return ops.array(0.0)
-
-        return ops.array(
-            float(
-                abs(len(y_true) - len(y_pred))
-                > self.threshold
-            )
-        )
-
-
-class BoxCountRecallLoss(ConfidenceLoss):
-    """
-    Count-based approximation of detection recall.
-    """
-
-    def compute(
-        self,
-        y_pred: ODPrediction,
-        y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
-
-        return ops.array(
-            max(
-                0.0,
-                (len(y_true) - len(y_pred))
-                / len(y_true),
-            )
-        )
-
+        return ops.array(float(abs(len(y_true) - len(y_pred)) > self.threshold))
 
 class DetectionRecallLoss(ConfidenceLoss):
     """
-    Fraction of target objects left unassigned.
+    Loss 1 for an unmatched GT object, 0 for a matched GT object.
     """
+    def __init__(self, *, boxwise=False):
+        super().__init__(boxwise=boxwise, penalize_unmatched_boxes=True)
 
-    def compute(
+    def compute_boxwise(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
+    ) -> list[TensorLike]:
         if len(y_true) == 0:
-            return ops.array(0.0)
-
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.TRUE_TO_PRED,
-        )
-
-        return ops.array(
-            len(assignment.unassigned_source_indices)
-            / len(y_true)
-        )
-
+            return []        
+        assignment = check_assignment(assignment=assignment)
+        unmatched = set(assignment.unmatched_true_indices())
+        return [ops.array(self.upper_bound if i in unmatched else 0.0) for i in range(len(y_true))]
 
 class ThresholdedDistanceConfidenceLoss(ConfidenceLoss):
     """
-    Fraction of target objects whose closest prediction is farther
-    than a given distance threshold.
+    Fraction of target objects whose closest prediction is farther than ``distance_threshold``.
     """
 
-    def __init__(
-        self,
+    def __init__(self,
         distance_threshold: float = 0.5,
-        distance_metric: DistanceMetric = AsymmetricHausdorffDistance(),
-    ):
+        distance_metric: DistanceMetric | None = None,
+        *,
+        boxwise: bool = False):
+        super().__init__(
+            boxwise=boxwise,
+            penalize_unmatched_boxes=True,
+        )
         self.distance_threshold = distance_threshold
-        self.distance_metric = distance_metric
+        self.distance_metric = AsymmetricHausdorffDistance() if distance_metric is None else distance_metric
 
-    def compute(
+    def compute_boxwise(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
+    ) -> list[TensorLike]:
+        if not len(y_true):
+            return []
+        if self.boxwise:
+            check_assignment(assignment, direction=MatchingDirection.TRUE_TO_PRED)
 
-        if len(y_pred) == 0:
-            return ops.array(1.0)
+        if not len(y_pred):
+            return [ops.array(self.upper_bound) for _ in range(len(y_true))]
 
-        distances = self.distance_metric.cost_matrix(
-            y_pred,
-            y_true,
-        )
-
-        shortest_distances = ops.min(
-            distances,
-            axis=1,
-        )
-
-        return ops.mean(
-            ops.cast(
-                shortest_distances > self.distance_threshold,
-                "float32",
-            )
-        )
-
+        distances = self.distance_metric.cost_matrix(y_pred, y_true)
+        shortest_distances = ops.min(distances, axis=1)
+        return [ops.cast(shortest_distances[i] > self.distance_threshold, "float32") for i in range(len(y_true))]
 
 class ClassificationCoverageLoss(ClassificationLoss):
     """
-    Fraction of target objects whose class is not covered by the
-    corresponding prediction set.
+    Fraction of target objects whose class is not covered by the corresponding prediction set.
 
     Unassigned target objects count as errors.
     """
-
-    def compute(
-        self,
+    def compute_boxwise(self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
+        assignment: AssignmentResult | None = None) -> list[TensorLike]:
+        assignment = check_assignment(assignment=assignment)
+        pairs = list(self.matched_pairs(assignment))
 
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.TRUE_TO_PRED,
-        )
+        if pairs and y_pred.class_sets is None:
+            raise ValueError("ClassificationCoverageLoss requires prediction class_sets.")
 
-        loss = ops.array(
-            float(len(assignment.unassigned_source_indices))
-        )
-
-        prediction_sets = y_pred.prediction_sets
-
-        for true_idx, pred_idx in assignment.matched_pairs:
-            loss += ops.cast(
-                ops.logical_not(
-                    ops.any(
-                        prediction_sets[pred_idx]
-                        == y_true.labels[true_idx]
-                    )
-                ),
-                "float32",
-            )
-
-        return loss / len(y_true)
-
-
+        losses = [ops.cast(ops.logical_not(ops.any(y_pred.class_sets[pred_idx] == y_true.labels[true_idx])), "float32")
+            for true_idx, pred_idx in pairs]
+        return self._add_unmatched_penalties(losses, assignment.unmatched_true_indices())
 
 class BoxCoverageLoss(LocalizationLoss):
-    """
-    Fraction of target boxes not entirely covered by their assigned
-    predicted box.
-
-    Unassigned target objects count as errors.
-    """
-
-    def compute(
-        self,
+    def compute_boxwise(self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
+        assignment: AssignmentResult | None = None) -> list[TensorLike]:
+        assignment = check_assignment(assignment=assignment)
 
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.TRUE_TO_PRED,
-        )
+        true_to_losses: dict[int, list[TensorLike]] = {}
 
-        loss = ops.array(
-            float(len(assignment.unassigned_source_indices))
-        )
-
-        for true_idx, pred_idx in assignment.matched_pairs:
-            loss += ops.cast(
+        for true_idx, pred_idx in self.matched_pairs(assignment):
+            loss = ops.cast(
                 ops.logical_not(
-                    y_pred[pred_idx].contains(
-                        y_true[true_idx]
-                    )
+                    y_pred[pred_idx].contains(y_true[true_idx])
                 ),
                 "float32",
             )
+            true_to_losses.setdefault(true_idx, []).append(loss)
 
-        return loss / len(y_true)
+        losses = [
+            ops.min(ops.stack(true_to_losses[true_idx]))
+            if true_idx in true_to_losses
+            else ops.array(self.upper_bound)
+            for true_idx in range(len(y_true))
+        ]
 
+        return losses
 
 class PixelCoverageLoss(LocalizationLoss):
     """
@@ -352,71 +277,41 @@ class PixelCoverageLoss(LocalizationLoss):
 
     Unassigned target objects have zero covered area.
     """
-
-    def compute(
-        self,
+    def compute_boxwise(self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-        assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
+        assignment: AssignmentResult | None = None) -> list[TensorLike]:
+        assignment = check_assignment(assignment)
 
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.TRUE_TO_PRED,
-        )
-
-        covered_area = ops.array(0.0)
-
-        for true_idx, pred_idx in assignment.matched_pairs:
+        losses = []
+        for true_idx, pred_idx in self.matched_pairs(assignment):
             true_box = y_true[true_idx]
             pred_box = y_pred[pred_idx]
-
-            covered_area += (
-                true_box.intersection(pred_box).area
-                / true_box.area
-            )
-
-        return (
-            ops.array(1.0)
-            - covered_area / len(y_true)
-        )
-
+            covered_fraction = true_box.intersection(pred_box).area / ops.maximum(true_box.area, 1e-12)
+            losses.append(ops.array(1.0) - covered_fraction)
+        return self._add_unmatched_penalties(losses, assignment.unmatched_true_indices())
 
 class ThresholdedRecallLoss(LocalizationLoss):
     """
     Binary loss indicating whether a localization loss exceeds beta.
     """
-
     def __init__(
         self,
         beta: float = 0.25,
         base_loss: LocalizationLoss | None = None,
     ):
         self.beta = beta
-        self.base_loss = (
-            BoxCoverageLoss()
-            if base_loss is None
-            else base_loss
-        )
+        self.base_loss = BoxCoverageLoss() if base_loss is None else base_loss
+        super().__init__(boxwise=False, penalize_unmatched_boxes=self.base_loss.penalize_unmatched_boxes)
 
-    def compute(
+    def compute_imagewise(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> TensorLike:
-        loss = self.base_loss.compute(
-            y_pred,
-            y_true,
-            assignment,
-        )
-
-        return ops.cast(
-            loss > self.beta,
-            "float32",
-        )
+        loss = self.base_loss.compute_imagewise(y_pred, y_true, assignment)
+        return ops.cast(loss > self.beta, "float32")
 
 
 class BoxPrecisionLoss(LocalizationLoss):
@@ -426,37 +321,16 @@ class BoxPrecisionLoss(LocalizationLoss):
 
     Unassigned predictions count as errors.
     """
-
-    def compute(
+    def compute_boxwise(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_pred) == 0:
-            return ops.array(0.0)
-
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.PRED_TO_TRUE,
-        )
-
-        loss = ops.array(
-            float(len(assignment.unassigned_source_indices))
-        )
-
-        for pred_idx, true_idx in assignment.matched_pairs:
-            loss += ops.cast(
-                ops.logical_not(
-                    y_true[true_idx].contains(
-                        y_pred[pred_idx]
-                    )
-                ),
-                "float32",
-            )
-
-        return loss / len(y_pred)
-
+    ) -> list[TensorLike]:
+        assignment = check_assignment(assignment)
+        losses = [ops.cast(ops.logical_not(y_true[true_idx].contains(y_pred[pred_idx])), "float32")
+            for true_idx, pred_idx in self.matched_pairs(assignment)]
+        return self._add_unmatched_penalties(losses, assignment.unmatched_pred_indices())
 
 class IoUThresholdLoss(LocalizationLoss):
     """
@@ -465,40 +339,26 @@ class IoUThresholdLoss(LocalizationLoss):
 
     Unassigned targets count as errors.
     """
-
     def __init__(
         self,
         iou_threshold: float = 0.9,
+        *,
+        boxwise: bool = False,
+        penalize_unmatched_boxes: bool = True,
     ):
+        super().__init__(boxwise=boxwise, penalize_unmatched_boxes=penalize_unmatched_boxes)
         self.iou_threshold = iou_threshold
 
-    def compute(
+    def compute_boxwise(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
-
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.TRUE_TO_PRED,
-        )
-
-        loss = ops.array(
-            float(len(assignment.unassigned_source_indices))
-        )
-
-        for true_idx, pred_idx in assignment.matched_pairs:
-            loss += ops.cast(
-                y_true[true_idx].iou(
-                    y_pred[pred_idx]
-                ) < self.iou_threshold,
-                "float32",
-            )
-
-        return loss / len(y_true)
+    ) -> list[TensorLike]:
+        assignment = check_assignment(assignment)
+        losses = [ops.cast(y_true[true_idx].iou(y_pred[pred_idx]) < self.iou_threshold, "float32")
+            for true_idx, pred_idx in self.matched_pairs(assignment)]
+        return self._add_unmatched_penalties(losses, assignment.unmatched_true_indices())
 
 class JointCoverageLoss(ODLoss):
     """
@@ -509,44 +369,21 @@ class JointCoverageLoss(ODLoss):
       - the predicted box contains the target box,
       - the true class belongs to the prediction set.
     """
-    def compute(
+    def compute_boxwise(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
-    ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
+    ) -> list[TensorLike]:
+        assignment = check_assignment(assignment)
+        pairs = list(self.matched_pairs(assignment))
 
-        assignment = check_assignment(
-            assignment,
-            direction=MatchingDirection.TRUE_TO_PRED,
-        )
+        if pairs and y_pred.class_sets is None:
+            raise ValueError("JointCoverageLoss requires prediction class_sets.")
 
-        loss = ops.array(
-            float(len(assignment.unassigned_source_indices))
-        )
-
-        prediction_sets = y_pred.prediction_sets
-
-        for true_idx, pred_idx in assignment.matched_pairs:
-            loc_covered = y_pred[pred_idx].contains(
-                y_true[true_idx]
-            )
-
-            cls_covered = ops.any(
-                prediction_sets[pred_idx]
-                == y_true.labels[true_idx]
-            )
-
-            loss += ops.cast(
-                ops.logical_not(
-                    ops.logical_and(
-                        loc_covered,
-                        cls_covered,
-                    )
-                ),
-                "float32",
-            )
-
-        return loss / len(y_true)
+        losses = []
+        for true_idx, pred_idx in pairs:
+            loc_covered = y_pred[pred_idx].contains(y_true[true_idx])
+            cls_covered = ops.any(y_pred.class_sets[pred_idx] == y_true.labels[true_idx])
+            losses.append(ops.cast(ops.logical_not(ops.logical_and(loc_covered, cls_covered)), "float32"))
+        return self._add_unmatched_penalties(losses, assignment.unmatched_true_indices())

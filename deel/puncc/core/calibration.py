@@ -39,7 +39,9 @@ Operations such as :meth:`CalibrationContext.copy` therefore perform shallow cop
 """
 from __future__ import annotations
 
+from collections import UserList
 from collections.abc import Iterable, Iterator
+from numbers import Integral
 from typing import Any, KeysView, Self, ValuesView, ItemsView
 
 from deel.puncc.typing import TensorLike
@@ -118,7 +120,7 @@ class CalibrationContext:
 
     def __getitem__(
         self,
-        key:str|int|slice|TensorLike,
+        key:str|Integral|slice|TensorLike,
     ) -> Any | Self:
         """
         Access a field or index all stored calibration quantities.
@@ -137,8 +139,19 @@ class CalibrationContext:
         """
         if isinstance(key, str):
             return self.__dict__[key]
-        
-        if isinstance(key, (int, slice)):
+
+        if isinstance(key, ops.tensor_type):
+            key = ops.tolist(key)
+
+        if isinstance(key, Integral):
+            index = int(key)
+            if index < 0:
+                index += self.size
+            if index < 0 or index >= self.size:
+                raise IndexError("CalibrationContext index out of range.")
+            key = slice(index, index + 1)
+
+        if isinstance(key, slice):
             return type(self)(
                 **{
                     name: value[key]
@@ -148,18 +161,17 @@ class CalibrationContext:
 
         return type(self)(
             **{
-                name: ops.take(value, key, axis=0)
+                name: (
+                    type(value)([value[i] for i in key])
+                    if isinstance(value, UserList)
+                    else ops.take(value, key, axis=0)
+                    if isinstance(value, ops.tensor_type)
+                    else [value[i] for i in key]
+                )
                 for name, value in self.__dict__.items()
             }
         )
-        # return type(self)(
-        #     **{
-        #         name: value[key]
-        #         for name, value
-        #         in self.__dict__.items()
-        #     }
-        # )
-    
+
     def __contains__(self, key: str) -> bool:
         """
         Return whether a field is stored in the context.
@@ -308,3 +320,6 @@ class CalibrationContext:
 
         self.__dict__.update(other_context.__dict__)
         return self
+    
+    def is_empty(self)->bool:
+        return not bool(self.__dict__)

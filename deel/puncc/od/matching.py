@@ -26,6 +26,7 @@ Matching utilities for object detection.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
@@ -41,6 +42,14 @@ from .base import ODPrediction, ODTarget
 class MatchingDirection(StrEnum):
     """
     Direction of the assignment
+
+    TRUE_TO_PRED
+    source = ground truths
+    target = predictions
+
+    PRED_TO_TRUE
+    source = predictions
+    target = ground truths
     """
     TRUE_TO_PRED = "true_to_pred"
     PRED_TO_TRUE = "pred_to_true"
@@ -50,7 +59,9 @@ class AssignmentResult:
     """
     Results of an assignment between a source set and a target set.
     """
+    # source_to_target_index[source_idx] corresponds to the index of the target assigned to source_idx, or None if unassigned.
     source_to_target_index: list[int | None]
+    # list of the indices of the targets that were not assigned to any source.
     unassigned_target_indices: list[int]
     matching_direction:MatchingDirection = MatchingDirection.TRUE_TO_PRED
 
@@ -74,7 +85,102 @@ class AssignmentResult:
             in enumerate(self.source_to_target_index)
             if target_index is None
         ]
+        
+    def filter_predictions(
+        self,
+        kept_indices: Sequence[int],
+    ) -> "AssignmentResult":
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return self.filter_targets(kept_indices)
+        return self.filter_sources(kept_indices)
 
+    def filter_targets(
+        self,
+        kept_indices: Sequence[int],
+    ) -> AssignmentResult:
+        kept = list(map(int, kept_indices))
+        remap = {old: new for new, old in enumerate(kept)}
+
+        return AssignmentResult(
+            source_to_target_index=[
+                remap.get(target) if target is not None else None
+                for target in self.source_to_target_index
+            ],
+            unassigned_target_indices=[
+                remap[target]
+                for target in self.unassigned_target_indices
+                if target in remap
+            ],
+            matching_direction=self.matching_direction,
+        )
+        
+    def filter_sources(
+        self,
+        kept_indices: Sequence[int],
+    ) -> AssignmentResult:
+        kept = list(map(int, kept_indices))
+
+        source_to_target = [
+            self.source_to_target_index[i]
+            for i in kept
+        ]
+
+        all_targets = (
+            set(self.unassigned_target_indices)
+            | {
+                target
+                for target in self.source_to_target_index
+                if target is not None
+            }
+        )
+
+        assigned_targets = {
+            target
+            for target in source_to_target
+            if target is not None
+        }
+
+        return AssignmentResult(
+            source_to_target_index=source_to_target,
+            unassigned_target_indices=sorted(
+                all_targets - assigned_targets
+            ),
+            matching_direction=self.matching_direction,
+        )
+    
+    def matched_indices(
+        self,
+    ) -> list[list[int], list[int]]:
+        pairs = self.matched_pairs
+        matched_indices = [
+            [source_idx for source_idx, _ in pairs],
+            [target_idx for _, target_idx in pairs]
+        ]
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return matched_indices
+        return matched_indices[::-1]
+
+    def unmatched_true_indices(
+        self,
+    ) -> list[int]:
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return self.unassigned_source_indices
+        return list(self.unassigned_target_indices)
+    
+    def unmatched_pred_indices(
+        self,
+    ) -> list[int]:
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return list(self.unassigned_target_indices)
+        return self.unassigned_source_indices
+
+    def align_prediction_and_target(
+        self,
+        prediction: ODPrediction,
+        target: ODTarget,
+    ) -> tuple[ODPrediction, ODTarget]:
+        true_indices, pred_indices = self.matched_indices()
+        return prediction[pred_indices], target[true_indices]
 
 @runtime_checkable
 class AssignmentMethod(Protocol):

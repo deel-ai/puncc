@@ -23,20 +23,16 @@
 """
 This module implements conformal anomaly detection procedures.
 """
-from collections.abc import Callable
 from typing import Any, Iterable, Self
-
+import logging
 
 from deel.puncc.core.calibration import CalibrationContext
-from deel.puncc.core.conformal import CacheKey
-from deel.puncc.core.predictors import make_predictor
-from deel.puncc.typing import Predictor, PredictorLike, TensorLike
-from deel.puncc.backend.keras import ops
+from deel.puncc.core.split import SplitConformalPredictor
+from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 
+logger = logging.getLogger(__name__)
 
-
-# TODO : should inherit from ConformalPredictor in a way or another, but need rethinking to overload correctly basic methods
-class SplitCAD:
+class SplitCAD(SplitConformalPredictor):
     """Split conformal anomaly detection method based on Laxhammar's algorithm.
     The anomaly detection is based on the calibrated threshold (through
     conformal prediction) of underlying anomaly detection (model's) scores.
@@ -121,87 +117,30 @@ class SplitCAD:
         plt.yticks(())
         plt.legend()
     """
-    __slots__ = ("model", "fit_function", "calibration_context", "conformalization_cache")
+    def _is_anomaly(self, scores:TensorLike, threshold:float|TensorLike)->TensorLike:
+        return scores > threshold
 
-    # Any conformal method should have a model attribute.
-    def __init__(self, model:Predictor|PredictorLike,
-                 fit_function:Callable[..., Predictor] | None|None = None):
-        self.model = make_predictor(model)
-        self.fit_function = fit_function
-        self.calibration_context = CalibrationContext()
-        # TODO : cache is not used here. uniformize with other methods
-        self.conformalization_cache:dict[CacheKey, Any] = {}
+    def __init__(self,
+                 model:Predictor|PredictorLike,
+                 *,
+                 fit_function:FitFunction|None = None)->None:
+        super().__init__(model=model,
+                         # TODO : revoir l'archi pour rendre ceci moins sale
+                         # deviendrait valide si nc_score_function méthode de SplitCP plutôt que argument du constructeur
+                         nc_score_function=None, # Unused in CAD
+                         pred_set_function=self._is_anomaly,
+                          fit_function=fit_function)
 
-    def fit(self,
-            z:Iterable[Any],
-            *args:Any, 
-            **kwargs:Any
-            )->Self:
-        """
-        Fit the underlying predictive model.
-
-        The custom fit_function is used when provided. Otherwise the predictor's own fit method is called.
-
-        Args:
-            X:
-                Training inputs.
-
-            y:
-                Training targets.
-
-            *args:
-                Additional positional arguments forwarded to the fitting function.
-
-            **kwargs:
-                Additional keyword arguments forwarded to the fitting function.
-
-        Returns:
-            The predictor with its underlying model fitted.
-        """
-        if self.fit_function is not None:
-            self.model = self.fit_function(self.model, z, *args, **kwargs)
-            return self
-        
-        fit_method = getattr(
-            self.model,
-            "fit",
-            None,
-        )
-        if callable(fit_method):
-            fit_method(
-                z,
-                *args,
-                **kwargs,
-            )
-            return self
-        raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
-
-    def calibrate(self,
-                  z_calib:Iterable[Any])->Self:
-        self.conformalization_cache.clear()
-        self.calibration_context.clear()
+    def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any]|None = None)->Self:
+        self.reset_calibration()
         self.calibration_context.update(
-            z_calib=z_calib,
-            nc_scores=self.model(z_calib)
+            X_calib = X_calib,
+            y_pred = self.model(X_calib)
         )
+        self.calibration_context = self.compute_calibration_state(self.calibration_context)
+        logger.debug("Calibrating %s on %d samples.", type(self).__name__, self.calibration_context.size)
         return self
 
-    def predict(self, z_test: Iterable, alpha) -> TensorLike:
-        """Predict whether each example is an anomaly or not. The decision is
-        taken based on the calibrated threshold (through conformal prediction)
-        of underlying anomaly detection scores.
-
-        :param Iterable z_test: new data points.
-        :param float alpha: target maximum FDR.
-
-        :returns: outlier tag. True if outlier, False otherwise.
-        :rtype: Iterables[bool]
-
-        """
-        n_calib = self.calibration_context.size
-        # TODO : separate the quantile computation to allow usage of weighting mixin
-        quantile = ops.weighted_quantile(self.calibration_context.nc_scores, (1 - alpha) * (n_calib + 1) / n_calib, axis=0) 
-        test_nonconf_scores = self.model(z_test)
-        anomaly_pred = ops.logical_not(test_nonconf_scores <= quantile)
-        # TODO : maybe uniformize the output type with others methods
-        return anomaly_pred
+    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+        calibration_context.nc_scores = calibration_context.y_pred
+        return calibration_context

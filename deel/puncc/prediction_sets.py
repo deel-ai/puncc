@@ -93,7 +93,7 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=True)->PredSetFunction:
         penal_cs = cs + penalty
 
 
-        index_limit = ops.sum(penal_cs < quantile, axis=-1) + 1
+        index_limit = ops.sum(penal_cs <= quantile, axis=-1) + 1
         index_limit = ops.minimum(index_limit, K)
 
         if rand:
@@ -106,14 +106,10 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=True)->PredSetFunction:
             p_at_last = ops.take_along_axis(sorted_p, last_pos_exp, axis=-1)[..., 0]
 
             reg_at_L = lambd * ops.maximum(index_limit - k_reg, 0)
-            proba_excess = (cs_at_last + reg_at_L) - quantile
 
-            indic_L_greater_kreg = ops.where(index_limit > k_reg, 1, 0)
-            denom = p_at_last + lambd * indic_L_greater_kreg
-
-            v = proba_excess / denom
+            v = (quantile - cs_at_last - reg_at_L + p_at_last) / p_at_last
             v = ops.clip(v, 0, 1)
-            exclude_last = ops.where(u <= v, 1, 0)
+            exclude_last = ops.where(v <= u, 1, 0)
             index_limit = ops.maximum(index_limit - exclude_last, 0)
         return [p[:lim] for p, lim in zip(sorted_index, index_limit)]
     return _raps_set

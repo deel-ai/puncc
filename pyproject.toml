@@ -7,7 +7,7 @@ name = "puncc"
 version = "0.8.1"
 description = "Predictive UNcertainty Calibration and Conformalization Library"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
   { name = "Mouhcine Mendil", email = "mouhcine.mendil@irt-saintexupery.com" },
@@ -21,30 +21,27 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
   "Operating System :: OS Independent",
 ]
 
 dependencies = [
-  "joblib",
+  "keras>=3.15.0",
   "matplotlib",
   "numpy",
-  "pandas",
-  "scikit-learn",
-  "tqdm",
+  "scipy",
+  "packaging",
 ]
 
 [project.optional-dependencies]
-torch = [
-  "torch>=2.0",
-]
-
-tensorflow = [
-  "tensorflow>=2.10",
-  "tensorflow-addons",
-]
+torch = ["torch>=2.0"]
+jax = ["jax>=0.4.20"]
+numpy = ["jax>=0.4.20"]
+sklearn = ["scikit-learn>=1.5.0"]
+plot = ["matplotlib", "Pillow"]
+tensorflow = ["tensorflow>=2.16.1"]
 
 interactive = [
   "ipykernel",
@@ -62,15 +59,6 @@ dev = [
   "sphinx-autodoc-typehints",
   "sphinx-rtd-theme",
   "tox",
-]
-
-all = [
-  "torch>=2.0",
-  "tensorflow>=2.10",
-  "tensorflow-addons",
-  "scikit-learn",
-  "matplotlib",
-  "pandas",
 ]
 
 [project.urls]

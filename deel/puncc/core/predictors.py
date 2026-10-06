@@ -271,8 +271,8 @@ class LookupTablePredictor:
         Returns:
             The fitted predictor.
         """
-        self.X = ops.asarray(X_train)
-        self.y = ops.asarray(y_train)
+        self.X = ops.array(X_train)
+        self.y = ops.array(y_train)
         return self
     
     def predict(
@@ -294,11 +294,9 @@ class LookupTablePredictor:
             ValueError: If a requested sample is absent from the lookup table or appears more than once.
         """
         if self.X is None or self.y is None:
-            raise RuntimeError(
-                "LookupTablePredictor must be fitted before prediction."
-            )
+            raise RuntimeError("LookupTablePredictor must be fitted before prediction.")
 
-        X = ops.asarray(X)
+        X = ops.array(X)
 
         predictions = []
 
@@ -311,16 +309,10 @@ class LookupTablePredictor:
             indices = ops.where_1d(matches)
 
             if len(indices) == 0:
-                raise ValueError(
-                    "At least one requested sample was not found "
-                    "in the lookup table."
-                )
+                raise ValueError("At least one requested sample was not found in the lookup table.")
 
             if len(indices) > 1:
-                raise ValueError(
-                    "A requested sample appears multiple times "
-                    "in the lookup table."
-                )
+                raise ValueError("A requested sample appears multiple times in the lookup table.")
 
             predictions.append(
                 ops.take(self.y, indices[0], axis=0)

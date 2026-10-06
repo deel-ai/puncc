@@ -28,11 +28,17 @@ This module implements the generic machinery required to calibrate postprocessin
 from __future__ import annotations
 from typing import Any, Callable, Generic, TypeAlias, TypeVar
 
+import logging
+import warnings
+
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 from deel.puncc.optimization import ScalarOptimizer, BinarySearchOptimizer
 from deel.puncc.backend import ops
+from deel.puncc.warnings import CalibrationWarning
+
+logger = logging.getLogger(__name__)
 
 TPrediction = TypeVar("TPrediction")
 TTarget = TypeVar("TTarget")
@@ -69,35 +75,28 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         fit_function: Optional custom function used to fit the predictive model.
         optimizer: Scalar optimizer used to calibrate the postprocessing parameter. Defaults to :class:`BinarySearchOptimizer`.
         lambda_bounds: Lower and upper bounds of the parameter search interval.
-        search_tol: Tolerance used by the scalar optimizer.
-        max_iter: Maximum number of optimizer iterations.
     """
-    __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds", "search_tol", "max_iter")
+    __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds")
     def __init__(self, model: Predictor[TPrediction] | PredictorLike[TPrediction],
-                postprocessor: Postprocessor[TPrediction, TConformalPrediction],
-                loss_function: RiskLossFunction[TConformalPrediction, TTarget],
                 *,
+                postprocessor: Postprocessor[TPrediction, TConformalPrediction],
+                loss_function,#: RiskLossFunction[TConformalPrediction, TTarget],
                  loss_function_upper_bound:float|None = None,
                  fit_function:FitFunction|None = None,
                  optimizer:ScalarOptimizer|None = None,
-                 lambda_bounds:tuple[float, float]=(0.0, 1.0),
-                 search_tol:float=1e-4,
-                 max_iter:int=25):
+                 lambda_bounds:tuple[float, float]=(0.0, 1.0)):
         super().__init__(model, fit_function=fit_function)
         self.postprocessor = postprocessor
         self.loss_function = loss_function
         self.B = loss_function_upper_bound if loss_function_upper_bound is not None else getattr(loss_function, "upper_bound", None)
         if self.B is None:
             raise ValueError("loss_function_upper_bound must be provided or loss_function must have an 'upper_bound' attribute.")
-
         self.optimizer = optimizer if optimizer is not None else BinarySearchOptimizer()
         self.lambda_bounds = lambda_bounds
-        self.search_tol = search_tol
-        self.max_iter = max_iter
 
     @property
-    def len_calib(self)->int:
-        return self.calibration_context.size
+    def len_calib(self) -> int:
+        return self.get_calibration_set_size(self.calibration_context)
 
     def _r_hat(
         self,
@@ -121,8 +120,10 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
             ),
             calibration_context.y_calib,
         )
-
         return ops.item(ops.mean(losses))
+
+    def get_calibration_set_size(self, calibration_context:CalibrationContext) -> int:
+        return calibration_context.size
 
     def _get_lambda_from_alpha(
         self,
@@ -133,7 +134,6 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         Compute the calibrated postprocessing parameter.
 
         The parameter is selected so that the finite-sample corrected empirical risk is below the requested risk level.
-        Previously computed values may be retrieved from the conformalization cache.
 
         Args:
             alpha: Requested risk level.
@@ -150,41 +150,38 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         if alpha >= self.B:
             raise ValueError(f"alpha must be smaller than the loss upper bound B={self.B}.")
 
-        key = self._make_cache_key(alpha, calibration_context)
+        n = self.get_calibration_set_size(calibration_context)
+
+        def _lambda_loss(lambd: float) -> float:
+            return (
+                n / (n + 1)
+                * self._r_hat(
+                    lambd,
+                    calibration_context,
+                )
+                + self.B / (n + 1)
+                - alpha)
+
+        lambda_min, lambda_max = self.lambda_bounds
+
+        loss_min = _lambda_loss(lambda_min)
+        loss_max = _lambda_loss(lambda_max)
+
+        if loss_min <= 0:
+            return lambda_min
         
-        if key not in self.conformalization_cache:
-            n = calibration_context.size
+        if loss_max > 0:
+            warnings.warn("The risk constraint is not satisfied at lambda_max.", RuntimeWarning, stacklevel=2)
+            return lambda_max
 
-            def _lambda_loss(
-                lambd: float,
-            ) -> float:
-                return (
-                    n / (n + 1)
-                    * self._r_hat(
-                        lambd,
-                        calibration_context,
-                    )
-                    + self.B / (n + 1)
-                    - alpha
-                )
-
-            try:
-                lambda_hat = self.optimizer(
-                    _lambda_loss,
-                    *self.lambda_bounds,
-                    xtol=self.search_tol,
-                    maxiter=self.max_iter,
-                )
-
-            except ValueError:
-                # TODO : tmp print, use logging and warining
-                print("Warning: No feasible lambda found within bounds. Using upper bound.")
-
-                lambda_hat = self.lambda_bounds[1]
-
-            self.conformalization_cache[key] = lambda_hat
-
-        return self.conformalization_cache[key]
+        lambd = self.optimizer(_lambda_loss, lambda_min, lambda_max)
+        if _lambda_loss(lambd) > 0:
+            warnings.warn(
+                "No feasible lambda found within the specified bounds. The risk constraint may not be satisfied.",
+                CalibrationWarning,
+                stacklevel=2,
+            )
+        return lambd
 
     def conformalize(
         self,
@@ -205,17 +202,6 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         Returns:
             Base predictions and their conformalized counterpart.
         """
-        lambda_hat = self._get_lambda_from_alpha(
-            alpha,
-            calibration_context,
-        )
-
-        conformal_prediction = self.postprocessor(
-            prediction,
-            lambda_hat,
-        )
-
-        return ConformalPrediction(
-            prediction,
-            conformal_prediction,
-        )
+        lambda_hat = self._get_lambda_from_alpha(alpha, calibration_context)
+        conformal_prediction = self.postprocessor(prediction, lambda_hat)
+        return ConformalPrediction(prediction, conformal_prediction)

@@ -23,6 +23,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from collections.abc import Callable
 from typing import ClassVar, Generic, Literal, Self, TypeVar
 from deel.puncc.backend.keras import ops
 from deel.puncc.od.utils import IndexableUserList, IterableDataclassMixin
@@ -31,6 +32,34 @@ from deel.puncc.typing import TensorLike
 class BoxExtensionMode(StrEnum):
     ADDITIVE = "additive"
     MULTIPLICATIVE = "multiplicative"
+
+    @staticmethod
+    def additive_processing(boxes, value)-> TensorLike:
+        return boxes + ops.array([-value, -value, value, value])
+    
+    @staticmethod
+    def multiplicative_processing(boxes, value)-> TensorLike:
+        width = boxes[..., 2] - boxes[..., 0]
+        height = boxes[..., 3] - boxes[..., 1]
+        extension = ops.stack(
+            [
+                -value * width,
+                -value * height,
+                value * width,
+                value * height,
+            ],
+            axis=-1,
+        )
+        return boxes + extension
+
+    @property
+    def processor(self)->Callable[[TensorLike, float], TensorLike]:
+        if self == BoxExtensionMode.ADDITIVE:
+            return self.additive_processing
+        elif self == BoxExtensionMode.MULTIPLICATIVE:
+            return self.multiplicative_processing
+        else:
+            raise ValueError(f"Invalid mode: {self}. Must be one of {list(BoxExtensionMode)}")
 
 @dataclass(slots=True)
 class Box():
@@ -118,7 +147,7 @@ class Box():
     def iou(self, other_box: Box) -> TensorLike:
         intersection_area = self.intersection(other_box).area
         union_area = self.area + other_box.area - intersection_area
-        return intersection_area / union_area
+        return intersection_area / ops.maximum(union_area, 1e-12)
 
     @classmethod
     def from_xywh(cls, box: TensorLike) -> Box:
@@ -158,19 +187,12 @@ class Box():
     def extend(
         self,
         value: float,
-        mode: BoxExtensionMode = BoxExtensionMode.ADDITIVE,
+        mode: BoxExtensionMode|str = BoxExtensionMode.ADDITIVE,
         *,
         inplace: bool = False,
     ) -> Box:
-        if mode == BoxExtensionMode.ADDITIVE:
-            xyxy = self.xyxy + ops.array([-value, -value, value, value])
-        elif mode == BoxExtensionMode.MULTIPLICATIVE:
-            w = self.width
-            h = self.height
-            margin = value * ops.array([-w, -h, w, h])
-            xyxy = self.xyxy + margin
-        else:
-            raise ValueError(f"Invalid mode: {mode}. Must be one of {list(BoxExtensionMode)}")
+        mode = BoxExtensionMode(mode)
+        xyxy = mode.processor(self.xyxy, value)
         if inplace:
             self.xyxy = xyxy
             return self
@@ -181,8 +203,8 @@ TBox = TypeVar("TBox", bound=Box)
 @dataclass(slots=True)
 class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
     item_type: ClassVar[type[Box]] = Box
-
     boxes: TensorLike # n, x1, y1, x2, y2
+
     def __post_init__(self):
         shape = ops.shape(self.boxes)
         assert len(shape) == 2 and shape[-1] == 4, f"boxes must be of shape (n, 4), got {shape}"
@@ -264,30 +286,12 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
     def extend_boxes(
         self,
         value: float,
-        mode: BoxExtensionMode = BoxExtensionMode.ADDITIVE,
+        mode: BoxExtensionMode|str = BoxExtensionMode.ADDITIVE,
         *,
         inplace: bool = False,
     ) -> Self:
         mode = BoxExtensionMode(mode)
-
-        if mode == BoxExtensionMode.ADDITIVE:
-            margins = ops.stack(
-                (-value, -value, value, value)
-            )
-            boxes = self.boxes + margins
-
-        elif mode == BoxExtensionMode.MULTIPLICATIVE:
-            boxes = self.boxes + ops.stack(
-                (
-                    -value * self.widths,
-                    -value * self.heights,
-                    value * self.widths,
-                    value * self.heights,
-                ),
-                axis=-1,
-            )
-        else:
-            raise ValueError(f"Invalid extension mode: {mode}.")
+        boxes = mode.processor(self.boxes, value)
         if inplace:
             self.boxes = boxes
             return self
@@ -326,9 +330,7 @@ class BoxPrediction(Box):
         yield self.class_scores
         yield self.confidence
 
-class PredictionSetSequence(
-    IndexableUserList[TensorLike]
-):
+class PredictionSetSequence(IndexableUserList[TensorLike]):
     ...
 
 @dataclass(slots=True)
@@ -346,16 +348,30 @@ class ODPrediction(BoxSequence[BoxPrediction]):
         assert self.class_scores.ndim == 2, "class_scores must be 2D"
         assert self.confidences.ndim == 1, "confidence must be 1D"
 
+        if self.class_sets is not None:
+            if not isinstance(self.class_sets, PredictionSetSequence):
+                self.class_sets = PredictionSetSequence(self.class_sets)
+
+            assert len(self.class_sets) == len(self)
+
     @property
     def num_classes(self) -> int:
         return self.class_scores.shape[1]
     
     def __add__(self, other:ODPrediction):
         assert ops.shape(self.class_scores)[1] == ops.shape(other.class_scores)[1], "Cannot add ODResults with different number of classes"
+
+        class_sets = None
+        if self.class_sets is not None and other.class_sets is not None:
+            class_sets = PredictionSetSequence(self.class_sets.data + other.class_sets.data)
+        elif self.class_sets is not None or other.class_sets is not None:
+            raise ValueError("Cannot add ODResults if only one of them has class_sets defined")
+
         return ODPrediction(
             boxes=ops.concatenate((self.boxes, other.boxes), axis=0),
             class_scores=ops.concatenate((self.class_scores, other.class_scores), axis=0),
             confidences=ops.concatenate((self.confidences, other.confidences), axis=0),
+            class_sets=class_sets
         )
     
     def __radd__(self, other:Literal[0]|ODPrediction):
@@ -409,19 +425,40 @@ class BoxTarget(Box):
 @dataclass(slots=True)
 class ODTarget(BoxSequence[BoxTarget]):
     item_type: ClassVar[type[Box]] = BoxTarget
-
     labels: TensorLike      # (n_true,)
 
-class ODTargetSequence(IndexableUserList[ODTarget]):
+T_OD = TypeVar("T_OD", bound=BoxSequence)
+class _ODSequence(IndexableUserList[T_OD], Generic[T_OD]):
     @property
     def boxes(self):
-        return [target.boxes for target in self.data]
+        return [item.boxes for item in self.data]
 
+    def box_image_indices(self) -> TensorLike:
+        if not self:
+            return ops.zeros((0,), dtype="int32")
+
+        return ops.concatenate(
+            [
+                ops.full(len(item), i, dtype="int32")
+                for i, item in enumerate(self.data)
+            ],
+            axis=0,
+        )
+
+class ODTargetSequence(_ODSequence[ODTarget]):
     @property
     def labels(self):
         return [target.labels for target in self.data]
     
-class ODPredictionSequence(IndexableUserList[ODPrediction]):
+    #TODO : avoid duplication with ODPredictionSequence
+    def boxwise(self)->ODTarget:
+        if not self:
+            raise ValueError("Cannot flatten an empty ODTargetSequence.")
+        boxes = ops.concatenate(self.boxes)
+        labels = ops.concatenate(self.labels)
+        return ODTarget(boxes, labels)
+
+class ODPredictionSequence(_ODSequence[ODPrediction]):
     def filter_by_confidence(
         self,
         threshold: float,
@@ -447,10 +484,6 @@ class ODPredictionSequence(IndexableUserList[ODPrediction]):
         )
 
     @property
-    def boxes(self):
-        return [res.boxes for res in self.data]
-
-    @property
     def class_scores(self):
         return [res.class_scores for res in self.data]
     
@@ -458,3 +491,18 @@ class ODPredictionSequence(IndexableUserList[ODPrediction]):
     def confidences(self):
         return [res.confidences for res in self.data]
 
+    def boxwise(self)->ODPrediction:
+        if not self:
+            raise ValueError("Cannot flatten an empty ODPredictionSequence.")
+        boxes = ops.concatenate(self.boxes)
+        class_scores = ops.concatenate(self.class_scores)
+        confidences = ops.concatenate(self.confidences)
+
+        class_sets = None
+        if any(pred.class_sets is not None for pred in self.data):
+            if not all(pred.class_sets is not None for pred in self.data):
+                raise ValueError("Cannot flatten predictions if only some have class_sets defined.")
+            class_sets = PredictionSetSequence([class_set
+                for pred in self.data
+                for class_set in pred.class_sets])
+        return ODPrediction(boxes=boxes, class_scores=class_scores, confidences=confidences, class_sets=class_sets)

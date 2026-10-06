@@ -58,9 +58,9 @@ FitCalSplits: TypeAlias = list[
 # TODO : revoir ça
 def tensor_indexing(item:Any, indices:IndexTensor) -> Any:
     if isinstance(item, list):
-        return [item[i] for i in ops.convert_to_numpy(indices).tolist()]
+        return [item[i] for i in ops.tolist(indices)]
     elif isinstance(item, tuple):
-        return tuple(item[i] for i in ops.convert_to_numpy(indices).tolist())
+        return tuple(item[i] for i in ops.tolist(indices))
     return item[indices]
 
 def _take(
@@ -122,40 +122,21 @@ class FunctionalSplitter(BaseSplitter):
         self.group_function = group_function
         self.groups = groups
 
-    def group_indices(
-        self,
-        **datasets: Any,
-    ) -> dict[Any, IndexTensor]:
-        group_ids = ops.reshape(
-            self.group_function(**datasets),
-            (-1,),
-        )
-
+    def group_indices(self, **datasets: Any) -> dict[Any, IndexTensor]:
+        group_ids = ops.reshape(self.group_function(**datasets), (-1,))
+        observed_groups = list(dict.fromkeys(ops.tolist(group_ids)))
         if self.groups is None:
-            groups: Sequence[Any] = list(
-                dict.fromkeys(
-                    ops.convert_to_numpy(
-                        group_ids
-                    ).tolist()
-                )
-            )
+            groups = observed_groups
         else:
-            groups = self.groups
-
+            groups = list(dict.fromkeys([*self.groups, *observed_groups]))
         return {group: ops.where_1d(group_ids == group) for group in groups}
 
 
-    def split(
-        self,
-        **datasets: Any,
-    ) -> Splits:
+    def split(self, **datasets: Any) -> Splits:
         grouped_indices = self.group_indices(**datasets)
         return [_take(datasets, *grouped_indices.values())]
     
-    def split_context_by_group(
-        self,
-        context: CalibrationContext,
-    ) -> dict[Any, CalibrationContext]:
+    def split_context_by_group(self, context: CalibrationContext) -> dict[Any, CalibrationContext]:
         grouped_indices = self.group_indices(**dict(context.items()))
 
         return {

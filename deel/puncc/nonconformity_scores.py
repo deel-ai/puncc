@@ -40,6 +40,20 @@ def _absolute_difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
 def absolute_difference()->NCScoreFunction:
     return _absolute_difference
 
+def _boxwise_difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
+    return ops.stack(
+        [
+            y_pred[..., 0] - y_true[..., 0],  # xmin
+            y_pred[..., 1] - y_true[..., 1],  # ymin
+            y_true[..., 2] - y_pred[..., 2],  # xmax
+            y_true[..., 3] - y_pred[..., 3],  # ymax
+        ],
+        axis=-1,
+    )
+
+def boxwise_difference()->NCScoreFunction:
+    return _boxwise_difference
+
 # def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
 #     def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
 #         mean_pred = ops.take(y_pred, 0, axis=-1)
@@ -65,7 +79,8 @@ def _scaled_bbox_difference(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
     dx = ops.abs(x_max - x_min)
     dy = ops.abs(y_max - y_min)
-    return (y_pred - y_true) / ops.hstack([dx, dy, dx, dy])
+    diff = _boxwise_difference(y_pred, y_true)
+    return diff / ops.hstack([dx, dy, dx, dy])
 
 def scaled_bbox_difference()->NCScoreFunction:
     return _scaled_bbox_difference
@@ -82,17 +97,37 @@ def raps_score(lambd:float=0, k_reg:int=1, rand:bool=True)->NCScoreFunction:
         raise ValueError(f"`lambd` must be >= 0, got {lambd}")
     if k_reg < 0:
         raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
+
     def _raps_score(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
-        condition = y_pred>=ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
-        s = ops.sum(ops.where(condition, y_pred, 0), axis=-1)
-        nb_cum_elems = ops.sum(condition, axis=-1)
-        regul = lambd * ops.maximum(nb_cum_elems - k_reg, ops.zeros_like(nb_cum_elems, dtype=s.dtype))
-        rand_correction = 0
+        # true proba
+        true_p = ops.squeeze(ops.take_along_axis(y_pred, y_true[..., None], axis=-1), axis=-1)
+
+        # randomization for cases wxhere multiple classes have the same probability as the true class
+        tie_break = random.uniform(ops.shape(y_pred), dtype=y_pred.dtype)
+        true_tie_break = ops.squeeze(
+            ops.take_along_axis(
+                tie_break,
+                y_true[..., None],
+                axis=-1),
+            axis=-1)
+
+        before_true = ops.logical_or(
+            y_pred > true_p[..., None],
+            ops.logical_and(
+                y_pred == true_p[..., None],
+                tie_break < true_tie_break[..., None],
+            ))
+        rho = ops.sum(ops.where(before_true, y_pred, 0), axis=-1)
+        rank = (ops.sum(
+                ops.cast(before_true, "int32"),
+                axis=-1) + 1)
+        regul = lambd * ops.maximum(ops.cast(rank, true_p.dtype) - k_reg, 0)
         if rand:
-            u = random.uniform(ops.shape(s))
-            rand_correction = u * ops.squeeze(ops.take_along_axis(y_pred, y_true[..., None], axis=-1), axis=-1)
-        regul = ops.cast(regul, dtype=s.dtype)
-        return s + regul - rand_correction
+            u = random.uniform(ops.shape(true_p))
+        else:
+            u = ops.ones_like(true_p)
+            # or u = ops.zero_like(true_p) ?
+        return rho + u * true_p + regul
     return _raps_score
 
 def aps_score(rand:bool=True)->NCScoreFunction:

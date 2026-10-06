@@ -83,7 +83,7 @@ def weighted_bonferroni(weights: TensorLike) -> AlphaCorrection:
 
 def sidak(nvars:int=1)->AlphaCorrection:
     """
-    Sidak correction for multiple comparisons.
+    Apply the Šidák correction for multiple testing.
 
     Args:
         nvars (int, optional): Number of output features.. Defaults to 1.
