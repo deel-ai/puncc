@@ -204,6 +204,22 @@ def test_classwise_lac_and_raps_variants():
     assert built(y_pred, 0.65)[0] == raps_sets
 
 
+def test_raps_set_size_does_not_depend_on_batch_size():
+    # The set can hold every class, whatever the number of samples predicted.
+    y_pred = np.array([[0.5, 0.3, 0.1, 0.06, 0.04], [0.04, 0.06, 0.1, 0.3, 0.5]])
+
+    single = raps_set(y_pred[:1], scores_quantile=0.95, rand=False)[0]
+    batch = raps_set(y_pred, scores_quantile=0.95, rand=False)[0]
+    assert single == batch[:1]
+    assert single == [[0, 1, 2, 3]]
+
+    full_single = raps_set(y_pred[:1], scores_quantile=np.inf, rand=False)[0]
+    assert full_single == [[0, 1, 2, 3, 4]]
+
+    full_batch = raps_set(np.tile(y_pred, (5, 1)), scores_quantile=np.inf, rand=True)[0]
+    assert all(sorted(pred_set) == [0, 1, 2, 3, 4] for pred_set in full_batch)
+
+
 def test_classwise_lac_accepts_numpy_quantiles_with_torch_predictions():
     torch = pytest.importorskip("torch")
 

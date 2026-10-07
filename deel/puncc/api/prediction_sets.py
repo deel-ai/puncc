@@ -189,7 +189,7 @@ def raps_set(
     # is below the threshold "tau"
     # The minimum is used in case the Y_pred logits are not well normalized
     below_tau = b.astype(penal_cum_proba < tau, "int64")
-    L = b.minimum(b.sum(below_tau, axis=-1) + 1, pred_len)
+    L = b.minimum(b.sum(below_tau, axis=-1) + 1, n_classes)
 
     if not rand:
         # Build prediction set
