@@ -62,8 +62,8 @@ from deel.puncc.typing import TensorLike
 
 logger = logging.getLogger(__name__)
 
-# Requires keras >= 3.3 for numpy backend support
-_MIN_KERAS = (3, 3, 0)
+# Requires keras >= 3.15 for numpy backend support and various operations such as ops.pinv
+_MIN_KERAS = (3, 15, 0)
 
 # arg names for tensor valued parameters given to ops methods
 # Used for backend inference in case of bad configuration
@@ -340,6 +340,7 @@ class OpsBackendManager(BackendManager):
     ninf = float("-inf")
 
     @property
+    @set_backend_on_first_call
     def tensor_type(self) -> type[TensorLike]:
         """
         Returns:
@@ -373,11 +374,6 @@ class OpsBackendManager(BackendManager):
             TensorLike: A 1D tensor containing the elements of x
         """
         return self.reshape(x, (-1,))
-
-    @set_backend_on_first_call
-    def _unique_sorted(self, x:TensorLike):
-        x = self.sort(x)
-        return self.concatenate([x[:1], x[1:][self.not_equal(x[1:], x[:-1])]])
 
     @set_backend_on_first_call
     def where_1d(self, mask:TensorLike):
@@ -447,16 +443,56 @@ class OpsBackendManager(BackendManager):
 
 
         if not assume_unique:
-            a = self._unique_sorted(a)
-            b = self._unique_sorted(b)
+            a = self.unique(a, sorted=True)
+            b = self.unique(b, sorted=True)
 
-        # For each element in a, check if it exists in b
-        isin = self.any(self.expand_dims(a, -1) == b, axis=-1)
-        mask = self.logical_not(isin)
+        mask = self.isin(
+            a,
+            b,
+            assume_unique=True,
+            invert=True,
+        )
 
-        # Gather the elements where mask == True
-        idx = self.where_1d(mask)
-        return self.take(a, idx)
+        return self.take(a, self.where_1d(mask))
+
+    def _quantile_from_cumulative_weights(
+        self,
+        sorted_x,
+        cumulative_weights,
+        threshold,
+        *,
+        axis=0,
+    ):
+        threshold = self.convert_to_tensor(threshold)
+        if self.ndim(threshold) == 0:
+            indices = self.sum(cumulative_weights < threshold, axis=axis)
+        else:
+            threshold = self.expand_dims(threshold, axis=axis)
+            indices = self.sum(cumulative_weights < threshold, axis=axis)
+        return self.take(sorted_x, indices, axis=axis)
+
+    def _uniform_quantile(self,
+                          x:TensorLike,
+                          q:TensorLike,
+                          axis:int|None=None,
+                          keepdims:bool=False):
+        sorted_x = self.sort(x, axis=axis)
+        n = self.shape(x)[axis]
+
+        cdf = self.arange(1, n + 1, dtype=q.dtype) / self.cast(n, q.dtype)
+        idx = self.searchsorted(cdf, q, side="left")
+        idx = self.clip(idx, 0, n - 1)
+        if len(q.shape) == 0:
+            res = self.take(sorted_x, idx, axis=axis)
+            if keepdims:
+                res = self.expand_dims(res, axis=axis)
+            return res
+        idx = self.expand_dims(idx, axis=axis)
+        res = self.take_along_axis(sorted_x, idx, axis=axis)
+        if not keepdims:
+            res = self.squeeze(res, axis=axis)
+        return res
+        
 
     @set_backend_on_first_call
     def weighted_quantile(self, 
@@ -500,32 +536,21 @@ class OpsBackendManager(BackendManager):
             if weights is not None:
                 weights = self.flatten(weights)
             axis = 0
-            # Uniform empirical quantile.
-            # For n observations, the inverse empirical CDF is x_(ceil(n q)).
-        if weights is None:
-            sorted_x = self.sort(x, axis=axis)
-            n = self.shape(x)[axis]
+        axis %= len(x.shape)
 
-            cdf = self.arange(1, n + 1, dtype=q.dtype) / self.cast(n, q.dtype)
-            idx = self.searchsorted(cdf, q, side="left")
-            idx = self.clip(idx, 0, n - 1)
-            if len(q.shape) == 0:
-                res = self.take(sorted_x, idx, axis=axis)
-                if keepdims:
-                    res = self.expand_dims(res, axis=axis)
-                return res
-            idx = self.expand_dims(idx, axis=axis)
-            res = self.take_along_axis(sorted_x, idx, axis=axis)
-            if not keepdims:
-                res = self.squeeze(res, axis=axis)
-            return res
+        # Uniform empirical quantile.
+        if weights is None:
+            return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
 
         if self.any(weights < 0):
             raise ValueError("Weights must be non-negative.")
         if self.all(weights == 0):
             raise ValueError("All weights are zero. At least one weight must be positive.")
-
-        weights = self.cast(weights, "float32")
+        # if all weights equals -> fast path to uniform quantile
+        if self.item(self.all(weights == self.reshape(weights, (-1,))[0])):
+            return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
+        if "float" not in self.dtype(weights):
+            weights = self.cast(weights, "float32")
 
         if len(weights.shape) == 1:
             if weights.shape[0] != x.shape[axis]:
@@ -537,11 +562,9 @@ class OpsBackendManager(BackendManager):
             weights = self.reshape(weights, shape)
             weights = self.broadcast_to(weights, self.shape(x))
         elif tuple(weights.shape) != tuple(x.shape):
-            raise ValueError(
-                "Weights must either be one-dimensional along "
-                "the quantile axis or have the same shape as x."
-            )
+            raise ValueError("Weights must either be one-dimensional along the quantile axis or have the same shape as x.")
         
+        # TODO : risk of overflow on sum with very large weights with CP under covariate shift ?
         weights = weights / self.sum(weights, axis=axis, keepdims=True)
         sorted_indices = self.argsort(x, axis=axis)
         sorted_cumsum_weights = self.cumsum(self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis)
@@ -551,7 +574,7 @@ class OpsBackendManager(BackendManager):
         q = self.clip(q, 0.0, 1.0)
 
         idx = self.sum(sorted_cumsum_weights < q, axis=axis, keepdims=True)
-        idx = self.minimum(idx,self.shape(x)[axis] - 1)
+        idx = self.minimum(idx, self.shape(x)[axis] - 1)
         sorted_x = self.take_along_axis(x, sorted_indices, axis=axis)
         res = self.take_along_axis(sorted_x, idx, axis=axis)
         if not keepdims:

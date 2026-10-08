@@ -140,9 +140,6 @@ class CalibrationContext:
         if isinstance(key, str):
             return self.__dict__[key]
 
-        if isinstance(key, ops.tensor_type):
-            key = ops.tolist(key)
-
         if isinstance(key, Integral):
             index = int(key)
             if index < 0:
@@ -158,6 +155,9 @@ class CalibrationContext:
                     for name, value in self.__dict__.items()
                 }
             )
+        
+        if isinstance(key, ops.tensor_type):
+            key = ops.tolist(key)
 
         return type(self)(
             **{

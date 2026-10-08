@@ -24,9 +24,8 @@
 Basic definitions of type aliases and protocols used by conformal prediction methods
 """
 from __future__ import annotations
-from typing import Any, TypeVar, Union, TypeAlias, Protocol, runtime_checkable
+from typing import Any, TypeVar, TypeAlias, Protocol, runtime_checkable
 from collections.abc import Iterable, Callable
-from deel.puncc.cloning import clone_model
 
 # from typing import TYPE_CHECKING
 # if TYPE_CHECKING:

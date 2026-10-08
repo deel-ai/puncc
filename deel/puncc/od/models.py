@@ -365,7 +365,7 @@ class ODCRC(_ODConformalPredictor, CRC):
 
         if not loss.boxwise:
             return calibration_context.size
-
+        # TODO : get the good number of calculated losses on the calibration set.
         warnings.warn(
             "ODCRC is using box-level losses and the number of box-level losses as the calibration size. This is statistically valid "
             "only if the corresponding box-level losses satisfy the exchangeability assumptions required by CRC. "
@@ -413,21 +413,31 @@ class ODConfidenceCRC(ODCRC):
             **kwargs,
         )
 
-    def _r_hat(self, lambd: float, calibration_context: CalibrationContext) -> float:
+    def _r_hat(self, lambd, calibration_context):
         threshold = 1 - lambd
-
         predictions = []
-        assignments = []
+        if "assignments" in calibration_context:
+            filtered_assignments = []
+            assignments = calibration_context.assignments
+        else:
+            filtered_assignments = None
+            assignments = None
 
-        for prediction, assignment in zip(calibration_context.y_pred, calibration_context.assignments, strict=True,):
+        for i, prediction in enumerate(calibration_context.y_pred):
             kept_indices = ops.where_1d(prediction.confidences >= threshold)
             predictions.append(prediction[kept_indices])
-            assignments.append(assignment.filter_predictions(ops.tolist(kept_indices)))
+            if filtered_assignments is not None:
+                # assignments is not None
+                filtered_assignments.append(assignments[i].filter_predictions(ops.tolist(kept_indices)))
 
         losses = self.loss_function(
             ODPredictionSequence(predictions),
             calibration_context.y_calib,
-            assignments=IndexableUserList(assignments)
+            assignments=(
+                None
+                if filtered_assignments is None
+                else IndexableUserList(filtered_assignments)
+            ),
         )
         return ops.item(ops.mean(losses))
 
@@ -579,12 +589,9 @@ class TripleConformalPredictor:
         if isinstance(self.confidence_cp, NoopODConformalPredictor):
             self._localization_context = self.localization_cp.compute_calibration_state(context.copy())
             self._classification_context = self.classification_cp.compute_calibration_state(context.copy())
-            return self
-        
         # if no localization and classification calibration phase : all calibration goes to confidence
         elif isinstance(self.classification_cp, NoopODConformalPredictor) and isinstance(self.localization_cp, NoopODConformalPredictor):
             self._confidence_context = self.confidence_cp.compute_calibration_state(context.copy())
-            return self
         else:
         # otherwise : split context in two parts
             confidence_context, self._downstream_context = self.splitter.split_context(context)[0]

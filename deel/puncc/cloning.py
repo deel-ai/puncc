@@ -65,29 +65,21 @@ def get_imported_modules() -> set[str]:
     """
     return set(module.split(".")[0] for module in list(sys.modules.keys()) if module)
 
-def get_imported_ml_modules() -> set[str]:
+def get_imported_ml_modules() -> list[str]:
     """
     Returns:
         set[str]: Set of top-level ML modules that have been imported in the current Python session, filtered from a predefined list of ML libraries that are supported in Keras3.3 context.
     """
     imported = get_imported_modules()
-    return ML_MODULES.intersection(imported)
+    #return ML_MODULES.intersection(imported)
+    return [module for module in ML_MODULES if module in imported]
 
-def get_origin_from_model(obj)->str|None:
-    cls = obj.__class__
-    module = getattr(cls, "__module__", "") or ""
-    mro = getattr(cls, "__mro__", ()) or ()
-
-    def mro_has(prefix: str):
-        for c in mro:
-            mod = getattr(c, "__module__", "") or ""
-            if mod.startswith(prefix):
-                return True
-        return False
-
-    for orig in ML_MODULES:
-        if module.startswith(orig) or mro_has(orig):
-            return orig
+def get_origin_from_model(obj) -> str | None:
+    for cls in type(obj).__mro__:
+        module = getattr(cls, "__module__", "") or ""
+        root = module.split(".", 1)[0]
+        if root in ML_MODULES:
+            return root
     return None
 
 
@@ -202,14 +194,13 @@ def clone_model(
     # most probable cloning strategies
     order = []
 
-    if origin_guess is not None :
-        order = [origin_guess]
-
-    if backend_guess is not None and origin_guess != backend_guess:
-        order += [backend_guess]
-
-    # Possible cloning strategies
-    order += [k for k in get_imported_ml_modules() if k not in order]
+    for guess in (
+        origin_guess,
+        backend_guess,
+        *get_imported_ml_modules(),
+    ):
+        if guess is not None and guess not in order:
+            order.append(guess)
 
     # # add remaining cloners at the end of the list
     # order += [k for k in available_cloners.keys() if k not in order]

@@ -261,12 +261,13 @@ class BoxCoverageLoss(LocalizationLoss):
             )
             true_to_losses.setdefault(true_idx, []).append(loss)
 
-        losses = [
-            ops.min(ops.stack(true_to_losses[true_idx]))
-            if true_idx in true_to_losses
-            else ops.array(self.upper_bound)
-            for true_idx in range(len(y_true))
-        ]
+        losses = []
+
+        for true_idx in range(len(y_true)):
+            if true_idx in true_to_losses:
+                losses.append(ops.min(ops.stack(true_to_losses[true_idx])))
+            elif self.penalize_unmatched_boxes:
+                losses.append(ops.array(self.upper_bound))
 
         return losses
 

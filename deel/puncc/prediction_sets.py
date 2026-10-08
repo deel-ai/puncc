@@ -68,7 +68,9 @@ def cqr_interval()->PredSetFunction:
     return _cqr_interval
 
 def _lac_set(y_pred:TensorLike, quantile:float|TensorLike) -> list[TensorLike]:
-    # TODO : 
+    if ops.ndim(quantile) == 1:
+        quantile = ops.expand_dims(quantile, axis=-1)
+
     mask = y_pred >= (1 - quantile)
     n_samples = len(y_pred)
     return [ops.where_1d(mask[i]) for i in range(n_samples)]
@@ -83,8 +85,18 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=True)->PredSetFunction:
     if k_reg < 0:
         raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
     def _raps_set(y_pred:TensorLike, quantile:float|TensorLike) -> list[TensorLike]:
-        sorted_index = ops.argsort(-y_pred, axis=-1)
+        # Shuffle the predictions to break ties randomly
+        tie_break = random.uniform(ops.shape(y_pred), dtype=y_pred.dtype)
+        tie_order = ops.argsort(tie_break, axis=-1)
+        shuffled_p = ops.take_along_axis(y_pred, tie_order, axis=-1)
+        order = ops.argsort(-shuffled_p, axis=-1)
+        sorted_index = ops.take_along_axis(tie_order, order, axis=-1)
+
+        #sorted_index = ops.argsort(-y_pred, axis=-1)
         sorted_p = ops.take_along_axis(y_pred, sorted_index, axis=-1)
+        
+
+
         cs = ops.cumsum(sorted_p, axis=-1)
 
         K = ops.shape(y_pred)[-1]
@@ -92,6 +104,8 @@ def raps_set(lambd:float=0, k_reg:int=1, rand:bool=True)->PredSetFunction:
         penalty = lambd * ops.maximum(ranks - k_reg, 0)
         penal_cs = cs + penalty
 
+        if ops.ndim(quantile) == 1:
+            quantile = ops.expand_dims(quantile, axis=-1)
 
         index_limit = ops.sum(penal_cs <= quantile, axis=-1) + 1
         index_limit = ops.minimum(index_limit, K)
@@ -118,46 +132,32 @@ def aps_set(rand:bool=False)->PredSetFunction:
     return raps_set(lambd=0, k_reg=1, rand=rand)
 
 def _constant_bbox(y_pred:TensorLike, quantile:TensorLike) -> TensorLike:
-    x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
-    # Coordinates of covering bbox (upperbounds)
-    x_min_lo, y_min_lo = x_min - quantile[0], y_min - quantile[1]
-    x_max_hi, y_max_hi = x_max + quantile[2], y_max + quantile[3]
-    Y_pred_hi = ops.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
+    direction = ops.convert_to_tensor([-1.0, -1.0, 1.0, 1.0], dtype=y_pred.dtype)
 
-    # Coordinates of included bbox (lowerbounds)
-    x_min_hi, y_min_hi = x_min + quantile[0], y_min + quantile[1]
-    x_max_lo, y_max_lo = x_max - quantile[2], y_max - quantile[3]
-    Y_pred_lo = ops.hstack([x_min_hi, y_min_hi, x_max_lo, y_max_lo])
-    return ops.stack([Y_pred_lo, Y_pred_hi], axis=-1)
+    delta = quantile * direction
+
+    outer = y_pred + delta
+    inner = y_pred - delta
+
+    return ops.stack([inner, outer], axis=-1)
 
 def constant_bbox()->PredSetFunction:
     return _constant_bbox
 
 def _scaled_bbox(y_pred:TensorLike, quantile:float|TensorLike) -> Any:
-    x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
-    dx = ops.abs(x_max - x_min)
-    dy = ops.abs(y_max - y_min)
-    qd = [quantile[0] * dx, quantile[1] * dy, quantile[2] * dx, quantile[3] * dy]
-    # Coordinates of covering bbox (upperbounds)
-    x_min_lo = x_min - qd[0]
-    y_min_lo = y_min - qd[1]
-    x_max_hi = x_max + qd[2]
-    y_max_hi = y_max + qd[3]
+    dx = ops.abs(y_pred[..., 2] - y_pred[..., 0])
+    dy = ops.abs(y_pred[..., 3] - y_pred[..., 1])
 
-    Y_pred_outer = ops.hstack([x_min_lo, y_min_lo, x_max_hi, y_max_hi])
+    scale = ops.stack([dx, dy, dx, dy], axis=-1)
 
-    # Coordinates of included bbox (lowerbounds)
-    x_min_hi, y_min_hi = (
-        x_min + qd[0],
-        y_min + qd[1],
-    )
-    x_max_lo, y_max_lo = (
-        x_max - qd[2],
-        y_max - qd[3],
-    )
-    Y_pred_inner = ops.hstack([x_min_hi, y_min_hi, x_max_lo, y_max_lo])
+    direction = ops.convert_to_tensor([-1.0, -1.0, 1.0, 1.0], dtype=y_pred.dtype)
 
-    return ops.stack([Y_pred_inner, Y_pred_outer], axis=-1)
+    delta = quantile * scale * direction
+
+    outer = y_pred + delta
+    inner = y_pred - delta
+
+    return ops.stack([inner, outer], axis=-1)
 
 def scaled_bbox()->PredSetFunction:
     return _scaled_bbox

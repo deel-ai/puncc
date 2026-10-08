@@ -109,7 +109,17 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):#(Classificat
             else:
                 quantile_k = ops.array(float("inf"))
             quantiles.append(quantile_k)
-        y_set = self.pred_set_function(prediction, ops.stack(quantiles, axis=-1))
+
+        # For weighted class conditional with missing classes, we need to ensure that all quantiles have the same shape.
+        non_scalar_quantile = next((q for q in quantiles if ops.ndim(q) > 0), None)
+        if non_scalar_quantile is not None:
+            quantiles = [ops.ones_like(non_scalar_quantile) * q if ops.ndim(q) == 0 else q for q in quantiles]
+
+        quantiles = ops.stack(quantiles, axis=-1)
+        if ops.ndim(quantiles) == 1:
+            quantiles = ops.expand_dims(quantiles, axis=0)
+
+        y_set = self.pred_set_function(prediction, quantiles)
         return ConformalPrediction(prediction, y_set)
 
 class LAC(PresetSplitConformalPredictor):

@@ -201,8 +201,14 @@ def iou(bboxes1: TensorLike, bboxes2: TensorLike) -> TensorLike:
     inter_height = ops.maximum(inter_y_max - inter_y_min, 0)
     inter_area = inter_width * inter_height
 
-    box1_area = (x1_max - x1_min) * (y1_max - y1_min)
-    box2_area = (x2_max - x2_min) * (y2_max - y2_min)
+    box1_width = ops.maximum(x1_max - x1_min, 0.0)
+    box1_height = ops.maximum(y1_max - y1_min, 0.0)
+    box2_width = ops.maximum(x2_max - x2_min, 0.0)
+    box2_height = ops.maximum(y2_max - y2_min, 0.0)
 
-    result = inter_area / (box1_area + ops.transpose(box2_area) - inter_area)
-    return result
+    box1_area = box1_width * box1_height
+    box2_area = box2_width * box2_height
+
+    union = box1_area + ops.transpose(box2_area) - inter_area
+
+    return inter_area / ops.maximum(union, 1e-12)

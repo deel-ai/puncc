@@ -149,6 +149,12 @@ class SplitConformalPredictor(ConformalPredictor):
         prediction_sets = self.pred_set_function(prediction, quantile)
         return ConformalPrediction(prediction, prediction_sets)
 
+    @staticmethod
+    def extend_scores_with_inf(scores:TensorLike)->TensorLike:
+        if "float" not in ops.dtype(scores):
+            scores = ops.cast(scores, "float32")
+        return ops.concatenate([scores, ops.full_like(scores[:1], float("inf"))], axis=0)   
+
     def _get_quantile(
         self,
         alpha: float|TensorLike,
@@ -166,16 +172,7 @@ class SplitConformalPredictor(ConformalPredictor):
         Returns:
             Conformal nonconformity threshold.
         """
-        scores = calibration_context.nc_scores
-        scores = ops.concatenate(
-            [scores, ops.full_like(scores[:1], float("inf"))],
-            axis=0,
-        )
-
-        # add inf mass score
-        if "float" not in ops.dtype(scores):
-            scores = ops.cast(scores, "float32")
-
+        scores = self.extend_scores_with_inf(calibration_context.nc_scores)
         return ops.weighted_quantile(
             scores,
             1 - alpha,
@@ -209,9 +206,7 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         *,
         X: Any | None = None,
     ) -> TensorLike:
-        scores = calibration_context.nc_scores
-        scores = ops.concatenate([scores, ops.full_like(scores[:1], float("inf"))], axis=0)
-
+        scores = self.extend_scores_with_inf(calibration_context.nc_scores)
         calibration_weights = calibration_context.calibration_weights
         test_weights = self.weight_function(X)
 
@@ -287,8 +282,11 @@ class LocallyScaledMixin(SplitConformalPredictor):
 
         quantile = self._get_quantile(alpha, calibration_context, X=X)
         scale = self._scale(X)
-        if quantile.ndim > 0:
-            scale = ops.reshape(scale, (-1,) + (1,) * quantile.ndim)
+
+        score_ndim = calibration_context.nc_scores.ndim - 1
+        if score_ndim > 0:
+            scale = ops.reshape(scale, (-1,) + (1,) * score_ndim)
+
         quantile = quantile * (scale + self.eps)
         return ConformalPrediction(prediction, self.pred_set_function(prediction, quantile))
 
