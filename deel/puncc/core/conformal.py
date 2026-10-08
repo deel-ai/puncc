@@ -36,7 +36,7 @@ from collections.abc import (
 from dataclasses import dataclass
 from numbers import Real
 from pathlib import Path
-from typing import Any, Generic, SupportsIndex, TypeAlias, TypeVar, Self
+from typing import Any, Generic, SupportsIndex, TypeVar, Self
 import pickle
 import logging
 import warnings
@@ -58,6 +58,26 @@ logger = logging.getLogger(__name__)
 
 TPrediction = TypeVar("TPrediction")
 TSet = TypeVar("TSet")
+
+def _validate_alpha(alpha: float | TensorLike) -> None:
+    """Check that all miscoverage levels belong to (0, 1)."""
+    if isinstance(alpha, Real):
+        valid = 0 < alpha < 1
+    else:
+        alpha_tensor = ops.convert_to_tensor(alpha)
+        valid = bool(ops.item(ops.all((alpha_tensor > 0) & (alpha_tensor < 1))))
+
+    if not valid:
+        raise ValueError("alpha must be finite and strictly between 0 and 1.")
+
+def _check_calibration_samples(X_calib: Any, y_calib: Any | None = None, require_y:bool=True) -> None:
+    n_samples = len(X_calib)
+    if n_samples == 0:
+        raise ValueError("Calibration data must not be empty.")
+    if require_y and y_calib is None:
+        raise ValueError("Calibration targets y_calib are required but were not provided.")
+    if y_calib is not None and len(y_calib) != n_samples:
+        raise ValueError("X_calib and y_calib must have the same number of samples.")
 
 @dataclass(frozen=True, slots=True)
 class ConformalPrediction(Generic[TPrediction, TSet]):
@@ -141,6 +161,8 @@ class ConformalPredictor(ABC):
             The calibrated predictor.
         """
 
+        _check_calibration_samples(X_calib, y_calib, require_y=True)
+
         self.reset_calibration()
         self.calibration_context.update(
             X_calib=X_calib,
@@ -192,6 +214,8 @@ class ConformalPredictor(ABC):
         Returns:
             Base predictions and their associated conformal prediction sets.
         """
+        _validate_alpha(alpha)
+
         prediction = self.model(X_test)
 
         if alpha_correction is not None:

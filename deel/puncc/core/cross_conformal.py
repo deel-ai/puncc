@@ -34,7 +34,7 @@ import logging
 
 from deel.puncc.core.predictors import make_predictor
 from deel.puncc.core.split import SplitConformalPredictor
-from deel.puncc.core.conformal import ConformalPrediction
+from deel.puncc.core.conformal import ConformalPrediction, _validate_alpha
 from deel.puncc.core.splitters import KFoldSplitter, BaseSplitter
 from deel.puncc.corrections import AlphaCorrection
 from deel.puncc.typing import Predictor, PredictorLike, TensorLike, FitFunction
@@ -175,6 +175,8 @@ class CVPlusRegressor(CrossConformalPredictor):
         Raises:
             RuntimeError: If the predictor has not been fitted.
         """
+        _validate_alpha(alpha)
+
         if not self._conformal_predictors:
             raise RuntimeError("CVPlusRegressor must be fitted before prediction.")
 

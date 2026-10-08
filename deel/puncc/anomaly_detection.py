@@ -27,6 +27,7 @@ from typing import Any, Iterable, Self
 import logging
 
 from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.conformal import _check_calibration_samples
 from deel.puncc.core.split import SplitConformalPredictor
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 
@@ -132,6 +133,7 @@ class SplitCAD(SplitConformalPredictor):
                           fit_function=fit_function)
 
     def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any]|None = None)->Self:
+        _check_calibration_samples(X_calib, y_calib, require_y=False)
         self.reset_calibration()
         self.calibration_context.update(
             X_calib = X_calib,

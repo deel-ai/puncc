@@ -30,7 +30,7 @@ from typing import Any, ClassVar, Iterable, Self, Sequence, Protocol, runtime_ch
 import warnings
 
 
-from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor, NoopConformalPredictor
+from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor, NoopConformalPredictor, _check_calibration_samples
 from deel.puncc.core.predictors import make_predictor
 from deel.puncc.core.risk_control import CRC, Postprocessor, RiskLossFunction
 from deel.puncc.core.calibration import CalibrationContext
@@ -581,6 +581,7 @@ class TripleConformalPredictor:
         )
 
     def calibrate(self, X_calib: Iterable[Any], y_calib: ODTargetSequence) -> Self:
+        _check_calibration_samples(X_calib, y_calib, require_y=True)
         self.reset_calibration()
         prediction = self.model(X_calib).filter_by_confidence(self.confidence_threshold)
         context = CalibrationContext(X_calib=X_calib, y_calib=y_calib, y_pred=prediction)

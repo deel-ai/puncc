@@ -75,6 +75,18 @@ def _take(
         for idxs in group_idxs
     )
 
+def _sample_count(datasets: dict[str, Any]) -> int:
+    """Validate sample counts and return the common length."""
+    if not datasets:
+        raise ValueError("At least one dataset must be provided.")
+
+    lengths = {name: len(data) for name, data in datasets.items()}
+
+    if len(set(lengths.values())) != 1:
+        raise ValueError(f"All datasets must have the same number of samples: {lengths}")
+
+    return next(iter(lengths.values()))
+
 class BaseSplitter(ABC):
     """
     Base class for data splitters.
@@ -185,11 +197,8 @@ class IdSplitter(FitCalSplitter):
         y_calib:Sequence[Any],
     ):
         super().__init__(random_state=None)
-
-        # TODO : Check again
-        #sample_len_check(X_fit, y_fit)
-        #sample_len_check(X_calib, y_calib)
-        #features_len_check(X_fit, X_calib)
+        _sample_count({"X_fit": X_fit, "y_fit": y_fit})
+        _sample_count({"X_calib": X_calib, "y_calib": y_calib})
 
         self._split = [
             (
@@ -246,11 +255,7 @@ class RandomSplitter(FitCalSplitter):
             Split: A single-element list containing
                 (X_train, y_train, X_calib, y_calib).
         """
-        # TODO : checks length of datasets
-
-        n_samples = len(
-            next(iter(datasets.values()))
-        )
+        n_samples = _sample_count(datasets)
 
         if n_samples < 2:
             raise ValueError(
@@ -317,12 +322,7 @@ class KFoldSplitter(FitCalSplitter):
             Split: A list of K tuples, each tuple being
                 (X_train, y_train, X_calib, y_calib).
         """
-        # TODO : checks
-        # sample_len_check(X, y)
-
-        n_samples = len(
-            next(iter(datasets.values()))
-        )
+        n_samples = _sample_count(datasets)
 
         if self.K > n_samples:
             raise ValueError(f"K must be <= number of samples. Provided K: {self.K}, number of samples: {n_samples}.")
