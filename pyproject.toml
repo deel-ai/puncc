@@ -15,7 +15,6 @@ authors = [
   { name = "Joseba Dalmau", email = "joseba.dalmau@irt-saintexupery.com" },
   { name = "Thomas Mullor", email = "thomas.mullor@irt-saintexupery.com"}
 ]
-urls = { Homepage = "https://github.com/deel-ai/puncc" }
 keywords = ["conformal prediction", "uncertainty quantification", "machine learning"]
 classifiers = [
   "License :: OSI Approved :: MIT License",
