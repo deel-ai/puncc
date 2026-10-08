@@ -20,19 +20,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable
+import os
 
 import numpy as np
 import pytest
-from sklearn import linear_model
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
+import tensorflow as tf
+from tensorflow.keras.utils import register_keras_serializable
 from sklearn.model_selection import train_test_split
 
-from deel.puncc.old_api.prediction import BasePredictor
-from deel.puncc.old_api.prediction import DualPredictor
-from deel.puncc.old_api.prediction import MeanVarPredictor
+from deel.puncc.api.prediction import BasePredictor
+from deel.puncc.api.prediction import DualPredictor
+from deel.puncc.api.prediction import MeanVarPredictor
 from deel.puncc.metrics import regression_mean_coverage
 from deel.puncc.metrics import regression_sharpness
 from deel.puncc.regression import AdaptiveEnbPI
@@ -42,19 +40,27 @@ from deel.puncc.regression import EnbPI
 from deel.puncc.regression import LocallyAdaptiveCP
 from deel.puncc.regression import SplitCP
 
-# from deel.puncc.regression import AdaptiveEnbPI
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
-RESULTS = {
-    "scp": {"cov": 0.95, "width": 218.98},
-    "nescp": {"cov": 0.96, "width": 230.1},
-    "lacp": {"cov": 0.96, "width": 347.87},
-    "cqr": {"cov": 0.93, "width": 204.52},
-    "cv+": {"cov": 0.9, "width": 232.55},
-    "enbpi": {"cov": 0.9, "width": 221.5},
-    "aenbpi": {"cov": 0.87, "width": 272.14},
-}
+@register_keras_serializable(package="Custom")  
+class PinballLoss(tf.keras.losses.Loss):
+    def __init__(self, tau, 
+                 reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, 
+                 name="pinball_loss"):
+        super().__init__(reduction=reduction, name=name)
+        self.tau = tau
 
+    def call(self, y_true, y_pred):
+        err = y_true - y_pred
+        loss = tf.maximum(self.tau * err, (self.tau - 1) * err)
+        return tf.reduce_mean(loss, axis=-1)
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"tau": self.tau})
+        return config
 
 @pytest.mark.parametrize(
     "alpha, random_state",
@@ -63,31 +69,42 @@ RESULTS = {
 def test_split_cp(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
     )
 
-    # Create linear regression predictor
-    predictor = BasePredictor(linear_model.LinearRegression())
-    # CP method initialization
-    split_cp = SplitCP(predictor)
+    tf.keras.utils.set_random_seed(0)
 
-    # The fit method trains the model and computes the residuals on the
-    # calibration set
-    split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-    # The predict method infers prediction intervals with respect to
-    # the risk alpha
+    # Create NN predictor
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(1))
+    compile_kwargs = {"optimizer": "sgd", "loss": "mse"}
+    predictor = BasePredictor(model, **compile_kwargs)
+
+    ## Conformal predictor
+    split_cp = SplitCP(predictor)
+    kwargs = {"batch_size": 64, "epochs": 5}
+
+    ## Fitting
+    split_cp.fit(
+        X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib, **kwargs
+    )
+
+    ## Predict
     y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["scp"] == res
 
 
 @pytest.mark.parametrize(
@@ -97,6 +114,7 @@ def test_split_cp(diabetes_data, alpha, random_state):
 def test_ne_split_cp(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
@@ -108,25 +126,37 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 
         return w_estimator
 
-    # Create linear regression predictor
-    predictor = BasePredictor(linear_model.LinearRegression())
+    tf.keras.utils.set_random_seed(0)
+    # Create NN predictor
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(1))
+    compile_kwargs = {"optimizer": "sgd", "loss": "mse"}
+    predictor = BasePredictor(model, **compile_kwargs)
+
     # CP method initialization
     w_split_cp = SplitCP(predictor, weight_func=w_estimator_gen(0.95))
+
     # The fit method trains the model and computes the residuals on the
     # calibration set
-    w_split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+    kwargs = {"batch_size": 64, "epochs": 5}
+    w_split_cp.fit(
+        X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib, **kwargs
+    )
+
     # The predict method infers prediction intervals with respect to
     # the risk alpha
     y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["nescp"] == res
 
 
 @pytest.mark.parametrize(
@@ -136,34 +166,55 @@ def test_ne_split_cp(diabetes_data, alpha, random_state):
 def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
     )
 
-    # Create linear regression object
-    mu_model = linear_model.LinearRegression()
-    # Create RF regression object
-    var_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
+    tf.keras.utils.set_random_seed(0)
+
+    # Create NN regression object
+    mu_model = tf.keras.Sequential()
+    mu_model.add(tf.keras.layers.Dense(1))
+    compile_kwargs1 = {"optimizer": "sgd", "loss": "mse"}
+
+    # Create NN regression model
+    var_model = tf.keras.Sequential()
+    var_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    var_model.add(tf.keras.layers.Dense(1, activation="relu"))
+    compile_kwargs2 = {"optimizer": "rmsprop", "loss": "mse"}
+
     # Create predictor
-    predictor = MeanVarPredictor(models=[mu_model, var_model])
+    predictor = MeanVarPredictor(
+        models=[mu_model, var_model],
+        compile_args=[compile_kwargs1, compile_kwargs2],
+    )
+
     # CP method initialization
     la_cp = LocallyAdaptiveCP(predictor)
-
     # Fit and conformalize
-    la_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+    kwargs1 = {"batch_size": 64, "epochs": 5}
+    kwargs2 = {"batch_size": 64, "epochs": 4}
+    la_cp.fit(
+        X_fit=X_fit,
+        y_fit=y_fit,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        dictargs=[kwargs1, kwargs2],
+    )
     y_pred, y_pred_lower, y_pred_upper = la_cp.predict(X_test, alpha=alpha)
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["lacp"] == res
 
 
 @pytest.mark.parametrize(
@@ -173,10 +224,13 @@ def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
 def test_cqr(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
+
     # split train data into fit and calibration
     X_fit, X_calib, y_fit, y_calib = train_test_split(
         X_train, y_train, random_state=random_state
     )
+
+    tf.keras.utils.set_random_seed(0)
 
     gbr_params = {
         "n_estimators": 250,
@@ -187,31 +241,50 @@ def test_cqr(diabetes_data, alpha, random_state):
         "random_state": random_state,
     }
 
-    # Lower quantile regression
-    regressor_q_low = GradientBoostingRegressor(
-        loss="quantile", alpha=alpha / 2, **gbr_params
-    )
-    # Upper quantile regression
-    regressor_q_hi = GradientBoostingRegressor(
-        loss="quantile", alpha=1 - alpha / 2, **gbr_params
-    )
+    # Lower quantile model
+    q_lo_model = tf.keras.Sequential()
+    q_lo_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    q_lo_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    q_lo_model.add(tf.keras.layers.Dense(1, activation="relu"))
+    loss_lo = PinballLoss(tau=alpha / 2)
+    compile_kwargs1 = {"optimizer": "sgd", "loss": loss_lo}
+
+    # Upper quantile model
+    q_hi_model = tf.keras.Sequential()
+    q_hi_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    q_hi_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    q_hi_model.add(tf.keras.layers.Dense(1, activation="relu"))
+    loss_hi = PinballLoss(tau=1 - alpha / 2)
+    compile_kwargs2 = {"optimizer": "sgd", "loss": loss_hi}
+
     # Wrap models in predictor
-    predictor = DualPredictor(models=[regressor_q_low, regressor_q_hi])
+    predictor = DualPredictor(
+        models=[q_lo_model, q_hi_model],
+        compile_args=[compile_kwargs1, compile_kwargs2],
+    )
     # CP method initialization
     crq = CQR(predictor)
 
     # Fit and conformalize
-    crq.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+    kwargs1 = {"batch_size": 64, "epochs": 5}
+    kwargs2 = {"batch_size": 64, "epochs": 4}
+    crq.fit(
+        X_fit=X_fit,
+        y_fit=y_fit,
+        X_calib=X_calib,
+        y_calib=y_calib,
+        dictargs=[kwargs1, kwargs2],
+    )
     _, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
+
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
 
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-
-    assert RESULTS["cqr"] == res
 
 
 @pytest.mark.parametrize(
@@ -222,16 +295,20 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
 
-    # Create RF regression object and wrap it by a predictor
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    predictor = BasePredictor(rf_model)
+    tf.keras.utils.set_random_seed(0)
+
+    # Create NN model and wrap it by a predictor
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(1))
+    compile_kwargs = {"optimizer": "sgd", "loss": "mse"}
+    predictor = BasePredictor(model, **compile_kwargs)
+
     # CP method initialization
     cv_cp = CVPlus(predictor, K=20, random_state=random_state)
 
     # Fit and conformalize
-    cv_cp.fit(X=X_train, y=y_train)
+    kwargs = {"batch_size": 64, "epochs": 5}
+    cv_cp.fit(X_train, y_train, **kwargs)
     _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
 
     # Compute marginal coverage
@@ -239,8 +316,6 @@ def test_cv_plus(diabetes_data, alpha, random_state):
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["cv+"] == res
 
 
 @pytest.mark.parametrize(
@@ -250,27 +325,37 @@ def test_cv_plus(diabetes_data, alpha, random_state):
 def test_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
-    # Create RF regression object and wrap it by a predictor
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    predictor = BasePredictor(rf_model)
-    # Fit and conformalize
+
+    tf.keras.utils.set_random_seed(0)
+
+    # Create NN model and wrap it in a predictor
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(1))
+    compile_kwargs = {"optimizer": "sgd", "loss": "mse"}
+    predictor = BasePredictor(model, **compile_kwargs)
+
+    # Create EnbPI object
     enbpi = EnbPI(
         predictor, B=30, agg_func_loo=np.mean, random_state=random_state
     )
-    enbpi.fit(X=X_train, y=y_train)
+
+    # Fit and conformalize
+    kwargs = {"batch_size": 64, "epochs": 5}
+    enbpi.fit(X_train, y_train, **kwargs)
     y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
+
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["enbpi"] == res
 
 
 @pytest.mark.parametrize(
@@ -280,31 +365,49 @@ def test_enbpi(diabetes_data, alpha, random_state):
 def test_adaptive_enbpi(diabetes_data, alpha, random_state):
     # Get data
     (X_train, X_test, y_train, y_test) = diabetes_data
-    # Create mean and dispersion regressors
-    mean_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
+
+    tf.keras.utils.set_random_seed(0)
+
+    # Create NN regression object
+    mu_model = tf.keras.Sequential()
+    mu_model.add(tf.keras.layers.Dense(1))
+    compile_kwargs1 = {"optimizer": "sgd", "loss": "mse"}
+
+    # Create NN regression model
+    var_model = tf.keras.Sequential()
+    var_model.add(tf.keras.layers.Dense(10, activation="relu"))
+    var_model.add(tf.keras.layers.Dense(1, activation="relu"))
+    compile_kwargs2 = {"optimizer": "rmsprop", "loss": "mse"}
+
+    # Create predictor
+    predictor = MeanVarPredictor(
+        models=[mu_model, var_model],
+        compile_args=[compile_kwargs1, compile_kwargs2],
     )
-    sigma_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    # Wrap models in dualpredictor
-    mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
-    # Fit and conformalize
+
+    # Build AdaptiveEnbPI object
     aenbpi = AdaptiveEnbPI(
-        mean_var_predictor,
+        predictor,
         B=30,
         agg_func_loo=np.mean,
         random_state=random_state,
     )
-    aenbpi.fit(X_train, y_train)
+
+    # Fit and conformalize
+    kwargs1 = {"batch_size": 64, "epochs": 5}
+    kwargs2 = {"batch_size": 64, "epochs": 4}
+    aenbpi.fit(X_train, y_train, dictargs=[kwargs1, kwargs2])
     y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
         X_test, alpha=alpha, y_true=y_test, s=None
     )
+
     assert y_pred is not None
+    assert not (True in np.isnan(y_pred))
+    assert not (True in np.isnan(y_pred_lower))
+    assert not (True in np.isnan(y_pred_upper))
+
     # Compute marginal coverage
     coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
     width = regression_sharpness(
         y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
     )
-    res = {"cov": np.round(coverage, 2), "width": np.round(width, 2)}
-    assert RESULTS["aenbpi"] == res

@@ -23,4 +23,4 @@ jobs:
         python -m pip install --upgrade pip
         pip install tox
     - name: Check lint
-      run: tox -e py$(echo ${{ matrix.python-version }} | tr -d .)-lint
+      run: python -m pylint deel/puncc

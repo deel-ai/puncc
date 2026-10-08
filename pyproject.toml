@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "puncc"
-version = "0.8.1"
+version = "0.9.3"
 description = "Predictive UNcertainty Calibration and Conformalization Library"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.11"
@@ -15,6 +15,7 @@ authors = [
   { name = "Joseba Dalmau", email = "joseba.dalmau@irt-saintexupery.com" },
   { name = "Thomas Mullor", email = "thomas.mullor@irt-saintexupery.com"}
 ]
+urls = { Homepage = "https://github.com/deel-ai/puncc" }
 keywords = ["conformal prediction", "uncertainty quantification", "machine learning"]
 classifiers = [
   "License :: OSI Approved :: MIT License",

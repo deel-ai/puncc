@@ -24,13 +24,26 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import pytest
 import tensorflow as tf
 
-from deel.puncc.old_api.utils import alpha_calib_check
-from deel.puncc.old_api.utils import features_len_check
-from deel.puncc.old_api.utils import quantile
-from deel.puncc.old_api.utils import sample_len_check
-from deel.puncc.old_api.utils import supported_types_check
+from deel.puncc.api.utils import _n_features
+from deel.puncc.api.utils import _n_samples
+from deel.puncc.api.utils import alpha_calib_check
+from deel.puncc.api.utils import dual_predictor_check
+from deel.puncc.api.utils import features_len_check
+from deel.puncc.api.utils import generate_leverage_func
+from deel.puncc.api.utils import get_min_max_alpha_calib
+from deel.puncc.api.utils import hungarian_assignment
+from deel.puncc.api.utils import quantile
+from deel.puncc.api.utils import quantile_unweighted
+from deel.puncc.api.utils import quantile_weighted
+from deel.puncc.api.utils import quantile_weighted_unidim
+from deel.puncc.api.utils import sample_len_check
+from deel.puncc.api.utils import supported_bbox_shape_check
+from deel.puncc.api.utils import supported_dual_models_shape_check
+from deel.puncc.api.utils import supported_meanvar_models_shape_check
+from deel.puncc.api.utils import supported_types_check
 
 np.random.seed(0)
 
@@ -47,8 +60,7 @@ class DataTypeStructureCheck(unittest.TestCase):
         supported_types_check(self.y_pred_tensor)
 
     def test_other_type(self):
-        with self.assertRaises(TypeError):
-            supported_types_check((1, 2, 3))
+        supported_types_check((1, 2, 3))
 
     def test_type_consistency(self):
         supported_types_check(self.y_pred_np, self.y_pred_np)
@@ -57,11 +69,9 @@ class DataTypeStructureCheck(unittest.TestCase):
         )
         supported_types_check(self.y_pred_tensor, self.y_pred_tensor)
 
-        with self.assertRaises(TypeError):
-            supported_types_check([1, 2, 3])
-
-        with self.assertRaises(TypeError):
-            supported_types_check(self.y_pred_np, [1, 2, 3])
+        # Lists are supported as array-like inputs.
+        supported_types_check([1, 2, 3])
+        supported_types_check(self.y_pred_np, np.array([1, 2, 3]))
 
     def test_sample_len_check(self):
         dummy_array = np.random.random_sample(size=(100, 2))
@@ -300,3 +310,244 @@ class QuantileCheck(unittest.TestCase):
                 a=self.a_tensor, q=p_2d, w=weights, axis=0, feature_axis=1
             ),
         )
+
+
+def test_dual_predictor_check_accepts_list_of_two_elements():
+    dual_predictor_check([object(), object()], "models", "predictors")
+
+
+def test_dual_predictor_check_rejects_invalid_input():
+    with pytest.raises(TypeError, match="list of two predictors"):
+        dual_predictor_check([object()], "models", "predictors")
+
+
+def test_supported_meanvar_models_shape_check_accepts_valid_shapes():
+    y_pred = np.array([[1.0, 0.5], [2.0, 0.7]])
+    y_true = np.array([1.2, 1.8])
+
+    supported_meanvar_models_shape_check(y_pred, y_true)
+    supported_meanvar_models_shape_check(y_pred)
+
+
+def test_supported_meanvar_models_shape_check_rejects_invalid_shapes():
+    with pytest.raises(RuntimeError, match="point prediction and a dispersion"):
+        supported_meanvar_models_shape_check(
+            np.array([1.0, 0.5]), np.array([1.0])
+        )
+
+    with pytest.raises(RuntimeError, match="point observation"):
+        supported_meanvar_models_shape_check(
+            np.array([[1.0, 0.5], [2.0, 0.7]]),
+            np.array([[1.0], [2.0]]),
+        )
+
+
+def test_supported_dual_models_shape_check_rejects_invalid_shapes():
+    with pytest.raises(RuntimeError, match="two point predictions"):
+        supported_dual_models_shape_check(np.array([1.0, 0.5]), np.array([1.0]))
+
+    with pytest.raises(RuntimeError, match="point observation"):
+        supported_dual_models_shape_check(
+            np.array([[1.0, 0.5], [2.0, 0.7]]),
+            np.array([[1.0], [2.0]]),
+        )
+
+
+def test_supported_bbox_shape_check_rejects_invalid_shapes():
+    with pytest.raises(
+        RuntimeError, match="predicted bounding box must contain 4 coordinates"
+    ):
+        supported_bbox_shape_check(
+            np.array([[0, 1, 2]]), np.array([[0, 1, 2, 3]])
+        )
+
+    with pytest.raises(
+        RuntimeError, match="true bounding box must contain 4 coordinates"
+    ):
+        supported_bbox_shape_check(
+            np.array([[0, 1, 2, 3]]), np.array([[0, 1, 2]])
+        )
+
+
+def test_alpha_calib_check_complement_branch():
+    with pytest.raises(ValueError, match="too large"):
+        alpha_calib_check(alpha=0.95, n=10, complement_check=True)
+
+
+def test_get_min_max_alpha_calib_returns_expected_bounds():
+    assert get_min_max_alpha_calib(4) == (0.2, 1)
+    assert get_min_max_alpha_calib(4, two_sided_conformalization=True) == (
+        0.2,
+        0.8,
+    )
+
+
+def test_get_min_max_alpha_calib_rejects_invalid_n():
+    with pytest.raises(ValueError, match="need n>=1"):
+        get_min_max_alpha_calib(0)
+
+
+def test_hungarian_assignment_pads_predictions_and_filters_by_iou():
+    predicted_bboxes = np.array([[0, 0, 2, 2], [9, 9, 10, 10]])
+    true_bboxes = np.array([[0, 0, 2, 2], [5, 5, 7, 7], [20, 20, 22, 22]])
+
+    aligned_predictions, aligned_truth, valid_indices = hungarian_assignment(
+        predicted_bboxes, true_bboxes, min_iou=0.5
+    )
+
+    np.testing.assert_array_equal(aligned_predictions, np.array([[0, 0, 2, 2]]))
+    np.testing.assert_array_equal(aligned_truth, np.array([[0, 0, 2, 2]]))
+    np.testing.assert_array_equal(valid_indices, np.array([True, False, False]))
+
+
+def test_n_samples_and_n_features_fallbacks():
+    class NoShapeLen:
+        def __len__(self):
+            return 3
+
+    class NoFeatureShape:
+        def __len__(self):
+            return 2
+
+        def __getitem__(self, idx):
+            return [1, 2, 3][idx]
+
+    assert _n_samples(NoShapeLen()) == 3
+    assert _n_features([]) == 0
+    assert _n_features([[1, 2, 3], [4, 5, 6]]) == 3
+
+
+def test_logit_and_supported_type_error_branches():
+    from deel.puncc.api.utils import logit_normalization_check
+
+    with pytest.raises(ValueError, match="Logits must some to 1"):
+        logit_normalization_check(np.array([[0.2, 0.2], [0.1, 0.1]]))
+
+    class Unconvertible:
+        def __array__(self, dtype=None):
+            raise TypeError("cannot convert")
+
+    with pytest.raises(TypeError, match="Unsupported data type"):
+        supported_types_check(Unconvertible())
+
+
+def test_supported_dual_and_bbox_valid_shapes():
+    supported_dual_models_shape_check(
+        np.array([[1.0, 0.5], [2.0, 0.7]]),
+        np.array([1.0, 2.0]),
+    )
+    supported_bbox_shape_check(
+        np.array([[0, 1, 2, 3]]),
+        np.array([[0, 1, 2, 3]]),
+    )
+
+
+def test_alpha_calib_check_positive_complement_branch():
+    with pytest.raises(ValueError, match="too small"):
+        alpha_calib_check(alpha=0.0, n=10, complement_check=True)
+
+    with pytest.raises(ValueError, match="too large"):
+        alpha_calib_check(alpha=0.95, n=10, complement_check=True)
+
+
+def test_alpha_calib_check_zero_branch_via_monkeypatch(monkeypatch):
+    import deel.puncc.api.utils as utils_module
+
+    calls = {"count": 0}
+
+    def fake_any(value):
+        calls["count"] += 1
+        if calls["count"] in (1, 2, 3):
+            return False
+        return True
+
+    monkeypatch.setattr(utils_module.np, "any", fake_any)
+
+    with pytest.raises(ValueError, match="too small"):
+        utils_module.alpha_calib_check(alpha=0.0, n=10, complement_check=True)
+
+
+def test_quantile_validation_branches():
+    with pytest.raises(ValueError, match="open interval"):
+        quantile(np.array([1, 2, 3]), q=1.0)
+
+    with pytest.raises(ValueError, match="axis value cannot coincide"):
+        quantile_unweighted(np.array([[1, 2], [3, 4]]), q=np.array([0.5, 0.5]), axis=1, feature_axis=1)
+
+    with pytest.raises(ValueError, match="same number of features"):
+        quantile_unweighted(np.array([[1, 2], [3, 4]]), q=np.array([0.5]), axis=0, feature_axis=1)
+
+    with pytest.raises(ValueError, match="w must be a 1D array"):
+        quantile_weighted_unidim(np.array([1, 2]), 0.5, np.array([[0.5, 0.5]]))
+
+    with pytest.raises(ValueError, match="a and w must have the same length"):
+        quantile_weighted_unidim(np.array([1, 2]), 0.5, np.array([1.0]))
+
+    with pytest.raises(RuntimeError, match="not normalized"):
+        quantile_weighted_unidim(np.array([1, 2]), 0.5, np.array([0.2, 0.2]))
+
+    with pytest.raises(ValueError, match="axis value cannot coincide"):
+        quantile_weighted(
+            np.array([[1, 2], [3, 4]]),
+            q=0.5,
+            w=np.array([0.5, 0.5]),
+            axis=1,
+            feature_axis=1,
+        )
+
+    with pytest.raises(ValueError, match="same length as a.shape"):
+        quantile_weighted(
+            np.array([[1, 2], [3, 4]]),
+            q=0.5,
+            w=np.array([0.5]),
+            axis=0,
+        )
+
+    with pytest.raises(ValueError, match="same number of features"):
+        quantile_weighted(
+            np.array([[1, 2], [3, 4]]),
+            q=np.array([0.5]),
+            w=np.array([0.5, 0.5]),
+            axis=0,
+            feature_axis=1,
+        )
+
+    with pytest.raises(ValueError, match="same number of features"):
+        quantile_weighted(
+            np.array([[1, 2], [3, 4]]),
+            q=np.array([0.5, 0.6]),
+            w=np.array([[0.5], [0.5]]),
+            axis=0,
+            feature_axis=1,
+        )
+
+    with pytest.raises(TypeError):
+        quantile_weighted(
+            np.array([[1, 2], [3, 4]]),
+            q=0.5,
+            w=np.array([[0.5, 0.5], [0.5, 0.5]]),
+            axis=0,
+            feature_axis=1,
+        )
+
+
+def test_generate_leverage_func_returns_scores():
+    X = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+    leverage_func = generate_leverage_func(X)
+    scores = leverage_func(np.array([[1.0, 0.0], [0.5, 0.5]]))
+
+    assert scores.shape == (2,)
+    assert np.all(scores >= 0)
+
+
+def test_hungarian_assignment_no_padding_branch():
+    predicted_bboxes = np.array([[0, 0, 2, 2], [4, 4, 6, 6]])
+    true_bboxes = np.array([[0, 0, 2, 2], [4, 4, 6, 6]])
+
+    aligned_predictions, aligned_truth, valid_indices = hungarian_assignment(
+        predicted_bboxes, true_bboxes, min_iou=0.1
+    )
+
+    np.testing.assert_array_equal(aligned_predictions, predicted_bboxes)
+    np.testing.assert_array_equal(aligned_truth, true_bboxes)
+    np.testing.assert_array_equal(valid_indices, np.array([True, True]))

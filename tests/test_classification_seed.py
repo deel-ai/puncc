@@ -31,7 +31,7 @@ from tensorflow.keras import models
 from tensorflow.keras.utils import to_categorical
 
 from deel.puncc import metrics
-from deel.puncc.old_api.prediction import BasePredictor
+from deel.puncc.api.prediction import BasePredictor
 from deel.puncc.classification import APS
 from deel.puncc.classification import RAPS
 from deel.puncc.classification import LAC
@@ -59,17 +59,15 @@ def test_lac(mnist_data, alpha, random_state):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -101,8 +99,12 @@ def test_lac(mnist_data, alpha, random_state):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["lac"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["lac"]["cov"], RESULTS["lac"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -113,17 +115,15 @@ def test_classwise_lac(mnist_data, alpha, random_state):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -176,17 +176,15 @@ def test_aps(mnist_data, alpha, random_state, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -218,8 +216,12 @@ def test_aps(mnist_data, alpha, random_state, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["aps"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["aps"]["cov"], RESULTS["aps"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -230,17 +232,15 @@ def test_aps_norand(mnist_data, alpha, random_state, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -272,8 +272,12 @@ def test_aps_norand(mnist_data, alpha, random_state, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["aps-norand"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["aps-norand"]["cov"], RESULTS["aps-norand"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -284,17 +288,15 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -326,8 +328,12 @@ def test_raps(mnist_data, alpha, random_state, lambd, k_reg, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["raps"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["raps"]["cov"], RESULTS["raps"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
 
 
 @pytest.mark.parametrize(
@@ -338,17 +344,15 @@ def test_raps_norand(mnist_data, alpha, random_state, lambd, k_reg, rand):
     tf.keras.utils.set_random_seed(random_state)
 
     # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, y_test_cat) = mnist_data
+    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
     # Split fit and calib datasets
     X_fit, X_calib = X_train[:50000], X_train[50000:]
     y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, y_calib_cat = y_train_cat[:50000], y_train_cat[50000:]
+    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
 
     # One hot encoding of classes
     y_fit_cat = to_categorical(y_fit)
-    y_calib_cat = to_categorical(y_calib)
-    y_test_cat = to_categorical(y_test)
 
     # Classification model
     nn_model = models.Sequential()
@@ -380,5 +384,9 @@ def test_raps_norand(mnist_data, alpha, random_state, lambd, k_reg, rand):
     # Compute marginal coverage
     coverage = metrics.classification_mean_coverage(y_test, set_pred)
     width = metrics.classification_mean_size(set_pred)
-    res = {"cov": np.round(coverage, 2), "size": np.round(width, 2)}
-    assert RESULTS["raps-norand"] == res
+    np.testing.assert_allclose(
+        [coverage, width],
+        [RESULTS["raps-norand"]["cov"], RESULTS["raps-norand"]["size"]],
+        rtol=0.0,
+        atol=5e-3,
+    )
