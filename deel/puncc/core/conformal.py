@@ -59,6 +59,7 @@ logger = logging.getLogger(__name__)
 TPrediction = TypeVar("TPrediction")
 TSet = TypeVar("TSet")
 
+
 def _validate_alpha(alpha: float | TensorLike) -> None:
     """Check that all miscoverage levels belong to (0, 1)."""
     if isinstance(alpha, Real):
@@ -70,14 +71,22 @@ def _validate_alpha(alpha: float | TensorLike) -> None:
     if not valid:
         raise ValueError("alpha must be finite and strictly between 0 and 1.")
 
-def _check_calibration_samples(X_calib: Any, y_calib: Any | None = None, require_y:bool=True) -> None:
+
+def _check_calibration_samples(
+    X_calib: Any, y_calib: Any | None = None, require_y: bool = True
+) -> None:
     n_samples = len(X_calib)
     if n_samples == 0:
         raise ValueError("Calibration data must not be empty.")
     if require_y and y_calib is None:
-        raise ValueError("Calibration targets y_calib are required but were not provided.")
+        raise ValueError(
+            "Calibration targets y_calib are required but were not provided."
+        )
     if y_calib is not None and len(y_calib) != n_samples:
-        raise ValueError("X_calib and y_calib must have the same number of samples.")
+        raise ValueError(
+            "X_calib and y_calib must have the same number of samples."
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class ConformalPrediction(Generic[TPrediction, TSet]):
@@ -106,8 +115,11 @@ class ConformalPrediction(Generic[TPrediction, TSet]):
     def __len__(self) -> int:
         return 2
 
-    def __getitem__(self, index:SupportsIndex|slice)->TPrediction | TSet | tuple[TPrediction | TSet, ...]:
+    def __getitem__(
+        self, index: SupportsIndex | slice
+    ) -> TPrediction | TSet | tuple[TPrediction | TSet, ...]:
         return (self.prediction, self.prediction_set)[index]
+
 
 class ConformalPredictor(ABC):
     """
@@ -131,11 +143,15 @@ class ConformalPredictor(ABC):
             Optional custom function used to fit model.
             If omitted, model.fit is used when available.
     """
+
     __slots__ = ("model", "fit_function", "calibration_context")
 
     # Any conformal method should have a model attribute.
-    def __init__(self, model:Predictor|PredictorLike,
-                 fit_function:FitFunction|None = None):
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        fit_function: FitFunction | None = None,
+    ):
         self.model = make_predictor(model)
         self.fit_function = fit_function
         self.calibration_context = CalibrationContext()
@@ -143,7 +159,9 @@ class ConformalPredictor(ABC):
     def reset_calibration(self):
         self.calibration_context.clear()
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any]|None=None)->Self:
+    def calibrate(
+        self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
+    ) -> Self:
         """
         Calibrate the conformal predictor.
 
@@ -165,17 +183,24 @@ class ConformalPredictor(ABC):
 
         self.reset_calibration()
         self.calibration_context.update(
-            X_calib=X_calib,
-            y_pred = self.model(X_calib)
+            X_calib=X_calib, y_pred=self.model(X_calib)
         )
         if y_calib is not None:
             self.calibration_context.update(y_calib=y_calib)
 
-        self.calibration_context = self.compute_calibration_state(self.calibration_context)
-        logger.debug("Calibrating %s on %d samples.", type(self).__name__, self.calibration_context.size)
+        self.calibration_context = self.compute_calibration_state(
+            self.calibration_context
+        )
+        logger.debug(
+            "Calibrating %s on %d samples.",
+            type(self).__name__,
+            self.calibration_context.size,
+        )
         return self
 
-    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
         """
         Compute method-specific calibration state.
 
@@ -193,10 +218,15 @@ class ConformalPredictor(ABC):
         """
         return calibration_context
 
-    def predict(self, X_test:Iterable[Any],
-                alpha:float|TensorLike,
-                *,
-                alpha_correction: Callable[[float|TensorLike], float|TensorLike] | None = None,)->ConformalPrediction[Any, Any]:
+    def predict(
+        self,
+        X_test: Iterable[Any],
+        alpha: float | TensorLike,
+        *,
+        alpha_correction: (
+            Callable[[float | TensorLike], float | TensorLike] | None
+        ) = None,
+    ) -> ConformalPrediction[Any, Any]:
         """
         Perform a conformal prediction using the calibrated model.
 
@@ -221,10 +251,19 @@ class ConformalPredictor(ABC):
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
 
-        return self.conformalize(prediction, alpha, self.calibration_context, X=X_test)
+        return self.conformalize(
+            prediction, alpha, self.calibration_context, X=X_test
+        )
 
     @abstractmethod
-    def conformalize(self, prediction:Any, alpha:float|TensorLike, calibration_context:CalibrationContext, *, X:Any|None = None)->ConformalPrediction[Any, Any]:
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
         """
         Conformalize already-computed model predictions.
 
@@ -245,12 +284,13 @@ class ConformalPredictor(ABC):
             Base predictions and their associated conformal prediction sets.
         """
 
-    def fit(self,
-            X:Iterable[Any],
-            y:Iterable[Any]|None = None,
-            *args:Any, 
-            **kwargs:Any
-            )->Self:
+    def fit(
+        self,
+        X: Iterable[Any],
+        y: Iterable[Any] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
         """
         Fit the underlying predictive model.
 
@@ -276,9 +316,11 @@ class ConformalPredictor(ABC):
         y_arg = [y] if y is not None else []
 
         if self.fit_function is not None:
-            self.model = make_predictor(self.fit_function(self.model, X, *y_arg, *args, **kwargs))
+            self.model = make_predictor(
+                self.fit_function(self.model, X, *y_arg, *args, **kwargs)
+            )
             return self
-        
+
         fit_method = getattr(
             self.model,
             "fit",
@@ -292,12 +334,15 @@ class ConformalPredictor(ABC):
                 **kwargs,
             )
             return self
-        raise NotImplementedError("The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function.")
+        raise NotImplementedError(
+            "The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function."
+        )
 
     def __getstate__(self):
         state = {}
         if getattr(self, "__dict__", None):
             state = self.__dict__.copy()
+            state.pop("model", None)
 
         for cls in type(self).mro():
             slots = getattr(cls, "__slots__", ())
@@ -315,7 +360,7 @@ class ConformalPredictor(ABC):
         for key, value in state.items():
             setattr(self, key, value)
 
-    def save(self, path:Path|str)->None:
+    def save(self, path: Path | str) -> None:
         """
         Save the conformal predictor state to disk.
 
@@ -324,12 +369,14 @@ class ConformalPredictor(ABC):
         Args:
             path: Path of the file in which the predictor state is stored.
         """
-        logger.debug("Saving %s calibration state to %s.", type(self).__name__, path)
+        logger.debug(
+            "Saving %s calibration state to %s.", type(self).__name__, path
+        )
         with open(path, "wb") as f:
             pickle.dump(self.__getstate__(), f)
 
     @classmethod
-    def load(cls, path:Path|str, model:Predictor |PredictorLike)->Self:
+    def load(cls, path: Path | str, model: Predictor | PredictorLike) -> Self:
         """
         Load a conformal predictor state from disk.
 
@@ -349,6 +396,7 @@ class ConformalPredictor(ABC):
         obj.model = make_predictor(model)
         logger.debug("Loaded %s calibration state from %s.", cls.__name__, path)
         return obj
+
 
 class GroupConditionalMixin(ConformalPredictor):
     """
@@ -380,23 +428,27 @@ class GroupConditionalMixin(ConformalPredictor):
 
     def __init__(
         self,
-        *args:Any,
+        *args: Any,
         group_function: Callable[..., TensorLike],
-        groups:Sequence[Any]|None=None,
-        **kwargs:Any,
+        groups: Sequence[Any] | None = None,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
-        self.group_splitter = FunctionalSplitter(group_function=group_function, groups=groups)
-        self.group_calibration_contexts:dict[Any, CalibrationContext] = {}
+        self.group_splitter = FunctionalSplitter(
+            group_function=group_function, groups=groups
+        )
+        self.group_calibration_contexts: dict[Any, CalibrationContext] = {}
 
     def calibrate(
         self,
         X_calib: Iterable[Any],
-        y_calib: Iterable[Any]|None = None,
+        y_calib: Iterable[Any] | None = None,
     ) -> Self:
-        
+
         super().calibrate(X_calib, y_calib)
-        self.group_calibration_contexts = self.group_splitter.split_context_by_group(self.calibration_context)
+        self.group_calibration_contexts = (
+            self.group_splitter.split_context_by_group(self.calibration_context)
+        )
         self.calibration_context.clear()
         return self
 
@@ -409,16 +461,24 @@ class GroupConditionalMixin(ConformalPredictor):
         X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
         if X is None:
-            raise ValueError("X is required for group-conditional conformalization.")
+            raise ValueError(
+                "X is required for group-conditional conformalization."
+            )
         if len(X) == 0:
-            raise ValueError("Group-conditional conformalization requires at least one test sample.")
+            raise ValueError(
+                "Group-conditional conformalization requires at least one test sample."
+            )
 
         if calibration_context is self.calibration_context:
             group_contexts = self.group_calibration_contexts
         else:
-            group_contexts = self.group_splitter.split_context_by_group(calibration_context)
+            group_contexts = self.group_splitter.split_context_by_group(
+                calibration_context
+            )
 
-        grouped_indices = self.group_splitter.group_indices(X_calib=X, y_pred=prediction)
+        grouped_indices = self.group_splitter.group_indices(
+            X_calib=X, y_pred=prediction
+        )
         grouped_prediction_sets: list[Any] = []
         non_empty_indices: list[TensorLike] = []
 
@@ -431,17 +491,24 @@ class GroupConditionalMixin(ConformalPredictor):
             group_context = group_contexts.get(group)
 
             if group_context is None:
-                group_prediction_set = self.conformalize_unknown_group(group_prediction, alpha, X=ops.take(X, indices, axis=0))
-                #group_prediction_set = self.pred_set_function(group_prediction, ops.array(float("inf")))
+                group_prediction_set = self.conformalize_unknown_group(
+                    group_prediction, alpha, X=ops.take(X, indices, axis=0)
+                )
+                # group_prediction_set = self.pred_set_function(group_prediction, ops.array(float("inf")))
                 missing_group_count += 1
             else:
-                group_prediction_set = super().conformalize(group_prediction, alpha, group_context, X=ops.take(X, indices, axis=0))
+                group_prediction_set = super().conformalize(
+                    group_prediction,
+                    alpha,
+                    group_context,
+                    X=ops.take(X, indices, axis=0),
+                )
             grouped_prediction_sets.append(group_prediction_set.prediction_set)
             non_empty_indices.append(indices)
 
-
         if missing_group_count:
-            warnings.warn(f"{missing_group_count} test group(s) were not observed during calibration. Specific fallback stratedgy was used for these groups.",
+            warnings.warn(
+                f"{missing_group_count} test group(s) were not observed during calibration. Specific fallback stratedgy was used for these groups.",
                 CalibrationWarning,
                 stacklevel=2,
             )
@@ -449,8 +516,14 @@ class GroupConditionalMixin(ConformalPredictor):
         first_prediction_set = grouped_prediction_sets[0]
 
         # Preserve tensor structure
-        if isinstance(first_prediction_set, ops.tensor_type,):
-            prediction_set = ops.concatenate(grouped_prediction_sets, axis=0,)
+        if isinstance(
+            first_prediction_set,
+            ops.tensor_type,
+        ):
+            prediction_set = ops.concatenate(
+                grouped_prediction_sets,
+                axis=0,
+            )
             concatenated_indices = ops.concatenate(non_empty_indices, axis=0)
             original_order = ops.argsort(concatenated_indices, axis=0)
             prediction_set = ops.take(prediction_set, original_order, axis=0)
@@ -463,18 +536,26 @@ class GroupConditionalMixin(ConformalPredictor):
         # Reassemble them directly in Python while preserving sample order.
         prediction_set_items: list[Any] = [None] * len(prediction)
 
-        for indices, group_prediction_set in zip(non_empty_indices, grouped_prediction_sets, strict=True):
+        for indices, group_prediction_set in zip(
+            non_empty_indices, grouped_prediction_sets, strict=True
+        ):
             original_indices = ops.tolist(indices)
             for local_idx, original_idx in enumerate(original_indices):
-                prediction_set_items[original_idx] = (group_prediction_set[local_idx])
+                prediction_set_items[original_idx] = group_prediction_set[
+                    local_idx
+                ]
 
         return ConformalPrediction(
             prediction=prediction,
             prediction_set=prediction_set_items,
         )
 
-    def conformalize_unknown_group(self, prediction, alpha, *, X=None) -> ConformalPrediction[Any, Any]:
-        raise ValueError("Test group was not observed during calibration. Please provide a fallback strategy for unknown groups or provide a better calibration set.")
+    def conformalize_unknown_group(
+        self, prediction, alpha, *, X=None
+    ) -> ConformalPrediction[Any, Any]:
+        raise ValueError(
+            "Test group was not observed during calibration. Please provide a fallback strategy for unknown groups or provide a better calibration set."
+        )
         # TODO :
         # for split CP :
         # call pred set function with q = ops.inf
@@ -489,14 +570,28 @@ class NoopConformalPredictor(ConformalPredictor):
     It simply returns the base model predictions as both the prediction and the prediction set.
     For testing and debugging purposes.
     """
-    def calibrate(self, X_calib:Iterable[Any]|None = None, y_calib:Iterable[Any]|None=None)->Self:
+
+    def calibrate(
+        self,
+        X_calib: Iterable[Any] | None = None,
+        y_calib: Iterable[Any] | None = None,
+    ) -> Self:
         self.reset_calibration()
         return self
 
-    def compute_calibration_state(self, calibration_context: CalibrationContext) -> CalibrationContext:
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
         return CalibrationContext()
 
-    def conformalize(self, prediction:Any, alpha:float|TensorLike|None, calibration_context:CalibrationContext, *, X:Any|None = None)->ConformalPrediction[Any, Any]:
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike | None,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
         return ConformalPrediction(
             prediction=prediction,
             prediction_set=prediction,

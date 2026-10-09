@@ -21,12 +21,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-    This module provides basic cloning utilities for simple models (used in cross-conformal methods)
-    The main function is `clone_model`, which tries to clone a model using various strategies, including specific cloners for popular ML libraries and a fallback to `copy.deepcopy`.
-    This is approximative and may not work for all models, especially complex ones with non-standard architectures or custom layers.
-    In such cases, users are encouraged to implement their own cloning logic or expose a `clone` method in their model classes.
-    The whole module should be improved (or replaced) in the future.
+This module provides basic cloning utilities for simple models (used in cross-conformal methods)
+The main function is `clone_model`, which tries to clone a model using various strategies, including specific cloners for popular ML libraries and a fallback to `copy.deepcopy`.
+This is approximative and may not work for all models, especially complex ones with non-standard architectures or custom layers.
+In such cases, users are encouraged to implement their own cloning logic or expose a `clone` method in their model classes.
+The whole module should be improved (or replaced) in the future.
 """
+
 from __future__ import annotations
 
 import copy
@@ -58,12 +59,16 @@ logger = logging.getLogger(__name__)
 
 ML_MODULES = {"keras", "torch", "tensorflow", "sklearn", "transformers", "jax"}
 
+
 def get_imported_modules() -> set[str]:
     """
     Returns:
         set[str]: Set of top-level modules that have been imported in the current Python session.
     """
-    return set(module.split(".")[0] for module in list(sys.modules.keys()) if module)
+    return set(
+        module.split(".")[0] for module in list(sys.modules.keys()) if module
+    )
+
 
 def get_imported_ml_modules() -> list[str]:
     """
@@ -71,8 +76,9 @@ def get_imported_ml_modules() -> list[str]:
         set[str]: Set of top-level ML modules that have been imported in the current Python session, filtered from a predefined list of ML libraries that are supported in Keras3.3 context.
     """
     imported = get_imported_modules()
-    #return ML_MODULES.intersection(imported)
+    # return ML_MODULES.intersection(imported)
     return [module for module in ML_MODULES if module in imported]
+
 
 def get_origin_from_model(obj) -> str | None:
     for cls in type(obj).__mro__:
@@ -95,16 +101,13 @@ class ModelCloningError(RuntimeError):
         But today, dear coder, you must concede,
         Some models are wild, they cannot be freed.
         """
-    
+
     def __init__(
         self,
         model,
         strategy: str | None = None,
     ):
-        model_type = (
-            f"{type(model).__module__}."
-            f"{type(model).__qualname__}"
-        )
+        model_type = f"{type(model).__module__}." f"{type(model).__qualname__}"
 
         msg = f"Could not clone model of type {model_type}."
 
@@ -119,20 +122,16 @@ class ModelCloningError(RuntimeError):
         super().__init__(msg)
 
 
-def clone_model(
-    model: Any,
-    *,
-    clone_weights:bool=False
-) -> Any:
+def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
     """
-        Clone a model across popular ML frameworks.
+    Clone a model across popular ML frameworks.
 
-        Strategy:
-        1) If the object exposes `.clone()`, use it.
-        2) Try a cloner matching the configured backend.
-        3) Try a cloner matching the model's inferred origin.
-        4) Try remaining cloners.
-        5) Fallback to deepcopy (restricted for ML frameworks).
+    Strategy:
+    1) If the object exposes `.clone()`, use it.
+    2) Try a cloner matching the configured backend.
+    3) Try a cloner matching the model's inferred origin.
+    4) Try remaining cloners.
+    5) Fallback to deepcopy (restricted for ML frameworks).
     """
     # Check if model has a "clone" or a "copy" method:
     clone_method = getattr(model, "clone", None)
@@ -147,14 +146,19 @@ def clone_model(
             try:
                 clone = clone_method(clone_weights=clone_weights)
                 if clone is model:
-                    raise ModelCloningError(model, strategy="model.clone() returned the original object")
+                    raise ModelCloningError(
+                        model,
+                        strategy="model.clone() returned the original object",
+                    )
                 return clone
             except Exception as e:
                 raise ModelCloningError(model, strategy="model.clone()") from e
         if clone_weights:
             clone = clone_method()
             if clone is model:
-                raise ModelCloningError(model, strategy="model.clone() returned the original object")
+                raise ModelCloningError(
+                    model, strategy="model.clone() returned the original object"
+                )
             return clone
         warnings.warn(
             (
@@ -173,18 +177,17 @@ def clone_model(
         "keras": _clone_keras,
         "transformers": _clone_hf,
         "tensorflow": _clone_keras,
-        "jax": _clone_jax
+        "jax": _clone_jax,
     }
 
     # Try cloner associated to the actually used backend
     backend_guess = get_backend()
     if backend_guess == "numpy":
-        backend_guess =  None #"sklearn"
+        backend_guess = None  # "sklearn"
 
     origin_guess = get_origin_from_model(model)
     logger.debug(
-        "Cloning model type=%s.%s, backend=%s, origin=%s, "
-        "clone_weights=%s.",
+        "Cloning model type=%s.%s, backend=%s, origin=%s, " "clone_weights=%s.",
         type(model).__module__,
         type(model).__qualname__,
         backend_guess,
@@ -222,7 +225,10 @@ def clone_model(
         if cloned is not None:
             logger.debug("Model cloned successfully using strategy=%s.", guess)
             if cloned is model:
-                raise ModelCloningError(model, strategy=f"{guess} cloner returned the original object")
+                raise ModelCloningError(
+                    model,
+                    strategy=f"{guess} cloner returned the original object",
+                )
             return cloned
 
     # if model is from a known ML library but no cloner worked, raise an error instead of silently falling back to deepcopy
@@ -248,18 +254,21 @@ def clone_model(
         )
         clone = copy.deepcopy(model)
         if clone is model:
-            raise ModelCloningError(model, strategy="deepcopy returned the original object")
+            raise ModelCloningError(
+                model, strategy="deepcopy returned the original object"
+            )
         return clone
     except Exception as e:
         # If even deepcopy fails, raise a custom error
         raise ModelCloningError(model, strategy="deepcopy") from e
 
-def _clone_sklearn(model: Any, *, clone_weights:bool=False) -> Any | None:
+
+def _clone_sklearn(model: Any, *, clone_weights: bool = False) -> Any | None:
     try:
         import sklearn.base
     except ImportError:
         return None
-    
+
     if not isinstance(model, getattr(sklearn.base, "BaseEstimator", ())):
         return None
     try:
@@ -272,13 +281,14 @@ def _clone_sklearn(model: Any, *, clone_weights:bool=False) -> Any | None:
             strategy="sklearn",
         ) from e
 
-def _clone_keras(model: Any, *, clone_weights:bool=False) -> Any | None:
+
+def _clone_keras(model: Any, *, clone_weights: bool = False) -> Any | None:
     """
     Clone Keras models with optional recompilation that mirrors optimizer/loss/metrics.
     """
     if "keras" not in sys.modules:
         return None
-    
+
     keras = sys.modules["keras"]
 
     if not isinstance(model, keras.Model):
@@ -300,8 +310,10 @@ def _clone_keras(model: Any, *, clone_weights:bool=False) -> Any | None:
             strategy="keras",
         ) from e
 
+
 def _torch_device(model):
     import torch
+
     try:
         for p in model.parameters(recurse=True):
             return p.device
@@ -311,13 +323,14 @@ def _torch_device(model):
         pass
     return torch.device("cpu")
 
+
 def _reinit_torch_module_(m):
     # Best-effort: reinitialize common modules
     reset = getattr(m, "reset_parameters", None)
     if callable(reset):
         reset()
         return True
-    
+
     reset_stats = getattr(m, "reset_running_stats", None)
     if callable(reset_stats):
         reset_stats()
@@ -355,7 +368,9 @@ def _clone_torch(model, *, clone_weights: bool = False):
                 for m in cloned.modules():
                     if _reinit_torch_module_(m):
                         continue
-                    has_state = (any(True for _ in m.parameters(recurse=False))) or any(True for _ in m.buffers(recurse=False))
+                    has_state = (
+                        any(True for _ in m.parameters(recurse=False))
+                    ) or any(True for _ in m.buffers(recurse=False))
                     if has_state:
                         missing.append(type(m).__name__)
 
@@ -378,12 +393,13 @@ def _clone_torch(model, *, clone_weights: bool = False):
             strategy="torch",
         ) from e
 
-def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
+
+def _clone_hf(model: Any, *, clone_weights: bool = False) -> Any | None:
     try:
         import transformers
     except ImportError:
         return None
-    
+
     try:
         # PyTorch HF
         if isinstance(model, getattr(transformers, "PreTrainedModel", ())):
@@ -392,6 +408,7 @@ def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
             if clone_weights:
                 try:
                     import torch
+
                     with torch.no_grad():
                         new_m.load_state_dict(model.state_dict())
                 except ImportError:
@@ -419,8 +436,9 @@ def _clone_hf(model: Any, *, clone_weights:bool=False) -> Any | None:
             model,
             strategy="transformers",
         ) from e
-        
-def _clone_jax(model: Any, *, clone_weights:bool = False) -> Any | None:
+
+
+def _clone_jax(model: Any, *, clone_weights: bool = False) -> Any | None:
     """Generic JAX cloning is not supported yet."""
     return None
-    #raise NotImplementedError("JAX model cloning is not yet implemented, please expose a 'clone' method or use non cross conformal methods.")
+    # raise NotImplementedError("JAX model cloning is not yet implemented, please expose a 'clone' method or use non cross conformal methods.")

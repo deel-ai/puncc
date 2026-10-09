@@ -26,8 +26,8 @@ class ScalarOptimizer(ABC):
         function: ScalarFunction,
         a: float,
         b: float,
-    ) -> float:
-        ...
+    ) -> float: ...
+
 
 class BinarySearchOptimizer(ScalarOptimizer):
     def __call__(
@@ -37,7 +37,9 @@ class BinarySearchOptimizer(ScalarOptimizer):
         b: float,
     ) -> float:
         if a >= b:
-            raise ValueError("lower bound must be strictly smaller than upper bound in optimization process.")
+            raise ValueError(
+                "lower bound must be strictly smaller than upper bound in optimization process."
+            )
 
         f_a = function(a)
         f_b = function(b)
@@ -55,7 +57,9 @@ class BinarySearchOptimizer(ScalarOptimizer):
             mid = (low + high) / 2
             f_mid = function(mid)
             if not math.isfinite(f_mid):
-                raise ValueError("Objective function returned a non-finite value.")
+                raise ValueError(
+                    "Objective function returned a non-finite value."
+                )
             if f_mid <= 0:
                 high = mid
             else:
@@ -68,7 +72,7 @@ class BinarySearchOptimizer(ScalarOptimizer):
 
 
 class ScipyOptimizer(ScalarOptimizer):
-    method:str
+    method: str
 
     def __call__(
         self,
@@ -85,25 +89,33 @@ class ScipyOptimizer(ScalarOptimizer):
             maxiter=self.maxiter,
         )
         if not result.converged:
-            raise RuntimeError(f"SciPy optimizer {self.method!r} did not converge.")
+            raise RuntimeError(
+                f"SciPy optimizer {self.method!r} did not converge."
+            )
 
         root = float(result.root)
-        if function(root)<=0:
+        if function(root) <= 0:
             return root
         candidate = min(root + self.xtol + self.rtol * abs(root), b)
 
         if function(candidate) <= 0:
             return candidate
-        raise RuntimeError("Optimizer converged to an infeasible point and no feasible point was found within its numerical tolerance.")
-    
+        raise RuntimeError(
+            "Optimizer converged to an infeasible point and no feasible point was found within its numerical tolerance."
+        )
+
+
 class BrentqOptimizer(ScipyOptimizer):
-    method:str="brentq"
+    method: str = "brentq"
+
 
 class BrenthOptimizer(ScipyOptimizer):
-    method:str="brenth"
+    method: str = "brenth"
+
 
 class RidderOptimizer(ScipyOptimizer):
-    method:str="ridder"
+    method: str = "ridder"
+
 
 class TomsOptimizer(ScipyOptimizer):
-    method:str="toms748"
+    method: str = "toms748"

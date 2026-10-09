@@ -44,6 +44,7 @@ from deel.puncc import ops
 
 logger = logging.getLogger(__name__)
 
+
 class CrossConformalPredictor(ABC):
     """
     Base class for cross-conformal prediction methods.
@@ -57,11 +58,14 @@ class CrossConformalPredictor(ABC):
         splitter: Data splitter defining the fitting and calibration subsets.
         fit_function: Optional custom function used to fit each cloned model.
     """
-    def __init__(self,
-                 model:Predictor|PredictorLike,
-                 conformal_predictor_class:type[SplitConformalPredictor],
-                 splitter:BaseSplitter,
-                 fit_function:FitFunction|None = None):
+
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        conformal_predictor_class: type[SplitConformalPredictor],
+        splitter: BaseSplitter,
+        fit_function: FitFunction | None = None,
+    ):
         # TODO : implement WCV+
         self.model = make_predictor(model)
         self.fit_function = fit_function
@@ -71,20 +75,24 @@ class CrossConformalPredictor(ABC):
         self.conformal_predictor_class = conformal_predictor_class
 
     @property
-    def len_calibr(self)->int:
+    def len_calibr(self) -> int:
         """
         Total number of calibration samples across all fitted splits.
         """
         return sum(cp.len_calibr for cp in self._conformal_predictors)
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike|None=None)->Never:
+    def calibrate(
+        self, X_calib: Iterable[Any], y_calib: TensorLike | None = None
+    ) -> Never:
         """
         Raises:
             RuntimeError: the calibration step is not required for cross-conformal predictors, only the `fit` method should be used to train and calibrate the model.
         """
-        raise RuntimeError("Cross-conformal predictors do not require a separate calibration step. Please use the `fit` method to train and calibrate the model.")
+        raise RuntimeError(
+            "Cross-conformal predictors do not require a separate calibration step. Please use the `fit` method to train and calibrate the model."
+        )
 
-    def fit(self, X:Iterable[Any], y:TensorLike)->Self:
+    def fit(self, X: Iterable[Any], y: TensorLike) -> Self:
         """
         Fit and calibrate conformal predictors across all data splits.
 
@@ -99,23 +107,42 @@ class CrossConformalPredictor(ABC):
         """
         self._conformal_predictors.clear()
 
-        for fold_idx, ((X_fit, y_fit),(X_calib, y_calib)) in enumerate(self.splitter(X=X, y=y)):
-            logger.debug("Fitting %s fold=%d: n_fit=%d, n_calib=%d.", type(self).__name__, fold_idx, len(y_fit), len(y_calib))
-            cp = self.conformal_predictor_class(clone_model(self.model), fit_function=self.fit_function)
+        for fold_idx, ((X_fit, y_fit), (X_calib, y_calib)) in enumerate(
+            self.splitter(X=X, y=y)
+        ):
+            logger.debug(
+                "Fitting %s fold=%d: n_fit=%d, n_calib=%d.",
+                type(self).__name__,
+                fold_idx,
+                len(y_fit),
+                len(y_calib),
+            )
+            cp = self.conformal_predictor_class(
+                clone_model(self.model), fit_function=self.fit_function
+            )
             cp.fit(X_fit, y_fit)
             cp.calibrate(X_calib, y_calib)
             if ops.ndim(cp.nc_scores) != 1:
-                raise ValueError("CVPlusRegressor currently supports scalar nonconformity scores only.")
+                raise ValueError(
+                    "CVPlusRegressor currently supports scalar nonconformity scores only."
+                )
             self._conformal_predictors.append(cp)
-        logger.debug("%s fitted with %d folds and %d total calibration samples.", type(self).__name__, len(self._conformal_predictors), self.len_calibr)
+        logger.debug(
+            "%s fitted with %d folds and %d total calibration samples.",
+            type(self).__name__,
+            len(self._conformal_predictors),
+            self.len_calibr,
+        )
         return self
-    
+
     @abstractmethod
-    def predict(self,
-                X_test:Iterable[Any],
-                alpha:float|TensorLike,
-                *,
-                alpha_correction: AlphaCorrection | None = None,)->ConformalPrediction[Any, Any]:
+    def predict(
+        self,
+        X_test: Iterable[Any],
+        alpha: float | TensorLike,
+        *,
+        alpha_correction: AlphaCorrection | None = None,
+    ) -> ConformalPrediction[Any, Any]:
         """
         Produce an aggregated cross-conformal prediction.
 
@@ -128,6 +155,7 @@ class CrossConformalPredictor(ABC):
             Aggregated point predictions and conformal prediction sets.
         """
         ...
+
 
 class CVPlusRegressor(CrossConformalPredictor):
     """
@@ -143,19 +171,33 @@ class CVPlusRegressor(CrossConformalPredictor):
         random_state: Random seed controlling fold generation.
         fit_function: Optional custom function used to fit each cloned model.
     """
-    def __init__(self,
-                 model:Predictor|PredictorLike,
-                 K:int=5,
-                 random_state:int|None=None,
-                 fit_function:Callable[[Predictor, Iterable[Any], TensorLike], Predictor]|None = None):
-        super().__init__(model,
-                         splitter = KFoldSplitter(K=K, shuffle=True, random_state=random_state),
-                         conformal_predictor_class=SplitConformalRegression,
-                         fit_function = fit_function
-                         )
+
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        K: int = 5,
+        random_state: int | None = None,
+        fit_function: (
+            Callable[[Predictor, Iterable[Any], TensorLike], Predictor] | None
+        ) = None,
+    ):
+        super().__init__(
+            model,
+            splitter=KFoldSplitter(
+                K=K, shuffle=True, random_state=random_state
+            ),
+            conformal_predictor_class=SplitConformalRegression,
+            fit_function=fit_function,
+        )
 
     # TODO : see what can be moved to the parent class Here
-    def predict(self, X_test:Iterable[Any], alpha:float|TensorLike, *, alpha_correction:AlphaCorrection|None = None)->ConformalPrediction[Any, Any]:
+    def predict(
+        self,
+        X_test: Iterable[Any],
+        alpha: float | TensorLike,
+        *,
+        alpha_correction: AlphaCorrection | None = None,
+    ) -> ConformalPrediction[Any, Any]:
         """
         Compute CV+ prediction intervals.
 
@@ -178,7 +220,9 @@ class CVPlusRegressor(CrossConformalPredictor):
         _validate_alpha(alpha)
 
         if not self._conformal_predictors:
-            raise RuntimeError("CVPlusRegressor must be fitted before prediction.")
+            raise RuntimeError(
+                "CVPlusRegressor must be fitted before prediction."
+            )
 
         n = self.len_calibr
 
@@ -192,28 +236,50 @@ class CVPlusRegressor(CrossConformalPredictor):
         for cp in self._conformal_predictors:
             prediction = cp.model(X_test)
             predictions.append(prediction)
-            prediction = ops.expand_dims(prediction,axis=0)
+            prediction = ops.expand_dims(prediction, axis=0)
             scores = ops.expand_dims(cp.nc_scores, axis=1)
             lower_candidates.append(prediction - scores)
-            upper_candidates .append(prediction + scores)
+            upper_candidates.append(prediction + scores)
 
-        lower_candidates = ops.sort(ops.concatenate(lower_candidates, axis=0), axis=0)
-        upper_candidates = ops.sort(ops.concatenate(upper_candidates, axis=0), axis=0)
-        
-        if "float" not in ops.dtype(lower_candidates): # same type for upper_candidate
+        lower_candidates = ops.sort(
+            ops.concatenate(lower_candidates, axis=0), axis=0
+        )
+        upper_candidates = ops.sort(
+            ops.concatenate(upper_candidates, axis=0), axis=0
+        )
+
+        if "float" not in ops.dtype(
+            lower_candidates
+        ):  # same type for upper_candidate
             lower_candidates = ops.cast(lower_candidates, "float32")
             upper_candidates = ops.cast(upper_candidates, "float32")
 
-        lower_candidates = ops.concatenate([ops.full_like(lower_candidates[:1], float("-inf")), lower_candidates], axis=0)
-        upper_candidates = ops.concatenate([upper_candidates, ops.full_like(upper_candidates[:1], float("inf"))], axis=0)
+        lower_candidates = ops.concatenate(
+            [
+                ops.full_like(lower_candidates[:1], float("-inf")),
+                lower_candidates,
+            ],
+            axis=0,
+        )
+        upper_candidates = ops.concatenate(
+            [
+                upper_candidates,
+                ops.full_like(upper_candidates[:1], float("inf")),
+            ],
+            axis=0,
+        )
 
         # TODO : revoir les formules des indices ici
-        l_alpha = lower_candidates[ops.cast(ops.floor(alpha * (n+1)), int)]
-        u_alpha = upper_candidates[ops.cast(ops.ceil((1 - alpha) * (n+1)) - 1, int)]
+        l_alpha = lower_candidates[ops.cast(ops.floor(alpha * (n + 1)), int)]
+        u_alpha = upper_candidates[
+            ops.cast(ops.ceil((1 - alpha) * (n + 1)) - 1, int)
+        ]
 
         # TODO : See if mean is the best aggregation here
         point_prediction = ops.mean(
             ops.stack(predictions, axis=0),
             axis=0,
         )
-        return ConformalPrediction(point_prediction, ops.stack([l_alpha, u_alpha], axis=-1))
+        return ConformalPrediction(
+            point_prediction, ops.stack([l_alpha, u_alpha], axis=-1)
+        )

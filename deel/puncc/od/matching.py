@@ -39,6 +39,7 @@ from deel.puncc.typing import TensorLike
 
 from .base import ODPrediction, ODTarget
 
+
 class MatchingDirection(StrEnum):
     """
     Direction of the assignment
@@ -51,19 +52,22 @@ class MatchingDirection(StrEnum):
     source = predictions
     target = ground truths
     """
+
     TRUE_TO_PRED = "true_to_pred"
     PRED_TO_TRUE = "pred_to_true"
+
 
 @dataclass(slots=True)
 class AssignmentResult:
     """
     Results of an assignment between a source set and a target set.
     """
+
     # source_to_target_index[source_idx] corresponds to the index of the target assigned to source_idx, or None if unassigned.
     source_to_target_index: list[int | None]
     # list of the indices of the targets that were not assigned to any source.
     unassigned_target_indices: list[int]
-    matching_direction:MatchingDirection = MatchingDirection.TRUE_TO_PRED
+    matching_direction: MatchingDirection = MatchingDirection.TRUE_TO_PRED
 
     def get(self, source_index: int) -> int | None:
         return self.source_to_target_index[source_index]
@@ -72,8 +76,9 @@ class AssignmentResult:
     def matched_pairs(self) -> list[tuple[int, int]]:
         return [
             (source_index, target_index)
-            for source_index, target_index
-            in enumerate(self.source_to_target_index)
+            for source_index, target_index in enumerate(
+                self.source_to_target_index
+            )
             if target_index is not None
         ]
 
@@ -81,11 +86,12 @@ class AssignmentResult:
     def unassigned_source_indices(self) -> list[int]:
         return [
             source_index
-            for source_index, target_index
-            in enumerate(self.source_to_target_index)
+            for source_index, target_index in enumerate(
+                self.source_to_target_index
+            )
             if target_index is None
         ]
-        
+
     def filter_predictions(
         self,
         kept_indices: Sequence[int],
@@ -113,48 +119,38 @@ class AssignmentResult:
             ],
             matching_direction=self.matching_direction,
         )
-        
+
     def filter_sources(
         self,
         kept_indices: Sequence[int],
     ) -> AssignmentResult:
         kept = list(map(int, kept_indices))
 
-        source_to_target = [
-            self.source_to_target_index[i]
-            for i in kept
-        ]
+        source_to_target = [self.source_to_target_index[i] for i in kept]
 
-        all_targets = (
-            set(self.unassigned_target_indices)
-            | {
-                target
-                for target in self.source_to_target_index
-                if target is not None
-            }
-        )
+        all_targets = set(self.unassigned_target_indices) | {
+            target
+            for target in self.source_to_target_index
+            if target is not None
+        }
 
         assigned_targets = {
-            target
-            for target in source_to_target
-            if target is not None
+            target for target in source_to_target if target is not None
         }
 
         return AssignmentResult(
             source_to_target_index=source_to_target,
-            unassigned_target_indices=sorted(
-                all_targets - assigned_targets
-            ),
+            unassigned_target_indices=sorted(all_targets - assigned_targets),
             matching_direction=self.matching_direction,
         )
-    
+
     def matched_indices(
         self,
     ) -> list[list[int], list[int]]:
         pairs = self.matched_pairs
         matched_indices = [
             [source_idx for source_idx, _ in pairs],
-            [target_idx for _, target_idx in pairs]
+            [target_idx for _, target_idx in pairs],
         ]
         if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
             return matched_indices
@@ -166,7 +162,7 @@ class AssignmentResult:
         if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
             return self.unassigned_source_indices
         return list(self.unassigned_target_indices)
-    
+
     def unmatched_pred_indices(
         self,
     ) -> list[int]:
@@ -182,29 +178,31 @@ class AssignmentResult:
         true_indices, pred_indices = self.matched_indices()
         return prediction[pred_indices], target[true_indices]
 
+
 @runtime_checkable
 class AssignmentMethod(Protocol):
     """
     General interface for an assignment method between a set of predictions and a set of ground truths.
     """
+
     def assign(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-    ) -> AssignmentResult:
-        ...
+    ) -> AssignmentResult: ...
+
 
 @runtime_checkable
 class DistanceMetric(Protocol):
     """
     base interface for distance between true and predicted bounding boxes.
     """
+
     def cost_matrix(
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-    ) -> TensorLike:
-        ...
+    ) -> TensorLike: ...
 
 
 class IoUDistance:
@@ -243,6 +241,7 @@ class LACDistance:
         )
 
         return 1.0 - true_class_scores
+
 
 class AsymmetricHausdorffDistance:
     """
@@ -296,11 +295,12 @@ class AsymmetricHausdorffDistance:
             axis=-1,
         )
 
+
 class MixedDistance:
     def __init__(
         self,
-        localization_distance: DistanceMetric=IoUDistance(),
-        classification_distance: DistanceMetric=LACDistance(),
+        localization_distance: DistanceMetric = IoUDistance(),
+        classification_distance: DistanceMetric = LACDistance(),
         class_weight: float = 0.25,
     ):
         self.localization_distance = localization_distance
@@ -309,8 +309,8 @@ class MixedDistance:
 
     def cost_matrix(
         self,
-        y_pred:ODPrediction,
-        y_true:ODTarget,
+        y_pred: ODPrediction,
+        y_true: ODTarget,
     ):
         loc = self.localization_distance.cost_matrix(
             y_pred,
@@ -322,10 +322,8 @@ class MixedDistance:
             y_true,
         )
 
-        return (
-            (1 - self.class_weight) * loc
-            + self.class_weight * cls
-        )
+        return (1 - self.class_weight) * loc + self.class_weight * cls
+
 
 @runtime_checkable
 class CostMatrixMatcher(Protocol):
@@ -333,8 +331,8 @@ class CostMatrixMatcher(Protocol):
         self,
         cost_matrix: TensorLike,
         valid_mask: TensorLike | None = None,
-    ) -> list[tuple[int, int]]:
-        ...
+    ) -> list[tuple[int, int]]: ...
+
 
 class ArgminMatcher:
     """
@@ -354,9 +352,7 @@ class ArgminMatcher:
             return []
 
         if valid_mask is None:
-            indices = ops.convert_to_numpy(
-                ops.argmin(cost_matrix, axis=1)
-            )
+            indices = ops.convert_to_numpy(ops.argmin(cost_matrix, axis=1))
             return list(enumerate(indices.tolist()))
 
         indices = ops.convert_to_numpy(
@@ -370,15 +366,12 @@ class ArgminMatcher:
             )
         )
 
-        valid_sources = ops.convert_to_numpy(
-            ops.any(valid_mask, axis=1)
-        )
+        valid_sources = ops.convert_to_numpy(ops.any(valid_mask, axis=1))
 
         return [
-            (i, int(indices[i]))
-            for i in range(n_source)
-            if valid_sources[i]
+            (i, int(indices[i])) for i in range(n_source) if valid_sources[i]
         ]
+
 
 class HungarianMatcher:
     """One-to-one assignment minimizing the global cost."""
@@ -405,9 +398,8 @@ class HungarianMatcher:
 
             valid_costs = costs[valid]
             cost_span = valid_costs.max() - valid_costs.min()
-            unmatched_cost = (
-                valid_costs.max()
-                + (n_source + 1) * max(cost_span, 1.0)
+            unmatched_cost = valid_costs.max() + (n_source + 1) * max(
+                cost_span, 1.0
             )
 
             augmented = np.full(
@@ -432,6 +424,7 @@ class HungarianMatcher:
                 targets.tolist(),
             )
         )
+
 
 class AssignmentStrategy:
     """
@@ -486,10 +479,7 @@ class AssignmentStrategy:
         valid_mask = None
 
         if self.iou_threshold is not None:
-            valid_mask = (
-                y_true.pairwise_iou(y_pred)
-                >= self.iou_threshold
-            )
+            valid_mask = y_true.pairwise_iou(y_pred) >= self.iou_threshold
 
         if self.class_matching:
             predicted_labels = ops.argmax(
@@ -497,10 +487,7 @@ class AssignmentStrategy:
                 axis=1,
             )
 
-            same_class = (
-                y_true.labels[:, None]
-                == predicted_labels[None, :]
-            )
+            same_class = y_true.labels[:, None] == predicted_labels[None, :]
 
             valid_mask = (
                 same_class
@@ -520,11 +507,7 @@ class AssignmentStrategy:
 
         reverse = self.direction == MatchingDirection.PRED_TO_TRUE
 
-        n_source, n_target = (
-            (n_pred, n_true)
-            if reverse
-            else (n_true, n_pred)
-        )
+        n_source, n_target = (n_pred, n_true) if reverse else (n_true, n_pred)
 
         if not n_source or not n_target:
             return AssignmentResult(
@@ -558,10 +541,7 @@ class AssignmentStrategy:
         for source, target in matched_pairs:
             source_to_target[source] = target
 
-        assigned_targets = {
-            target
-            for _, target in matched_pairs
-        }
+        assigned_targets = {target for _, target in matched_pairs}
 
         return AssignmentResult(
             source_to_target_index=source_to_target,
@@ -572,7 +552,7 @@ class AssignmentStrategy:
             ],
             matching_direction=self.direction,
         )
-    
+
 
 class RandomMatcher:
     def __init__(
@@ -604,15 +584,14 @@ class RandomMatcher:
             valid_mask,
         )
 
+
 def check_assignment(
     assignment: AssignmentResult | None,
     *,
     direction: MatchingDirection | None = None,
 ) -> AssignmentResult:
     if assignment is None:
-        raise ValueError(
-            "This loss requires an AssignmentResult."
-        )
+        raise ValueError("This loss requires an AssignmentResult.")
 
     if direction is not None and assignment.matching_direction != direction:
         raise ValueError(

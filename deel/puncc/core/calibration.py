@@ -37,6 +37,7 @@ Stored fields can be accessed by name, iterated over, copied, updated, sliced, a
 The container stores references to the underlying objects.
 Operations such as :meth:`CalibrationContext.copy` therefore perform shallow copies and do not duplicate tensors, arrays, or other calibration data.
 """
+
 from __future__ import annotations
 
 from collections import UserList
@@ -120,7 +121,7 @@ class CalibrationContext:
 
     def __getitem__(
         self,
-        key:str|Integral|slice|TensorLike,
+        key: str | Integral | slice | TensorLike,
     ) -> Any | Self:
         """
         Access a field or index all stored calibration quantities.
@@ -150,12 +151,9 @@ class CalibrationContext:
 
         if isinstance(key, slice):
             return type(self)(
-                **{
-                    name: value[key]
-                    for name, value in self.__dict__.items()
-                }
+                **{name: value[key] for name, value in self.__dict__.items()}
             )
-        
+
         if isinstance(key, ops.tensor_type):
             key = ops.tolist(key)
 
@@ -164,9 +162,11 @@ class CalibrationContext:
                 name: (
                     type(value)([value[i] for i in key])
                     if isinstance(value, UserList)
-                    else ops.take(value, key, axis=0)
-                    if isinstance(value, ops.tensor_type)
-                    else [value[i] for i in key]
+                    else (
+                        ops.take(value, key, axis=0)
+                        if isinstance(value, ops.tensor_type)
+                        else [value[i] for i in key]
+                    )
                 )
                 for name, value in self.__dict__.items()
             }
@@ -196,7 +196,7 @@ class CalibrationContext:
         """
         del self.__dict__[key]
 
-    def keys(self)->KeysView[str]:
+    def keys(self) -> KeysView[str]:
         """
         Return a view over the stored field names.
 
@@ -205,7 +205,7 @@ class CalibrationContext:
         """
         return self.__dict__.keys()
 
-    def values(self)->ValuesView[Any]:
+    def values(self) -> ValuesView[Any]:
         """
         Return a view over the stored calibration values.
 
@@ -214,7 +214,7 @@ class CalibrationContext:
         """
         return self.__dict__.values()
 
-    def items(self)->ItemsView[str, Any]:
+    def items(self) -> ItemsView[str, Any]:
         """
         Return a view over the stored fields and values.
 
@@ -225,14 +225,11 @@ class CalibrationContext:
 
     def __repr__(self) -> str:
         fields = ", ".join(self.__dict__)
-        return (
-            f"{type(self).__name__}"
-            f"({fields})"
-        )
+        return f"{type(self).__name__}" f"({fields})"
 
     def from_values(
         self,
-        values:Iterable[Any],
+        values: Iterable[Any],
     ) -> Self:
         """
         Create a context with the same fields and new values.
@@ -247,16 +244,8 @@ class CalibrationContext:
         Raises:
             ValueError: If the number of provided values differs from the number of fields stored in the context.
         """
-        return type(self)(
-            **dict(
-                zip(
-                    self.keys(),
-                    values,
-                    strict=True
-                )
-            )
-        )
-    
+        return type(self)(**dict(zip(self.keys(), values, strict=True)))
+
     def update(
         self,
         **kwargs: Any,
@@ -272,7 +261,7 @@ class CalibrationContext:
         """
         self.__dict__.update(kwargs)
         return self
-    
+
     def clear(self) -> Self:
         """
         Remove all fields from the context.
@@ -282,7 +271,7 @@ class CalibrationContext:
         """
         self.__dict__.clear()
         return self
-    
+
     def copy(self) -> Self:
         """
         Create a shallow copy of the context.
@@ -292,11 +281,9 @@ class CalibrationContext:
         Returns:
             A shallow copy of the context.
         """
-        return type(self)(
-            **self.__dict__
-        )
-    
-    def merge(self, other_context:CalibrationContext)->Self:
+        return type(self)(**self.__dict__)
+
+    def merge(self, other_context: CalibrationContext) -> Self:
         """
         Merge another calibration context into this context.
 
@@ -312,7 +299,11 @@ class CalibrationContext:
         Raises:
             ValueError: If the two contexts contain different numbers of calibration samples.
         """
-        if self.__dict__ and other_context.__dict__ and self.size != other_context.size:
+        if (
+            self.__dict__
+            and other_context.__dict__
+            and self.size != other_context.size
+        ):
             raise ValueError(
                 f"Cannot merge CalibrationContext with different sizes: "
                 f"{self.size} != {other_context.size}"
@@ -320,6 +311,6 @@ class CalibrationContext:
 
         self.__dict__.update(other_context.__dict__)
         return self
-    
-    def is_empty(self)->bool:
+
+    def is_empty(self) -> bool:
         return not bool(self.__dict__)

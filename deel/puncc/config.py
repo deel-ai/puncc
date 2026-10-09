@@ -16,11 +16,11 @@ def _backend_from_env() -> str | None:
         return None
     return value
 
-_VALID = {"torch", "tensorflow", "jax", "numpy"}
-_backend:str|None = _backend_from_env()
-_backend_locked:bool = False
-_backend_explicitly_set:bool = False
 
+_VALID = {"torch", "tensorflow", "jax", "numpy"}
+_backend: str | None = _backend_from_env()
+_backend_locked: bool = False
+_backend_explicitly_set: bool = False
 
 
 def lock_backend() -> None:
@@ -29,6 +29,7 @@ def lock_backend() -> None:
     """
     global _backend_locked
     _backend_locked = True
+
 
 def set_backend(name: str) -> None:
     global _backend, _backend_explicitly_set
@@ -45,6 +46,7 @@ def set_backend(name: str) -> None:
     _backend = name
     _backend_explicitly_set = True
     logger.debug("PUNCC backend configured as %s.", name)
+
 
 def set_inferred_backend(name: str) -> None:
     global _backend
@@ -63,20 +65,22 @@ def set_inferred_backend(name: str) -> None:
     logger.debug("PUNCC backend inferred as %s.", name)
 
 
-def get_backend() -> str|None:
+def get_backend() -> str | None:
     """
     Returns:
         str|None: the backend currently selected by PUNCC.
     """
     return _backend
-    #val = _backend or os.environ.get(_BACKEND_ENV_VAR)
-    #return val.strip().lower() if val else None
+    # val = _backend or os.environ.get(_BACKEND_ENV_VAR)
+    # return val.strip().lower() if val else None
+
 
 def is_backend_locked() -> bool:
     """
     Return whether the PUNCC backend has been selected.
     """
     return _backend_locked
+
 
 def is_backend_explicitly_set() -> bool:
     """

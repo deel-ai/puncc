@@ -51,6 +51,7 @@ from deel.puncc.typing import (
 )
 from deel.puncc.warnings import ExperimentalWarning
 
+
 class SplitConformalPredictor(ConformalPredictor):
     """
     Base class for split conformal prediction methods
@@ -62,17 +63,20 @@ class SplitConformalPredictor(ConformalPredictor):
         pred_set_function (PredSetFunction): function to build a prediction set from the model prediction and a non conformity score threshold.
         fit_function (Callable[[Predictor, Iterable[Any], TensorLike], Predictor], optional): Optional function that trains the model. Defaults to None.
     """
+
     __slots__ = (
         "nc_score_function",
         "pred_set_function",
     )
 
-    def __init__(self,
-                 model:Predictor|PredictorLike,
-                 *,                 
-                 nc_score_function:NCScoreFunction,
-                 pred_set_function: PredSetFunction,
-                 fit_function:FitFunction|None = None)->None:
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        *,
+        nc_score_function: NCScoreFunction,
+        pred_set_function: PredSetFunction,
+        fit_function: FitFunction | None = None,
+    ) -> None:
         super().__init__(model=model, fit_function=fit_function)
 
         self.nc_score_function = nc_score_function
@@ -100,10 +104,14 @@ class SplitConformalPredictor(ConformalPredictor):
             self.calibration_context,
             "nc_scores",
         ):
-            raise RuntimeError("The conformal predictor has not been calibrated yet.")
+            raise RuntimeError(
+                "The conformal predictor has not been calibrated yet."
+            )
         return self.calibration_context.nc_scores
 
-    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
         """
         Compute the nonconformity scores associated with a calibration context.
         The scores are computed from the stored model predictions and calibration targets and added to the provided context.
@@ -114,19 +122,19 @@ class SplitConformalPredictor(ConformalPredictor):
         Returns:
             The updated calibration context containing nonconformity scores.
         """
-        calibration_context.nc_scores = (
-            self.nc_score_function(
-                calibration_context.y_pred,
-                calibration_context.y_calib)
+        calibration_context.nc_scores = self.nc_score_function(
+            calibration_context.y_pred, calibration_context.y_calib
         )
         return calibration_context
 
-    def conformalize(self,
-                    prediction:Any,
-                    alpha:float|TensorLike,
-                    calibration_context:CalibrationContext,
-                    *,
-                    X:Any|None=None)->ConformalPrediction[Any, Any]:
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
         """
         Conformalize model predictions.
 
@@ -140,28 +148,26 @@ class SplitConformalPredictor(ConformalPredictor):
         Returns:
             The base predictions and their associated conformal prediction sets.
         """
-        quantile = self._get_quantile(
-            alpha,
-            calibration_context,
-            X=X
-        )
+        quantile = self._get_quantile(alpha, calibration_context, X=X)
 
         prediction_sets = self.pred_set_function(prediction, quantile)
         return ConformalPrediction(prediction, prediction_sets)
 
     @staticmethod
-    def extend_scores_with_inf(scores:TensorLike)->TensorLike:
+    def extend_scores_with_inf(scores: TensorLike) -> TensorLike:
         if "float" not in ops.dtype(scores):
             scores = ops.cast(scores, "float32")
-        return ops.concatenate([scores, ops.full_like(scores[:1], float("inf"))], axis=0)   
+        return ops.concatenate(
+            [scores, ops.full_like(scores[:1], float("inf"))], axis=0
+        )
 
     def _get_quantile(
         self,
-        alpha: float|TensorLike,
+        alpha: float | TensorLike,
         calibration_context: CalibrationContext,
         *,
-        X: Any|None = None,
-    )->TensorLike:
+        X: Any | None = None,
+    ) -> TensorLike:
         """
         Return the conformal quantile associated with a miscoverage level.
 
@@ -180,7 +186,7 @@ class SplitConformalPredictor(ConformalPredictor):
             weights=None,
         )
 
-    
+
 class WeightedQuantileMixin(SplitConformalPredictor):
     """
     Add sample-weighted quantile computation to split conformal prediction.
@@ -190,15 +196,22 @@ class WeightedQuantileMixin(SplitConformalPredictor):
     Args:
         weight_function: Function assigning a weight to each calibration sample.
     """
-    def __init__(self, *args:Any, weight_function:WeightFunction, **kwargs:Any)->None:
+
+    def __init__(
+        self, *args: Any, weight_function: WeightFunction, **kwargs: Any
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.weight_function = weight_function
 
     def compute_calibration_state(self, calibration_context):
-        calibration_context = super().compute_calibration_state(calibration_context)
-        calibration_context.calibration_weights = self.weight_function(calibration_context.X_calib)
+        calibration_context = super().compute_calibration_state(
+            calibration_context
+        )
+        calibration_context.calibration_weights = self.weight_function(
+            calibration_context.X_calib
+        )
         return calibration_context
-    
+
     def _get_quantile(
         self,
         alpha: float | TensorLike,
@@ -214,7 +227,8 @@ class WeightedQuantileMixin(SplitConformalPredictor):
 
         for test_weight in test_weights:
             weights = ops.concatenate(
-                [calibration_weights, ops.reshape(test_weight, (1,))], axis=0)
+                [calibration_weights, ops.reshape(test_weight, (1,))], axis=0
+            )
 
             quantiles.append(
                 ops.weighted_quantile(
@@ -225,6 +239,7 @@ class WeightedQuantileMixin(SplitConformalPredictor):
                 )
             )
         return ops.stack(quantiles, axis=0)
+
 
 class PresetSplitConformalPredictor(SplitConformalPredictor):
     """
@@ -237,10 +252,16 @@ class PresetSplitConformalPredictor(SplitConformalPredictor):
         model: Underlying predictive model.
         fit_function: Optional custom function used to fit the predictive model.
     """
+
     __slots__ = ()
-    nc_score_function:NCScoreFunction
-    pred_set_function:PredSetFunction
-    def __init__(self, model:Predictor|PredictorLike, fit_function:FitFunction|None=None):
+    nc_score_function: NCScoreFunction
+    pred_set_function: PredSetFunction
+
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        fit_function: FitFunction | None = None,
+    ):
         super().__init__(
             model=model,
             nc_score_function=type(self).nc_score_function,
@@ -248,11 +269,14 @@ class PresetSplitConformalPredictor(SplitConformalPredictor):
             fit_function=fit_function,
         )
 
-LocalScaleFunction:TypeAlias = Callable[[Any], TensorLike]
+
+LocalScaleFunction: TypeAlias = Callable[[Any], TensorLike]
+
 
 class LocallyScaledMixin(SplitConformalPredictor):
-    eps:float = 1e-12
-    def __init__(self, *args, scale_function:LocalScaleFunction, **kwargs):
+    eps: float = 1e-12
+
+    def __init__(self, *args, scale_function: LocalScaleFunction, **kwargs):
         self.scale_function = scale_function
         super().__init__(*args, **kwargs)
 
@@ -263,22 +287,34 @@ class LocallyScaledMixin(SplitConformalPredictor):
         if scale.ndim != 1:
             raise ValueError("scale_function must return shape (n,) or (n, 1).")
         if ops.any(scale <= 0):
-            raise ValueError("LocallyScaledCP requires strictly positive dispersion estimates.")
+            raise ValueError(
+                "LocallyScaledCP requires strictly positive dispersion estimates."
+            )
         return scale
 
-    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
-        calibration_context = super().compute_calibration_state(calibration_context)
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
+        calibration_context = super().compute_calibration_state(
+            calibration_context
+        )
         scores = calibration_context.nc_scores
         scale = self._scale(calibration_context.X_calib)
         # Add singleton dimensions after the sample dimension to match multivariate nonconformity scores.
         if scores.ndim > 1:
             scale = ops.reshape(scale, (-1,) + (1,) * (scores.ndim - 1))
-        calibration_context.nc_scores = calibration_context.nc_scores / (scale + self.eps)
+        calibration_context.nc_scores = calibration_context.nc_scores / (
+            scale + self.eps
+        )
         return calibration_context
 
-    def conformalize(self, prediction, alpha, calibration_context=None, *, X=None):
+    def conformalize(
+        self, prediction, alpha, calibration_context=None, *, X=None
+    ):
         if X is None:
-            raise ValueError("X is required for locally scaled conformal prediction.")
+            raise ValueError(
+                "X is required for locally scaled conformal prediction."
+            )
 
         quantile = self._get_quantile(alpha, calibration_context, X=X)
         scale = self._scale(X)
@@ -288,36 +324,53 @@ class LocallyScaledMixin(SplitConformalPredictor):
             scale = ops.reshape(scale, (-1,) + (1,) * score_ndim)
 
         quantile = quantile * (scale + self.eps)
-        return ConformalPrediction(prediction, self.pred_set_function(prediction, quantile))
+        return ConformalPrediction(
+            prediction, self.pred_set_function(prediction, quantile)
+        )
+
 
 class LocallyAdaptiveMixin(LocallyScaledMixin):
-    def __init__(self, *args, 
-                 dispertion_estimator:Predictor|PredictorLike,
-                 dispertion_estimation_function:Callable[[TensorLike, TensorLike], TensorLike] = absolute_difference(),
-                 **kwargs):
+    def __init__(
+        self,
+        *args,
+        dispertion_estimator: Predictor | PredictorLike,
+        dispertion_estimation_function: Callable[
+            [TensorLike, TensorLike], TensorLike
+        ] = absolute_difference(),
+        **kwargs,
+    ):
         self.dispertion_estimator = make_predictor(dispertion_estimator)
         self.dispertion_estimation_function = dispertion_estimation_function
-        super().__init__(*args, scale_function=self.dispertion_estimator, **kwargs)
+        super().__init__(
+            *args, scale_function=self.dispertion_estimator, **kwargs
+        )
 
-    def fit(self,
-            X:Iterable[Any],
-            y:Iterable[Any]|None = None,
-            *args:Any,
-            **kwargs:Any
-            )->Self:
+    def fit(
+        self,
+        X: Iterable[Any],
+        y: Iterable[Any] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
         super().fit(X, y, *args, **kwargs)
         mu_pred = self.model(X)
-        self.dispertion_estimator.fit(X, self.dispertion_estimation_function(mu_pred, y))
+        self.dispertion_estimator.fit(
+            X, self.dispertion_estimation_function(mu_pred, y)
+        )
         return self
+
 
 def inverse_root_leverage_weight(h: TensorLike) -> TensorLike:
     return 1 / ops.sqrt(1 + h)
+
 
 class LeverageWeightedMixin(LocallyScaledMixin):
     def __init__(
         self,
         *args,
-        leverage_weight_function: Callable[[TensorLike], TensorLike] = inverse_root_leverage_weight,
+        leverage_weight_function: Callable[
+            [TensorLike], TensorLike
+        ] = inverse_root_leverage_weight,
         **kwargs,
     ):
         self.leverage_weight_function = leverage_weight_function
@@ -331,9 +384,9 @@ class LeverageWeightedMixin(LocallyScaledMixin):
             **kwargs,
         )
 
-    def fit(self, X:Iterable[Any],
-            y:Iterable[Any]|None = None,
-            *args, **kwargs) -> Self:
+    def fit(
+        self, X: Iterable[Any], y: Iterable[Any] | None = None, *args, **kwargs
+    ) -> Self:
         super().fit(X, y, *args, **kwargs)
         return self.fit_leverage(X)
 
@@ -341,13 +394,17 @@ class LeverageWeightedMixin(LocallyScaledMixin):
         X = ops.array(X)
 
         if ops.shape(X)[0] <= ops.shape(X)[1]:
-            raise ValueError("LeverageWeightedCP requires more training samples than features.")
+            raise ValueError(
+                "LeverageWeightedCP requires more training samples than features."
+            )
 
         self._feature_mean = ops.mean(X, axis=0)
         self._feature_scale = ops.std(X, axis=0)
 
         if ops.item(ops.any(self._feature_scale == 0)):
-            raise ValueError("LeverageWeightedCP requires non-constant features.")
+            raise ValueError(
+                "LeverageWeightedCP requires non-constant features."
+            )
 
         X = (X - self._feature_mean) / self._feature_scale
         self._gram_pinv = ops.pinv(ops.transpose(X) @ X)
@@ -355,7 +412,9 @@ class LeverageWeightedMixin(LocallyScaledMixin):
 
     def _leverage(self, X):
         if self._gram_pinv is None:
-            raise RuntimeError("Call fit() or fit_leverage() before calibration.")
+            raise RuntimeError(
+                "Call fit() or fit_leverage() before calibration."
+            )
 
         X = (ops.array(X) - self._feature_mean) / self._feature_scale
         return ops.sum((X @ self._gram_pinv) * X, axis=-1)

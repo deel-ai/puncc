@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-    Object detection various tools (should be placed somewhere else)
+Object detection various tools (should be placed somewhere else)
 """
 
 from collections import UserList
@@ -44,16 +44,16 @@ class IterableDataclassMixin(Generic[T]):
         return len(getattr(self, field.name))
 
     @overload
-    def __getitem__(self, idx: Integral) -> T:
-        ...
+    def __getitem__(self, idx: Integral) -> T: ...
 
     @overload
-    def __getitem__(self, idx: slice | TensorLike) -> Self:
-        ...
+    def __getitem__(self, idx: slice | TensorLike) -> Self: ...
 
     def __getitem__(self, idx) -> T | Self:
         # keep both parts of the condition even if second one covers first one to avoid errors that may be raised by ops.tensor_type
-        if not isinstance(idx, (Integral, slice)) and isinstance(idx, ops.tensor_type):
+        if not isinstance(idx, (Integral, slice)) and isinstance(
+            idx, ops.tensor_type
+        ):
             idx = ops.tolist(idx)
         if isinstance(idx, Integral) and not isinstance(idx, bool):
             values = {
@@ -80,15 +80,13 @@ class IterableDataclassMixin(Generic[T]):
 
 class IndexableUserList(UserList[T]):
     @overload
-    def __getitem__(self, idx: Integral) -> T:
-        ...
+    def __getitem__(self, idx: Integral) -> T: ...
 
     @overload
     def __getitem__(
         self,
         idx: list[Integral] | tuple[Integral, ...] | slice | TensorLike,
-    ) -> Self:
-        ...
+    ) -> Self: ...
 
     def __getitem__(self, idx):
         if isinstance(idx, Integral) and not isinstance(idx, bool):

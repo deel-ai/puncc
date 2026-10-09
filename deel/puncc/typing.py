@@ -23,6 +23,7 @@
 """
 Basic definitions of type aliases and protocols used by conformal prediction methods
 """
+
 from __future__ import annotations
 from typing import Any, TypeVar, TypeAlias, Protocol, runtime_checkable
 from collections.abc import Iterable, Callable
@@ -37,7 +38,7 @@ from collections.abc import Iterable, Callable
 # else:
 #     TensorLike = Any
 
-TensorLike:TypeAlias = Any
+TensorLike: TypeAlias = Any
 TPrediction_co = TypeVar(
     "TPrediction_co",
     covariant=True,
@@ -46,18 +47,20 @@ TPrediction_co = TypeVar(
 
 @runtime_checkable
 class Predictor(Protocol[TPrediction_co]):
-    def __call__(self, X: Any, *args:Any, **kwargs:Any) -> TPrediction_co:
-        ...
+    def __call__(self, X: Any, *args: Any, **kwargs: Any) -> TPrediction_co: ...
+
 
 @runtime_checkable
 class Fittable(Protocol):
-    def fit(self, X: Iterable[Any], y: TensorLike, *args:Any, **kwargs:Any) -> Any:
-        ...
+    def fit(
+        self, X: Iterable[Any], y: TensorLike, *args: Any, **kwargs: Any
+    ) -> Any: ...
+
 
 @runtime_checkable
 class PredictorLike(Protocol[TPrediction_co]):
-    def predict(self, X: Any, *args:Any, **kwargs:Any) -> TPrediction_co:
-        ...
+    def predict(self, X: Any, *args: Any, **kwargs: Any) -> TPrediction_co: ...
+
 
 # A nonconformity score function takes as input the true labels and the model's predictions, and outputs a sequence of nonconformity scores.
 NCScoreFunction: TypeAlias = Callable[
@@ -77,7 +80,9 @@ WeightFunction = Callable[
 ]
 
 # A fit function takes as input a model, features and targets and returns a predictor fitted to given dataset
-FitFunction: TypeAlias = Callable[[Predictor, Iterable[Any], Iterable[Any]], Predictor]
+FitFunction: TypeAlias = Callable[
+    [Predictor, Iterable[Any], Iterable[Any]], Predictor
+]
 
 # A function that takes a float or tensor and returns a float or tensor, used for alpha correction in conformal prediction methods.
-AlphaCorrection:TypeAlias = Callable[[float|TensorLike], float|TensorLike]
+AlphaCorrection: TypeAlias = Callable[[float | TensorLike], float | TensorLike]

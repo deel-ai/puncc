@@ -23,6 +23,7 @@
 """
 This module implements conformal anomaly detection procedures.
 """
+
 from typing import Any, Iterable, Self
 import logging
 
@@ -32,6 +33,7 @@ from deel.puncc.core.split import SplitConformalPredictor
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 
 logger = logging.getLogger(__name__)
+
 
 class SplitCAD(SplitConformalPredictor):
     """Split conformal anomaly detection method based on Laxhammar's algorithm.
@@ -118,31 +120,47 @@ class SplitCAD(SplitConformalPredictor):
         plt.yticks(())
         plt.legend()
     """
-    def _is_anomaly(self, scores:TensorLike, threshold:float|TensorLike)->TensorLike:
+
+    def _is_anomaly(
+        self, scores: TensorLike, threshold: float | TensorLike
+    ) -> TensorLike:
         return scores > threshold
 
-    def __init__(self,
-                 model:Predictor|PredictorLike,
-                 *,
-                 fit_function:FitFunction|None = None)->None:
-        super().__init__(model=model,
-                         # TODO : revoir l'archi pour rendre ceci moins sale
-                         # deviendrait valide si nc_score_function méthode de SplitCP plutôt que argument du constructeur
-                         nc_score_function=None, # Unused in CAD
-                         pred_set_function=self._is_anomaly,
-                          fit_function=fit_function)
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        *,
+        fit_function: FitFunction | None = None,
+    ) -> None:
+        super().__init__(
+            model=model,
+            # TODO : revoir l'archi pour rendre ceci moins sale
+            # deviendrait valide si nc_score_function méthode de SplitCP plutôt que argument du constructeur
+            nc_score_function=None,  # Unused in CAD
+            pred_set_function=self._is_anomaly,
+            fit_function=fit_function,
+        )
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any]|None = None)->Self:
+    def calibrate(
+        self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
+    ) -> Self:
         _check_calibration_samples(X_calib, y_calib, require_y=False)
         self.reset_calibration()
         self.calibration_context.update(
-            X_calib = X_calib,
-            y_pred = self.model(X_calib)
+            X_calib=X_calib, y_pred=self.model(X_calib)
         )
-        self.calibration_context = self.compute_calibration_state(self.calibration_context)
-        logger.debug("Calibrating %s on %d samples.", type(self).__name__, self.calibration_context.size)
+        self.calibration_context = self.compute_calibration_state(
+            self.calibration_context
+        )
+        logger.debug(
+            "Calibrating %s on %d samples.",
+            type(self).__name__,
+            self.calibration_context.size,
+        )
         return self
 
-    def compute_calibration_state(self, calibration_context:CalibrationContext)->CalibrationContext:
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
         calibration_context.nc_scores = calibration_context.y_pred
         return calibration_context

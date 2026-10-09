@@ -23,9 +23,11 @@
 """
 This module provides conformal prediction metrics.
 """
+
 from typing import Iterable
 from deel.puncc.typing import TensorLike
 from deel.puncc import ops
+
 
 def classification_mean_coverage(
     y_true: TensorLike, set_pred: Iterable[Iterable]
@@ -51,7 +53,8 @@ def classification_mean_coverage(
         correctly covered.
     """
     return sum([y in s for y, s in zip(y_true, set_pred)]) / len(y_true)
-    #return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
+    # return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
+
 
 def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
     """
@@ -64,9 +67,12 @@ def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
         float: Average size of the prediction sets
     """
     return sum([len(s) for s in set_pred]) / len(set_pred)
-    #return ops.mean(ops.array([len(s) for s in set_pred]))
+    # return ops.mean(ops.array([len(s) for s in set_pred]))
 
-def regression_mean_coverage(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike) -> float:
+
+def regression_mean_coverage(
+    y_true: TensorLike, y_pred_lower: TensorLike, y_pred_upper: TensorLike
+) -> float:
     """
     Compute average coverage on several prediction intervals.
 
@@ -87,9 +93,19 @@ def regression_mean_coverage(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_
         float: average coverage, indicating the proportion of instances that are
         correctly covered.
     """
-    return ops.item(ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper)))
+    return ops.item(
+        ops.mean(
+            ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper)
+        )
+    )
 
-def regression_ace(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:TensorLike, alpha:float) -> float:
+
+def regression_ace(
+    y_true: TensorLike,
+    y_pred_lower: TensorLike,
+    y_pred_upper: TensorLike,
+    alpha: float,
+) -> float:
     """
     Compute the Average Coverage Error (ACE).
 
@@ -115,7 +131,10 @@ def regression_ace(y_true:TensorLike, y_pred_lower:TensorLike, y_pred_upper:Tens
     cov = regression_mean_coverage(y_true, y_pred_lower, y_pred_upper)
     return cov - (1 - alpha)
 
-def regression_sharpness(y_pred_lower:TensorLike, y_pred_upper:TensorLike) -> float:
+
+def regression_sharpness(
+    y_pred_lower: TensorLike, y_pred_upper: TensorLike
+) -> float:
     """
     Compute the average absolute width of the prediction intervals.
 
@@ -128,9 +147,10 @@ def regression_sharpness(y_pred_lower:TensorLike, y_pred_upper:TensorLike) -> fl
     """
     return ops.mean(ops.abs(y_pred_upper - y_pred_lower))
 
+
 def object_detection_mean_coverage(
     y_pred_outer: TensorLike, y_true: TensorLike
-)->float:
+) -> float:
     """
     Calculate the mean coverage of conformal object detection predictions.
     For each instance, coverage is defined as the true bounding box being inside
@@ -144,7 +164,9 @@ def object_detection_mean_coverage(
         float: average coverage, indicating the proportion of objects that are
         correctly covered.
     """
-    x_min_true, y_min_true, x_max_true, y_max_true = ops.split(y_true, 4, axis=1)
+    x_min_true, y_min_true, x_max_true, y_max_true = ops.split(
+        y_true, 4, axis=1
+    )
     x_min, y_min, x_max, y_max = ops.split(y_pred_outer, 4, axis=1)
     cov = (
         (x_min <= x_min_true)
@@ -155,7 +177,7 @@ def object_detection_mean_coverage(
     return ops.mean(cov)
 
 
-def object_detection_mean_area(y_pred: TensorLike)->float:
+def object_detection_mean_area(y_pred: TensorLike) -> float:
     """
     Calculate the mean area of object bounding predictions.
 
@@ -172,21 +194,21 @@ def object_detection_mean_area(y_pred: TensorLike)->float:
 # pairwise iou
 def iou(bboxes1: TensorLike, bboxes2: TensorLike) -> TensorLike:
     """
-    Calculates the Intersection over Union (IoU) between two sets of 
-    bounding boxes. The IoU is calculated as the ratio between the area of 
+    Calculates the Intersection over Union (IoU) between two sets of
+    bounding boxes. The IoU is calculated as the ratio between the area of
     intersection and the area of union between two bounding boxes.
 
     Args:
-        bboxes1 (TensorLike): array of shape (N, 4) representing the 
-        coordinates of N bounding boxes in the format 
+        bboxes1 (TensorLike): array of shape (N, 4) representing the
+        coordinates of N bounding boxes in the format
         [x_min, y_min, x_max, y_max].
 
-        bboxes2 (TensorLike): array of shape (N, 4) representing the 
-        coordinates of N bounding boxes in the format 
+        bboxes2 (TensorLike): array of shape (N, 4) representing the
+        coordinates of N bounding boxes in the format
         [x_min, y_min, x_max, y_max].
 
     Returns:
-        TensorLike: Array of shape (N, ) representing the IoU 
+        TensorLike: Array of shape (N, ) representing the IoU
         between each pair of bounding boxes.
     """
     x1_min, y1_min, x1_max, y1_max = ops.split(bboxes1, 4, axis=1)

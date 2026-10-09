@@ -36,7 +36,10 @@ from deel.puncc.typing import TensorLike
 from deel.puncc.backend.keras import ops
 from deel.puncc.nonconformity_scores import lac_score, aps_score, raps_score
 from deel.puncc.prediction_sets import lac_set, aps_set, raps_set
-from deel.puncc.core.split import PresetSplitConformalPredictor, SplitConformalPredictor
+from deel.puncc.core.split import (
+    PresetSplitConformalPredictor,
+    SplitConformalPredictor,
+)
 
 # class ClassificationSplitConformalPredictor(SplitConformalPredictor):
 #     nc_score_function: ClassVar[NCScoreFunction]
@@ -67,25 +70,33 @@ from deel.puncc.core.split import PresetSplitConformalPredictor, SplitConformalP
 #         return [ops.where_1d(mask[i]) for i in range(n_samples)]
 
 
-class ClassConditionalSplitConformalMixin(SplitConformalPredictor):#(ClassificationConformalPredictor):
+class ClassConditionalSplitConformalMixin(
+    SplitConformalPredictor
+):  # (ClassificationConformalPredictor):
     __slots__ = ("classwise_calibration_contexts",)
     splitter = ClasswiseSplitter()
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:Iterable[Any]|None=None)->Self:
+    def calibrate(
+        self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
+    ) -> Self:
         super().calibrate(X_calib, y_calib)
-        self.classwise_calibration_contexts = self.splitter.split_context_by_group(self.calibration_context)
+        self.classwise_calibration_contexts = (
+            self.splitter.split_context_by_group(self.calibration_context)
+        )
         return self
-    
+
     def reset_calibration(self) -> None:
         super().reset_calibration()
         self.classwise_calibration_contexts = {}
 
-    def conformalize(self,
-                    prediction:Any,
-                    alpha:float|TensorLike,
-                    calibration_context:CalibrationContext,
-                    *,
-                    X:Any|None = None)->ConformalPrediction[Any, Any]:
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
         if isinstance(alpha, Real):
             alpha_is_scalar = True
         else:
@@ -95,7 +106,9 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):#(Classificat
         if calibration_context is self.calibration_context:
             classwise_contexts = self.classwise_calibration_contexts
         else:
-            classwise_contexts = self.splitter.split_context_by_group(calibration_context)
+            classwise_contexts = self.splitter.split_context_by_group(
+                calibration_context
+            )
 
         n_classes = int(ops.shape(prediction)[-1])
         quantiles = []
@@ -111,9 +124,18 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):#(Classificat
             quantiles.append(quantile_k)
 
         # For weighted class conditional with missing classes, we need to ensure that all quantiles have the same shape.
-        non_scalar_quantile = next((q for q in quantiles if ops.ndim(q) > 0), None)
+        non_scalar_quantile = next(
+            (q for q in quantiles if ops.ndim(q) > 0), None
+        )
         if non_scalar_quantile is not None:
-            quantiles = [ops.ones_like(non_scalar_quantile) * q if ops.ndim(q) == 0 else q for q in quantiles]
+            quantiles = [
+                (
+                    ops.ones_like(non_scalar_quantile) * q
+                    if ops.ndim(q) == 0
+                    else q
+                )
+                for q in quantiles
+            ]
 
         quantiles = ops.stack(quantiles, axis=-1)
         if ops.ndim(quantiles) == 1:
@@ -122,9 +144,11 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):#(Classificat
         y_set = self.pred_set_function(prediction, quantiles)
         return ConformalPrediction(prediction, y_set)
 
+
 class LAC(PresetSplitConformalPredictor):
-    nc_score_function=lac_score()
-    pred_set_function=lac_set()
+    nc_score_function = lac_score()
+    pred_set_function = lac_set()
+
 
 class ClassConditionalLAC(ClassConditionalSplitConformalMixin, LAC):
     """Implementation of the Classwise Least Ambiguous Set-Valued Classifier.
@@ -209,13 +233,27 @@ class ClassConditionalLAC(ClassConditionalSplitConformalMixin, LAC):
         print(f"Average prediction set size: {np.round(size, 2)}")
     """
 
+
 class APS(PresetSplitConformalPredictor):
     nc_score_function = aps_score()
     pred_set_function = aps_set(rand=True)
 
+
 class RAPS(SplitConformalPredictor):
     # TODO : add random state propagation to control randomized tie breaking
-    def __init__(self, model, lambd:float=0, k_reg:int=1, rand:bool=True, fit_function=None):
+    def __init__(
+        self,
+        model,
+        lambd: float = 0,
+        k_reg: int = 1,
+        rand: bool = True,
+        fit_function=None,
+    ):
         nc_score_function = raps_score(lambd=lambd, k_reg=k_reg, rand=rand)
         pred_set_function = raps_set(lambd=lambd, k_reg=k_reg, rand=rand)
-        super().__init__(model, nc_score_function=nc_score_function, pred_set_function=pred_set_function, fit_function=fit_function)
+        super().__init__(
+            model,
+            nc_score_function=nc_score_function,
+            pred_set_function=pred_set_function,
+            fit_function=fit_function,
+        )

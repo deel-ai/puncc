@@ -183,9 +183,7 @@ class BackendManager:
     def __getattr__(self, name: str):
         if self._keras is None:
             if not is_backend_locked() and "keras" not in sys.modules:
-                return _DeferredBackendOperation(
-                    name=name, backend_manager=self
-                )
+                return _DeferredBackendOperation(name=name, backend_manager=self)
             self._load_keras()
         return getattr(self.module, name)
 
@@ -453,9 +451,7 @@ class OpsBackendManager(BackendManager):
         return idx
 
     @set_backend_on_first_call
-    def setdiff1d(
-        self, a: TensorLike, b: TensorLike, assume_unique: bool = False
-    ):
+    def setdiff1d(self, a: TensorLike, b: TensorLike, assume_unique: bool = False):
         """
         Return values present in ``a`` and absent from ``b``.
 
@@ -520,13 +516,12 @@ class OpsBackendManager(BackendManager):
         n = self.shape(x)[axis]
 
         cdf = self.arange(1, n + 1, dtype=q.dtype) / self.cast(n, q.dtype)
+        # idx = self.searchsorted(cdf, q, side="left")
+
         q_is_scalar = self.ndim(q) == 0
-        # TensorFlow's searchsorted requires `values` to have at least one
-        # dimension.
-        # Normalize a scalar quantile for the lookup, then restore its scalar
-        # shape so the reduction semantics remain backend-independent.
         search_q = self.reshape(q, (1,)) if q_is_scalar else q
         idx = self.searchsorted(cdf, search_q, side="left")
+
         idx = self.clip(idx, 0, n - 1)
         if q_is_scalar:
             idx = self.squeeze(idx, axis=0)

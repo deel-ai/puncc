@@ -22,7 +22,6 @@
 # SOFTWARE.
 import logging.config
 
-
 # Create the Logger
 logging.basicConfig(
     format="%(asctime)s === %(name)s [%(funcName)s()] | %(levelname)s | - %(message)s",

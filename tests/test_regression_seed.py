@@ -20,383 +20,460 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Callable
 
 import numpy as np
 import pytest
-from sklearn import linear_model
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 
-from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.api.prediction import DualPredictor
-from deel.puncc.api.prediction import MeanVarPredictor
-from deel.puncc.metrics import regression_mean_coverage
-from deel.puncc.metrics import regression_sharpness
-from deel.puncc.regression import AdaptiveEnbPI
-from deel.puncc.regression import CQR
-from deel.puncc.regression import CVPlus
-from deel.puncc.regression import EnbPI
-from deel.puncc.regression import LeverageWeightedCP
-from deel.puncc.regression import LocallyAdaptiveCP
-from deel.puncc.regression import SplitCP
-
-# from deel.puncc.regression import AdaptiveEnbPI
-
-
-RESULTS = {
-    "scp": {"cov": 0.95, "width": 218.98},
-    "nescp": {"cov": 0.96, "width": 230.1},
-    "lwcp": {"cov": 0.93, "width": 211.90},
-    "lacp": {"cov": 0.96, "width": 347.87},
-    "cqr": {"cov": 0.93, "width": 204.52},
-    "cqr_new_sklearn": {"cov": 0.94, "width": 204.624497},
-    "cv+": {"cov": 0.9, "width": 232.55},
-    "enbpi": {"cov": 0.9, "width": 221.5},
-    "aenbpi": {"cov": 0.87, "width": 272.14},
-}
-
-
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
+from deel.puncc import ops
+from deel.puncc.core.cross_conformal import CVPlusRegressor
+from deel.puncc.core.predictors import MultiPredictorStack, SklearnWrapper
+from deel.puncc.core.samplers import IIDBootstrapSampler
+from deel.puncc.core.split import WeightedQuantileMixin
+from deel.puncc.metrics import regression_mean_coverage, regression_sharpness
+from deel.puncc.regression.sequential import EnbPIRegressor
+from deel.puncc.regression.split import (
+    CQR,
+    LeverageWeightedCP,
+    LocallyAdaptiveCP,
+    SplitConformalRegression,
 )
-def test_split_cp(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # split train data into fit and calibration
-    X_fit, X_calib, y_fit, y_calib = train_test_split(
-        X_train, y_train, random_state=random_state
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.exceptions import NotCalibratedError
+from tests._utils import tensor, to_numpy
+
+
+@pytest.fixture(scope="module")
+def regression_data():
+    rng = np.random.default_rng(42)
+
+    X = rng.normal(size=(320, 3)).astype(np.float32)
+    noise = rng.normal(scale=0.6, size=320)
+
+    y = (2.0 * X[:, 0] - 0.6 * X[:, 1] + 0.4 * X[:, 2] + noise).astype(np.float32)
+
+    X, y = tensor(X, "float32"), tensor(y, "float32")
+    fit_data = X[:150], y[:150]
+    calib_data = X[150:260], y[150:260]
+    test_data = X[260:], y[260:]
+
+    return fit_data, calib_data, test_data
+
+
+def assert_valid_intervals(result, n_samples):
+    prediction = to_numpy(result.prediction)
+    intervals = to_numpy(result.prediction_set)
+
+    assert prediction.shape[0] == n_samples
+    assert intervals.shape == (n_samples, 2)
+
+    assert np.all(np.isfinite(prediction))
+    assert np.all(np.isfinite(intervals))
+    assert np.all(intervals[:, 0] <= intervals[:, 1])
+
+    return prediction, intervals
+
+
+def assert_reasonable_coverage(y_true, intervals):
+    lower = intervals[:, 0]
+    upper = intervals[:, 1]
+
+    coverage = regression_mean_coverage(to_numpy(y_true), lower, upper)
+    width = regression_sharpness(lower, upper)
+
+    assert 0.7 <= coverage <= 1.0
+    assert np.isfinite(to_numpy(width)).all()
+    assert float(to_numpy(width)) > 0
+
+
+def test_split_cp(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = regression_data
+
+    cp = SplitConformalRegression(model=SklearnWrapper(LinearRegression()))
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
+
+    expected_scores = np.abs(to_numpy(cp.model(X_calib)) - to_numpy(y_calib))
+    np.testing.assert_allclose(
+        to_numpy(cp.nc_scores),
+        expected_scores,
+        rtol=1e-5,
     )
 
-    # Create linear regression predictor
-    predictor = BasePredictor(linear_model.LinearRegression())
-    # CP method initialization
-    split_cp = SplitCP(predictor)
+    alpha = 0.1
+    prediction, intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=alpha),
+        n_samples=len(X_test),
+    )
 
-    # The fit method trains the model and computes the residuals on the
-    # calibration set
-    split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-    # The predict method infers prediction intervals with respect to
-    # the risk alpha
-    y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
+    # Independent empirical-quantile oracle.
+    sorted_scores = np.sort(np.concatenate([expected_scores, [np.inf]]))
+    quantile_index = int(np.ceil((len(expected_scores) + 1) * (1 - alpha)) - 1)
+    quantile = sorted_scores[quantile_index]
 
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    expected_intervals = np.stack(
+        [prediction - quantile, prediction + quantile],
+        axis=-1,
     )
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["scp"]["cov"], RESULTS["scp"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+        intervals,
+        expected_intervals,
+        rtol=1e-5,
     )
 
-
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_ne_split_cp(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # split train data into fit and calibration
-    X_fit, X_calib, y_fit, y_calib = train_test_split(
-        X_train, y_train, random_state=random_state
+    # Smaller alpha must produce intervals at least as wide.
+    _, wider_intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=0.05),
+        n_samples=len(X_test),
     )
 
-    def w_estimator_gen(gamma):
-        def w_estimator(X):
-            return [gamma ** (len(X) + 1 - i) for i in range(len(X))]
+    assert np.all(wider_intervals[:, 0] <= intervals[:, 0])
+    assert np.all(wider_intervals[:, 1] >= intervals[:, 1])
 
-        return w_estimator
+    assert_reasonable_coverage(y_test, intervals)
 
-    # Create linear regression predictor
-    predictor = BasePredictor(linear_model.LinearRegression())
-    # CP method initialization
-    w_split_cp = SplitCP(predictor, weight_func=w_estimator_gen(0.95))
-    # The fit method trains the model and computes the residuals on the
-    # calibration set
-    w_split_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-    # The predict method infers prediction intervals with respect to
-    # the risk alpha
-    y_pred, y_pred_lower, y_pred_upper = w_split_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
 
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+class WeightedSplitConformalRegression(
+    WeightedQuantileMixin,
+    SplitConformalRegression,
+):
+    pass
+
+
+def first_column(X):
+    return ops.squeeze(ops.convert_to_tensor(X), axis=-1)
+
+
+def test_weighted_split_cp():
+    X_calib = np.array(
+        [[0.0], [1.0], [2.0], [3.0]],
+        dtype=np.float32,
+    )
+    X_calib = tensor(X_calib, "float32")
+    y_calib = np.array(
+        [0.0, 1.0, 2.0, 5.0],
+        dtype=np.float32,
+    )
+    y_calib = tensor(y_calib, "float32")
+    X_test = np.array(
+        [[4.0], [5.0]],
+        dtype=np.float32,
+    )
+    X_test = tensor(X_test, "float32")
+
+    cp = WeightedSplitConformalRegression(
+        model=first_column,
+        weight_function=lambda X: first_column(X) + 1.0,
+    )
+    cp.calibrate(X_calib, y_calib)
+
+    np.testing.assert_allclose(
+        to_numpy(cp.calibration_context.calibration_weights),
+        [1.0, 2.0, 3.0, 4.0],
     )
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["nescp"]["cov"], RESULTS["nescp"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+        to_numpy(cp.nc_scores),
+        [0.0, 0.0, 0.0, 2.0],
     )
 
+    # Weights [1, 2, 3, 4, 5] and [1, 2, 3, 4, 6],
+    # including the extra +inf conformity score.
+    # Both weighted median thresholds equal 2.
+    result = cp.predict(X_test, alpha=0.5)
 
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_locally_adaptive_cp(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # split train data into fit and calibration
-    X_fit, X_calib, y_fit, y_calib = train_test_split(
-        X_train, y_train, random_state=random_state
-    )
-
-    # Create linear regression object
-    mu_model = linear_model.LinearRegression()
-    # Create RF regression object
-    var_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    # Create predictor
-    predictor = MeanVarPredictor(models=[mu_model, var_model])
-    # CP method initialization
-    la_cp = LocallyAdaptiveCP(predictor)
-
-    # Fit and conformalize
-    la_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-    y_pred, y_pred_lower, y_pred_upper = la_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
-
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
-    )
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["lacp"]["cov"], RESULTS["lacp"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+        to_numpy(result.prediction_set),
+        [[2.0, 6.0], [3.0, 7.0]],
     )
 
 
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_leverage_weighted_cp(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # split train data into fit and calibration
-    X_fit, X_calib, y_fit, y_calib = train_test_split(
-        X_train, y_train, random_state=random_state
+def test_locally_adaptive_cp(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = regression_data
+
+    cp = LocallyAdaptiveCP(
+        model=SklearnWrapper(LinearRegression()),
+        dispertion_estimator=SklearnWrapper(
+            RandomForestRegressor(
+                n_estimators=30,
+                random_state=42,
+            )
+        ),
     )
 
-    # Standardize inputs from fit split only (recommended for leverage scores)
-    scaler = StandardScaler()
-    X_fit = scaler.fit_transform(X_fit)
-    X_calib = scaler.transform(X_calib)
-    X_test = scaler.transform(X_test)
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
 
-    # Create linear regression predictor
-    predictor = BasePredictor(linear_model.LinearRegression())
-    # CP method initialization
-    lw_cp = LeverageWeightedCP(
-        predictor, weight_func=lambda h: np.power(1 + h, -0.5)
+    assert cp.len_calibr == len(X_calib)
+    assert np.all(np.isfinite(to_numpy(cp.nc_scores)))
+
+    _, intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=0.1),
+        n_samples=len(X_test),
     )
 
-    # Fit and conformalize
-    lw_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-    y_pred, y_pred_lower, y_pred_upper = lw_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
+    # Local dispersion estimates should produce varying interval widths.
+    widths = intervals[:, 1] - intervals[:, 0]
+    assert np.ptp(widths) > 0
 
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
-    )
-    np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["lwcp"]["cov"], RESULTS["lwcp"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
-    )
+    assert_reasonable_coverage(y_test, intervals)
 
 
-def test_leverage_weighted_cp_requires_x_fit(diabetes_data):
-    # Get data
-    X_train, _, y_train, _ = diabetes_data
-    # split train data into fit and calibration
-    _, X_calib, _, y_calib = train_test_split(X_train, y_train, random_state=42)
+def test_leverage_weighted_cp(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = regression_data
 
-    # Use train=False and pretrained predictor to isolate X_fit requirement
-    predictor = BasePredictor(linear_model.LinearRegression(), is_trained=True)
-    lw_cp = LeverageWeightedCP(predictor, train=False)
+    cp = LeverageWeightedCP(model=SklearnWrapper(LinearRegression()))
 
-    with pytest.raises(ValueError, match="X_fit should be provided"):
-        lw_cp.fit(X_fit=None, X_calib=X_calib, y_calib=y_calib)
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
 
+    assert cp.len_calibr == len(X_calib)
+    assert np.all(to_numpy(cp.nc_scores) >= 0)
 
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_cqr(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # split train data into fit and calibration
-    X_fit, X_calib, y_fit, y_calib = train_test_split(
-        X_train, y_train, random_state=random_state
+    _, intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=0.1),
+        n_samples=len(X_test),
     )
 
-    gbr_params = {
-        "n_estimators": 250,
-        "max_depth": 3,
-        "learning_rate": 0.1,
-        "min_samples_leaf": 9,
-        "min_samples_split": 9,
-        "random_state": random_state,
-    }
+    # Leverage depends on X, so the interval width should vary.
+    assert np.ptp(intervals[:, 1] - intervals[:, 0]) > 0
 
-    # Lower quantile regression
-    regressor_q_low = GradientBoostingRegressor(
-        loss="quantile", alpha=alpha / 2, **gbr_params
+    assert_reasonable_coverage(y_test, intervals)
+
+
+def test_leverage_weighted_cp_requires_leverage_fit(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), _ = regression_data
+
+    pretrained_model = SklearnWrapper(LinearRegression().fit(to_numpy(X_fit), to_numpy(y_fit)))
+    cp = LeverageWeightedCP(model=pretrained_model)
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"fit\(\) or fit_leverage\(\)",
+    ):
+        cp.calibrate(X_calib, y_calib)
+
+
+def test_cqr(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = regression_data
+
+    lower_model = GradientBoostingRegressor(
+        loss="quantile",
+        alpha=0.1,
+        n_estimators=60,
+        random_state=42,
     )
-    # Upper quantile regression
-    regressor_q_hi = GradientBoostingRegressor(
-        loss="quantile", alpha=1 - alpha / 2, **gbr_params
-    )
-    # Wrap models in predictor
-    predictor = DualPredictor(models=[regressor_q_low, regressor_q_hi])
-    # CP method initialization
-    crq = CQR(predictor)
-
-    # Fit and conformalize
-    crq.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
-    _, y_pred_lower, y_pred_upper = crq.predict(X_test, alpha=alpha)
-
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    upper_model = GradientBoostingRegressor(
+        loss="quantile",
+        alpha=0.9,
+        n_estimators=60,
+        random_state=42,
     )
 
-    assert any(
-        np.allclose(
-            [coverage, width],
-            [RESULTS[k]["cov"], RESULTS[k]["width"]],
-            rtol=0.0,
-            atol=5e-3,
+    cp = CQR(
+        model=MultiPredictorStack(
+            SklearnWrapper(lower_model),
+            SklearnWrapper(upper_model),
         )
-        for k in ("cqr", "cqr_new_sklearn")
     )
 
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
 
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_cv_plus(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-
-    # Create RF regression object and wrap it by a predictor
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
+    prediction, intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=0.1),
+        n_samples=len(X_test),
     )
-    predictor = BasePredictor(rf_model)
-    # CP method initialization
-    cv_cp = CVPlus(predictor, K=20, random_state=random_state)
 
-    # Fit and conformalize
-    cv_cp.fit(X=X_train, y=y_train)
-    _, y_pred_lower, y_pred_upper = cv_cp.predict(X_test, alpha=alpha)
+    assert prediction.shape == (len(X_test), 2)
+    assert len(cp.nc_scores) == len(X_calib)
 
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    assert_reasonable_coverage(y_test, intervals)
+
+
+def test_cv_plus(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = regression_data
+
+    X_train = ops.concatenate([X_fit, X_calib], axis=0)
+    y_train = ops.concatenate([y_fit, y_calib], axis=0)
+
+    cp = CVPlusRegressor(
+        model=SklearnWrapper(LinearRegression()),
+        K=5,
+        random_state=42,
     )
+
+    cp.fit(X_train, y_train)
+
+    assert cp.len_calibr == len(X_train)
+
+    prediction, intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=0.1),
+        n_samples=len(X_test),
+    )
+
+    assert prediction.shape == (len(X_test),)
+    assert_reasonable_coverage(y_test, intervals)
+
+
+def test_enbpi_conformalize_uses_signed_residuals():
+    # Known signed residuals, including asymmetric extremes.
+    residuals = np.array(
+        [-10.0, -5.0, -4.0, 0.0, 1.0, 2.0, 3.0, 4.0, 6.0, 100.0, 101.0],
+        dtype=np.float32,
+    )
+    residuals = tensor(residuals, "float32")
+
+    cp = EnbPIRegressor(
+        model=SklearnWrapper(LinearRegression()),
+        beta_grid_size=4,
+    )
+
+    context = cp.compute_calibration_state(
+        CalibrationContext(
+            y_calib=residuals,
+            y_pred=tensor(np.zeros_like(to_numpy(residuals)), "float32"),
+        )
+    )
+
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["cv+"]["cov"], RESULTS["cv+"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+        to_numpy(context.residuals),
+        to_numpy(residuals),
     )
 
+    prediction = np.array([10.0, 20.0], dtype=np.float32)
+    prediction = tensor(prediction, "float32")
 
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_enbpi(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # Create RF regression object and wrap it by a predictor
-    rf_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
+    result = cp.conformalize(
+        prediction,
+        alpha=0.3,
+        calibration_context=context,
     )
-    predictor = BasePredictor(rf_model)
-    # Fit and conformalize
-    enbpi = EnbPI(
-        predictor, B=30, agg_func_loo=np.mean, random_state=random_state
-    )
-    enbpi.fit(X=X_train, y=y_train)
-    y_pred, y_pred_lower, y_pred_upper = enbpi.predict(
-        X_test, alpha=alpha, y_true=y_test, s=None
-    )
-    assert y_pred is not None
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
-    )
+
+    # beta grid: [0.0, 0.1, 0.2, 0.3].
+    #
+    # The inverse empirical CDF gives candidate offsets:
+    # beta=0.0: [-10,   4] (width 14)
+    # beta=0.1: [ -5,   6] (width 11) <- narrowest
+    # beta=0.2: [ -4, 100] (width 104)
+    # beta=0.3: [  0, 101] (width 101)
+    #
+    # The selected interval is prediction + [-5, 6].
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["enbpi"]["cov"], RESULTS["enbpi"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+        to_numpy(result.prediction_set),
+        [[5.0, 16.0], [15.0, 26.0]],
     )
 
+    # Conformalization must use the explicitly provided context,
+    # not calibration state stored inside the predictor.
+    shifted_context = cp.compute_calibration_state(
+        CalibrationContext(
+            y_calib=residuals + 2.0,
+            y_pred=tensor(np.zeros_like(to_numpy(residuals)), "float32"),
+        )
+    )
 
-@pytest.mark.parametrize(
-    "alpha, random_state",
-    [(0.1, 42)],
-)
-def test_adaptive_enbpi(diabetes_data, alpha, random_state):
-    # Get data
-    X_train, X_test, y_train, y_test = diabetes_data
-    # Create mean and dispersion regressors
-    mean_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
+    shifted_result = cp.conformalize(
+        prediction,
+        alpha=0.3,
+        calibration_context=shifted_context,
     )
-    sigma_model = RandomForestRegressor(
-        n_estimators=100, random_state=random_state
-    )
-    # Wrap models in dualpredictor
-    mean_var_predictor = MeanVarPredictor([mean_model, sigma_model])
-    # Fit and conformalize
-    aenbpi = AdaptiveEnbPI(
-        mean_var_predictor,
-        B=30,
-        agg_func_loo=np.mean,
-        random_state=random_state,
-    )
-    aenbpi.fit(X_train, y_train)
-    y_pred, y_pred_lower, y_pred_upper = aenbpi.predict(
-        X_test, alpha=alpha, y_true=y_test, s=None
-    )
-    assert y_pred is not None
-    # Compute marginal coverage
-    coverage = regression_mean_coverage(y_test, y_pred_lower, y_pred_upper)
-    width = regression_sharpness(
-        y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
-    )
+
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["aenbpi"]["cov"], RESULTS["aenbpi"]["width"]],
-        rtol=0.0,
-        atol=5e-3,
+        to_numpy(shifted_result.prediction_set),
+        [[7.0, 18.0], [17.0, 28.0]],
+    )
+
+
+def test_enbpi_fit_predict_update(regression_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = regression_data
+
+    cp = EnbPIRegressor(
+        model=SklearnWrapper(LinearRegression()),
+        B=40,
+        sampler=IIDBootstrapSampler(random_state=42),
+        beta_grid_size=21,
+    )
+
+    # Calibration is initialized by fit(), not calibrate().
+    with pytest.raises(NotCalibratedError):
+        _ = cp.residuals
+
+    with pytest.raises(
+        RuntimeError,
+        match="does not use a separate calibration set",
+    ):
+        cp.calibrate(X_calib, y_calib)
+
+    assert cp.fit(X_fit, y_fit) is cp
+
+    assert cp.window_size_ == len(X_fit)
+    assert cp.len_calibr == len(X_fit)
+
+    # The initial residuals are signed OOB residuals, not
+    # absolute nonconformity scores.
+    initial_residuals = to_numpy(cp.residuals).copy()
+    oob_predictions = to_numpy(cp.calibration_context.y_pred)
+
+    np.testing.assert_allclose(
+        initial_residuals,
+        to_numpy(y_fit) - oob_predictions,
+        rtol=1e-5,
+        atol=1e-5,
+    )
+
+    ensemble = cp.model
+    fitted_models = tuple(ensemble.models_)
+
+    # Prediction must not modify the calibration window.
+    prediction, intervals = assert_valid_intervals(
+        cp.predict(X_test, alpha=0.1),
+        n_samples=len(X_test),
+    )
+
+    assert prediction.shape == (len(X_test),)
+    assert intervals.shape == (len(X_test), 2)
+
+    np.testing.assert_allclose(
+        to_numpy(cp.residuals),
+        initial_residuals,
+    )
+
+    # Feedback is supplied explicitly, after predictions are issued.
+    batch_size = 5
+    new_targets = y_test[:batch_size]
+    issued_predictions = tensor(prediction[:batch_size], "float32")
+
+    assert (
+        cp.update(
+            new_targets,
+            prediction=issued_predictions,
+        )
+        is cp
+    )
+
+    # The oldest residuals are discarded so the window keeps
+    # its original length.
+    new_residuals = to_numpy(new_targets) - to_numpy(issued_predictions)
+
+    expected_residuals = np.concatenate(
+        [initial_residuals, new_residuals],
+    )[-len(X_fit) :]
+
+    np.testing.assert_allclose(
+        to_numpy(cp.residuals),
+        expected_residuals,
+        rtol=1e-5,
+        atol=1e-5,
+    )
+
+    assert cp.len_calibr == len(X_fit)
+    assert cp.window_size_ == len(X_fit)
+
+    # update() changes calibration data, not the trained ensemble.
+    assert cp.model is ensemble
+    assert len(cp.model.models_) == len(fitted_models)
+    assert all(
+        current is original
+        for current, original in zip(cp.model.models_, fitted_models)
     )

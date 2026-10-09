@@ -20,6 +20,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""Initialization of puncc."""
 
-from deel.puncc.backend.keras import ops, random
+import numpy as np
+import pytest
+
+from tests._utils import tensor, to_numpy
+
+from deel.puncc.nonconformity_scores import scaled_bbox_difference
+
+
+@pytest.mark.parametrize("n_samples", [1, 10])
+def test_scaled_bbox_difference(n_samples):
+    bbox_pred = np.tile(
+        np.array([[1.0, 2.0, 3.0, 4.0]]),
+        (n_samples, 1),
+    )
+    bbox_pred = tensor(bbox_pred, "float32")
+    bbox_true = np.tile(
+        np.array([[2.0, 3.0, 4.0, 5.0]]),
+        (n_samples, 1),
+    )
+    bbox_true = tensor(bbox_true, "float32")
+
+    expected = np.tile(
+        np.array([[-0.5, -0.5, 0.5, 0.5]]),
+        (n_samples, 1),
+    )
+
+    score_function = scaled_bbox_difference()
+    result = score_function(bbox_pred, bbox_true)
+
+    assert result.shape == (n_samples, 4)
+    np.testing.assert_allclose(to_numpy(result), expected)

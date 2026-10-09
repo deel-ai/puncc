@@ -25,6 +25,7 @@ Conformal Risk Control components.
 
 This module implements the generic machinery required to calibrate postprocessing parameters according to a bounded empirical risk.
 """
+
 from __future__ import annotations
 from typing import Any, Callable, Generic, TypeAlias, TypeVar
 
@@ -42,9 +43,7 @@ logger = logging.getLogger(__name__)
 
 TPrediction = TypeVar("TPrediction")
 TTarget = TypeVar("TTarget")
-TConformalPrediction = TypeVar(
-    "TConformalPrediction"
-)
+TConformalPrediction = TypeVar("TConformalPrediction")
 
 Postprocessor: TypeAlias = Callable[
     [TPrediction, float],
@@ -59,7 +58,10 @@ RiskLossFunction: TypeAlias = Callable[
     TensorLike,
 ]
 
-class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]):
+
+class CRC(
+    ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]
+):
     """
     Generic Conformal Risk Control predictor.
 
@@ -76,22 +78,41 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         optimizer: Scalar optimizer used to calibrate the postprocessing parameter. Defaults to :class:`BinarySearchOptimizer`.
         lambda_bounds: Lower and upper bounds of the parameter search interval.
     """
-    __slots__ = ("loss_function", "postprocessor", "B", "optimizer", "lambda_bounds")
-    def __init__(self, model: Predictor[TPrediction] | PredictorLike[TPrediction],
-                *,
-                postprocessor: Postprocessor[TPrediction, TConformalPrediction],
-                loss_function,#: RiskLossFunction[TConformalPrediction, TTarget],
-                 loss_function_upper_bound:float|None = None,
-                 fit_function:FitFunction|None = None,
-                 optimizer:ScalarOptimizer|None = None,
-                 lambda_bounds:tuple[float, float]=(0.0, 1.0)):
+
+    __slots__ = (
+        "loss_function",
+        "postprocessor",
+        "B",
+        "optimizer",
+        "lambda_bounds",
+    )
+
+    def __init__(
+        self,
+        model: Predictor[TPrediction] | PredictorLike[TPrediction],
+        *,
+        postprocessor: Postprocessor[TPrediction, TConformalPrediction],
+        loss_function,  #: RiskLossFunction[TConformalPrediction, TTarget],
+        loss_function_upper_bound: float | None = None,
+        fit_function: FitFunction | None = None,
+        optimizer: ScalarOptimizer | None = None,
+        lambda_bounds: tuple[float, float] = (0.0, 1.0),
+    ):
         super().__init__(model, fit_function=fit_function)
         self.postprocessor = postprocessor
         self.loss_function = loss_function
-        self.B = loss_function_upper_bound if loss_function_upper_bound is not None else getattr(loss_function, "upper_bound", None)
+        self.B = (
+            loss_function_upper_bound
+            if loss_function_upper_bound is not None
+            else getattr(loss_function, "upper_bound", None)
+        )
         if self.B is None:
-            raise ValueError("loss_function_upper_bound must be provided or loss_function must have an 'upper_bound' attribute.")
-        self.optimizer = optimizer if optimizer is not None else BinarySearchOptimizer()
+            raise ValueError(
+                "loss_function_upper_bound must be provided or loss_function must have an 'upper_bound' attribute."
+            )
+        self.optimizer = (
+            optimizer if optimizer is not None else BinarySearchOptimizer()
+        )
         self.lambda_bounds = lambda_bounds
 
     @property
@@ -122,12 +143,14 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         )
         return ops.item(ops.mean(losses))
 
-    def get_calibration_set_size(self, calibration_context:CalibrationContext) -> int:
+    def get_calibration_set_size(
+        self, calibration_context: CalibrationContext
+    ) -> int:
         return calibration_context.size
 
     def _get_lambda_from_alpha(
         self,
-        alpha: float|TensorLike,
+        alpha: float | TensorLike,
         calibration_context: CalibrationContext,
     ) -> float:
         """
@@ -145,22 +168,26 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         Raises:
             ValueError: If ``alpha`` is not smaller than the loss upper bound, or if no feasible parameter can be found within ``lambda_bounds``.
         """
-        alpha =ops.item(alpha)
+        alpha = ops.item(alpha)
 
         if alpha >= self.B:
-            raise ValueError(f"alpha must be smaller than the loss upper bound B={self.B}.")
+            raise ValueError(
+                f"alpha must be smaller than the loss upper bound B={self.B}."
+            )
 
         n = self.get_calibration_set_size(calibration_context)
 
         def _lambda_loss(lambd: float) -> float:
             return (
-                n / (n + 1)
+                n
+                / (n + 1)
                 * self._r_hat(
                     lambd,
                     calibration_context,
                 )
                 + self.B / (n + 1)
-                - alpha)
+                - alpha
+            )
 
         lambda_min, lambda_max = self.lambda_bounds
 
@@ -169,9 +196,13 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
 
         if loss_min <= 0:
             return lambda_min
-        
+
         if loss_max > 0:
-            warnings.warn("The risk constraint is not satisfied at lambda_max.", RuntimeWarning, stacklevel=2)
+            warnings.warn(
+                "The risk constraint is not satisfied at lambda_max.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             return lambda_max
 
         lambd = self.optimizer(_lambda_loss, lambda_min, lambda_max)
@@ -189,7 +220,7 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         alpha: float | TensorLike,
         calibration_context: CalibrationContext,
         *,
-        X:Any|None=None
+        X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
         """
         Conformalize model predictions.

@@ -23,6 +23,7 @@
 """
 Bootstrap sampling schemes.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -75,14 +76,14 @@ class BootstrapSampler(ABC):
         allow backend inference. Sampling runs eagerly.
     """
 
-    def __init__(self, random_state:int|None=None) -> None:
+    def __init__(self, random_state: int | None = None) -> None:
         self.random_state = random_state
 
     @abstractmethod
     def sample(
         self,
-        n_samples:int,
-        n_resamples:int,
+        n_samples: int,
+        n_resamples: int,
     ) -> Iterator[BootstrapSample]:
         """
         Generate bootstrap samples of the indices ``0, ..., n_samples - 1``.
@@ -98,20 +99,26 @@ class BootstrapSampler(ABC):
 
     def __call__(
         self,
-        n_samples:int,
-        n_resamples:int,
+        n_samples: int,
+        n_resamples: int,
     ) -> Iterator[BootstrapSample]:
         return self.sample(n_samples, n_resamples)
 
     @staticmethod
-    def _check_positive_integer(value:int, name:str) -> None:
-        if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
-            raise ValueError(f"{name} must be a positive integer. Provided value: {value}.")
+    def _check_positive_integer(value: int, name: str) -> None:
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, Integral)
+            or value < 1
+        ):
+            raise ValueError(
+                f"{name} must be a positive integer. Provided value: {value}."
+            )
 
     @staticmethod
     def _make_sample(
-        train_indices:IndexTensor,
-        n_samples:int,
+        train_indices: IndexTensor,
+        n_samples: int,
     ) -> BootstrapSample:
         # Counts avoid allocating a pairwise membership comparison matrix.
         counts = ops.bincount(train_indices, minlength=n_samples)
@@ -132,8 +139,8 @@ class IIDBootstrapSampler(BootstrapSampler):
 
     def sample(
         self,
-        n_samples:int,
-        n_resamples:int,
+        n_samples: int,
+        n_resamples: int,
     ) -> Iterator[BootstrapSample]:
         """
         Generate independent bootstrap samples.
@@ -190,8 +197,8 @@ class BlockBootstrapSampler(BootstrapSampler):
 
     def __init__(
         self,
-        block_length:int,
-        random_state:int|None=None,
+        block_length: int,
+        random_state: int | None = None,
     ) -> None:
         self._check_positive_integer(block_length, "block_length")
         super().__init__(random_state=random_state)
@@ -199,8 +206,8 @@ class BlockBootstrapSampler(BootstrapSampler):
 
     def sample(
         self,
-        n_samples:int,
-        n_resamples:int,
+        n_samples: int,
+        n_resamples: int,
     ) -> Iterator[BootstrapSample]:
         """
         Generate bootstrap samples by drawing consecutive blocks.

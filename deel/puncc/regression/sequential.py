@@ -26,6 +26,7 @@ Sequential conformal regression using Ensemble Batch Prediction Intervals.
 EnbPI initializes signed residuals from out-of-bag ensemble predictions and
 updates their empirical distribution as new outcomes become available.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
@@ -34,11 +35,17 @@ from typing import Any, Never, Self
 
 from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
-from deel.puncc.core.conformal import CacheKey, ConformalPrediction, alpha_cache_key
+from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.core.ensemble import BootstrapEnsemble
 from deel.puncc.core.samplers import BootstrapSampler
 from deel.puncc.exceptions import NotCalibratedError
-from deel.puncc.typing import AlphaCorrection, FitFunction, Predictor, PredictorLike, TensorLike
+from deel.puncc.typing import (
+    AlphaCorrection,
+    FitFunction,
+    Predictor,
+    PredictorLike,
+    TensorLike,
+)
 
 
 class EnbPIRegressor:
@@ -87,13 +94,13 @@ class EnbPIRegressor:
 
     def __init__(
         self,
-        model:Predictor|PredictorLike,
+        model: Predictor | PredictorLike,
         *,
-        B:int=50,
-        sampler:BootstrapSampler|None=None,
-        aggregation:str|Callable[..., TensorLike]="mean",
-        fit_function:FitFunction|None=None,
-        beta_grid_size:int=101,
+        B: int = 50,
+        sampler: BootstrapSampler | None = None,
+        aggregation: str | Callable[..., TensorLike] = "mean",
+        fit_function: FitFunction | None = None,
+        beta_grid_size: int = 101,
     ) -> None:
         if (
             isinstance(beta_grid_size, bool)
@@ -110,15 +117,16 @@ class EnbPIRegressor:
             fit_function=fit_function,
         )
         self.calibration_context = CalibrationContext()
-        self.conformalization_cache: dict[CacheKey, TensorLike] = {}
         self.beta_grid_size = int(beta_grid_size)
-        self.window_size_: int|None = None
+        self.window_size_: int | None = None
 
     @property
     def residuals(self) -> TensorLike:
         """Current signed residuals, ordered from oldest to newest."""
         if "residuals" not in self.calibration_context:
-            raise NotCalibratedError("EnbPIRegressor must be fitted before use.")
+            raise NotCalibratedError(
+                "EnbPIRegressor must be fitted before use."
+            )
         return self.calibration_context.residuals
 
     @property
@@ -126,7 +134,7 @@ class EnbPIRegressor:
         """Number of residuals in the current calibration window."""
         return len(self.residuals)
 
-    def calibrate(self, X_calib:Iterable[Any], y_calib:TensorLike) -> Never:
+    def calibrate(self, X_calib: Iterable[Any], y_calib: TensorLike) -> Never:
         """EnbPI initializes calibration in fit and accepts feedback via update."""
         raise RuntimeError(
             "EnbPIRegressor does not use a separate calibration set. "
@@ -135,7 +143,7 @@ class EnbPIRegressor:
 
     def compute_calibration_state(
         self,
-        calibration_context:CalibrationContext,
+        calibration_context: CalibrationContext,
     ) -> CalibrationContext:
         """
         Store aligned targets, predictions, and their signed residuals.
@@ -157,15 +165,14 @@ class EnbPIRegressor:
             y_pred=prediction,
             residuals=residuals,
         )
-        self.conformalization_cache.clear()
         return calibration_context
 
     def fit(
         self,
-        X:Iterable[Any],
-        y:TensorLike,
-        *args:Any,
-        **kwargs:Any,
+        X: Iterable[Any],
+        y: TensorLike,
+        *args: Any,
+        **kwargs: Any,
     ) -> Self:
         """
         Fit the ensemble and initialize the residual window internally.
@@ -203,10 +210,10 @@ class EnbPIRegressor:
 
     def predict(
         self,
-        X_test:Iterable[Any],
-        alpha:float|TensorLike,
+        X_test: Iterable[Any],
+        alpha: float | TensorLike,
         *,
-        alpha_correction:AlphaCorrection|None=None,
+        alpha_correction: AlphaCorrection | None = None,
     ) -> ConformalPrediction[Any, Any]:
         """
         Produce ensemble point predictions and EnbPI prediction intervals.
@@ -224,7 +231,7 @@ class EnbPIRegressor:
         Note:
             Prediction leaves the residual window unchanged. Call update
             with the corresponding observed outcomes to advance the window.
-        
+
         Example:
             For a fitted regressor and chronological test arrays, process
             one feedback batch at a time::
@@ -253,36 +260,37 @@ class EnbPIRegressor:
 
     def _get_offsets(
         self,
-        alpha:float,
-        calibration_context:CalibrationContext,
+        alpha: float,
+        calibration_context: CalibrationContext,
     ) -> TensorLike:
-        """Find and cache the narrowest pair of residual quantiles on the grid."""
+        """Find the narrowest pair of residual quantiles on the grid."""
         if "residuals" not in calibration_context:
-            raise NotCalibratedError("The calibration context has no EnbPI residuals.")
-        key = (calibration_context, alpha_cache_key(alpha))
-        if key not in self.conformalization_cache:
-            residuals = calibration_context.residuals
-            sorted_residuals = ops.sort(residuals, axis=0)
-            n = len(residuals)
-            beta = ops.linspace(0.0, alpha, self.beta_grid_size)
-            levels = ops.stack([beta, 1 - alpha + beta], axis=0)
+            raise NotCalibratedError(
+                "The calibration context has no EnbPI residuals."
+            )
+        residuals = calibration_context.residuals
+        sorted_residuals = ops.sort(residuals, axis=0)
+        n = len(residuals)
+        beta = ops.linspace(0.0, alpha, self.beta_grid_size)
+        levels = ops.stack([beta, 1 - alpha + beta], axis=0)
 
-            # Inverse empirical CDF: rank ceil(n * q), expressed as a zero-based
-            # index. Clipping handles q=0 and numerical rounding near q=1.
-            indices = ops.cast(ops.clip(ops.ceil(n * levels) - 1, 0, n - 1), "int32")
-            bounds = ops.take(sorted_residuals, indices, axis=0)
-            best = ops.argmin(bounds[1] - bounds[0], axis=0)
-            # argmin selects the first (smallest-beta) candidate on width ties.
-            self.conformalization_cache[key] = ops.take(bounds, best, axis=1)
-        return self.conformalization_cache[key]
+        # Inverse empirical CDF: rank ceil(n * q), expressed as a zero-based
+        # index. Clipping handles q=0 and numerical rounding near q=1.
+        indices = ops.cast(
+            ops.clip(ops.ceil(n * levels) - 1, 0, n - 1), "int32"
+        )
+        bounds = ops.take(sorted_residuals, indices, axis=0)
+        best = ops.argmin(bounds[1] - bounds[0], axis=0)
+        # argmin selects the first (smallest-beta) candidate on width ties.
+        return ops.take(bounds, best, axis=1)
 
     def conformalize(
         self,
-        prediction:TensorLike,
-        alpha:float|TensorLike,
-        calibration_context:CalibrationContext,
+        prediction: TensorLike,
+        alpha: float | TensorLike,
+        calibration_context: CalibrationContext,
         *,
-        X:Any|None=None,
+        X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
         """
         Add residual-quantile offsets to already-computed predictions.
@@ -296,7 +304,7 @@ class EnbPIRegressor:
         intervals = ops.expand_dims(prediction, axis=-1) + offsets
         return ConformalPrediction(prediction, intervals)
 
-    def update(self, y:TensorLike, *, prediction:TensorLike) -> Self:
+    def update(self, y: TensorLike, *, prediction: TensorLike) -> Self:
         """
         Incorporate observed outcomes without retraining the ensemble.
 
@@ -317,15 +325,23 @@ class EnbPIRegressor:
             recomputed and bootstrap models are not fitted again.
         """
         if self.window_size_ is None:
-            raise NotCalibratedError("EnbPIRegressor must be fitted before update.")
+            raise NotCalibratedError(
+                "EnbPIRegressor must be fitted before update."
+            )
         y = ops.reshape(ops.convert_to_tensor(y), (-1,))
-        prediction = ops.reshape(ops.convert_to_tensor(prediction),(-1,))
+        prediction = ops.reshape(ops.convert_to_tensor(prediction), (-1,))
         if len(y) != len(prediction):
-            raise ValueError("Targets and predictions must have the same length.")
+            raise ValueError(
+                "Targets and predictions must have the same length."
+            )
 
         previous = self.calibration_context
-        targets = ops.concatenate([previous.y_calib, y], axis=0)[-self.window_size_:]
-        predictions = ops.concatenate([previous.y_pred, prediction], axis=0)[-self.window_size_:]
+        targets = ops.concatenate([previous.y_calib, y], axis=0)[
+            -self.window_size_ :
+        ]
+        predictions = ops.concatenate([previous.y_pred, prediction], axis=0)[
+            -self.window_size_ :
+        ]
         context = CalibrationContext(y_calib=targets, y_pred=predictions)
         self.calibration_context = self.compute_calibration_state(context)
         return self

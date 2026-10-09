@@ -29,5 +29,4 @@ from __future__ import annotations
 from deel.puncc.core.conformal import ConformalPredictor
 
 
-class RCPS(ConformalPredictor):
-    ...
+class RCPS(ConformalPredictor): ...

@@ -23,15 +23,21 @@
 """
 This module implements conformal anomaly detection procedures.
 """
+
 from collections.abc import Iterable
 from typing import Any
 from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.core.split import SplitConformalPredictor
 from deel.puncc.od.base import BoxExtensionMode
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
-from deel.puncc.nonconformity_scores import boxwise_difference, difference, scaled_bbox_difference
+from deel.puncc.nonconformity_scores import (
+    boxwise_difference,
+    difference,
+    scaled_bbox_difference,
+)
 from deel.puncc.prediction_sets import constant_bbox, scaled_bbox
 from deel.puncc.corrections import AlphaCorrection, bonferroni
+
 
 # TODO : passer d'une conformalization de regression 4D à une conformalization d'OD localization
 class SplitBoxWise(SplitConformalPredictor):
@@ -109,29 +115,36 @@ class SplitBoxWise(SplitConformalPredictor):
         average_area = object_detection_mean_area(box_outer)
         print(f"Marginal coverage: {np.round(coverage, 2)}")
     """
-    def __init__(self,
-                 model:Predictor|PredictorLike,
-                 *,
-                 box_extension_mode: BoxExtensionMode|str = BoxExtensionMode.ADDITIVE,
-                 fit_function:FitFunction|None = None):
+
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        *,
+        box_extension_mode: BoxExtensionMode | str = BoxExtensionMode.ADDITIVE,
+        fit_function: FitFunction | None = None,
+    ):
         box_extension_mode = BoxExtensionMode(box_extension_mode)
-        if box_extension_mode ==  BoxExtensionMode.ADDITIVE:
+        if box_extension_mode == BoxExtensionMode.ADDITIVE:
             nc_score_function = boxwise_difference()
             pred_set_function = constant_bbox()
         elif box_extension_mode == BoxExtensionMode.MULTIPLICATIVE:
             nc_score_function = scaled_bbox_difference()
             pred_set_function = scaled_bbox()
         else:
-            raise ValueError(f"Unknown method '{box_extension_mode}' for SplitBoxWise. Supported methods are 'additive' and 'multiplicative'.")
-        super().__init__(model=model,
-                            nc_score_function=nc_score_function,
-                            pred_set_function=pred_set_function,
-                            fit_function=fit_function)
+            raise ValueError(
+                f"Unknown method '{box_extension_mode}' for SplitBoxWise. Supported methods are 'additive' and 'multiplicative'."
+            )
+        super().__init__(
+            model=model,
+            nc_score_function=nc_score_function,
+            pred_set_function=pred_set_function,
+            fit_function=fit_function,
+        )
 
     def predict(
         self,
         X_test: Iterable[Any],
-        alpha: float|TensorLike,
+        alpha: float | TensorLike,
         *,
         alpha_correction: AlphaCorrection | None = bonferroni(4),
     ) -> ConformalPrediction[

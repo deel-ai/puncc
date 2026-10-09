@@ -23,21 +23,33 @@
 """
 This module implements usual conformal regression wrappers.
 """
-from deel.puncc.nonconformity_scores import absolute_difference, cqr_score #,scaled_ad
-from deel.puncc.prediction_sets import constant_interval, cqr_interval #, scaled_interval
-from deel.puncc.core.split import PresetSplitConformalPredictor, LocallyAdaptiveMixin, LeverageWeightedMixin
+
+from deel.puncc.nonconformity_scores import (
+    absolute_difference,
+    cqr_score,
+)  # ,scaled_ad
+from deel.puncc.prediction_sets import (
+    constant_interval,
+    cqr_interval,
+)  # , scaled_interval
+from deel.puncc.core.split import (
+    PresetSplitConformalPredictor,
+    LocallyAdaptiveMixin,
+    LeverageWeightedMixin,
+)
 
 
 class SplitConformalRegression(PresetSplitConformalPredictor):
-    nc_score_function=absolute_difference()
-    pred_set_function=constant_interval()
+    nc_score_function = absolute_difference()
+    pred_set_function = constant_interval()
+
 
 class CQR(PresetSplitConformalPredictor):
-    nc_score_function=cqr_score()
-    pred_set_function=cqr_interval()
+    nc_score_function = cqr_score()
+    pred_set_function = cqr_interval()
 
-class LocallyAdaptiveCP(LocallyAdaptiveMixin, SplitConformalRegression):
-    ...
 
-class LeverageWeightedCP(LeverageWeightedMixin, SplitConformalRegression):
-    ...
+class LocallyAdaptiveCP(LocallyAdaptiveMixin, SplitConformalRegression): ...
+
+
+class LeverageWeightedCP(LeverageWeightedMixin, SplitConformalRegression): ...

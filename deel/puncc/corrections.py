@@ -24,12 +24,13 @@
 This module provides correction functions for multiple hypothesis testing.
 To be used when building a conformal predictor for multivariate regression or object detection.
 """
+
 from deel.puncc.typing import TensorLike
 from deel.puncc import ops
 from deel.puncc.typing import AlphaCorrection
 
 
-def bonferroni(nvars:int=1)->AlphaCorrection:
+def bonferroni(nvars: int = 1) -> AlphaCorrection:
     """
     Bonferroni correction for multiple comparisons.
 
@@ -41,6 +42,7 @@ def bonferroni(nvars:int=1)->AlphaCorrection:
     """
     if nvars < 1:
         raise ValueError("nvars must be a positive integer.")
+
     def _bonferroni(alpha: float | TensorLike) -> float | TensorLike:
         """
         Bonferroni Correction function
@@ -54,7 +56,9 @@ def bonferroni(nvars:int=1)->AlphaCorrection:
         if nvars == 1:
             return alpha
         return ops.ones((nvars,)) * alpha / nvars
+
     return _bonferroni
+
 
 def weighted_bonferroni(weights: TensorLike) -> AlphaCorrection:
     """
@@ -66,6 +70,7 @@ def weighted_bonferroni(weights: TensorLike) -> AlphaCorrection:
     Returns:
         AlphaCorrection: Weighted Bonferroni correction function
     """
+
     def _weighted_bonferroni(alpha: float | TensorLike) -> float | TensorLike:
         """
         Weighted Bonferroni correction function.
@@ -79,9 +84,11 @@ def weighted_bonferroni(weights: TensorLike) -> AlphaCorrection:
         # normalization of weights
         w = weights / ops.sum(weights)
         return alpha * w
+
     return _weighted_bonferroni
 
-def sidak(nvars:int=1)->AlphaCorrection:
+
+def sidak(nvars: int = 1) -> AlphaCorrection:
     """
     Apply the Šidák correction for multiple testing.
 
@@ -93,6 +100,7 @@ def sidak(nvars:int=1)->AlphaCorrection:
     """
     if nvars < 1:
         raise ValueError("nvars must be a positive integer.")
+
     def _sidak(alpha: float | TensorLike) -> float | TensorLike:
         """
         Sidak correction function.
@@ -106,4 +114,5 @@ def sidak(nvars:int=1)->AlphaCorrection:
         if nvars == 1:
             return alpha
         return ops.ones((nvars,)) * (1 - (1 - alpha) ** (1 / nvars))
+
     return _sidak

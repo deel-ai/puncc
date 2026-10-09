@@ -236,10 +236,7 @@ def classification_coverage(
 
     for true_idx, pred_idx in assignment.matched_pairs:
         covered += ops.cast(
-            ops.any(
-                prediction_sets[pred_idx]
-                == y_true.labels[true_idx]
-            ),
+            ops.any(prediction_sets[pred_idx] == y_true.labels[true_idx]),
             "float32",
         )
 
@@ -260,9 +257,13 @@ def mean_prediction_set_size(
     if len(y_pred) == 0:
         return _nan()
     return ops.mean(
-        ops.stack([ops.cast(ops.size(prediction_set),"float32") 
-                   for prediction_set in y_pred.prediction_sets])
+        ops.stack(
+            [
+                ops.cast(ops.size(prediction_set), "float32")
+                for prediction_set in y_pred.prediction_sets
+            ]
         )
+    )
 
 
 def joint_coverage(
@@ -298,13 +299,10 @@ def joint_coverage(
     covered = ops.array(0.0)
 
     for true_idx, pred_idx in assignment.matched_pairs:
-        localization_covered = y_pred[pred_idx].contains(
-            y_true[true_idx]
-        )
+        localization_covered = y_pred[pred_idx].contains(y_true[true_idx])
 
         classification_covered = ops.any(
-            prediction_sets[pred_idx]
-            == y_true.labels[true_idx]
+            prediction_sets[pred_idx] == y_true.labels[true_idx]
         )
 
         covered += ops.cast(

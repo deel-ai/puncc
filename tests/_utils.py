@@ -20,6 +20,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""Initialization of puncc."""
+import numpy as np
+from deel.puncc import ops
 
-from deel.puncc.backend.keras import ops, random
+
+def tensor(values, dtype=None):
+    """Create a tensor on the active PUNCC backend."""
+    return ops.convert_to_tensor(values, dtype=dtype)
+
+
+def numpy(value):
+    """Convert a backend tensor to NumPy for assertions."""
+    return np.asarray(ops.convert_to_numpy(value))
+
+
+# Backwards-compatible assertion helper used by migrated tests.
+to_numpy = numpy

@@ -27,6 +27,7 @@ The ensemble fits independent predictors on bootstrap samples and keeps track
 of which models excluded each training observation. This supports the nested
 out-of-bag aggregation used by EnbPI, independently of residual calibration.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
@@ -75,20 +76,26 @@ class BootstrapEnsemble:
 
     def __init__(
         self,
-        model:Predictor|PredictorLike,
+        model: Predictor | PredictorLike,
         *,
-        B:int=50,
-        sampler:BootstrapSampler|None=None,
-        aggregation:str|Callable[..., TensorLike]="mean",
-        fit_function:FitFunction|None=None,
+        B: int = 50,
+        sampler: BootstrapSampler | None = None,
+        aggregation: str | Callable[..., TensorLike] = "mean",
+        fit_function: FitFunction | None = None,
     ) -> None:
         if isinstance(B, bool) or not isinstance(B, Integral) or B < 1:
-            raise ValueError(f"B must be a positive integer. Provided value: {B}.")
+            raise ValueError(
+                f"B must be a positive integer. Provided value: {B}."
+            )
         if isinstance(aggregation, str):
             if aggregation not in ("mean", "median"):
-                raise ValueError("aggregation must be 'mean', 'median', or a callable.")
+                raise ValueError(
+                    "aggregation must be 'mean', 'median', or a callable."
+                )
         elif not callable(aggregation):
-            raise TypeError("aggregation must be 'mean', 'median', or a callable.")
+            raise TypeError(
+                "aggregation must be 'mean', 'median', or a callable."
+            )
 
         self.model = make_predictor(model)
         self.B = int(B)
@@ -97,13 +104,13 @@ class BootstrapEnsemble:
         self.fit_function = fit_function
 
         self.models_: list[Predictor] = []
-        self.oob_mask_: TensorLike|None = None
-        self.n_train_: int|None = None
+        self.oob_mask_: TensorLike | None = None
+        self.n_train_: int | None = None
 
     @staticmethod
     def _prediction_vector(
-        prediction:TensorLike,
-        n_samples:int,
+        prediction: TensorLike,
+        n_samples: int,
     ) -> TensorLike:
         prediction = ops.convert_to_tensor(prediction)
         shape = tuple(ops.shape(prediction))
@@ -121,9 +128,11 @@ class BootstrapEnsemble:
 
     def _check_fitted(self) -> None:
         if not self.models_ or self.oob_mask_ is None:
-            raise RuntimeError("BootstrapEnsemble must be fitted before prediction.")
+            raise RuntimeError(
+                "BootstrapEnsemble must be fitted before prediction."
+            )
 
-    def _aggregate(self, predictions:TensorLike) -> TensorLike:
+    def _aggregate(self, predictions: TensorLike) -> TensorLike:
         """Reduce the first axis, keeping every remaining prediction axis."""
         if self.aggregation == "mean":
             result = ops.mean(predictions, axis=0)
@@ -133,7 +142,9 @@ class BootstrapEnsemble:
             result = self.aggregation(predictions, axis=0)
         result = ops.convert_to_tensor(result)
         if tuple(ops.shape(result)) != tuple(ops.shape(predictions))[1:]:
-            raise ValueError("aggregation must reduce axis 0 without keeping it.")
+            raise ValueError(
+                "aggregation must reduce axis 0 without keeping it."
+            )
         return result
 
     def _mean_weights(self) -> TensorLike:
@@ -142,10 +153,10 @@ class BootstrapEnsemble:
 
     def fit(
         self,
-        X:Iterable[Any],
-        y:TensorLike,
-        *args:Any,
-        **kwargs:Any,
+        X: Iterable[Any],
+        y: TensorLike,
+        *args: Any,
+        **kwargs: Any,
     ) -> Self:
         """
         Fit independent models on bootstrap samples.
@@ -171,25 +182,38 @@ class BootstrapEnsemble:
         """
         n_samples = len(X)
         if n_samples < 2:
-            raise ValueError("BootstrapEnsemble requires at least 2 observations.")
+            raise ValueError(
+                "BootstrapEnsemble requires at least 2 observations."
+            )
         if len(y) != n_samples:
-            raise ValueError("X and y must contain the same number of observations.")
+            raise ValueError(
+                "X and y must contain the same number of observations."
+            )
         target_shape = getattr(y, "shape", None)
         if target_shape is None:
             target_shape = ops.shape(ops.convert_to_tensor(y))
         if tuple(target_shape) not in ((n_samples,), (n_samples, 1)):
-            raise ValueError("BootstrapEnsemble requires scalar regression targets.")
+            raise ValueError(
+                "BootstrapEnsemble requires scalar regression targets."
+            )
 
         samples = list(self.sampler(n_samples=n_samples, n_resamples=self.B))
         if len(samples) != self.B:
-            raise ValueError(f"The sampler must return exactly {self.B} samples.")
+            raise ValueError(
+                f"The sampler must return exactly {self.B} samples."
+            )
 
         # Each column describes the observations excluded from one model.
-        oob_mask = ops.stack([
-            ops.bincount(sample.oob_indices, minlength=n_samples) > 0
-            for sample in samples
-        ], axis=1)
-        missing = ops.where_1d(ops.sum(ops.cast(oob_mask, "int32"), axis=1) == 0)
+        oob_mask = ops.stack(
+            [
+                ops.bincount(sample.oob_indices, minlength=n_samples) > 0
+                for sample in samples
+            ],
+            axis=1,
+        )
+        missing = ops.where_1d(
+            ops.sum(ops.cast(oob_mask, "int32"), axis=1) == 0
+        )
         if len(missing):
             raise ValueError(
                 f"{len(missing)} training observations have no out-of-bag model. "
@@ -203,9 +227,13 @@ class BootstrapEnsemble:
             y_fit = tensor_indexing(y, sample.train_indices)
 
             if self.fit_function is not None:
-                fitted_model = self.fit_function(model, X_fit, y_fit, *args, **kwargs)
+                fitted_model = self.fit_function(
+                    model, X_fit, y_fit, *args, **kwargs
+                )
                 if fitted_model is None:
-                    raise TypeError("fit_function must return the fitted predictor.")
+                    raise TypeError(
+                        "fit_function must return the fitted predictor."
+                    )
                 model = make_predictor(fitted_model)
             else:
                 fit_method = getattr(model, "fit", None)
@@ -221,7 +249,7 @@ class BootstrapEnsemble:
         self.n_train_ = n_samples
         return self
 
-    def predict_members(self, X:Iterable[Any]) -> TensorLike:
+    def predict_members(self, X: Iterable[Any]) -> TensorLike:
         """
         Evaluate every fitted model once on the supplied inputs.
 
@@ -233,12 +261,15 @@ class BootstrapEnsemble:
         """
         self._check_fitted()
         n_samples = len(X)
-        return ops.stack([
-            self._prediction_vector(model(X), n_samples)
-            for model in self.models_
-        ], axis=0)
+        return ops.stack(
+            [
+                self._prediction_vector(model(X), n_samples)
+                for model in self.models_
+            ],
+            axis=0,
+        )
 
-    def predict_oob_training(self, X:Iterable[Any]) -> TensorLike:
+    def predict_oob_training(self, X: Iterable[Any]) -> TensorLike:
         """
         Predict each training observation using only models that excluded it.
 
@@ -251,11 +282,13 @@ class BootstrapEnsemble:
         """
         self._check_fitted()
         if len(X) != self.n_train_:
-            raise ValueError("X must contain all original training observations.")
+            raise ValueError(
+                "X must contain all original training observations."
+            )
         predictions = self.predict_members(X)
 
         if self.aggregation == "mean":
-            weights = self._mean_weights(predictions.dtype)
+            weights = self._mean_weights()
             return ops.sum(weights * ops.transpose(predictions), axis=1)
 
         # Take the training column first, avoiding an n_train by n_train array.
@@ -266,10 +299,10 @@ class BootstrapEnsemble:
             result.append(self._aggregate(eligible))
         return self._prediction_vector(ops.stack(result, axis=0), self.n_train_)
 
-    def _leave_one_out_predictions(self, predictions:TensorLike) -> TensorLike:
+    def _leave_one_out_predictions(self, predictions: TensorLike) -> TensorLike:
         """Form every observation-specific predictor from cached model outputs."""
         if self.aggregation == "mean":
-            return self._mean_weights(predictions.dtype) @ predictions
+            return self._mean_weights() @ predictions
 
         result = []
         for i in range(self.n_train_):
@@ -278,7 +311,7 @@ class BootstrapEnsemble:
             result.append(self._aggregate(eligible))
         return ops.stack(result, axis=0)
 
-    def predict_leave_one_out(self, X:Iterable[Any]) -> TensorLike:
+    def predict_leave_one_out(self, X: Iterable[Any]) -> TensorLike:
         """
         Evaluate the predictor associated with each excluded training point.
 
@@ -297,7 +330,7 @@ class BootstrapEnsemble:
         """
         return self._leave_one_out_predictions(self.predict_members(X))
 
-    def predict(self, X:Iterable[Any]) -> TensorLike:
+    def predict(self, X: Iterable[Any]) -> TensorLike:
         """
         Aggregate the observation-specific out-of-bag predictors.
 
@@ -314,11 +347,13 @@ class BootstrapEnsemble:
         if self.aggregation == "mean":
             # mean(W @ P, axis=0) == mean(W, axis=0) @ P.
             # Avoid allocating the (n_train, n_test) intermediate matrix.
-            member_weights = ops.mean(self._mean_weights(predictions.dtype), axis=0)
+            member_weights = ops.mean(self._mean_weights(), axis=0)
             result = member_weights @ predictions
         else:
-            result = self._aggregate(self._leave_one_out_predictions(predictions))
+            result = self._aggregate(
+                self._leave_one_out_predictions(predictions)
+            )
         return self._prediction_vector(result, len(X))
 
-    def __call__(self, X:Iterable[Any]) -> TensorLike:
+    def __call__(self, X: Iterable[Any]) -> TensorLike:
         return self.predict(X)
