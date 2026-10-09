@@ -26,6 +26,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Tutorial on CP with TensorFlow**
      - Learn how to use *puncc* with TensorFlow / Keras.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__
+   * - **Multi-backend Tutorial**
+     - Use the same conformal API with PyTorch, TensorFlow, and a mixed PyTorch/scikit-learn pipeline.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_multi_backend.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_multi_backend.ipynb>`__
    * - **Tutorial on Adaptive Conformal Regression**
      - Learn how conformalize regression models to obtain adaptive prediction intervals using methods such as LACP, LWCP and CQR.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb>`__

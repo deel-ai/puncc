@@ -49,12 +49,19 @@ Notes :
     Backend inference is intended as a convenience.
     Applications that use multiple numerical frameworks in the same process should explicitly configure the desired backend with :func:`deel.puncc.config.set_backend` before performing numerical operations.
 """
+
 from functools import wraps
 from types import ModuleType
 from typing import Any, Callable
 import logging
 
-from deel.puncc.config import get_backend, is_backend_locked, lock_backend, set_inferred_backend, is_backend_explicitly_set
+from deel.puncc.config import (
+    get_backend,
+    is_backend_locked,
+    lock_backend,
+    set_inferred_backend,
+    is_backend_explicitly_set,
+)
 import sys
 from packaging.version import Version
 
@@ -74,19 +81,22 @@ _BACKEND_INFERENCE_ARG_NAMES = (
     "mask",
 )
 
+
 class NoBackendSpecifiedError(RuntimeError):
     """
     Error raised when no numerical backend can be selected.
 
     This exception is raised when PUNCC requires a numerical operation but no backend has been explicitly configured and backend inference from the current runtime context is unsuccessful.
     """
+
     def __init__(self):
         super().__init__(
             "PUNCC backend has not been initialized and could not be infered from context. "
             "Call deel.puncc.config.set_backend(...) first."
         )
 
-def infer_backend_from_tensor(x:TensorLike) -> str|None:
+
+def infer_backend_from_tensor(x: TensorLike) -> str | None:
     """
     Infer a Keras backend from a tensor-like object.
 
@@ -115,11 +125,12 @@ def infer_backend_from_tensor(x:TensorLike) -> str|None:
     if module.startswith("tensorflow"):
         return "tensorflow"
 
-    if module.startswith("jax"):# or module.startswith("jaxlib"):
+    if module.startswith("jax"):  # or module.startswith("jaxlib"):
         return "jax"
     return None
 
-def infer_backend_from_modules()->str|None:
+
+def infer_backend_from_modules() -> str | None:
     """
     Infer a Keras backend from frameworks already imported.
 
@@ -132,11 +143,10 @@ def infer_backend_from_modules()->str|None:
     Note:
         Explicit backend configuration is preferable in applications that import several numerical frameworks.
     """
-    imported_modules = {
-        name.split(".", 1)[0]
-        for name in sys.modules
-    }
-    detected_backends:set[str] = set.intersection({"torch", "tensorflow", "jax"}, imported_modules)
+    imported_modules = {name.split(".", 1)[0] for name in sys.modules}
+    detected_backends: set[str] = set.intersection(
+        {"torch", "tensorflow", "jax"}, imported_modules
+    )
 
     if "jaxlib" in imported_modules:
         detected_backends.add("jax")
@@ -148,7 +158,8 @@ def infer_backend_from_modules()->str|None:
 
     return None
 
-class BackendManager():
+
+class BackendManager:
     """
     Lazily load and proxy a Keras backend module.
 
@@ -159,7 +170,8 @@ class BackendManager():
 
     Subclasses can override ``module`` to expose a Keras submodule such as ``keras.ops`` or ``keras.random``.
     """
-    __slots__ = ("_keras")
+
+    __slots__ = "_keras"
 
     def __init__(self):
         self._keras = None
@@ -168,10 +180,12 @@ class BackendManager():
     def module(self):
         return self._keras
 
-    def __getattr__(self, name:str):
+    def __getattr__(self, name: str):
         if self._keras is None:
             if not is_backend_locked() and "keras" not in sys.modules:
-                return _DeferredBackendOperation(name=name, backend_manager=self)
+                return _DeferredBackendOperation(
+                    name=name, backend_manager=self
+                )
             self._load_keras()
         return getattr(self.module, name)
 
@@ -197,13 +211,18 @@ class BackendManager():
             set_inferred_backend(keras_backend)
             self._keras = keras
             lock_backend()
-            logger.debug("Using already loaded Keras version=%s with backend=%s.", keras.__version__, keras_backend)
+            logger.debug(
+                "Using already loaded Keras version=%s with backend=%s.",
+                keras.__version__,
+                keras_backend,
+            )
             return
 
         if get_backend() is None:
             raise NoBackendSpecifiedError()
 
         import keras
+
         check_keras_version(keras)
         keras_backend = keras.backend.backend()
         expected_backend = get_backend()
@@ -217,10 +236,15 @@ class BackendManager():
 
         lock_backend()
 
-        logger.debug("Loaded Keras version=%s with backend=%s.", keras.__version__, keras.backend.backend())
+        logger.debug(
+            "Loaded Keras version=%s with backend=%s.",
+            keras.__version__,
+            keras.backend.backend(),
+        )
         self._keras = keras
 
-def get_tensor_arg(args:Any, kwargs:Any):
+
+def get_tensor_arg(args: Any, kwargs: Any):
     """
     Extract the tensor argument used for backend inference.
 
@@ -240,7 +264,8 @@ def get_tensor_arg(args:Any, kwargs:Any):
             return kwargs[name]
     return None
 
-def check_keras_version(keras:ModuleType):
+
+def check_keras_version(keras: ModuleType):
     """
     Check that the installed Keras version is supported.
 
@@ -258,7 +283,8 @@ def check_keras_version(keras:ModuleType):
             "Upgrade with: pip install -U keras"
         )
 
-def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
+
+def set_backend_on_first_call(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     Ensure that a backend is selected before an operation runs.
 
@@ -276,10 +302,11 @@ def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
     Raises:
         NoBackendSpecifiedError: If no backend was configured and backend inference fails.
     """
+
     @wraps(f)
-    def _f(self:object, *args:Any, **kwargs:Any):
+    def _f(self: object, *args: Any, **kwargs: Any):
         if get_backend() is None and "keras" not in sys.modules:
-        #if not is_backend_locked() and "keras" not in sys.modules and not is_backend_explicitly_set():
+            # if not is_backend_locked() and "keras" not in sys.modules and not is_backend_explicitly_set():
             x = get_tensor_arg(args, kwargs)
             backend = None
             inference_source = None
@@ -291,37 +318,48 @@ def set_backend_on_first_call(f:Callable[..., Any])->Callable[..., Any]:
                 inference_source = "modules"
             if backend is None:
                 raise NoBackendSpecifiedError()
-            logger.debug("Automatically inferred PUNCC backend=%s from %s.", backend, inference_source)
+            logger.debug(
+                "Automatically inferred PUNCC backend=%s from %s.",
+                backend,
+                inference_source,
+            )
             set_inferred_backend(backend)
         return f(self, *args, **kwargs)
+
     return _f
 
-class _DeferredBackendOperation():
+
+class _DeferredBackendOperation:
     """
     Proxy an operation until the numerical backend is known.
 
     Instances are returned when an ``ops`` attribute is accessed before Keras can safely be initialized.
     The underlying Keras operation is resolved when the proxy is called.
     """
-    __slots__ = ("name","backend_manager")
-    def __init__(self, name:str, backend_manager:BackendManager):
+
+    __slots__ = ("name", "backend_manager")
+
+    def __init__(self, name: str, backend_manager: BackendManager):
         self.name = name
         self.backend_manager = backend_manager
 
     @set_backend_on_first_call
-    def __call__(self, *args:Any, **kwargs:Any):
+    def __call__(self, *args: Any, **kwargs: Any):
         self.backend_manager._load_keras()
         return getattr(self.backend_manager, self.name)(*args, **kwargs)
-    
+
+
 class RandomBackendManager(BackendManager):
     """
     Provide lazily initialized access to ``keras.random``.
     """
+
     @property
     def module(self):
         if self._keras is None:
             raise RuntimeError("Keras has not been loaded.")
         return self._keras.random
+
 
 class OpsBackendManager(BackendManager):
     """
@@ -336,6 +374,7 @@ class OpsBackendManager(BackendManager):
         inf: Positive infinity.
         ninf: Negative infinity.
     """
+
     inf = float("inf")
     ninf = float("-inf")
 
@@ -359,10 +398,8 @@ class OpsBackendManager(BackendManager):
             raise RuntimeError("Keras has not been loaded.")
         return self._keras.ops
 
-
-
     @set_backend_on_first_call
-    def flatten(self, x:TensorLike):
+    def flatten(self, x: TensorLike):
         """
         Flatten a tensor to 1D.
         Backend-agnostic equivalent of np.flatten(x).
@@ -376,7 +413,7 @@ class OpsBackendManager(BackendManager):
         return self.reshape(x, (-1,))
 
     @set_backend_on_first_call
-    def where_1d(self, mask:TensorLike):
+    def where_1d(self, mask: TensorLike):
         """
         Return indices of true values in a one-dimensional mask.
 
@@ -400,7 +437,7 @@ class OpsBackendManager(BackendManager):
         return self.reshape(idx, (-1,))
 
     @set_backend_on_first_call
-    def where_nd(self, mask:TensorLike):
+    def where_nd(self, mask: TensorLike):
         """
         Return coordinates of true values in a boolean tensor.
 
@@ -416,7 +453,9 @@ class OpsBackendManager(BackendManager):
         return idx
 
     @set_backend_on_first_call
-    def setdiff1d(self, a:TensorLike, b:TensorLike, assume_unique:bool=False):
+    def setdiff1d(
+        self, a: TensorLike, b: TensorLike, assume_unique: bool = False
+    ):
         """
         Return values present in ``a`` and absent from ``b``.
 
@@ -440,7 +479,6 @@ class OpsBackendManager(BackendManager):
         # Ensure both are 1D tensors
         a = self.reshape(a, (-1,))
         b = self.reshape(b, (-1,))
-
 
         if not assume_unique:
             a = self.unique(a, sorted=True)
@@ -471,18 +509,27 @@ class OpsBackendManager(BackendManager):
             indices = self.sum(cumulative_weights < threshold, axis=axis)
         return self.take(sorted_x, indices, axis=axis)
 
-    def _uniform_quantile(self,
-                          x:TensorLike,
-                          q:TensorLike,
-                          axis:int|None=None,
-                          keepdims:bool=False):
+    def _uniform_quantile(
+        self,
+        x: TensorLike,
+        q: TensorLike,
+        axis: int | None = None,
+        keepdims: bool = False,
+    ):
         sorted_x = self.sort(x, axis=axis)
         n = self.shape(x)[axis]
 
         cdf = self.arange(1, n + 1, dtype=q.dtype) / self.cast(n, q.dtype)
-        idx = self.searchsorted(cdf, q, side="left")
+        q_is_scalar = self.ndim(q) == 0
+        # TensorFlow's searchsorted requires `values` to have at least one
+        # dimension.
+        # Normalize a scalar quantile for the lookup, then restore its scalar
+        # shape so the reduction semantics remain backend-independent.
+        search_q = self.reshape(q, (1,)) if q_is_scalar else q
+        idx = self.searchsorted(cdf, search_q, side="left")
         idx = self.clip(idx, 0, n - 1)
-        if len(q.shape) == 0:
+        if q_is_scalar:
+            idx = self.squeeze(idx, axis=0)
             res = self.take(sorted_x, idx, axis=axis)
             if keepdims:
                 res = self.expand_dims(res, axis=axis)
@@ -492,15 +539,16 @@ class OpsBackendManager(BackendManager):
         if not keepdims:
             res = self.squeeze(res, axis=axis)
         return res
-        
 
     @set_backend_on_first_call
-    def weighted_quantile(self, 
-                          x:TensorLike,
-                          q:float|TensorLike,
-                          weights:TensorLike=None,
-                          axis:int|None=None,
-                          keepdims:bool=False):
+    def weighted_quantile(
+        self,
+        x: TensorLike,
+        q: float | TensorLike,
+        weights: TensorLike = None,
+        axis: int | None = None,
+        keepdims: bool = False,
+    ):
         """
         Compute weighted empirical quantiles.
 
@@ -530,7 +578,7 @@ class OpsBackendManager(BackendManager):
         """
         q = self.convert_to_tensor(q)
         q = self.clip(q, 0.0, 1.0)
-        
+
         if axis is None:
             x = self.flatten(x)
             if weights is not None:
@@ -545,7 +593,9 @@ class OpsBackendManager(BackendManager):
         if self.any(weights < 0):
             raise ValueError("Weights must be non-negative.")
         if self.all(weights == 0):
-            raise ValueError("All weights are zero. At least one weight must be positive.")
+            raise ValueError(
+                "All weights are zero. At least one weight must be positive."
+            )
         # if all weights equals -> fast path to uniform quantile
         if self.item(self.all(weights == self.reshape(weights, (-1,))[0])):
             return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
@@ -554,7 +604,9 @@ class OpsBackendManager(BackendManager):
 
         if len(weights.shape) == 1:
             if weights.shape[0] != x.shape[axis]:
-                raise ValueError("1D weights must have the same length as x along the quantile axis.")
+                raise ValueError(
+                    "1D weights must have the same length as x along the quantile axis."
+                )
 
             shape = [1] * len(x.shape)
             shape[axis] = x.shape[axis]
@@ -562,12 +614,16 @@ class OpsBackendManager(BackendManager):
             weights = self.reshape(weights, shape)
             weights = self.broadcast_to(weights, self.shape(x))
         elif tuple(weights.shape) != tuple(x.shape):
-            raise ValueError("Weights must either be one-dimensional along the quantile axis or have the same shape as x.")
-        
+            raise ValueError(
+                "Weights must either be one-dimensional along the quantile axis or have the same shape as x."
+            )
+
         # TODO : risk of overflow on sum with very large weights with CP under covariate shift ?
         weights = weights / self.sum(weights, axis=axis, keepdims=True)
         sorted_indices = self.argsort(x, axis=axis)
-        sorted_cumsum_weights = self.cumsum(self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis)
+        sorted_cumsum_weights = self.cumsum(
+            self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis
+        )
 
         q = self.convert_to_tensor(q)
         q = self.cast(q, sorted_cumsum_weights.dtype)
@@ -578,15 +634,14 @@ class OpsBackendManager(BackendManager):
         sorted_x = self.take_along_axis(x, sorted_indices, axis=axis)
         res = self.take_along_axis(sorted_x, idx, axis=axis)
         if not keepdims:
-            res = self.squeeze(res,axis=axis)
+            res = self.squeeze(res, axis=axis)
         return res
-    
-    def item(self, x:TensorLike):
+
+    def item(self, x: TensorLike):
         return self.convert_to_numpy(x).item()
-    
-    def tolist(self, x:TensorLike)->list:
+
+    def tolist(self, x: TensorLike) -> list:
         return self.convert_to_numpy(x).tolist()
-    
 
 
 ops = OpsBackendManager()
