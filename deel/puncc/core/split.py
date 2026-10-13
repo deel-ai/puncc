@@ -104,9 +104,7 @@ class SplitConformalPredictor(ConformalPredictor):
             self.calibration_context,
             "nc_scores",
         ):
-            raise RuntimeError(
-                "The conformal predictor has not been calibrated yet."
-            )
+            raise RuntimeError("The conformal predictor has not been calibrated yet.")
         return self.calibration_context.nc_scores
 
     def compute_calibration_state(
@@ -204,9 +202,7 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         self.weight_function = weight_function
 
     def compute_calibration_state(self, calibration_context):
-        calibration_context = super().compute_calibration_state(
-            calibration_context
-        )
+        calibration_context = super().compute_calibration_state(calibration_context)
         calibration_context.calibration_weights = self.weight_function(
             calibration_context.X_calib
         )
@@ -295,26 +291,23 @@ class LocallyScaledMixin(SplitConformalPredictor):
     def compute_calibration_state(
         self, calibration_context: CalibrationContext
     ) -> CalibrationContext:
-        calibration_context = super().compute_calibration_state(
-            calibration_context
-        )
+        calibration_context = super().compute_calibration_state(calibration_context)
         scores = calibration_context.nc_scores
         scale = self._scale(calibration_context.X_calib)
         # Add singleton dimensions after the sample dimension to match multivariate nonconformity scores.
         if scores.ndim > 1:
             scale = ops.reshape(scale, (-1,) + (1,) * (scores.ndim - 1))
-        calibration_context.nc_scores = calibration_context.nc_scores / (
-            scale + self.eps
-        )
+
+        scale = ops.cast(scale, scores.dtype)
+        calibration_context.nc_scores = scores / (scale + self.eps)
         return calibration_context
 
-    def conformalize(
-        self, prediction, alpha, calibration_context=None, *, X=None
-    ):
+    def conformalize(self, prediction, alpha, calibration_context=None, *, X=None):
+        if not hasattr(calibration_context, "nc_scores"):
+            raise RuntimeError("The conformal predictor has not been calibrated yet.")
+
         if X is None:
-            raise ValueError(
-                "X is required for locally scaled conformal prediction."
-            )
+            raise ValueError("X is required for locally scaled conformal prediction.")
 
         quantile = self._get_quantile(alpha, calibration_context, X=X)
         scale = self._scale(X)
@@ -323,7 +316,9 @@ class LocallyScaledMixin(SplitConformalPredictor):
         if score_ndim > 0:
             scale = ops.reshape(scale, (-1,) + (1,) * score_ndim)
 
+        scale = ops.cast(scale, quantile.dtype)
         quantile = quantile * (scale + self.eps)
+
         return ConformalPrediction(
             prediction, self.pred_set_function(prediction, quantile)
         )
@@ -341,9 +336,7 @@ class LocallyAdaptiveMixin(LocallyScaledMixin):
     ):
         self.dispertion_estimator = make_predictor(dispertion_estimator)
         self.dispertion_estimation_function = dispertion_estimation_function
-        super().__init__(
-            *args, scale_function=self.dispertion_estimator, **kwargs
-        )
+        super().__init__(*args, scale_function=self.dispertion_estimator, **kwargs)
 
     def fit(
         self,
@@ -402,9 +395,7 @@ class LeverageWeightedMixin(LocallyScaledMixin):
         self._feature_scale = ops.std(X, axis=0)
 
         if ops.item(ops.any(self._feature_scale == 0)):
-            raise ValueError(
-                "LeverageWeightedCP requires non-constant features."
-            )
+            raise ValueError("LeverageWeightedCP requires non-constant features.")
 
         X = (X - self._feature_mean) / self._feature_scale
         self._gram_pinv = ops.pinv(ops.transpose(X) @ X)
@@ -412,9 +403,7 @@ class LeverageWeightedMixin(LocallyScaledMixin):
 
     def _leverage(self, X):
         if self._gram_pinv is None:
-            raise RuntimeError(
-                "Call fit() or fit_leverage() before calibration."
-            )
+            raise RuntimeError("Call fit() or fit_leverage() before calibration.")
 
         X = (ops.array(X) - self._feature_mean) / self._feature_scale
         return ops.sum((X @ self._gram_pinv) * X, axis=-1)

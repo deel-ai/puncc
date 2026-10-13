@@ -94,9 +94,7 @@ def regression_mean_coverage(
         correctly covered.
     """
     return ops.item(
-        ops.mean(
-            ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper)
-        )
+        ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper))
     )
 
 
@@ -132,9 +130,7 @@ def regression_ace(
     return cov - (1 - alpha)
 
 
-def regression_sharpness(
-    y_pred_lower: TensorLike, y_pred_upper: TensorLike
-) -> float:
+def regression_sharpness(y_pred_lower: TensorLike, y_pred_upper: TensorLike) -> float:
     """
     Compute the average absolute width of the prediction intervals.
 
@@ -164,9 +160,7 @@ def object_detection_mean_coverage(
         float: average coverage, indicating the proportion of objects that are
         correctly covered.
     """
-    x_min_true, y_min_true, x_max_true, y_max_true = ops.split(
-        y_true, 4, axis=1
-    )
+    x_min_true, y_min_true, x_max_true, y_max_true = ops.split(y_true, 4, axis=1)
     x_min, y_min, x_max, y_max = ops.split(y_pred_outer, 4, axis=1)
     cov = (
         (x_min <= x_min_true)
@@ -211,6 +205,9 @@ def iou(bboxes1: TensorLike, bboxes2: TensorLike) -> TensorLike:
         TensorLike: Array of shape (N, ) representing the IoU
         between each pair of bounding boxes.
     """
+    bboxes1 = ops.cast(bboxes1, "float32")
+    bboxes2 = ops.cast(bboxes2, "float32")
+
     x1_min, y1_min, x1_max, y1_max = ops.split(bboxes1, 4, axis=1)
     x2_min, y2_min, x2_max, y2_max = ops.split(bboxes2, 4, axis=1)
 

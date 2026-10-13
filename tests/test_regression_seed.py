@@ -244,7 +244,9 @@ def test_leverage_weighted_cp(regression_data):
 def test_leverage_weighted_cp_requires_leverage_fit(regression_data):
     (X_fit, y_fit), (X_calib, y_calib), _ = regression_data
 
-    pretrained_model = SklearnWrapper(LinearRegression().fit(to_numpy(X_fit), to_numpy(y_fit)))
+    pretrained_model = SklearnWrapper(
+        LinearRegression().fit(to_numpy(X_fit), to_numpy(y_fit))
+    )
     cp = LeverageWeightedCP(model=pretrained_model)
 
     with pytest.raises(
@@ -278,6 +280,12 @@ def test_cqr(regression_data):
     )
 
     cp.fit(X_fit, y_fit)
+
+    y_calib = ops.cast(
+        y_calib,
+        cp.model(X_calib).dtype,
+    )
+
     cp.calibrate(X_calib, y_calib)
 
     prediction, intervals = assert_valid_intervals(

@@ -76,9 +76,7 @@ class AssignmentResult:
     def matched_pairs(self) -> list[tuple[int, int]]:
         return [
             (source_index, target_index)
-            for source_index, target_index in enumerate(
-                self.source_to_target_index
-            )
+            for source_index, target_index in enumerate(self.source_to_target_index)
             if target_index is not None
         ]
 
@@ -86,9 +84,7 @@ class AssignmentResult:
     def unassigned_source_indices(self) -> list[int]:
         return [
             source_index
-            for source_index, target_index in enumerate(
-                self.source_to_target_index
-            )
+            for source_index, target_index in enumerate(self.source_to_target_index)
             if target_index is None
         ]
 
@@ -129,14 +125,10 @@ class AssignmentResult:
         source_to_target = [self.source_to_target_index[i] for i in kept]
 
         all_targets = set(self.unassigned_target_indices) | {
-            target
-            for target in self.source_to_target_index
-            if target is not None
+            target for target in self.source_to_target_index if target is not None
         }
 
-        assigned_targets = {
-            target for target in source_to_target if target is not None
-        }
+        assigned_targets = {target for target in source_to_target if target is not None}
 
         return AssignmentResult(
             source_to_target_index=source_to_target,
@@ -368,9 +360,7 @@ class ArgminMatcher:
 
         valid_sources = ops.convert_to_numpy(ops.any(valid_mask, axis=1))
 
-        return [
-            (i, int(indices[i])) for i in range(n_source) if valid_sources[i]
-        ]
+        return [(i, int(indices[i])) for i in range(n_source) if valid_sources[i]]
 
 
 class HungarianMatcher:
@@ -398,9 +388,7 @@ class HungarianMatcher:
 
             valid_costs = costs[valid]
             cost_span = valid_costs.max() - valid_costs.min()
-            unmatched_cost = valid_costs.max() + (n_source + 1) * max(
-                cost_span, 1.0
-            )
+            unmatched_cost = valid_costs.max() + (n_source + 1) * max(cost_span, 1.0)
 
             augmented = np.full(
                 (n_source, n_target + n_source),
@@ -546,9 +534,7 @@ class AssignmentStrategy:
         return AssignmentResult(
             source_to_target_index=source_to_target,
             unassigned_target_indices=[
-                target
-                for target in range(n_target)
-                if target not in assigned_targets
+                target for target in range(n_target) if target not in assigned_targets
             ],
             matching_direction=self.direction,
         )

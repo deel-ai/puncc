@@ -47,13 +47,11 @@ class IterableDataclassMixin(Generic[T]):
     def __getitem__(self, idx: Integral) -> T: ...
 
     @overload
-    def __getitem__(self, idx: slice | TensorLike) -> Self: ...
+    def __getitem__(self, idx: slice | TensorLike | list | tuple) -> Self: ...
 
     def __getitem__(self, idx) -> T | Self:
         # keep both parts of the condition even if second one covers first one to avoid errors that may be raised by ops.tensor_type
-        if not isinstance(idx, (Integral, slice)) and isinstance(
-            idx, ops.tensor_type
-        ):
+        if not isinstance(idx, (Integral, slice)) and isinstance(idx, ops.tensor_type):
             idx = ops.tolist(idx)
         if isinstance(idx, Integral) and not isinstance(idx, bool):
             values = {
@@ -66,8 +64,20 @@ class IterableDataclassMixin(Generic[T]):
                 if (value := getattr(self, field.name)) is not None
             }
             return self.item_type(**values)
+        if isinstance(idx, slice):
+            values = {
+                field.name: value[idx]
+                for field in fields(self)
+                if (value := getattr(self, field.name)) is not None
+            }
+            return replace(self, **values)
+
         values = {
-            field.name: value[idx]
+            field.name: (
+                value[idx]
+                if isinstance(value, UserList)
+                else ops.take(value, idx, axis=0)
+            )
             for field in fields(self)
             if (value := getattr(self, field.name)) is not None
         }
@@ -89,18 +99,21 @@ class IndexableUserList(UserList[T]):
     ) -> Self: ...
 
     def __getitem__(self, idx):
-        if isinstance(idx, Integral) and not isinstance(idx, bool):
-            return self.data[idx]
+        if (
+            isinstance(idx, slice)
+            or isinstance(idx, Integral)
+            and not isinstance(idx, bool)
+        ):
+            return super().__getitem__(idx)
 
-        if isinstance(idx, slice):
-            return type(self)(self.data[idx])
-
-        if isinstance(idx, (list, tuple)):
-            if all(isinstance(i, bool) for i in idx):
-                idx = [i for i, selected in enumerate(idx) if selected]
-            return type(self)([self.data[i] for i in idx])
-
-        if isinstance(idx, ops.tensor_type):
+        if not isinstance(idx, (list, tuple)):
             idx = ops.tolist(idx)
 
+        if not isinstance(idx, (list, tuple)):
+            raise TypeError(
+                f"Index must be an integer, slice, tensor, list or tuple, got {type(idx)}"
+            )
+
+        if all(isinstance(i, bool) for i in idx):
+            idx = [i for i, selected in enumerate(idx) if selected]
         return type(self)([self.data[i] for i in idx])

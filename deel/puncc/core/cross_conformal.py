@@ -183,9 +183,7 @@ class CVPlusRegressor(CrossConformalPredictor):
     ):
         super().__init__(
             model,
-            splitter=KFoldSplitter(
-                K=K, shuffle=True, random_state=random_state
-            ),
+            splitter=KFoldSplitter(K=K, shuffle=True, random_state=random_state),
             conformal_predictor_class=SplitConformalRegression,
             fit_function=fit_function,
         )
@@ -220,14 +218,13 @@ class CVPlusRegressor(CrossConformalPredictor):
         _validate_alpha(alpha)
 
         if not self._conformal_predictors:
-            raise RuntimeError(
-                "CVPlusRegressor must be fitted before prediction."
-            )
+            raise RuntimeError("CVPlusRegressor must be fitted before prediction.")
 
         n = self.len_calibr
 
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
+            _validate_alpha(alpha)
 
         predictions: list[TensorLike] = []
         lower_candidates: list[TensorLike] = []
@@ -241,16 +238,10 @@ class CVPlusRegressor(CrossConformalPredictor):
             lower_candidates.append(prediction - scores)
             upper_candidates.append(prediction + scores)
 
-        lower_candidates = ops.sort(
-            ops.concatenate(lower_candidates, axis=0), axis=0
-        )
-        upper_candidates = ops.sort(
-            ops.concatenate(upper_candidates, axis=0), axis=0
-        )
+        lower_candidates = ops.sort(ops.concatenate(lower_candidates, axis=0), axis=0)
+        upper_candidates = ops.sort(ops.concatenate(upper_candidates, axis=0), axis=0)
 
-        if "float" not in ops.dtype(
-            lower_candidates
-        ):  # same type for upper_candidate
+        if "float" not in ops.dtype(lower_candidates):  # same type for upper_candidate
             lower_candidates = ops.cast(lower_candidates, "float32")
             upper_candidates = ops.cast(upper_candidates, "float32")
 
@@ -271,9 +262,7 @@ class CVPlusRegressor(CrossConformalPredictor):
 
         # TODO : revoir les formules des indices ici
         l_alpha = lower_candidates[ops.cast(ops.floor(alpha * (n + 1)), int)]
-        u_alpha = upper_candidates[
-            ops.cast(ops.ceil((1 - alpha) * (n + 1)) - 1, int)
-        ]
+        u_alpha = upper_candidates[ops.cast(ops.ceil((1 - alpha) * (n + 1)) - 1, int)]
 
         # TODO : See if mean is the best aggregation here
         point_prediction = ops.mean(

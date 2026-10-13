@@ -84,18 +84,12 @@ class BootstrapEnsemble:
         fit_function: FitFunction | None = None,
     ) -> None:
         if isinstance(B, bool) or not isinstance(B, Integral) or B < 1:
-            raise ValueError(
-                f"B must be a positive integer. Provided value: {B}."
-            )
+            raise ValueError(f"B must be a positive integer. Provided value: {B}.")
         if isinstance(aggregation, str):
             if aggregation not in ("mean", "median"):
-                raise ValueError(
-                    "aggregation must be 'mean', 'median', or a callable."
-                )
+                raise ValueError("aggregation must be 'mean', 'median', or a callable.")
         elif not callable(aggregation):
-            raise TypeError(
-                "aggregation must be 'mean', 'median', or a callable."
-            )
+            raise TypeError("aggregation must be 'mean', 'median', or a callable.")
 
         self.model = make_predictor(model)
         self.B = int(B)
@@ -128,9 +122,7 @@ class BootstrapEnsemble:
 
     def _check_fitted(self) -> None:
         if not self.models_ or self.oob_mask_ is None:
-            raise RuntimeError(
-                "BootstrapEnsemble must be fitted before prediction."
-            )
+            raise RuntimeError("BootstrapEnsemble must be fitted before prediction.")
 
     def _aggregate(self, predictions: TensorLike) -> TensorLike:
         """Reduce the first axis, keeping every remaining prediction axis."""
@@ -142,14 +134,13 @@ class BootstrapEnsemble:
             result = self.aggregation(predictions, axis=0)
         result = ops.convert_to_tensor(result)
         if tuple(ops.shape(result)) != tuple(ops.shape(predictions))[1:]:
-            raise ValueError(
-                "aggregation must reduce axis 0 without keeping it."
-            )
+            raise ValueError("aggregation must reduce axis 0 without keeping it.")
         return result
 
     def _mean_weights(self) -> TensorLike:
         """Give equal weight to the eligible models in each training row."""
-        return self.oob_mask_ / ops.sum(self.oob_mask_, axis=1, keepdims=True)
+        mask = ops.cast(self.oob_mask_, "float32")
+        return mask / ops.sum(mask, axis=1, keepdims=True)
 
     def fit(
         self,
@@ -182,26 +173,18 @@ class BootstrapEnsemble:
         """
         n_samples = len(X)
         if n_samples < 2:
-            raise ValueError(
-                "BootstrapEnsemble requires at least 2 observations."
-            )
+            raise ValueError("BootstrapEnsemble requires at least 2 observations.")
         if len(y) != n_samples:
-            raise ValueError(
-                "X and y must contain the same number of observations."
-            )
+            raise ValueError("X and y must contain the same number of observations.")
         target_shape = getattr(y, "shape", None)
         if target_shape is None:
             target_shape = ops.shape(ops.convert_to_tensor(y))
         if tuple(target_shape) not in ((n_samples,), (n_samples, 1)):
-            raise ValueError(
-                "BootstrapEnsemble requires scalar regression targets."
-            )
+            raise ValueError("BootstrapEnsemble requires scalar regression targets.")
 
         samples = list(self.sampler(n_samples=n_samples, n_resamples=self.B))
         if len(samples) != self.B:
-            raise ValueError(
-                f"The sampler must return exactly {self.B} samples."
-            )
+            raise ValueError(f"The sampler must return exactly {self.B} samples.")
 
         # Each column describes the observations excluded from one model.
         oob_mask = ops.stack(
@@ -211,9 +194,7 @@ class BootstrapEnsemble:
             ],
             axis=1,
         )
-        missing = ops.where_1d(
-            ops.sum(ops.cast(oob_mask, "int32"), axis=1) == 0
-        )
+        missing = ops.where_1d(ops.sum(ops.cast(oob_mask, "int32"), axis=1) == 0)
         if len(missing):
             raise ValueError(
                 f"{len(missing)} training observations have no out-of-bag model. "
@@ -227,13 +208,9 @@ class BootstrapEnsemble:
             y_fit = tensor_indexing(y, sample.train_indices)
 
             if self.fit_function is not None:
-                fitted_model = self.fit_function(
-                    model, X_fit, y_fit, *args, **kwargs
-                )
+                fitted_model = self.fit_function(model, X_fit, y_fit, *args, **kwargs)
                 if fitted_model is None:
-                    raise TypeError(
-                        "fit_function must return the fitted predictor."
-                    )
+                    raise TypeError("fit_function must return the fitted predictor.")
                 model = make_predictor(fitted_model)
             else:
                 fit_method = getattr(model, "fit", None)
@@ -262,10 +239,7 @@ class BootstrapEnsemble:
         self._check_fitted()
         n_samples = len(X)
         return ops.stack(
-            [
-                self._prediction_vector(model(X), n_samples)
-                for model in self.models_
-            ],
+            [self._prediction_vector(model(X), n_samples) for model in self.models_],
             axis=0,
         )
 
@@ -282,9 +256,7 @@ class BootstrapEnsemble:
         """
         self._check_fitted()
         if len(X) != self.n_train_:
-            raise ValueError(
-                "X must contain all original training observations."
-            )
+            raise ValueError("X must contain all original training observations.")
         predictions = self.predict_members(X)
 
         if self.aggregation == "mean":
@@ -348,11 +320,12 @@ class BootstrapEnsemble:
             # mean(W @ P, axis=0) == mean(W, axis=0) @ P.
             # Avoid allocating the (n_train, n_test) intermediate matrix.
             member_weights = ops.mean(self._mean_weights(), axis=0)
-            result = member_weights @ predictions
-        else:
-            result = self._aggregate(
-                self._leave_one_out_predictions(predictions)
+            result = ops.squeeze(
+                ops.matmul(member_weights[None, :], predictions),
+                axis=0,
             )
+        else:
+            result = self._aggregate(self._leave_one_out_predictions(predictions))
         return self._prediction_vector(result, len(X))
 
     def __call__(self, X: Iterable[Any]) -> TensorLike:

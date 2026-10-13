@@ -141,6 +141,9 @@ class CalibrationContext:
         if isinstance(key, str):
             return self.__dict__[key]
 
+        if isinstance(key, bool):
+            raise TypeError("Boolean scalar indexing is not supported.")
+
         if isinstance(key, Integral):
             index = int(key)
             if index < 0:
@@ -154,22 +157,25 @@ class CalibrationContext:
                 **{name: value[key] for name, value in self.__dict__.items()}
             )
 
-        if isinstance(key, ops.tensor_type):
+        if not isinstance(key, (list, tuple)):
             key = ops.tolist(key)
 
+        if key and all(isinstance(i, bool) for i in key):
+            if len(key) != self.size:
+                raise IndexError("Boolean mask length mismatch.")
+            key = [i for i, selected in enumerate(key) if selected]
+
+        def select(value):
+            if isinstance(value, UserList):
+                return value[key]
+            if isinstance(value, list):
+                return [value[i] for i in key]
+            if isinstance(value, tuple):
+                return tuple(value[i] for i in key)
+            return ops.take(value, key, axis=0)
+
         return type(self)(
-            **{
-                name: (
-                    type(value)([value[i] for i in key])
-                    if isinstance(value, UserList)
-                    else (
-                        ops.take(value, key, axis=0)
-                        if isinstance(value, ops.tensor_type)
-                        else [value[i] for i in key]
-                    )
-                )
-                for name, value in self.__dict__.items()
-            }
+            **{name: select(value) for name, value in self.__dict__.items()}
         )
 
     def __contains__(self, key: str) -> bool:
@@ -299,11 +305,7 @@ class CalibrationContext:
         Raises:
             ValueError: If the two contexts contain different numbers of calibration samples.
         """
-        if (
-            self.__dict__
-            and other_context.__dict__
-            and self.size != other_context.size
-        ):
+        if self.__dict__ and other_context.__dict__ and self.size != other_context.size:
             raise ValueError(
                 f"Cannot merge CalibrationContext with different sizes: "
                 f"{self.size} != {other_context.size}"

@@ -273,7 +273,8 @@ def check_keras_version(keras: ModuleType):
     Raises:
         RuntimeError: If the installed Keras version is older than the minimum version required by PUNCC.
     """
-    if Version(keras.__version__) < Version("3.3.0"):
+    min_version = ".".join(map(str, _MIN_KERAS))
+    if Version(keras.__version__) < Version(min_version):
         raise RuntimeError(
             f"Keras {keras.__version__} detected. "
             f"This library requires Keras >= "
@@ -489,22 +490,6 @@ class OpsBackendManager(BackendManager):
 
         return self.take(a, self.where_1d(mask))
 
-    def _quantile_from_cumulative_weights(
-        self,
-        sorted_x,
-        cumulative_weights,
-        threshold,
-        *,
-        axis=0,
-    ):
-        threshold = self.convert_to_tensor(threshold)
-        if self.ndim(threshold) == 0:
-            indices = self.sum(cumulative_weights < threshold, axis=axis)
-        else:
-            threshold = self.expand_dims(threshold, axis=axis)
-            indices = self.sum(cumulative_weights < threshold, axis=axis)
-        return self.take(sorted_x, indices, axis=axis)
-
     def _uniform_quantile(
         self,
         x: TensorLike,
@@ -585,12 +570,25 @@ class OpsBackendManager(BackendManager):
         if weights is None:
             return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
 
-        if self.any(weights < 0):
+        # Validate weights after broadcasting to x.shape.
+        if not self.item(self.all(self.isfinite(weights))):
+            raise ValueError("Weights must be finite.")
+
+        if self.item(self.any(weights < 0)):
             raise ValueError("Weights must be non-negative.")
-        if self.all(weights == 0):
+
+        weight_sums = self.sum(
+            weights,
+            axis=axis,
+            keepdims=True,
+        )
+
+        if self.item(self.any(weight_sums <= 0)):
             raise ValueError(
-                "All weights are zero. At least one weight must be positive."
+                "Weights must have a strictly positive sum "
+                "along every quantile axis."
             )
+
         # if all weights equals -> fast path to uniform quantile
         if self.item(self.all(weights == self.reshape(weights, (-1,))[0])):
             return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
@@ -605,7 +603,6 @@ class OpsBackendManager(BackendManager):
 
             shape = [1] * len(x.shape)
             shape[axis] = x.shape[axis]
-
             weights = self.reshape(weights, shape)
             weights = self.broadcast_to(weights, self.shape(x))
         elif tuple(weights.shape) != tuple(x.shape):
@@ -614,7 +611,7 @@ class OpsBackendManager(BackendManager):
             )
 
         # TODO : risk of overflow on sum with very large weights with CP under covariate shift ?
-        weights = weights / self.sum(weights, axis=axis, keepdims=True)
+        weights = weights / weight_sums
         sorted_indices = self.argsort(x, axis=axis)
         sorted_cumsum_weights = self.cumsum(
             self.take_along_axis(weights, sorted_indices, axis=axis), axis=axis

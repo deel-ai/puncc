@@ -31,9 +31,7 @@ from deel.puncc import ops
 from deel.puncc.backend.keras import random
 
 
-def _constant_interval(
-    y_pred: TensorLike, quantile: float | TensorLike
-) -> TensorLike:
+def _constant_interval(y_pred: TensorLike, quantile: float | TensorLike) -> TensorLike:
     lower_bounds = y_pred - quantile
     upper_bounds = y_pred + quantile
     return ops.stack([lower_bounds, upper_bounds], axis=-1)
@@ -67,9 +65,7 @@ def scaled_interval(eps: float = 1e-12) -> PredSetFunction:
     return _scaled_interval
 
 
-def _cqr_interval(
-    y_pred: TensorLike, quantile: float | TensorLike
-) -> TensorLike:
+def _cqr_interval(y_pred: TensorLike, quantile: float | TensorLike) -> TensorLike:
     lower_pred = ops.take(y_pred, 0, axis=-1)
     upper_pred = ops.take(y_pred, 1, axis=-1)
     y_low = lower_pred - quantile
@@ -81,9 +77,7 @@ def cqr_interval() -> PredSetFunction:
     return _cqr_interval
 
 
-def _lac_set(
-    y_pred: TensorLike, quantile: float | TensorLike
-) -> list[TensorLike]:
+def _lac_set(y_pred: TensorLike, quantile: float | TensorLike) -> list[TensorLike]:
     if ops.ndim(quantile) == 1:
         quantile = ops.expand_dims(quantile, axis=-1)
 
@@ -96,18 +90,14 @@ def lac_set() -> PredSetFunction:
     return _lac_set
 
 
-def raps_set(
-    lambd: float = 0, k_reg: int = 1, rand: bool = True
-) -> PredSetFunction:
+def raps_set(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> PredSetFunction:
     # TODO : I think this implementation is clearly suboptimal, see if it can be improved
     if lambd < 0:
         raise ValueError(f"`lambd` must be >= 0, got {lambd}")
     if k_reg < 0:
         raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
 
-    def _raps_set(
-        y_pred: TensorLike, quantile: float | TensorLike
-    ) -> list[TensorLike]:
+    def _raps_set(y_pred: TensorLike, quantile: float | TensorLike) -> list[TensorLike]:
         # Shuffle the predictions to break ties randomly
         tie_break = random.uniform(ops.shape(y_pred), dtype=y_pred.dtype)
         tie_order = ops.argsort(tie_break, axis=-1)
@@ -138,11 +128,9 @@ def raps_set(
             last_pos_exp = ops.expand_dims(last_pos, axis=-1)
 
             cs_at_last = ops.take_along_axis(cs, last_pos_exp, axis=-1)[..., 0]
-            p_at_last = ops.take_along_axis(sorted_p, last_pos_exp, axis=-1)[
-                ..., 0
-            ]
+            p_at_last = ops.take_along_axis(sorted_p, last_pos_exp, axis=-1)[..., 0]
 
-            reg_at_L = lambd * ops.maximum(index_limit - k_reg, 0)
+            reg_at_L = lambd * ops.maximum(ops.cast(index_limit, cs.dtype) - k_reg, 0)
 
             v = (quantile - cs_at_last - reg_at_L + p_at_last) / p_at_last
             v = ops.clip(v, 0, 1)
@@ -158,9 +146,7 @@ def aps_set(rand: bool = False) -> PredSetFunction:
 
 
 def _constant_bbox(y_pred: TensorLike, quantile: TensorLike) -> TensorLike:
-    direction = ops.convert_to_tensor(
-        [-1.0, -1.0, 1.0, 1.0], dtype=y_pred.dtype
-    )
+    direction = ops.convert_to_tensor([-1.0, -1.0, 1.0, 1.0], dtype=y_pred.dtype)
 
     delta = quantile * direction
 
@@ -180,9 +166,7 @@ def _scaled_bbox(y_pred: TensorLike, quantile: float | TensorLike) -> Any:
 
     scale = ops.stack([dx, dy, dx, dy], axis=-1)
 
-    direction = ops.convert_to_tensor(
-        [-1.0, -1.0, 1.0, 1.0], dtype=y_pred.dtype
-    )
+    direction = ops.convert_to_tensor([-1.0, -1.0, 1.0, 1.0], dtype=y_pred.dtype)
 
     delta = quantile * scale * direction
 

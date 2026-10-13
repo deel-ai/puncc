@@ -66,10 +66,12 @@ def _validate_alpha(alpha: float | TensorLike) -> None:
         valid = 0 < alpha < 1
     else:
         alpha_tensor = ops.convert_to_tensor(alpha)
-        valid = bool(ops.item(ops.all((alpha_tensor > 0) & (alpha_tensor < 1))))
+        valid = ops.size(alpha_tensor) > 0 and bool(ops.item(ops.all((alpha_tensor > 0) & (alpha_tensor < 1))))
 
     if not valid:
-        raise ValueError("alpha must be finite and strictly between 0 and 1.")
+        raise ValueError(
+            "alpha must be non empty, finite and strictly between 0 and 1."
+        )
 
 
 def _check_calibration_samples(
@@ -83,9 +85,7 @@ def _check_calibration_samples(
             "Calibration targets y_calib are required but were not provided."
         )
     if y_calib is not None and len(y_calib) != n_samples:
-        raise ValueError(
-            "X_calib and y_calib must have the same number of samples."
-        )
+        raise ValueError("X_calib and y_calib must have the same number of samples.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,9 +182,7 @@ class ConformalPredictor(ABC):
         _check_calibration_samples(X_calib, y_calib, require_y=True)
 
         self.reset_calibration()
-        self.calibration_context.update(
-            X_calib=X_calib, y_pred=self.model(X_calib)
-        )
+        self.calibration_context.update(X_calib=X_calib, y_pred=self.model(X_calib))
         if y_calib is not None:
             self.calibration_context.update(y_calib=y_calib)
 
@@ -250,10 +248,9 @@ class ConformalPredictor(ABC):
 
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
+            _validate_alpha(alpha)
 
-        return self.conformalize(
-            prediction, alpha, self.calibration_context, X=X_test
-        )
+        return self.conformalize(prediction, alpha, self.calibration_context, X=X_test)
 
     @abstractmethod
     def conformalize(
@@ -369,9 +366,7 @@ class ConformalPredictor(ABC):
         Args:
             path: Path of the file in which the predictor state is stored.
         """
-        logger.debug(
-            "Saving %s calibration state to %s.", type(self).__name__, path
-        )
+        logger.debug("Saving %s calibration state to %s.", type(self).__name__, path)
         with open(path, "wb") as f:
             pickle.dump(self.__getstate__(), f)
 
@@ -405,7 +400,10 @@ class GroupConditionalMixin(ConformalPredictor):
     Calibration data are partitioned according to group_function and a separate calibration context is computed for each observed group.
     During prediction, test samples are routed to the calibration context associated with their group before delegating conformalization to the next ConformalPredictor implementation in the MRO.
 
-    A global calibration context is also retained and currently acts as a fallback for test groups that were not observed during calibration.
+    If a test sample belongs to a group that was not observed during calibration, a ValueError is raised by default.
+
+    Subclasses may override conformalize_unknown_group() to implement an explicit fallback strategy.
+    Such strategies are responsible for defining their own statistical guarantees.
 
     Args:
         group_function:
@@ -446,8 +444,8 @@ class GroupConditionalMixin(ConformalPredictor):
     ) -> Self:
 
         super().calibrate(X_calib, y_calib)
-        self.group_calibration_contexts = (
-            self.group_splitter.split_context_by_group(self.calibration_context)
+        self.group_calibration_contexts = self.group_splitter.split_context_by_group(
+            self.calibration_context
         )
         self.calibration_context.clear()
         return self
@@ -461,9 +459,7 @@ class GroupConditionalMixin(ConformalPredictor):
         X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
         if X is None:
-            raise ValueError(
-                "X is required for group-conditional conformalization."
-            )
+            raise ValueError("X is required for group-conditional conformalization.")
         if len(X) == 0:
             raise ValueError(
                 "Group-conditional conformalization requires at least one test sample."
@@ -494,7 +490,6 @@ class GroupConditionalMixin(ConformalPredictor):
                 group_prediction_set = self.conformalize_unknown_group(
                     group_prediction, alpha, X=ops.take(X, indices, axis=0)
                 )
-                # group_prediction_set = self.pred_set_function(group_prediction, ops.array(float("inf")))
                 missing_group_count += 1
             else:
                 group_prediction_set = super().conformalize(
@@ -541,9 +536,7 @@ class GroupConditionalMixin(ConformalPredictor):
         ):
             original_indices = ops.tolist(indices)
             for local_idx, original_idx in enumerate(original_indices):
-                prediction_set_items[original_idx] = group_prediction_set[
-                    local_idx
-                ]
+                prediction_set_items[original_idx] = group_prediction_set[local_idx]
 
         return ConformalPrediction(
             prediction=prediction,
@@ -553,6 +546,20 @@ class GroupConditionalMixin(ConformalPredictor):
     def conformalize_unknown_group(
         self, prediction, alpha, *, X=None
     ) -> ConformalPrediction[Any, Any]:
+        """
+        Handle predictions for groups unseen during calibration.
+
+        The default policy is strict: an exception is raised because no group-specific calibration data are available.
+
+        Subclasses may override this method to implement an explicit fallback strategy.
+
+        Note:
+            A custom fallback does not automatically preserve group-conditional coverage guarantees.
+
+        Raises:
+            ValueError:
+                If the group was not observed during calibration.
+        """
         raise ValueError(
             "Test group was not observed during calibration. Please provide a fallback strategy for unknown groups or provide a better calibration set."
         )
