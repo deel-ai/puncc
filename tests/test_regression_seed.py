@@ -193,7 +193,7 @@ def test_locally_adaptive_cp(regression_data):
 
     cp = LocallyAdaptiveCP(
         model=SklearnWrapper(LinearRegression()),
-        dispertion_estimator=SklearnWrapper(
+        dispersion_estimator=SklearnWrapper(
             RandomForestRegressor(
                 n_estimators=30,
                 random_state=42,

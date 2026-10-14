@@ -22,9 +22,12 @@
 # SOFTWARE.
 """
 This module provides basic cloning utilities for simple models (used in cross-conformal methods)
-The main function is `clone_model`, which tries to clone a model using various strategies, including specific cloners for popular ML libraries and a fallback to `copy.deepcopy`.
-This is approximative and may not work for all models, especially complex ones with non-standard architectures or custom layers.
-In such cases, users are encouraged to implement their own cloning logic or expose a `clone` method in their model classes.
+The main function is `clone_model`, which tries to clone a model using various strategies, including specific cloners
+for popular ML libraries and a fallback to `copy.deepcopy`.
+This is approximative and may not work for all models, especially complex ones with non-standard architectures or
+custom layers.
+In such cases, users are encouraged to implement their own cloning logic or expose a `clone` method in their model
+classes.
 The whole module should be improved (or replaced) in the future.
 """
 
@@ -65,15 +68,14 @@ def get_imported_modules() -> set[str]:
     Returns:
         set[str]: Set of top-level modules that have been imported in the current Python session.
     """
-    return set(
-        module.split(".")[0] for module in list(sys.modules.keys()) if module
-    )
+    return set(module.split(".")[0] for module in list(sys.modules.keys()) if module)
 
 
 def get_imported_ml_modules() -> list[str]:
     """
     Returns:
-        set[str]: Set of top-level ML modules that have been imported in the current Python session, filtered from a predefined list of ML libraries that are supported in Keras3.3 context.
+        list[str]: Set of top-level ML modules that have been imported in the current Python session,
+        filtered from a predefined list of ML libraries that are supported in Keras3.3 context.
     """
     imported = get_imported_modules()
     # return ML_MODULES.intersection(imported)
@@ -114,10 +116,7 @@ class ModelCloningError(RuntimeError):
         if strategy is not None:
             msg += f" Cloning strategy: {strategy}."
 
-        msg += (
-            " Consider providing a custom cloning implementation "
-            "for this model."
-        )
+        msg += " Consider providing a custom cloning implementation " "for this model."
 
         super().__init__(msg)
 
@@ -231,17 +230,20 @@ def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
                 )
             return cloned
 
-    # if model is from a known ML library but no cloner worked, raise an error instead of silently falling back to deepcopy
+    # if model is from a known ML library but no cloner worked,
+    # raise an error instead of silently falling back to deepcopy
     if origin_guess in {"torch", "tensorflow", "keras", "transformers", "jax"}:
         raise ModelCloningError(model, strategy=None)
 
     try:
         # Fallback to deepcopy if no specific cloner worked
+        model_type = type(model)
         if not clone_weights:
             warnings.warn(
                 (
-                    f"No dedicated cloning strategy was found for model type {type(model).__module__}.{type(model).__qualname__}. "
-                    "Falling back to deepcopy. PUNCC cannot guarantee that learned model state has been reset."
+                    f"No dedicated cloning strategy was found for model type {model_type.__module__}."
+                    f"{model_type.__qualname__}. Falling back to deepcopy. "
+                    "PUNCC cannot guarantee that learned model state has been reset."
                     "Please expose a `clone()` method or provide a custom cloning implementation for this model."
                 ),
                 ModelCloningWarning,
@@ -249,8 +251,8 @@ def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
             )
         logger.debug(
             "Falling back to deepcopy for model type=%s.%s.",
-            type(model).__module__,
-            type(model).__qualname__,
+            model_type.__module__,
+            model_type.__qualname__,
         )
         clone = copy.deepcopy(model)
         if clone is model:
@@ -368,9 +370,9 @@ def _clone_torch(model, *, clone_weights: bool = False):
                 for m in cloned.modules():
                     if _reinit_torch_module_(m):
                         continue
-                    has_state = (
-                        any(True for _ in m.parameters(recurse=False))
-                    ) or any(True for _ in m.buffers(recurse=False))
+                    has_state = (any(True for _ in m.parameters(recurse=False))) or any(
+                        True for _ in m.buffers(recurse=False)
+                    )
                     if has_state:
                         missing.append(type(m).__name__)
 
@@ -441,4 +443,6 @@ def _clone_hf(model: Any, *, clone_weights: bool = False) -> Any | None:
 def _clone_jax(model: Any, *, clone_weights: bool = False) -> Any | None:
     """Generic JAX cloning is not supported yet."""
     return None
-    # raise NotImplementedError("JAX model cloning is not yet implemented, please expose a 'clone' method or use non cross conformal methods.")
+    # raise NotImplementedError(
+    # "JAX model cloning is not yet implemented, please expose a 'clone' method or use non cross conformal methods."
+    # )

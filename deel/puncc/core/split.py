@@ -153,6 +153,25 @@ class SplitConformalPredictor(ConformalPredictor):
 
     @staticmethod
     def extend_scores_with_inf(scores: TensorLike) -> TensorLike:
+        """
+        Append an infinite nonconformity score along the sample axis.
+
+        An infinite score is added to account for the finite-sample correction when computing conformal quantiles.
+
+        Integer scores are converted to float32 so that infinity can be represented.
+        Floating-point scores retain their dtype.
+
+        Args:
+            scores:
+                Nonconformity scores with the sample dimension on axis 0.
+
+        Returns:
+            A tensor containing the original scores followed by one additional infinite score along axis 0.
+
+        Notes:
+            For multidimensional scores, the appended sample contains infinity in every component.
+            The original scores are not modified.
+        """
         if "float" not in ops.dtype(scores):
             scores = ops.cast(scores, "float32")
         return ops.concatenate(
@@ -187,12 +206,24 @@ class SplitConformalPredictor(ConformalPredictor):
 
 class WeightedQuantileMixin(SplitConformalPredictor):
     """
-    Add sample-weighted quantile computation to split conformal prediction.
+    Mixin providing weighted conformal quantiles for split conformal prediction.
 
-    The provided weight function is evaluated on the calibration inputs and its output is used when computing conformal quantiles.
+    Nonconformity scores are weighted using a user-provided weight function.
+    The weights are evaluated on the calibration inputs and separately on each test input.
+
+    For each test sample, its weight is appended to the calibration weights and used to compute a test-dependent conformal quantile.
 
     Args:
-        weight_function: Function assigning a weight to each calibration sample.
+        weight_function:
+            Function mapping input samples to non-negative weights.
+            It must return one weight per sample.
+
+    Notes:
+        The weight function is evaluated during calibration and prediction.
+
+        Calibration weights are stored in the calibration context, while test weights are computed when conformalizing predictions.
+
+        The validity of weighted conformal coverage guarantees depends on the assumptions underlying the chosen weighting scheme.
     """
 
     def __init__(
@@ -202,6 +233,18 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         self.weight_function = weight_function
 
     def compute_calibration_state(self, calibration_context):
+        """
+        Compute nonconformity scores and calibration sample weights.
+
+        The weight function is evaluated on the calibration inputs, and the resulting weights are stored in the calibration context.
+
+        Args:
+            calibration_context:
+                Context containing calibration inputs, targets and predictions.
+
+        Returns:
+            The updated calibration context containing nonconformity scores and calibration weights.
+        """
         calibration_context = super().compute_calibration_state(calibration_context)
         calibration_context.calibration_weights = self.weight_function(
             calibration_context.X_calib
@@ -215,6 +258,24 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         *,
         X: Any | None = None,
     ) -> TensorLike:
+        """
+        Compute a weighted conformal quantile for each test sample.
+
+        Each quantile is computed from the calibration nonconformity scores, using the stored
+        calibration weights and the weight associated with the corresponding test sample.
+
+        Args:
+            alpha:
+                Target miscoverage level.
+            calibration_context:
+                Context containing nonconformity scores and calibration weights.
+            X:
+                Test inputs used to compute sample-specific weights.
+
+        Returns:
+            Tensor containing one conformal quantile per test sample, possibly with additional dimensions for multivariate scores.
+        """
+
         scores = self.extend_scores_with_inf(calibration_context.nc_scores)
         calibration_weights = calibration_context.calibration_weights
         test_weights = self.weight_function(X)
@@ -270,6 +331,25 @@ LocalScaleFunction: TypeAlias = Callable[[Any], TensorLike]
 
 
 class LocallyScaledMixin(SplitConformalPredictor):
+    """
+    Mixin providing locally scaled nonconformity scores.
+
+    Calibration scores are divided by a sample-dependent scale estimated from the calibration inputs.
+    During prediction, the conformal quantile is multiplied by the scale estimated for each test input.
+
+    This allows prediction set sizes to adapt to local characteristics of the input data.
+
+    Args:
+        scale_function:
+            Function mapping input samples to strictly positive scale
+            estimates with shape (n_samples,) or (n_samples, 1).
+
+    Notes:
+        The scale function must be available during both calibration and prediction.
+        A small epsilon is added to the scale to improve numerical stability. Its default value is 1e-12.
+        The statistical validity of the resulting prediction sets depends on the assumptions of the underlying conformal method.
+    """
+
     eps: float = 1e-12
 
     def __init__(self, *args, scale_function: LocalScaleFunction, **kwargs):
@@ -277,6 +357,23 @@ class LocallyScaledMixin(SplitConformalPredictor):
         super().__init__(*args, **kwargs)
 
     def _scale(self, X: Any) -> TensorLike:
+        """
+        Compute and validate sample-dependent scale estimates.
+
+        Args:
+            X:
+                Input samples used to evaluate the scale function.
+
+        Returns:
+            A one-dimensional tensor of strictly positive scale estimates with shape (n_samples,).
+
+        Raises:
+            ValueError:
+                If the scale function returns a tensor with an invalid shape or containing non-positive values.
+
+        Notes:
+            Scale estimates with shape (n_samples, 1) are squeezed to shape (n_samples,).
+        """
         scale = self.scale_function(X)
         if scale.ndim == 2 and scale.shape[-1] == 1:
             scale = ops.squeeze(scale, axis=-1)
@@ -284,13 +381,31 @@ class LocallyScaledMixin(SplitConformalPredictor):
             raise ValueError("scale_function must return shape (n,) or (n, 1).")
         if ops.any(scale <= 0):
             raise ValueError(
-                "LocallyScaledCP requires strictly positive dispersion estimates."
+                "Locally scaled conformal prediction requires strictly positive scale estimates."
             )
         return scale
 
     def compute_calibration_state(
         self, calibration_context: CalibrationContext
     ) -> CalibrationContext:
+        """
+        Compute locally normalized calibration scores.
+
+        First compute the nonconformity scores using the parent method, then divide them by the sample-dependent scale estimates.
+
+        Args:
+            calibration_context:
+                Context containing calibration inputs, targets and
+                model predictions.
+
+        Returns:
+            The updated calibration context containing normalized
+            nonconformity scores.
+
+        Notes:
+            Scale estimates are broadcast over any additional score
+            dimensions, allowing multivariate nonconformity scores.
+        """
         calibration_context = super().compute_calibration_state(calibration_context)
         scores = calibration_context.nc_scores
         scale = self._scale(calibration_context.X_calib)
@@ -303,6 +418,35 @@ class LocallyScaledMixin(SplitConformalPredictor):
         return calibration_context
 
     def conformalize(self, prediction, alpha, calibration_context=None, *, X=None):
+        """
+        Construct prediction sets using locally rescaled conformal quantiles.
+
+        Compute the conformal quantile from normalized calibration scores,
+        then multiply it by the scale estimated for each test sample.
+
+        Args:
+            prediction:
+                Base model predictions.
+            alpha:
+                Target miscoverage level.
+            calibration_context:
+                Context containing normalized calibration scores.
+            X:
+                Test inputs used to compute local scale estimates.
+                Required for conformalization.
+
+        Returns:
+            A ConformalPrediction containing the original predictions and their locally scaled prediction sets.
+
+        Raises:
+            RuntimeError:
+                If the calibration context does not contain nonconformity scores.
+            ValueError:
+                If X is not provided or the estimated scales are invalid.
+
+        Notes:
+            Scale estimates are broadcast over additional dimensions when working with multivariate scores.
+        """
         if not hasattr(calibration_context, "nc_scores"):
             raise RuntimeError("The conformal predictor has not been calibrated yet.")
 
@@ -328,15 +472,15 @@ class LocallyAdaptiveMixin(LocallyScaledMixin):
     def __init__(
         self,
         *args,
-        dispertion_estimator: Predictor | PredictorLike,
-        dispertion_estimation_function: Callable[
+        dispersion_estimator: Predictor | PredictorLike,
+        dispersion_estimation_function: Callable[
             [TensorLike, TensorLike], TensorLike
         ] = absolute_difference(),
         **kwargs,
     ):
-        self.dispertion_estimator = make_predictor(dispertion_estimator)
-        self.dispertion_estimation_function = dispertion_estimation_function
-        super().__init__(*args, scale_function=self.dispertion_estimator, **kwargs)
+        self.dispersion_estimator = make_predictor(dispersion_estimator)
+        self.dispersion_estimation_function = dispersion_estimation_function
+        super().__init__(*args, scale_function=self.dispersion_estimator, **kwargs)
 
     def fit(
         self,
@@ -347,8 +491,8 @@ class LocallyAdaptiveMixin(LocallyScaledMixin):
     ) -> Self:
         super().fit(X, y, *args, **kwargs)
         mu_pred = self.model(X)
-        self.dispertion_estimator.fit(
-            X, self.dispertion_estimation_function(mu_pred, y)
+        self.dispersion_estimator.fit(
+            X, self.dispersion_estimation_function(mu_pred, y)
         )
         return self
 

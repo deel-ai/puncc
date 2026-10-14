@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements conformal anomaly detection procedures.
+This module implements conformal object detection methods.
 """
 
 from collections.abc import Iterable
@@ -41,33 +41,46 @@ from deel.puncc.corrections import AlphaCorrection, bonferroni
 
 # TODO : passer d'une conformalization de regression 4D à une conformalization d'OD localization
 class SplitBoxWise(SplitConformalPredictor):
-    """Implementation of box-wise conformal object detection. For more info,
-    we refer the user to the :ref:`theory overview page <theory splitboxwise>`
+    """
+    Implementation of box-wise conformal object detection.
 
-    :param BasePredictor | Any predictor: a predictive model.
-    :param bool train: if False, prediction model(s) will not be (re)trained.
-        Defaults to False.
-    :param callable weight_func: function that takes as argument an array of
-        features X and returns associated "conformality" weights, defaults to
-        None.
-    :param str method: chose between "additive" or "multiplicative" box-wise
-        conformalization.
+    This method constructs conformal bounds around predicted bounding boxes
+    by calibrating the four box coordinates. Box extensions can be additive
+    (constant offsets) or multiplicative (offsets proportional to box size).
 
-    :raises ValueError: if method is not 'additive' or 'multiplicative'.
+    Args:
+        model: Predictive model returning bounding boxes with shape
+            (n_samples, 4), in (x_min, y_min, x_max, y_max) format.
+        box_extension_mode: Extension mode, either "additive" or
+            "multiplicative". Defaults to "additive".
+        fit_function: Optional custom function used to train the model.
+            Defaults to None.
+
+    Raises:
+        ValueError: If box_extension_mode is invalid.
+
+    Notes:
+        By default, Bonferroni correction is applied across the four
+        bounding-box coordinates.
+
+        The returned prediction set has shape (n_samples, 4, 2).
+        Its last dimension contains the inner and outer conformal bounds.
 
     .. _example splitboxwise:
 
     Example::
 
-        from deel.puncc.object_detection import SplitBoxWise
         import numpy as np
 
         from sklearn.datasets import make_regression
         from sklearn.model_selection import train_test_split
         from sklearn.ensemble import RandomForestRegressor
 
-        from deel.puncc.metrics import object_detection_mean_coverage
-        from deel.puncc.metrics import object_detection_mean_area
+        from deel.puncc.od.split import SplitBoxWise
+        from deel.puncc.metrics import (
+            object_detection_mean_coverage,
+            object_detection_mean_area,
+        )
 
         # Generate a random regression problem
         X, y = make_regression(
@@ -79,7 +92,7 @@ class SplitBoxWise(SplitConformalPredictor):
             shuffle=False,
         )
 
-        # Create dummy object localization data formated as (x1, y1, x2, y2)
+        # Create dummy object localization data in (x1, y1, x2, y2) format
         y = np.abs(y)
         x1 = np.min(y[:, :2], axis=1)
         y1 = np.min(y[:, 2:], axis=1)
@@ -87,33 +100,45 @@ class SplitBoxWise(SplitConformalPredictor):
         y2 = np.max(y[:, 2:], axis=1)
         y = np.array([x1, y1, x2, y2]).T
 
-
-        # Split data into train and test
-        X, X_test, y, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-
-        # Split train data into fit and calibration
-        X_fit, X_calib, y_fit, y_calib = train_test_split(
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=0
         )
 
+        # Split training data into fit and calibration sets
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=0
+        )
+
         # Create a random forest model
-        rf_model = RandomForestRegressor(n_estimators=100, random_state=0)
+        rf_model = RandomForestRegressor(
+            n_estimators=100,
+            random_state=0,
+        )
 
-        # CP method initialization
-        od_cp = SplitBoxWise(rf_model, method="multiplicative")
+        # Initialize the conformal predictor
+        od_cp = SplitBoxWise(
+            model=rf_model,
+            box_extension_mode="multiplicative",
+        )
 
-        # The call to `fit` trains the model and computes the nonconformity
-        # scores on the calibration set
-        od_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+        # Fit the model and calibrate separately
+        od_cp.fit(X_fit, y_fit)
+        od_cp.calibrate(X_calib, y_calib)
 
-        # The predict method infers prediction intervals with respect to
-        # the significance level alpha = 20%
-        y_pred, box_inner, box_outer = od_cp.predict(X_test, alpha=0.2)
+        # Construct conformal bounding boxes for alpha = 20%
+        y_pred, box_bounds = od_cp.predict(X_test, alpha=0.2)
 
-        # Compute marginal coverage and average width of the prediction intervals
+        # Extract inner and outer bounding boxes
+        box_inner = box_bounds[..., 0]
+        box_outer = box_bounds[..., 1]
+
+        # Compute marginal coverage and average outer bounding-box area
         coverage = object_detection_mean_coverage(box_outer, y_test)
         average_area = object_detection_mean_area(box_outer)
+
         print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average bounding-box area: {np.round(average_area, 2)}")
     """
 
     def __init__(

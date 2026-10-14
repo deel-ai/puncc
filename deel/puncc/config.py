@@ -1,3 +1,9 @@
+"""
+Basic components allowing user to specify backend to use in puncc session.
+Main function in this module is ```set_backend```.
+This function should be called with appropriate backend name before any other operations using puncc or keras
+"""
+
 import os
 import logging
 

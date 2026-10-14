@@ -66,7 +66,9 @@ def _validate_alpha(alpha: float | TensorLike) -> None:
         valid = 0 < alpha < 1
     else:
         alpha_tensor = ops.convert_to_tensor(alpha)
-        valid = ops.size(alpha_tensor) > 0 and bool(ops.item(ops.all((alpha_tensor > 0) & (alpha_tensor < 1))))
+        valid = ops.size(alpha_tensor) > 0 and bool(
+            ops.item(ops.all((alpha_tensor > 0) & (alpha_tensor < 1)))
+        )
 
     if not valid:
         raise ValueError(
@@ -156,8 +158,20 @@ class ConformalPredictor(ABC):
         self.fit_function = fit_function
         self.calibration_context = CalibrationContext()
 
-    def reset_calibration(self):
+    def reset_calibration(self) -> Self:
+        """
+        Clear the current calibration state.
+
+        Remove all data stored in the calibration context, including calibration inputs, targets, model
+        predictions, and any method-specific calibration quantities.
+
+        The underlying predictive model and its fitted parameters are preserved.
+
+        Notes:
+            Subclasses may override this method to reset additional calibration-related state.
+        """
         self.calibration_context.clear()
+        return self
 
     def calibrate(
         self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
@@ -335,7 +349,17 @@ class ConformalPredictor(ABC):
             "The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function."
         )
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
+        """
+        Return the predictor state for serialization.
+
+        Collect instance attributes stored in ``__dict__`` and in the ``__slots__`` declarations of the class hierarchy.
+
+        The underlying predictive model is excluded from the serialized state and must be supplied separately when restoring the predictor.
+
+        Returns:
+            Dictionary containing the serializable predictor state, excluding the predictive model.
+        """
         state = {}
         if getattr(self, "__dict__", None):
             state = self.__dict__.copy()
@@ -353,7 +377,17 @@ class ConformalPredictor(ABC):
                     state[name] = getattr(self, name)
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, state) -> None:
+        """
+        Restore predictor attributes from a serialized state.
+
+        Args:
+            state: Dictionary containing the predictor attributes to restore.
+
+        Notes:
+            This method restores the saved attributes but does not reconstruct the underlying predictive model.
+            The load() method restores the model separately.
+        """
         for key, value in state.items():
             setattr(self, key, value)
 
@@ -395,7 +429,7 @@ class ConformalPredictor(ABC):
 
 class GroupConditionalMixin(ConformalPredictor):
     """
-    Mixin adding group-balanced calibration to a conformal predictor.
+    Mixin providing group-balanced calibration for conformal predictor.
 
     Calibration data are partitioned according to group_function and a separate calibration context is computed for each observed group.
     During prediction, test samples are routed to the calibration context associated with their group before delegating conformalization to the next ConformalPredictor implementation in the MRO.
@@ -420,9 +454,10 @@ class GroupConditionalMixin(ConformalPredictor):
             Keyword arguments forwarded to the concrete conformal predictor.
     """
 
-    def reset_calibration(self):
+    def reset_calibration(self) -> Self:
         super().reset_calibration()
         self.group_calibration_contexts.clear()
+        return self
 
     def __init__(
         self,
@@ -442,7 +477,29 @@ class GroupConditionalMixin(ConformalPredictor):
         X_calib: Iterable[Any],
         y_calib: Iterable[Any] | None = None,
     ) -> Self:
+        """
+        Calibrate the predictor separately for each observed group.
 
+        First compute the calibration state on the supplied dataset, then partition the resulting calibration context according to
+        the group identifiers returned by the configured group function.
+
+        The group-specific contexts are stored in ``group_calibration_contexts`` and the global
+        calibration context is cleared after partitioning.
+
+        Args:
+            X_calib: Calibration inputs.
+            y_calib: Calibration targets.
+
+        Returns:
+            The calibrated predictor.
+
+        Notes:
+            Only groups represented in the calibration dataset have
+            a calibration context.
+
+            By default, predictions associated with unseen groups
+            raise a ValueError rather than using a global fallback.
+        """
         super().calibrate(X_calib, y_calib)
         self.group_calibration_contexts = self.group_splitter.split_context_by_group(
             self.calibration_context
@@ -458,6 +515,44 @@ class GroupConditionalMixin(ConformalPredictor):
         *,
         X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
+        """
+        Conformalize predictions using group-specific calibration contexts.
+
+        Test samples are partitioned according to the configured group function.
+        Each group is conformalized independently using its corresponding calibration context.
+
+        The resulting prediction sets are reassembled in the original order of the test samples.
+
+        Args:
+            prediction:
+                Base predictions to conformalize.
+
+            alpha:
+                Target miscoverage level.
+
+            calibration_context:
+                Calibration context used for conformalization.
+                When the predictor's own context is provided, the stored group-specific calibration contexts are used.
+                Otherwise, the supplied context is partitioned by group.
+
+            X:
+                Test inputs used to determine group membership.
+                Required for group-conditional conformalization.
+
+        Returns:
+            A ConformalPrediction containing the original predictions and the corresponding group-conditional prediction sets.
+
+        Raises:
+            ValueError:
+                If X is missing or contains no test samples.
+                Also raised by default when a test group was not observed during calibration.
+
+        Notes:
+            Subclasses may override conformalize_unknown_group() to define a fallback strategy for unseen groups.
+
+            Prediction sets may be returned as a tensor or as a list, depending on the representation produced by the underlying
+            conformal prediction method.
+        """
         if X is None:
             raise ValueError("X is required for group-conditional conformalization.")
         if len(X) == 0:
@@ -503,7 +598,7 @@ class GroupConditionalMixin(ConformalPredictor):
 
         if missing_group_count:
             warnings.warn(
-                f"{missing_group_count} test group(s) were not observed during calibration. Specific fallback stratedgy was used for these groups.",
+                f"{missing_group_count} test group(s) were not observed during calibration. Specific fallback strategy was used for these groups.",
                 CalibrationWarning,
                 stacklevel=2,
             )
@@ -573,9 +668,17 @@ class GroupConditionalMixin(ConformalPredictor):
 
 class NoopConformalPredictor(ConformalPredictor):
     """
-    Conformal predictor that does not perform any conformalization.
-    It simply returns the base model predictions as both the prediction and the prediction set.
-    For testing and debugging purposes.
+    Conformal predictor that performs no conformalization.
+
+    The base model predictions are returned unchanged as both the predictions and their associated prediction sets.
+
+    No calibration data or method-specific calibration state are retained.
+    This class is intended for testing and debugging rather than providing statistical coverage guarantees.
+
+    Args:
+        model: Underlying predictive model.
+        fit_function: Optional custom function used to fit the model.
+            Defaults to None.
     """
 
     def calibrate(
@@ -583,12 +686,31 @@ class NoopConformalPredictor(ConformalPredictor):
         X_calib: Iterable[Any] | None = None,
         y_calib: Iterable[Any] | None = None,
     ) -> Self:
+        """
+        Reset calibration without using the supplied data.
+
+        Args:
+            X_calib: Ignored calibration inputs.
+            y_calib: Ignored calibration targets.
+
+        Returns:
+            The predictor with an empty calibration context.
+        """
         self.reset_calibration()
         return self
 
     def compute_calibration_state(
         self, calibration_context: CalibrationContext
     ) -> CalibrationContext:
+        """
+        Return an empty calibration context.
+
+        Args:
+            calibration_context: Ignored calibration context.
+
+        Returns:
+            A new empty CalibrationContext.
+        """
         return CalibrationContext()
 
     def conformalize(
@@ -599,6 +721,21 @@ class NoopConformalPredictor(ConformalPredictor):
         *,
         X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
+        """
+        Return the original predictions without conformalization.
+
+        Args:
+            prediction: Base model predictions.
+            alpha: Ignored miscoverage level.
+            calibration_context: Ignored calibration context.
+            X: Ignored test inputs.
+
+        Returns:
+            A ConformalPrediction whose prediction and prediction_set both reference the original predictions.
+
+        Notes:
+            No coverage guarantee is provided.
+        """
         return ConformalPrediction(
             prediction=prediction,
             prediction_set=prediction,

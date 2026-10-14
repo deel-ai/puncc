@@ -70,24 +70,49 @@ from deel.puncc.core.split import (
 #         return [ops.where_1d(mask[i]) for i in range(n_samples)]
 
 
-class ClassConditionalSplitConformalMixin(
-    SplitConformalPredictor
-):  # (ClassificationConformalPredictor):
-    __slots__ = ("classwise_calibration_contexts",)
+class ClassConditionalSplitConformalMixin(SplitConformalPredictor):
+    """
+    Mixin providing class-conditional calibration for split conformal classification methods.
+
+    Calibration samples are partitioned according to their true class labels.
+    A separate conformal quantile is computed for each class using only the corresponding calibration samples.
+
+    During prediction, each candidate class is evaluated against its own calibration quantile rather than
+    a global threshold.
+
+    Under the usual exchangeability assumptions, this approach provides class-conditional coverage for
+    classes represented in the calibration dataset.
+
+    Notes:
+        The underlying model must return class probabilities with shape (n_samples, n_classes), and calibration
+        labels must be integer class indices corresponding to the probability columns.
+
+        A scalar alpha applies the same miscoverage level to all classes.
+        Alternatively, alpha may specify one miscoverage level per class.
+
+        Classes absent from the calibration dataset are assigned an infinite quantile, so they are always included in prediction sets.
+
+        The class-specific calibration contexts are rebuilt whenever calibrate() is called and cleared by reset_calibration().
+
+    Example:
+        ClassConditionalLAC combines this mixin with LAC to provide class-conditional prediction sets.
+    """
+
     splitter = ClasswiseSplitter()
 
     def calibrate(
         self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
     ) -> Self:
         super().calibrate(X_calib, y_calib)
-        self.classwise_calibration_contexts = (
-            self.splitter.split_context_by_group(self.calibration_context)
+        self.classwise_calibration_contexts = self.splitter.split_context_by_group(
+            self.calibration_context
         )
         return self
 
-    def reset_calibration(self) -> None:
+    def reset_calibration(self) -> Self:
         super().reset_calibration()
         self.classwise_calibration_contexts = {}
+        return self
 
     def conformalize(
         self,
@@ -124,16 +149,10 @@ class ClassConditionalSplitConformalMixin(
             quantiles.append(quantile_k)
 
         # For weighted class conditional with missing classes, we need to ensure that all quantiles have the same shape.
-        non_scalar_quantile = next(
-            (q for q in quantiles if ops.ndim(q) > 0), None
-        )
+        non_scalar_quantile = next((q for q in quantiles if ops.ndim(q) > 0), None)
         if non_scalar_quantile is not None:
             quantiles = [
-                (
-                    ops.ones_like(non_scalar_quantile) * q
-                    if ops.ndim(q) == 0
-                    else q
-                )
+                (ops.ones_like(non_scalar_quantile) * q if ops.ndim(q) == 0 else q)
                 for q in quantiles
             ]
 
@@ -146,86 +165,190 @@ class ClassConditionalSplitConformalMixin(
 
 
 class LAC(PresetSplitConformalPredictor):
-    nc_score_function = lac_score()
-    pred_set_function = lac_set()
+    """
+    Implementation of the Least Ambiguous Set-Valued Classifier (LAC).
 
+    This method constructs prediction sets using the nonconformity score 1 - p(y | x),
+    where p(y | x) is the predicted probability of the true class.
 
-class ClassConditionalLAC(ClassConditionalSplitConformalMixin, LAC):
-    """Implementation of the Classwise Least Ambiguous Set-Valued Classifier.
+    A single conformal quantile is computed from the calibration scores and used to
+    select the classes included in each prediction set.
 
-    Unlike standard LAC which computes a single quantile across all classes,
-    ClasswiseLAC computes one quantile per class, providing class-conditional
-    coverage guarantees.
+    Args:
+        model: Predictive model returning class probabilities with shape (n_samples, n_classes).
+        fit_function: Optional custom function used to train the model.
+            Defaults to None.
 
-    For more details on classwise conformal prediction, see:
-    Ding et al. "Class-Conditional Conformal Prediction with Many Classes"
-    https://arxiv.org/abs/2306.09335
+    Notes:
+        The true class labels must be integer indices corresponding to the columns of the predicted probability matrix.
 
-    :param BasePredictor predictor: a predictor implementing fit and predict.
-    :param bool train: if False, prediction model(s) will not be trained and
-        will be used as is. Defaults to True.
-    :param float random_state: random seed used when the user does not
-        provide a custom fit/calibration split in `fit` method.
+        The predict() method returns a ConformalPrediction containing the class probabilities and a list of prediction
+        sets, each containing the indices of the selected classes.
 
     Example::
 
-        from deel.puncc.classification import ClasswiseLAC
-        from deel.puncc.api.prediction import BasePredictor
+        import numpy as np
 
         from sklearn.datasets import make_classification
         from sklearn.model_selection import train_test_split
         from sklearn.ensemble import RandomForestClassifier
 
-        from deel.puncc.metrics import classification_mean_coverage
-        from deel.puncc.metrics import classification_mean_size
+        from deel.puncc.classification import LAC
+        from deel.puncc.metrics import (
+            classification_mean_coverage,
+            classification_mean_size,
+        )
+
+        # Generate a random classification problem
+        X, y = make_classification(
+            n_samples=1000,
+            n_features=4,
+            n_informative=2,
+            n_classes=3,
+            n_clusters_per_class=1,
+            random_state=0,
+            shuffle=False,
+        )
+
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=0
+        )
+
+        # Split training data into fit and calibration sets
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=0
+        )
+
+        # Create a random forest classifier
+        rf_model = RandomForestClassifier(
+            n_estimators=100,
+            random_state=0,
+        )
+
+        # Adapt the classifier to return class probabilities
+        class ProbabilityPredictor:
+            def __init__(self, model):
+                self.model = model
+
+            def fit(self, X, y):
+                self.model.fit(X, y)
+                return self
+
+            def __call__(self, X):
+                return self.model.predict_proba(X)
+
+        predictor = ProbabilityPredictor(rf_model)
+
+        # Initialize the conformal predictor
+        cp = LAC(model=predictor)
+
+        # Fit the model and calibrate separately
+        cp.fit(X_fit, y_fit)
+        cp.calibrate(X_calib, y_calib)
+
+        # Construct prediction sets for alpha = 20%
+        y_pred, set_pred = cp.predict(X_test, alpha=0.2)
+
+        # Compute marginal coverage and average prediction set size
+        coverage = classification_mean_coverage(y_test, set_pred)
+        size = classification_mean_size(set_pred)
+
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average prediction set size: {np.round(size, 2)}")
+    """
+
+    nc_score_function = lac_score()
+    pred_set_function = lac_set()
+
+
+class ClassConditionalLAC(ClassConditionalSplitConformalMixin, LAC):
+    """
+    Implementation of the Class-Conditional Least Ambiguous Set-Valued Classifier.
+
+    Unlike standard LAC, which computes a single quantile across all classes,
+    this method computes one quantile per class to provide class-conditional
+    coverage under the usual conformal prediction assumptions.
+
+    Classes absent from the calibration set receive an infinite quantile
+    and are therefore included in every prediction set.
+
+    Args:
+        model: A predictive model returning class probabilities of shape
+            (n_samples, n_classes).
+        fit_function: Optional function used to train the predictive model.
+            Defaults to None.
+
+    For more details on class-conditional conformal prediction, see:
+    Ding et al. "Class-Conditional Conformal Prediction with Many Classes"
+    https://arxiv.org/abs/2306.09335
+
+    Example::
 
         import numpy as np
 
-        from tensorflow.keras.utils import to_categorical
+        from sklearn.datasets import make_classification
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestClassifier
+
+        from deel.puncc.classification import ClassConditionalLAC
+        from deel.puncc.metrics import (
+            classification_mean_coverage,
+            classification_mean_size,
+        )
 
         # Generate a random classification problem
-        X, y = make_classification(n_samples=1000, n_features=4, n_informative=2,
-                    n_classes=3, n_clusters_per_class=1, random_state=0, shuffle=False)
+        X, y = make_classification(
+            n_samples=1000,
+            n_features=4,
+            n_informative=2,
+            n_classes=3,
+            n_clusters_per_class=1,
+            random_state=0,
+            shuffle=False,
+        )
 
         # Split data into train and test
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=.2, random_state=0
+            X, y, test_size=0.2, random_state=0
         )
 
-        # Split train data into fit and calibration
+        # Split training data into fit and calibration sets
         X_fit, X_calib, y_fit, y_calib = train_test_split(
-            X_train, y_train, test_size=.2, random_state=0
+            X_train, y_train, test_size=0.2, random_state=0
         )
 
-        # One hot encoding of classes
-        y_fit_cat = to_categorical(y_fit)
-        y_calib_cat = to_categorical(y_calib)
-        y_test_cat = to_categorical(y_test)
+        # Create a random forest classifier
+        rf_model = RandomForestClassifier(
+            n_estimators=100,
+            random_state=0,
+        )
 
-        # Create rf classifier
-        rf_model = RandomForestClassifier(n_estimators=100, random_state=0)
+        # Use class probabilities instead of predicted class labels
+        class ProbabilityPredictor:
+            def __init__(self, model):
+                self.model = model
 
-        # Create a wrapper of the random forest model to redefine its predict method
-        # into logits predictions. Make sure to subclass BasePredictor.
-        class RFPredictor(BasePredictor):
-            def predict(self, X, **kwargs):
-                return self.model.predict_proba(X, **kwargs)
+            def fit(self, X, y):
+                self.model.fit(X, y)
+                return self
 
-        # Wrap model in the newly created RFPredictor
-        rf_predictor = RFPredictor(rf_model)
+            def __call__(self, X):
+                return self.model.predict_proba(X)
 
-        # CP method initialization
-        classwise_lac_cp = ClasswiseLAC(rf_predictor)
+        predictor = ProbabilityPredictor(rf_model)
 
-        # The call to `fit` trains the model and computes the nonconformity
-        # scores on the calibration set
-        classwise_lac_cp.fit(X_fit=X_fit, y_fit=y_fit, X_calib=X_calib, y_calib=y_calib)
+        # Initialize the conformal predictor
+        cp = ClassConditionalLAC(model=predictor)
 
-        # The predict method infers prediction sets with respect to
-        # the significance level alpha = 20%
-        y_pred, set_pred = classwise_lac_cp.predict(X_test, alpha=.2)
+        # Fit the predictive model and calibrate separately
+        cp.fit(X_fit, y_fit)
+        cp.calibrate(X_calib, y_calib)
 
-        # Compute marginal coverage
+        # Construct prediction sets for alpha = 20%
+        y_pred, set_pred = cp.predict(X_test, alpha=0.2)
+
+        # Compute marginal coverage and average prediction set size
         coverage = classification_mean_coverage(y_test, set_pred)
         size = classification_mean_size(set_pred)
 
@@ -235,11 +358,215 @@ class ClassConditionalLAC(ClassConditionalSplitConformalMixin, LAC):
 
 
 class APS(PresetSplitConformalPredictor):
+    """
+    Implementation of Adaptive Prediction Sets (APS).
+
+    This method constructs prediction sets by sorting class probabilities in descending order and accumulating
+    them until a conformal threshold is reached.
+
+    Unlike LAC, which evaluates each class probability independently, APS uses cumulative class probabilities
+    to adapt prediction set sizes to the uncertainty of the classification model.
+
+    Randomization is enabled by default to determine whether the last class should be included in the prediction set.
+
+    Args:
+        model: Predictive model returning class probabilities with shape (n_samples, n_classes).
+        fit_function: Optional custom function used to train the model.
+            Defaults to None.
+
+    Notes:
+        True class labels must be integer indices corresponding to the columns of the predicted probability matrix.
+
+        The predict() method returns a ConformalPrediction containing the class probabilities and a list of prediction sets, each
+        containing the indices of the selected classes.
+
+        Randomized tie-breaking is used when several classes have identical predicted probabilities.
+
+    Example::
+        import numpy as np
+
+        from sklearn.datasets import make_classification
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestClassifier
+
+        from deel.puncc.classification import APS
+        from deel.puncc.metrics import (
+            classification_mean_coverage,
+            classification_mean_size,
+        )
+
+        # Generate a random classification problem
+        X, y = make_classification(
+            n_samples=1000,
+            n_features=4,
+            n_informative=2,
+            n_classes=3,
+            n_clusters_per_class=1,
+            random_state=0,
+            shuffle=False,
+        )
+
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=0
+        )
+
+        # Split training data into fit and calibration sets
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=0
+        )
+
+        # Create a random forest classifier
+        rf_model = RandomForestClassifier(
+            n_estimators=100,
+            random_state=0,
+        )
+
+        # Adapt the classifier to return class probabilities
+        class ProbabilityPredictor:
+            def __init__(self, model):
+                self.model = model
+
+            def fit(self, X, y):
+                self.model.fit(X, y)
+                return self
+
+            def __call__(self, X):
+                return self.model.predict_proba(X)
+
+        predictor = ProbabilityPredictor(rf_model)
+
+        # Initialize the conformal predictor
+        cp = APS(model=predictor)
+
+        # Fit the model and calibrate separately
+        cp.fit(X_fit, y_fit)
+        cp.calibrate(X_calib, y_calib)
+
+        # Construct adaptive prediction sets for alpha = 20%
+        y_pred, set_pred = cp.predict(X_test, alpha=0.2)
+
+        # Compute marginal coverage and average prediction set size
+        coverage = classification_mean_coverage(y_test, set_pred)
+        size = classification_mean_size(set_pred)
+
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average prediction set size: {np.round(size, 2)}")
+    """
+
     nc_score_function = aps_score()
     pred_set_function = aps_set(rand=True)
 
 
 class RAPS(SplitConformalPredictor):
+    """
+    Implementation of Regularized Adaptive Prediction Sets (RAPS).
+
+    RAPS extends Adaptive Prediction Sets (APS) by introducing a regularization penalty for classes whose rank exceeds k_reg.
+
+    Classes are sorted by decreasing predicted probability, and their cumulative probabilities are adjusted using the penalty
+    lambd * max(rank - k_reg, 0).
+
+    Regularization can reduce prediction set sizes by discouraging the inclusion of low-ranked classes.
+
+    Args:
+        model: Predictive model returning class probabilities with shape (n_samples, n_classes).
+        lambd: Non-negative regularization strength. Defaults to 0, corresponding to APS without regularization.
+        k_reg: Non-negative rank threshold beyond which regularization is applied. Defaults to 1.
+        rand: Whether to randomize the inclusion of the last class.
+            Defaults to True.
+        fit_function: Optional custom function used to train the model.
+            Defaults to None.
+
+    Raises:
+        ValueError: If lambd or k_reg is negative.
+
+    Notes:
+        True class labels must be integer indices corresponding to the columns of the predicted probability matrix.
+
+        The predict() method returns a ConformalPrediction containing the class probabilities and a list of prediction sets, each
+        containing the indices of the selected classes.
+
+        Randomized tie-breaking is performed when classes have identical predicted probabilities, independently of rand.
+
+    Example::
+
+        import numpy as np
+
+        from sklearn.datasets import make_classification
+        from sklearn.model_selection import train_test_split
+        from sklearn.ensemble import RandomForestClassifier
+
+        from deel.puncc.classification import RAPS
+        from deel.puncc.metrics import (
+            classification_mean_coverage,
+            classification_mean_size,
+        )
+
+        # Generate a random classification problem
+        X, y = make_classification(
+            n_samples=1000,
+            n_features=4,
+            n_informative=2,
+            n_classes=5,
+            n_clusters_per_class=1,
+            random_state=0,
+            shuffle=False,
+        )
+
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=0
+        )
+
+        # Split training data into fit and calibration sets
+        X_fit, X_calib, y_fit, y_calib = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=0
+        )
+
+        # Create a random forest classifier
+        rf_model = RandomForestClassifier(
+            n_estimators=100,
+            random_state=0,
+        )
+
+        # Adapt the classifier to return class probabilities
+        class ProbabilityPredictor:
+            def __init__(self, model):
+                self.model = model
+
+            def fit(self, X, y):
+                self.model.fit(X, y)
+                return self
+
+            def __call__(self, X):
+                return self.model.predict_proba(X)
+
+        predictor = ProbabilityPredictor(rf_model)
+
+        # Initialize the conformal predictor
+        cp = RAPS(
+            model=predictor,
+            lambd=0.01,
+            k_reg=2,
+            rand=True,
+        )
+
+        # Fit the model and calibrate separately
+        cp.fit(X_fit, y_fit)
+        cp.calibrate(X_calib, y_calib)
+
+        # Construct regularized prediction sets for alpha = 20%
+        y_pred, set_pred = cp.predict(X_test, alpha=0.2)
+
+        # Compute marginal coverage and average prediction set size
+        coverage = classification_mean_coverage(y_test, set_pred)
+        size = classification_mean_size(set_pred)
+
+        print(f"Marginal coverage: {np.round(coverage, 2)}")
+        print(f"Average prediction set size: {np.round(size, 2)}")
+    """
+
     # TODO : add random state propagation to control randomized tie breaking
     def __init__(
         self,

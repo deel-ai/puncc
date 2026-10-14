@@ -70,9 +70,7 @@ class _PredictorAdapter:
         Returns:
             A new adapter containing the cloned model.
         """
-        return _PredictorAdapter(
-            clone_model(self._model, clone_weights=clone_weights)
-        )
+        return _PredictorAdapter(clone_model(self._model, clone_weights=clone_weights))
 
 
 def make_predictor(model: Predictor | PredictorLike) -> Predictor:
@@ -97,9 +95,7 @@ def make_predictor(model: Predictor | PredictorLike) -> Predictor:
         predictor = _PredictorAdapter(model)
         return predictor
     # TODO : maybe check for other types of predictors ? like predict_proba models ?
-    raise TypeError(
-        "The provided model neither have __call__ nor predict method."
-    )
+    raise TypeError("The provided model neither have __call__ nor predict method.")
 
 
 class MultiPredictorStack:
@@ -109,7 +105,7 @@ class MultiPredictorStack:
     Each predictor receives the same input samples.
     Their predictions are stacked along a new last axis.
 
-    Can be used for multi-output regression using several models, quantil regression, mean/variance estimation...
+    Can be used for multi-output regression using several models, quantile regression, mean/variance estimation...
     """
 
     def __init__(self, *models: Predictor | PredictorLike):
@@ -126,10 +122,7 @@ class MultiPredictorStack:
             A new predictor stack containing the cloned models.
         """
         return self.__class__(
-            *[
-                clone_model(model, clone_weights=clone_weights)
-                for model in self.models
-            ]
+            *[clone_model(model, clone_weights=clone_weights) for model in self.models]
         )
 
     def __call__(self, X: Iterable[Any]) -> TensorLike:
@@ -191,9 +184,7 @@ class MeanVarPredictor(MultiPredictorStack):
     ):
         super().__init__(mean_model, dispersion_model)
 
-    def dispersion_estimation(
-        self, mu: TensorLike, y: TensorLike
-    ) -> TensorLike:
+    def dispersion_estimation(self, mu: TensorLike, y: TensorLike) -> TensorLike:
         """
         Compute dispersion targets from predictions and observations.
         Can be overloaded to implement other dispersion targets (e.g., squared residuals, quantile loss, etc.)
@@ -315,9 +306,7 @@ class LookupTablePredictor:
             ValueError: If a requested sample is absent from the lookup table or appears more than once.
         """
         if self.X is None or self.y is None:
-            raise RuntimeError(
-                "LookupTablePredictor must be fitted before prediction."
-            )
+            raise RuntimeError("LookupTablePredictor must be fitted before prediction.")
 
         X = ops.array(X)
 

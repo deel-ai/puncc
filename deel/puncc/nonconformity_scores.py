@@ -86,9 +86,7 @@ def cqr_score() -> NCScoreFunction:
     return _cqr_score
 
 
-def _scaled_bbox_difference(
-    y_pred: TensorLike, y_true: TensorLike
-) -> TensorLike:
+def _scaled_bbox_difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
     dx = ops.abs(x_max - x_min)
     dy = ops.abs(y_max - y_min)
@@ -112,9 +110,7 @@ def lac_score() -> NCScoreFunction:
     return _lac_score
 
 
-def raps_score(
-    lambd: float = 0, k_reg: int = 1, rand: bool = True
-) -> NCScoreFunction:
+def raps_score(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> NCScoreFunction:
     if lambd < 0:
         raise ValueError(f"`lambd` must be >= 0, got {lambd}")
     if k_reg < 0:
@@ -126,7 +122,7 @@ def raps_score(
             ops.take_along_axis(y_pred, y_true[..., None], axis=-1), axis=-1
         )
 
-        # randomization for cases wxhere multiple classes have the same probability as the true class
+        # randomization for cases where multiple classes have the same probability as the true class
         tie_break = random.uniform(ops.shape(y_pred), dtype=y_pred.dtype)
         true_tie_break = ops.squeeze(
             ops.take_along_axis(tie_break, y_true[..., None], axis=-1), axis=-1

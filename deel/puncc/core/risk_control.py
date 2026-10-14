@@ -59,9 +59,7 @@ RiskLossFunction: TypeAlias = Callable[
 ]
 
 
-class CRC(
-    ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]
-):
+class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]):
     """
     Generic Conformal Risk Control predictor.
 
@@ -72,8 +70,10 @@ class CRC(
         model: Underlying predictive model.
         postprocessor: Function applying a scalar calibration parameter to base predictions.
         loss_function: Bounded loss used to evaluate the risk of conformalized predictions.
-        loss_function_upper_bound: Upper bound of the loss function.
-            If omitted, the ``upper_bound`` attribute of ``loss_function`` is used when available, and defaults to ``1.0`` otherwise.
+        loss_function_upper_bound:
+            Upper bound of the loss function.
+            If omitted, the ``upper_bound`` attribute of ``loss_function`` is used.
+            A ValueError is raised if neither is provided.
         fit_function: Optional custom function used to fit the predictive model.
         optimizer: Scalar optimizer used to calibrate the postprocessing parameter. Defaults to :class:`BinarySearchOptimizer`.
         lambda_bounds: Lower and upper bounds of the parameter search interval.
@@ -110,9 +110,7 @@ class CRC(
             raise ValueError(
                 "loss_function_upper_bound must be provided or loss_function must have an 'upper_bound' attribute."
             )
-        self.optimizer = (
-            optimizer if optimizer is not None else BinarySearchOptimizer()
-        )
+        self.optimizer = optimizer if optimizer is not None else BinarySearchOptimizer()
         self.lambda_bounds = lambda_bounds
 
     @property
@@ -143,9 +141,7 @@ class CRC(
         )
         return ops.item(ops.mean(losses))
 
-    def get_calibration_set_size(
-        self, calibration_context: CalibrationContext
-    ) -> int:
+    def get_calibration_set_size(self, calibration_context: CalibrationContext) -> int:
         return calibration_context.size
 
     def _get_lambda_from_alpha(
@@ -166,7 +162,18 @@ class CRC(
             Calibrated postprocessing parameter.
 
         Raises:
-            ValueError: If ``alpha`` is not smaller than the loss upper bound, or if no feasible parameter can be found within ``lambda_bounds``.
+            ValueError:
+                If alpha is greater than or equal to the loss upper bound.
+
+        Warns:
+            RuntimeWarning:
+                If the risk constraint is not satisfied at the upper bound of the parameter search interval.
+            CalibrationWarning:
+                If the optimizer returns a parameter that does not satisfy the corrected empirical risk constraint.
+
+        Notes:
+            When the upper search bound is infeasible, the method returns lambda_max with a warning rather
+            than raising an exception.
         """
         alpha = ops.item(alpha)
 
