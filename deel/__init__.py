@@ -21,7 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """Package initialization."""
+
 # https://docs.python.org/3/library/pkgutil.html
 from pkgutil import extend_path
+import logging
 
 __path__ = extend_path(__path__, __name__)
+logging.getLogger(__name__).addHandler(logging.NullHandler())

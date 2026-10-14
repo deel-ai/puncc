@@ -24,62 +24,173 @@
 import numpy as np
 import pytest
 
-from deel.puncc.api import nonconformity_scores
-from deel.puncc.api import prediction_sets
-from deel.puncc.object_detection import SplitBoxWise
-
-
-class DummyPredictor:
-    def predict(self, x):
-        return x
+from deel.puncc import ops
+from deel.puncc.od.base import Box, ODPrediction, ODTarget
+from deel.puncc.od.matching import AssignmentStrategy, HungarianMatcher
+from tests._utils import tensor, to_numpy
 
 
 @pytest.mark.parametrize(
-    ("method", "expected_score_func", "expected_pred_set_func"),
+    ("mode", "expected"),
     [
-        ("additive", nonconformity_scores.difference, prediction_sets.constant_bbox),
-        (
-            "multiplicative",
-            nonconformity_scores.scaled_bbox_difference,
-            prediction_sets.scaled_bbox,
-        ),
+        ("additive", [0.5, 1.5, 3.5, 6.5]),
+        ("multiplicative", [0.0, 0.0, 4.0, 8.0]),
     ],
 )
-def test_split_boxwise_selects_expected_functions(
-    method, expected_score_func, expected_pred_set_func
-):
-    predictor = DummyPredictor()
-    boxwise = SplitBoxWise(predictor, method=method, train=False, random_state=7)
+def test_box_extension_modes(mode, expected):
+    box = Box(tensor([1.0, 2.0, 3.0, 6.0], "float32"))
 
-    assert boxwise.predictor is predictor
-    assert boxwise.calibrator.nonconf_score_func is expected_score_func
-    assert boxwise.calibrator.pred_set_func is expected_pred_set_func
-    assert boxwise.train is False
-    assert boxwise.random_state == 7
+    extended = box.extend(0.5, mode=mode)
 
+    np.testing.assert_allclose(to_numpy(extended.xyxy), expected)
 
-def test_split_boxwise_rejects_invalid_method():
-    with pytest.raises(ValueError, match="method must be 'additive' or 'multiplicative'"):
-        SplitBoxWise(DummyPredictor(), method="invalid")
+    # Non-inplace extension must not modify the original box.
+    np.testing.assert_allclose(
+        to_numpy(box.xyxy),
+        [1.0, 2.0, 3.0, 6.0],
+    )
 
 
-def test_split_boxwise_predict_delegates_to_conformal_predictor():
-    class DummyConformalPredictor:
-        def __init__(self):
-            self.calls = []
+def test_box_extension_rejects_invalid_mode():
+    box = Box(tensor([0.0, 0.0, 2.0, 2.0], "float32"))
 
-        def predict(self, x_test, alpha, correction_func):
-            self.calls.append((x_test, alpha, correction_func))
-            return ("pred", "lower", "upper")
+    with pytest.raises(ValueError):
+        box.extend(0.5, mode="invalid")
 
-    boxwise = SplitBoxWise(DummyPredictor(), method="additive")
-    dummy = DummyConformalPredictor()
-    boxwise.conformal_predictor = dummy
 
-    x_test = np.array([[1.0, 2.0, 3.0, 4.0]])
-    correction_func = lambda alpha: np.full(4, alpha / 4)
+def test_hungarian_matcher():
+    costs = np.array(
+        [
+            [2.0, 1.0],
+            [1.0, 2.0],
+        ]
+    )
 
-    result = boxwise.predict(x_test, alpha=0.2, correction_func=correction_func)
+    matcher = HungarianMatcher()
 
-    assert result == ("pred", "lower", "upper")
-    assert dummy.calls == [(x_test, 0.2, correction_func)]
+    assert matcher.match(tensor(costs, "float32")) == [(0, 1), (1, 0)]
+
+    # Only the first source has a valid assignment.
+    valid_mask = np.array(
+        [
+            [False, True],
+            [False, False],
+        ]
+    )
+
+    assert matcher.match(tensor(costs, "float32"), tensor(valid_mask, "bool")) == [(0, 1)]
+
+
+def test_assignment_strategy_filters_by_iou():
+    predictions = ODPrediction(
+        boxes=tensor(np.array(
+            [
+                [0.0, 0.0, 2.0, 2.0],
+                [9.0, 9.0, 10.0, 10.0],
+            ],
+            dtype=np.float32,
+        ), "float32"),
+        class_scores=tensor(np.array(
+            [[0.9, 0.1], [0.1, 0.9]],
+            dtype=np.float32,
+        ), "float32"),
+        confidences=tensor(np.array([0.9, 0.8], dtype=np.float32), "float32"),
+    )
+
+    targets = ODTarget(
+        boxes=tensor(np.array(
+            [
+                [0.0, 0.0, 2.0, 2.0],
+                [5.0, 5.0, 7.0, 7.0],
+                [20.0, 20.0, 22.0, 22.0],
+            ],
+            dtype=np.float32,
+        ), "float32"),
+        labels=tensor(np.array([0, 1, 0], dtype=np.int32), "int32"),
+    )
+
+    strategy = AssignmentStrategy(
+        matcher=HungarianMatcher(),
+        iou_threshold=0.5,
+    )
+
+    assignment = strategy.assign(predictions, targets)
+
+    assert assignment.matched_pairs == [(0, 0)]
+    assert assignment.unmatched_true_indices() == [1, 2]
+    assert assignment.unmatched_pred_indices() == [1]
+
+    aligned_pred, aligned_true = assignment.align_prediction_and_target(
+        predictions,
+        targets,
+    )
+
+    np.testing.assert_allclose(
+        to_numpy(aligned_pred.boxes),
+        [[0.0, 0.0, 2.0, 2.0]],
+    )
+    np.testing.assert_allclose(
+        to_numpy(aligned_true.boxes),
+        [[0.0, 0.0, 2.0, 2.0]],
+    )
+
+
+def test_assignment_strategy_respects_classes():
+    predictions = ODPrediction(
+        boxes=tensor(np.array(
+            [
+                [0.0, 0.0, 2.0, 2.0],
+                [0.0, 0.0, 2.0, 2.0],
+            ],
+            dtype=np.float32,
+        ), "float32"),
+        class_scores=tensor(np.array(
+            [[0.9, 0.1], [0.1, 0.9]],
+            dtype=np.float32,
+        ), "float32"),
+        confidences=tensor(np.array([0.9, 0.9], dtype=np.float32), "float32"),
+    )
+
+    targets = ODTarget(
+        boxes=tensor(np.array(
+            [[0.0, 0.0, 2.0, 2.0]],
+            dtype=np.float32,
+        ), "float32"),
+        labels=tensor(np.array([1], dtype=np.int32), "int32"),
+    )
+
+    strategy = AssignmentStrategy(
+        matcher=HungarianMatcher(),
+        class_matching=True,
+    )
+
+    assignment = strategy.assign(predictions, targets)
+
+    # Both predicted boxes have IoU=1, but only the second
+    # predicts the correct class.
+    assert assignment.matched_pairs == [(0, 1)]
+    assert assignment.unmatched_pred_indices() == [0]
+
+
+def test_assignment_strategy_handles_empty_predictions():
+    predictions = ODPrediction(
+        boxes=tensor(np.empty((0, 4), dtype=np.float32), "float32"),
+        class_scores=tensor(np.empty((0, 2), dtype=np.float32), "float32"),
+        confidences=tensor(np.empty((0,), dtype=np.float32), "float32"),
+    )
+
+    targets = ODTarget(
+        boxes=tensor(np.array(
+            [[0.0, 0.0, 2.0, 2.0]],
+            dtype=np.float32,
+        ), "float32"),
+        labels=tensor(np.array([0], dtype=np.int32), "int32"),
+    )
+
+    assignment = AssignmentStrategy(
+        matcher=HungarianMatcher(),
+    ).assign(predictions, targets)
+
+    assert assignment.matched_pairs == []
+    assert assignment.unmatched_true_indices() == [0]
+    assert assignment.unmatched_pred_indices() == []

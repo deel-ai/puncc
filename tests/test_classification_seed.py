@@ -20,373 +20,286 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
-from typing import Callable
 
 import numpy as np
 import pytest
-import tensorflow as tf
-from tensorflow.keras import layers
-from tensorflow.keras import models
-from tensorflow.keras.utils import to_categorical
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
-from deel.puncc import metrics
-from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.classification import APS
-from deel.puncc.classification import RAPS
-from deel.puncc.classification import LAC
-from deel.puncc.classification import ClasswiseLAC
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-RESULTS = {
-    "lac": {"cov": 0.89, "size": 1.54},
-    "classwise-lac": {"cov": 0.89, "size": 1.61, 
-                      "classwise_cov": [0.91, 0.9, 0.88, 0.9, 0.9, 0.9, 0.89, 0.89, 0.88, 0.89],
-                      "classwise_size": [1.13, 1.33, 1.3, 1.76, 1.88, 1.79, 1.41, 1.55, 2.03, 1.96]}, 
-    "aps": {"cov": 0.89, "size": 1.92},
-    "aps-norand": {"cov": 0.98, "size": 3.91},
-    "raps": {"cov": 0.89, "size": 1.9},
-    "raps-norand": {"cov": 0.98, "size": 3.51},
-}
-
-
-@pytest.mark.parametrize(
-        "alpha, random_state",
-        [(0.1, 42)],
+from deel.puncc import ops
+from deel.puncc.classification import APS, RAPS, LAC, ClassConditionalLAC
+from deel.puncc.metrics import (
+    classification_mean_coverage,
+    classification_mean_size,
 )
-def test_lac(mnist_data, alpha, random_state):
-    tf.keras.utils.set_random_seed(random_state)
+from tests._utils import tensor, to_numpy
 
-    # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
 
-    # Split fit and calib datasets
-    X_fit, X_calib = X_train[:50000], X_train[50000:]
-    y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
+class ProbabilityModel:
+    """Adapt a classifier to PUNCC's predict-probabilities interface."""
 
-    # One hot encoding of classes
-    y_fit_cat = to_categorical(y_fit)
+    def __init__(self):
+        self.estimator = LogisticRegression(max_iter=500)
 
-    # Classification model
-    nn_model = models.Sequential()
-    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
-    nn_model.add(layers.Dense(10, activation="softmax"))
-    compile_kwargs = {
-        "optimizer": "rmsprop",
-        "loss": "categorical_crossentropy",
-        "metrics": [],
-    }
-    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
-    # Predictor wrapper
-    class_predictor = BasePredictor(
-        nn_model, is_trained=False, **compile_kwargs
+    def fit(self, X, y):
+        self.estimator.fit(to_numpy(X), to_numpy(y))
+        return self
+
+    def predict(self, X):
+        return tensor(self.estimator.predict_proba(to_numpy(X)), "float32")
+
+
+@pytest.fixture(scope="module")
+def classification_data():
+    X, y = make_classification(
+        n_samples=360,
+        n_features=6,
+        n_informative=4,
+        n_redundant=0,
+        n_classes=3,
+        n_clusters_per_class=1,
+        class_sep=1.5,
+        random_state=42,
+    )
+    X = X.astype(np.float32)
+
+    X_fit, X_remaining, y_fit, y_remaining = train_test_split(
+        X,
+        y,
+        train_size=0.5,
+        stratify=y,
+        random_state=42,
+    )
+    X_calib, X_test, y_calib, y_test = train_test_split(
+        X_remaining,
+        y_remaining,
+        test_size=0.5,
+        stratify=y_remaining,
+        random_state=42,
     )
 
-    # LAC
-    lac_cp = LAC(class_predictor)
-    lac_cp.fit(
-        X_fit=X_fit,
-        y_fit=y_fit_cat,
-        X_calib=X_calib,
-        y_calib=y_calib,
-        **fit_kwargs
+    return (
+        (tensor(X_fit, "float32"), tensor(y_fit, "int32")),
+        (tensor(X_calib, "float32"), tensor(y_calib, "int32")),
+        (tensor(X_test, "float32"), tensor(y_test, "int32")),
     )
-    y_pred, set_pred = lac_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
 
-    # Compute marginal coverage
-    coverage = metrics.classification_mean_coverage(y_test, set_pred)
-    width = metrics.classification_mean_size(set_pred)
+
+def conformal_quantile(scores, alpha):
+    """Independent finite-sample quantile, with an infinite extra score."""
+    values = np.sort(np.append(scores, np.inf))
+    rank = int(np.ceil(len(values) * (1 - alpha))) - 1
+    return values[rank]
+
+
+def check_prediction_sets(result, y_test, n_classes=3):
+    probabilities = to_numpy(result.prediction)
+    sets = [to_numpy(s) for s in result.prediction_set]
+
+    assert probabilities.shape == (len(y_test), n_classes)
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["lac"]["cov"], RESULTS["lac"]["size"]],
-        rtol=0.0,
-        atol=5e-3,
+        probabilities.sum(axis=-1),
+        np.ones(len(y_test)),
+        atol=1e-6,
     )
 
+    assert len(sets) == len(y_test)
+    for labels in sets:
+        assert labels.ndim == 1
+        assert np.all((labels >= 0) & (labels < n_classes))
+        assert len(np.unique(labels)) == len(labels)
 
-@pytest.mark.parametrize(
-        "alpha, random_state",
-        [(0.1, 42)],
-)
-def test_classwise_lac(mnist_data, alpha, random_state):
-    tf.keras.utils.set_random_seed(random_state)
+    coverage = classification_mean_coverage(to_numpy(y_test), sets)
+    mean_size = classification_mean_size(sets)
 
-    # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
+    assert coverage >= 0.6
+    assert 0 <= mean_size <= n_classes
 
-    # Split fit and calib datasets
-    X_fit, X_calib = X_train[:50000], X_train[50000:]
-    y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
-
-    # One hot encoding of classes
-    y_fit_cat = to_categorical(y_fit)
-
-    # Classification model
-    nn_model = models.Sequential()
-    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
-    nn_model.add(layers.Dense(10, activation="softmax"))
-    compile_kwargs = {
-        "optimizer": "rmsprop",
-        "loss": "categorical_crossentropy",
-        "metrics": [],
-    }
-    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
-    # Predictor wrapper
-    class_predictor = BasePredictor(
-        nn_model, is_trained=False, **compile_kwargs
-    )
-
-    # ClasswiseLAC
-    classwise_lac_cp = ClasswiseLAC(class_predictor)
-    classwise_lac_cp.fit(
-        X_fit=X_fit,
-        y_fit=y_fit_cat,
-        X_calib=X_calib,
-        y_calib=y_calib,
-        **fit_kwargs
-    )
-    y_pred, set_pred = classwise_lac_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
-
-    # Compute marginal coverage
-    coverage = metrics.classification_mean_coverage(y_test, set_pred)
-    width = metrics.classification_mean_size(set_pred)
-    classwise_cov = metrics.classification_classwise_coverage(
-        y_test, set_pred, n_classes=10
-    )
-    classwise_size = metrics.classification_classwise_size(
-        y_test, set_pred, n_classes=10
-    )
-    res = {"cov": np.round(coverage, 2), 
-           "size": np.round(width, 2),
-           "classwise_cov": np.round(classwise_cov, 2).tolist(),
-           "classwise_size": np.round(classwise_size, 2).tolist()}
-    assert RESULTS["classwise-lac"] == res
+    return probabilities, sets
 
 
-@pytest.mark.parametrize(
-    "alpha, random_state, rand",
-    [(0.1, 42, True)],
-)
-def test_aps(mnist_data, alpha, random_state, rand):
-    tf.keras.utils.set_random_seed(random_state)
+def test_lac(classification_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = classification_data
 
-    # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
+    cp = LAC(model=ProbabilityModel())
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
 
-    # Split fit and calib datasets
-    X_fit, X_calib = X_train[:50000], X_train[50000:]
-    y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
+    calib_prob = to_numpy(cp.model(X_calib))
+    expected_scores = 1 - calib_prob[np.arange(len(y_calib)), to_numpy(y_calib)]
 
-    # One hot encoding of classes
-    y_fit_cat = to_categorical(y_fit)
-
-    # Classification model
-    nn_model = models.Sequential()
-    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
-    nn_model.add(layers.Dense(10, activation="softmax"))
-    compile_kwargs = {
-        "optimizer": "rmsprop",
-        "loss": "categorical_crossentropy",
-        "metrics": [],
-    }
-    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
-    # Predictor wrapper
-    class_predictor = BasePredictor(
-        nn_model, is_trained=False, **compile_kwargs
-    )
-
-    # APS
-    aps_cp = APS(class_predictor, rand=rand)
-    aps_cp.fit(
-        X_fit=X_fit,
-        y_fit=y_fit_cat,
-        X_calib=X_calib,
-        y_calib=y_calib,
-        **fit_kwargs
-    )
-    y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
-
-    # Compute marginal coverage
-    coverage = metrics.classification_mean_coverage(y_test, set_pred)
-    width = metrics.classification_mean_size(set_pred)
     np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["aps"]["cov"], RESULTS["aps"]["size"]],
-        rtol=0.0,
-        atol=5e-3,
+        to_numpy(cp.nc_scores),
+        expected_scores,
+        atol=1e-6,
+    )
+
+    alpha = 0.2
+    probabilities, sets = check_prediction_sets(
+        cp.predict(X_test, alpha=alpha),
+        y_test,
+    )
+
+    q = conformal_quantile(expected_scores, alpha)
+
+    for prob, labels in zip(probabilities, sets):
+        np.testing.assert_array_equal(
+            labels,
+            np.flatnonzero(prob >= 1 - q),
+        )
+
+    # Lower miscoverage must produce supersets.
+    smaller_alpha_sets = cp.predict(X_test, alpha=0.05).prediction_set
+
+    for original, enlarged in zip(sets, smaller_alpha_sets):
+        assert set(original.tolist()).issubset(set(to_numpy(enlarged).tolist()))
+
+
+def test_class_conditional_lac(classification_data):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = classification_data
+
+    cp = ClassConditionalLAC(model=ProbabilityModel())
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
+
+    assert set(cp.classwise_calibration_contexts) == {0, 1, 2}
+
+    alpha = 0.2
+    probabilities, sets = check_prediction_sets(
+        cp.predict(X_test, alpha=alpha),
+        y_test,
+    )
+
+    calib_prob = to_numpy(cp.model(X_calib))
+
+    # Each class gets its own conformity quantile.
+    quantiles = []
+    for label in range(3):
+        mask = to_numpy(y_calib) == label
+        class_scores = 1 - calib_prob[mask, label]
+        quantiles.append(conformal_quantile(class_scores, alpha))
+
+    quantiles = np.asarray(quantiles)
+
+    for prob, labels in zip(probabilities, sets):
+        np.testing.assert_array_equal(
+            labels,
+            np.flatnonzero(prob >= 1 - quantiles),
+        )
+
+
+def test_class_conditional_lac_includes_missing_classes():
+    # Class 2 is never observed in calibration.
+    # Its quantile is +inf, so it must remain in prediction sets.
+    def fixed_probabilities(X):
+        return tensor(
+            np.tile(
+                np.array([[0.55, 0.35, 0.10]], dtype=np.float32),
+                (len(X), 1),
+            )
+        )
+
+    cp = ClassConditionalLAC(model=fixed_probabilities)
+
+    X_calib = tensor(np.arange(30, dtype=np.float32)[:, None])
+    y_calib = tensor(np.tile([0, 1], 15), "int32")
+
+    cp.calibrate(X_calib, y_calib)
+
+    result = cp.predict(
+        tensor([[0.0], [1.0]], "float32"),
+        alpha=0.2,
+    )
+
+    assert all(2 in to_numpy(labels) for labels in result.prediction_set)
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        pytest.param(
+            lambda model: APS(model),
+            id="aps-randomized",
+        ),
+        pytest.param(
+            lambda model: RAPS(model, lambd=0, k_reg=1, rand=False),
+            id="aps-nonrandomized",
+        ),
+        pytest.param(
+            lambda model: RAPS(model, lambd=0.05, k_reg=1, rand=True),
+            id="raps-randomized",
+        ),
+        pytest.param(
+            lambda model: RAPS(model, lambd=0.05, k_reg=1, rand=False),
+            id="raps-nonrandomized",
+        ),
+    ],
+)
+def test_aps_and_raps(classification_data, factory):
+    (X_fit, y_fit), (X_calib, y_calib), (X_test, y_test) = classification_data
+
+    cp = factory(ProbabilityModel())
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
+
+    scores = to_numpy(cp.nc_scores)
+
+    assert scores.shape == (len(X_calib),)
+    assert np.all(np.isfinite(scores))
+    assert np.all(scores >= 0)
+
+    # Cumulative probability is at most 1, with a maximum
+    # RAPS regularization penalty of 0.05 * (3 - 1).
+    assert np.all(scores <= 1.1 + 1e-6)
+
+    check_prediction_sets(
+        cp.predict(X_test, alpha=0.2),
+        y_test,
+    )
+
+
+def test_nonrandomized_aps_scores(classification_data):
+    (X_fit, y_fit), (X_calib, y_calib), _ = classification_data
+
+    # APS without randomization is RAPS with lambda=0.
+    cp = RAPS(
+        model=ProbabilityModel(),
+        lambd=0,
+        k_reg=1,
+        rand=False,
+    )
+    cp.fit(X_fit, y_fit)
+    cp.calibrate(X_calib, y_calib)
+
+    probabilities = to_numpy(cp.model(X_calib))
+    true_probabilities = probabilities[np.arange(len(y_calib)), to_numpy(y_calib)]
+
+    # Sum probability mass of classes ranked before the true class,
+    # then add the true class probability.
+    higher_ranked = probabilities > true_probabilities[:, None]
+    expected = (
+        np.sum(
+            np.where(higher_ranked, probabilities, 0),
+            axis=1,
+        )
+        + true_probabilities
+    )
+
+    np.testing.assert_allclose(
+        to_numpy(cp.nc_scores),
+        expected,
+        atol=1e-6,
     )
 
 
 @pytest.mark.parametrize(
-    "alpha, random_state, rand",
-    [(0.1, 42, False)],
+    "kwargs",
+    [
+        {"lambd": -0.1},
+        {"k_reg": -1},
+    ],
 )
-def test_aps_norand(mnist_data, alpha, random_state, rand):
-    tf.keras.utils.set_random_seed(random_state)
-
-    # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
-
-    # Split fit and calib datasets
-    X_fit, X_calib = X_train[:50000], X_train[50000:]
-    y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
-
-    # One hot encoding of classes
-    y_fit_cat = to_categorical(y_fit)
-
-    # Classification model
-    nn_model = models.Sequential()
-    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
-    nn_model.add(layers.Dense(10, activation="softmax"))
-    compile_kwargs = {
-        "optimizer": "rmsprop",
-        "loss": "categorical_crossentropy",
-        "metrics": [],
-    }
-    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
-    # Predictor wrapper
-    class_predictor = BasePredictor(
-        nn_model, is_trained=False, **compile_kwargs
-    )
-
-    # APS
-    aps_cp = APS(class_predictor, rand=rand)
-    aps_cp.fit(
-        X_fit=X_fit,
-        y_fit=y_fit_cat,
-        X_calib=X_calib,
-        y_calib=y_calib,
-        **fit_kwargs
-    )
-    y_pred, set_pred = aps_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
-
-    # Compute marginal coverage
-    coverage = metrics.classification_mean_coverage(y_test, set_pred)
-    width = metrics.classification_mean_size(set_pred)
-    np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["aps-norand"]["cov"], RESULTS["aps-norand"]["size"]],
-        rtol=0.0,
-        atol=5e-3,
-    )
-
-
-@pytest.mark.parametrize(
-    "alpha, random_state, lambd, k_reg, rand",
-    [(0.1, 42, 0.01, 1, True)],
-)
-def test_raps(mnist_data, alpha, random_state, lambd, k_reg, rand):
-    tf.keras.utils.set_random_seed(random_state)
-
-    # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
-
-    # Split fit and calib datasets
-    X_fit, X_calib = X_train[:50000], X_train[50000:]
-    y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
-
-    # One hot encoding of classes
-    y_fit_cat = to_categorical(y_fit)
-
-    # Classification model
-    nn_model = models.Sequential()
-    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
-    nn_model.add(layers.Dense(10, activation="softmax"))
-    compile_kwargs = {
-        "optimizer": "rmsprop",
-        "loss": "categorical_crossentropy",
-        "metrics": [],
-    }
-    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
-    # Predictor wrapper
-    class_predictor = BasePredictor(
-        nn_model, is_trained=False, **compile_kwargs
-    )
-
-    # RAPS
-    raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd, rand=rand)
-    raps_cp.fit(
-        X_fit=X_fit,
-        y_fit=y_fit_cat,
-        X_calib=X_calib,
-        y_calib=y_calib,
-        **fit_kwargs
-    )
-    y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
-
-    # Compute marginal coverage
-    coverage = metrics.classification_mean_coverage(y_test, set_pred)
-    width = metrics.classification_mean_size(set_pred)
-    np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["raps"]["cov"], RESULTS["raps"]["size"]],
-        rtol=0.0,
-        atol=5e-3,
-    )
-
-
-@pytest.mark.parametrize(
-    "alpha, random_state, lambd, k_reg, rand",
-    [(0.1, 42, 0.01, 1, False)],
-)
-def test_raps_norand(mnist_data, alpha, random_state, lambd, k_reg, rand):
-    tf.keras.utils.set_random_seed(random_state)
-
-    # Get data
-    (X_train, X_test, y_train, y_test, y_train_cat, _) = mnist_data
-
-    # Split fit and calib datasets
-    X_fit, X_calib = X_train[:50000], X_train[50000:]
-    y_fit, y_calib = y_train[:50000], y_train[50000:]
-    y_fit_cat, _ = y_train_cat[:50000], y_train_cat[50000:]
-
-    # One hot encoding of classes
-    y_fit_cat = to_categorical(y_fit)
-
-    # Classification model
-    nn_model = models.Sequential()
-    nn_model.add(layers.Dense(4, activation="relu", input_shape=(28 * 28,)))
-    nn_model.add(layers.Dense(10, activation="softmax"))
-    compile_kwargs = {
-        "optimizer": "rmsprop",
-        "loss": "categorical_crossentropy",
-        "metrics": [],
-    }
-    fit_kwargs = {"epochs": 2, "batch_size": 128, "verbose": 1}
-    # Predictor wrapper
-    class_predictor = BasePredictor(
-        nn_model, is_trained=False, **compile_kwargs
-    )
-
-    # RAPS
-    raps_cp = RAPS(class_predictor, k_reg=k_reg, lambd=lambd, rand=rand)
-    raps_cp.fit(
-        X_fit=X_fit,
-        y_fit=y_fit_cat,
-        X_calib=X_calib,
-        y_calib=y_calib,
-        **fit_kwargs
-    )
-    y_pred, set_pred = raps_cp.predict(X_test, alpha=alpha)
-    assert y_pred is not None
-
-    # Compute marginal coverage
-    coverage = metrics.classification_mean_coverage(y_test, set_pred)
-    width = metrics.classification_mean_size(set_pred)
-    np.testing.assert_allclose(
-        [coverage, width],
-        [RESULTS["raps-norand"]["cov"], RESULTS["raps-norand"]["size"]],
-        rtol=0.0,
-        atol=5e-3,
-    )
+def test_raps_rejects_invalid_parameters(kwargs):
+    with pytest.raises(ValueError):
+        RAPS(model=ProbabilityModel(), **kwargs)

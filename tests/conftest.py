@@ -22,16 +22,14 @@
 # SOFTWARE.
 import numpy as np
 import pytest
-from sklearn import datasets
-from sklearn.datasets import make_moons
-from tensorflow.keras.datasets import mnist
-from tensorflow.keras.utils import to_categorical
 
 
 @pytest.fixture
 def diabetes_data():
+    from sklearn.datasets import load_diabetes
+
     # Load the diabetes dataset
-    diabetes_X, diabetes_y = datasets.load_diabetes(return_X_y=True)
+    diabetes_X, diabetes_y = load_diabetes(return_X_y=True)
 
     # Use only one feature
     diabetes_X = diabetes_X[:, np.newaxis, 2]  # type: ignore
@@ -49,6 +47,9 @@ def diabetes_data():
 
 @pytest.fixture
 def mnist_data():
+    from tensorflow.keras.datasets import mnist
+    from tensorflow.keras.utils import to_categorical
+
     # Load MNIST Database
 
     # Split train and test datasets
@@ -112,6 +113,8 @@ def rand_class_data():
 
 @pytest.fixture
 def rand_anomaly_detection_data():
+    from sklearn.datasets import make_moons
+
     # First, we generate the two moons dataset
     dataset = 4 * make_moons(n_samples=1000, noise=0.05, random_state=0)[
         0

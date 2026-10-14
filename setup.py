@@ -20,61 +20,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from os import path
-
 import setuptools
 
-# read the contents of your README file
-
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
-
-
-def _read_requirements(filename):
-    req_path = path.join(this_directory, filename)
-    requirements = []
-    with open(req_path, encoding="utf-8") as f:
-        for raw_line in f:
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            requirements.append(line)
-    return requirements
-
-
-requirements = _read_requirements("requirements.txt")
-
-interactive_requirements = _read_requirements("requirements_interactive.txt")
-
-dev_requirements = _read_requirements("requirements_dev.txt")
-
-setuptools.setup(
-    name="puncc",
-    version="0.9.3",
-    author=", ".join(["Mouhcine Mendil", "Luca Mossina", "Joseba Dalmau"]),
-    author_email=", ".join(
-        [
-            "mouhcine.mendil@irt-saintexupery.com",
-            "luca.mossina@irt-saintexupery.com",
-            "joseba.dalmau@irt-saintexupery.com",
-        ]
-    ),
-    description="Predictive UNcertainty Calibration and Conformalization Library",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/deel-ai/puncc",
-    packages=setuptools.find_namespace_packages(include=["deel.*"]),
-    install_requires=requirements,
-    extras_require={
-        "interactive": interactive_requirements,
-        "dev": dev_requirements,
-    },
-    python_requires=">=3.9",
-    classifiers=[
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-    ],
-)
+setuptools.setup()

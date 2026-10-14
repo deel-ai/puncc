@@ -23,21 +23,19 @@
 """
 This module implements conformal anomaly detection procedures.
 """
+
+from typing import Any, Iterable, Self
 import logging
-from typing import Iterable
-from typing import Optional
-from typing import Tuple
 
-import numpy as np
-
-from deel.puncc.api.calibration import ScoreCalibrator
-from deel.puncc.api.splitting import IdSplitter
-from deel.puncc.api.splitting import RandomSplitter
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.conformal import _check_calibration_samples
+from deel.puncc.core.split import SplitConformalPredictor
+from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
 
 logger = logging.getLogger(__name__)
 
 
-class SplitCAD:
+class SplitCAD(SplitConformalPredictor):
     """Split conformal anomaly detection method based on Laxhammar's algorithm.
     The anomaly detection is based on the calibrated threshold (through
     conformal prediction) of underlying anomaly detection (model's) scores.
@@ -123,109 +121,46 @@ class SplitCAD:
         plt.legend()
     """
 
-    def __init__(self, predictor, *, train=True, random_state: float = None):
-        self.predictor = predictor
-        self.calibrator = ScoreCalibrator(nonconf_score_func=predictor.predict)
+    def _is_anomaly(
+        self, scores: TensorLike, threshold: float | TensorLike
+    ) -> TensorLike:
+        return scores > threshold
 
-        self.train = train
-
-        self.random_state = random_state
-
-        self.__is_fit = False
-
-    def fit(
+    def __init__(
         self,
+        model: Predictor | PredictorLike,
         *,
-        z: Optional[Iterable] = None,
-        fit_ratio: float = 0.8,
-        z_fit: Optional[Iterable] = None,
-        z_calib: Optional[Iterable] = None,
-        **kwargs: Optional[dict],
-    ):
-        """This method fits the models on the fit data
-        and computes nonconformity scores on calibration data.
-        If z are provided, randomly split data into
-        fit and calib subsets w.r.t to the fit_ratio.
-        In case z_fit and z_calib are provided,
-        the conformalization is performed on the given user defined
-        fit and calibration sets.
-
-        .. NOTE::
-
-            If z is provided, `fit` ignores
-            any user-defined fit/calib split.
-
-
-        :param Iterable z: data points from the training dataset.
-        :param float fit_ratio: the proportion of samples assigned to the
-            fit subset.
-        :param Iterable z_fit: data points from the fit dataset.
-        :param Iterable z_calib: data points from the calibration dataset.
-        :param dict kwargs: predict configuration to be passed to the model's
-            fit method.
-
-        :raises RuntimeError: no dataset provided.
-
-        """
-
-        if z is not None:
-            splitter = RandomSplitter(
-                ratio=fit_ratio, random_state=self.random_state
-            )
-
-        elif z_fit is not None and z_calib is not None:
-            splitter = IdSplitter(z_fit, z_fit, z_calib, z_calib)
-
-        elif (
-            self.predictor.is_trained and z_fit is None and z_calib is not None
-        ):
-            splitter = IdSplitter(
-                np.empty_like(z_calib), np.empty_like(z_calib), z_calib, z_calib
-            )
-
-        else:
-            raise RuntimeError("No dataset provided.")
-
-        # Apply splitter
-        z_fit, _, z_calib, _ = splitter(z, z)[0]
-
-        # Fit underlying model and calibrator
-        if self.train:
-            logger.info("Fitting model")
-            self.predictor.fit(z_fit, **kwargs)
-
-        # Make sure that predictor is already trained if train arg is False
-        elif self.train is False and self.predictor.is_trained is False:
-            raise RuntimeError(
-                "'train' argument is set to 'False' but model is not pre-trained"
-            )
-
-        else:  # Skipping training
-            logger.info("Skipping training.")
-
-        # Fitting calibrator
-        self.calibrator.fit(z_calib)
-
-        self.__is_fit = True
-
-    def predict(self, z_test: Iterable, alpha) -> Tuple[np.ndarray]:
-        """Predict whether each example is an anomaly or not. The decision is
-        taken based on the calibrated threshold (through conformal prediction)
-        of underlying anomaly detection scores.
-
-        :param Iterable z_test: new data points.
-        :param float alpha: target bound on the false positive rate.
-
-        :returns: outlier tag. True if outlier, False otherwise.
-        :rtype: Iterables[bool]
-
-        """
-
-        if self.__is_fit is None:
-            raise RuntimeError("Fit method should be called before predict.")
-
-        anomaly_pred = np.invert(
-            self.calibrator.is_conformal(z_test, alpha=alpha)
+        fit_function: FitFunction | None = None,
+    ) -> None:
+        super().__init__(
+            model=model,
+            # TODO : revoir l'archi pour rendre ceci moins sale
+            # deviendrait valide si nc_score_function méthode de SplitCP plutôt que argument du constructeur
+            nc_score_function=None,  # Unused in CAD
+            pred_set_function=self._is_anomaly,
+            fit_function=fit_function,
         )
 
-        return anomaly_pred
+    def calibrate(
+        self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
+    ) -> Self:
+        _check_calibration_samples(X_calib, y_calib, require_y=False)
+        self.reset_calibration()
+        self.calibration_context.update(
+            X_calib=X_calib, y_pred=self.model(X_calib)
+        )
+        self.calibration_context = self.compute_calibration_state(
+            self.calibration_context
+        )
+        logger.debug(
+            "Calibrating %s on %d samples.",
+            type(self).__name__,
+            self.calibration_context.size,
+        )
+        return self
+
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
+        calibration_context.nc_scores = calibration_context.y_pred
+        return calibration_context

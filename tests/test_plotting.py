@@ -52,7 +52,9 @@ def test_plot_prediction_intervals_sorts_x_and_adds_coverage_to_title():
         title="Demo",
     )
 
-    np.testing.assert_array_equal(returned_ax.lines[-1].get_xdata(), np.array([0, 1, 2]))
+    np.testing.assert_array_equal(
+        returned_ax.lines[-1].get_xdata(), np.array([0, 1, 2])
+    )
     assert returned_ax is ax
     assert returned_ax.get_title() == "Demo | coverage=0.667"
     plt.close(fig)
@@ -76,7 +78,9 @@ def test_plot_prediction_intervals_without_interval_uses_custom_title():
 
 
 def test_draw_bounding_box_requires_image_or_path():
-    with pytest.raises(ValueError, match="Either image or image_path must be provided"):
+    with pytest.raises(
+        ValueError, match="Either image or image_path must be provided"
+    ):
         draw_bounding_box()
 
 
@@ -103,3 +107,20 @@ def test_draw_bounding_box_adds_box_and_deduplicates_legend():
     assert image.legends == ["prediction"]
     assert len(image.custom_lines) == 1
     assert image.tobytes() != image_before
+
+
+def test_draw_bounding_box_from_image_path(tmp_path):
+    image = Image.new("RGB", (20, 20), color="white")
+    path = tmp_path / "image.png"
+    image.save(path)
+
+    result = draw_bounding_box(
+        image_path=str(path),
+        box=(2, 2, 12, 12),
+        label="object",
+        legend="prediction",
+    )
+
+    assert result.size == (20, 20)
+    assert result.legends == ["prediction"]
+    assert result.tobytes() != image.tobytes()

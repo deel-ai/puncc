@@ -1,0 +1,742 @@
+# -*- coding: utf-8 -*-
+# Copyright IRT Antoine de Saint Exupéry et Université Paul Sabatier Toulouse III - All
+# rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry,
+# CRIAQ and ANITI - https://www.deel.ai/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+Base abstractions and common utilities for conformal prediction methods.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from collections.abc import (
+    Callable,
+    Iterable,
+    Iterator,
+    Sequence,
+)
+from dataclasses import dataclass
+from numbers import Real
+from pathlib import Path
+from typing import Any, Generic, SupportsIndex, TypeVar, Self
+import pickle
+import logging
+import warnings
+
+from deel.puncc.core.calibration import CalibrationContext
+from deel.puncc.core.splitters import FunctionalSplitter
+from deel.puncc.core.predictors import make_predictor
+from deel.puncc.backend.keras import ops
+from deel.puncc.warnings import CalibrationWarning
+
+from deel.puncc.typing import (
+    FitFunction,
+    Predictor,
+    PredictorLike,
+    TensorLike,
+)
+
+logger = logging.getLogger(__name__)
+
+TPrediction = TypeVar("TPrediction")
+TSet = TypeVar("TSet")
+
+
+def _validate_alpha(alpha: float | TensorLike) -> None:
+    """Check that all miscoverage levels belong to (0, 1)."""
+    if isinstance(alpha, Real):
+        valid = 0 < alpha < 1
+    else:
+        alpha_tensor = ops.convert_to_tensor(alpha)
+        valid = ops.size(alpha_tensor) > 0 and bool(
+            ops.item(ops.all((alpha_tensor > 0) & (alpha_tensor < 1)))
+        )
+
+    if not valid:
+        raise ValueError(
+            "alpha must be non empty, finite and strictly between 0 and 1."
+        )
+
+
+def _check_calibration_samples(
+    X_calib: Any, y_calib: Any | None = None, require_y: bool = True
+) -> None:
+    n_samples = len(X_calib)
+    if n_samples == 0:
+        raise ValueError("Calibration data must not be empty.")
+    if require_y and y_calib is None:
+        raise ValueError(
+            "Calibration targets y_calib are required but were not provided."
+        )
+    if y_calib is not None and len(y_calib) != n_samples:
+        raise ValueError("X_calib and y_calib must have the same number of samples.")
+
+
+@dataclass(frozen=True, slots=True)
+class ConformalPrediction(Generic[TPrediction, TSet]):
+    """
+    Result of a conformal prediction.
+
+    The container behaves like a two-element tuple while preserving explicit names for the base prediction and its associated conformal prediction set.
+
+    Attributes:
+        prediction (Any):
+            The base (non-conformal) prediction produced by the underlying model.
+
+        prediction_set (Any):
+            The conformal prediction set associated with the prediction.
+            Its representation depends on the conformal method and may for example
+            be an interval tensor, a collection of labels, or structured detection outputs.
+    """
+
+    prediction: TPrediction
+    prediction_set: TSet
+
+    def __iter__(self) -> Iterator[TPrediction | TSet]:
+        yield self.prediction
+        yield self.prediction_set
+
+    def __len__(self) -> int:
+        return 2
+
+    def __getitem__(
+        self, index: SupportsIndex | slice
+    ) -> TPrediction | TSet | tuple[TPrediction | TSet, ...]:
+        return (self.prediction, self.prediction_set)[index]
+
+
+class ConformalPredictor(ABC):
+    """
+    Abstract base class for conformal prediction methods.
+
+    Subclasses should implement two method-specific operations:
+
+    - compute_calibration_state derives the state required for conformal
+      prediction from a calibration context.
+    - conformalize turns already-computed model predictions into conformal
+      prediction sets using a calibration context.
+
+    Calibration-dependent state should be stored in the provided CalibrationContext rather than in predictor attributes.
+    This makes calibration contexts explicit and allows the same predictor to conformalize predictions against different calibration subsets.
+
+    Args:
+        model:
+            Predictive model used to generate base predictions.
+
+        fit_function:
+            Optional custom function used to fit model.
+            If omitted, model.fit is used when available.
+    """
+
+    __slots__ = ("model", "fit_function", "calibration_context")
+
+    # Any conformal method should have a model attribute.
+    def __init__(
+        self,
+        model: Predictor | PredictorLike,
+        fit_function: FitFunction | None = None,
+    ):
+        self.model = make_predictor(model)
+        self.fit_function = fit_function
+        self.calibration_context = CalibrationContext()
+
+    def reset_calibration(self) -> Self:
+        """
+        Clear the current calibration state.
+
+        Remove all data stored in the calibration context, including calibration inputs, targets, model
+        predictions, and any method-specific calibration quantities.
+
+        The underlying predictive model and its fitted parameters are preserved.
+
+        Notes:
+            Subclasses may override this method to reset additional calibration-related state.
+        """
+        self.calibration_context.clear()
+        return self
+
+    def calibrate(
+        self, X_calib: Iterable[Any], y_calib: Iterable[Any] | None = None
+    ) -> Self:
+        """
+        Calibrate the conformal predictor.
+
+        The underlying model is evaluated once on the calibration inputs.
+        The resulting raw calibration data are stored in a CalibrationContext before method-specific calibration state is computed by compute_calibration_state.
+
+        Args:
+            X_calib:
+                Calibration inputs.
+
+            y_calib:
+                Calibration targets.
+
+        Returns:
+            The calibrated predictor.
+        """
+
+        _check_calibration_samples(X_calib, y_calib, require_y=True)
+
+        self.reset_calibration()
+        self.calibration_context.update(X_calib=X_calib, y_pred=self.model(X_calib))
+        if y_calib is not None:
+            self.calibration_context.update(y_calib=y_calib)
+
+        self.calibration_context = self.compute_calibration_state(
+            self.calibration_context
+        )
+        logger.debug(
+            "Calibrating %s on %d samples.",
+            type(self).__name__,
+            self.calibration_context.size,
+        )
+        return self
+
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
+        """
+        Compute method-specific calibration state.
+
+        The provided context contains at least the calibration inputs, targets, and corresponding model predictions.
+        Implementations may enrich it with additional sample-aligned quantities such as non-conformity scores.
+
+        Calibration-dependent information should be stored in the context whenever possible so that different contexts can be used independently.
+
+        Args:
+            calibration_context:
+                Context containing the raw calibration data.
+
+        Returns:
+            The context containing the state required by conformalize.
+        """
+        return calibration_context
+
+    def predict(
+        self,
+        X_test: Iterable[Any],
+        alpha: float | TensorLike,
+        *,
+        alpha_correction: (
+            Callable[[float | TensorLike], float | TensorLike] | None
+        ) = None,
+    ) -> ConformalPrediction[Any, Any]:
+        """
+        Perform a conformal prediction using the calibrated model.
+
+
+        Args:
+            X_test:
+                Inputs on which predictions are produced.
+
+            alpha:
+                Requested miscoverage level. It may be scalar or tensor-valued.
+
+            alpha_correction:
+                Optional transformation applied to alpha before conformalization.
+
+        Returns:
+            Base predictions and their associated conformal prediction sets.
+        """
+        _validate_alpha(alpha)
+
+        prediction = self.model(X_test)
+
+        if alpha_correction is not None:
+            alpha = alpha_correction(alpha)
+            _validate_alpha(alpha)
+
+        return self.conformalize(prediction, alpha, self.calibration_context, X=X_test)
+
+    @abstractmethod
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
+        """
+        Conformalize already-computed model predictions.
+
+        This method must not evaluate the predictive model.
+        All calibration-dependent information must come from the explicitly provided calibration context.
+
+        Args:
+            prediction:
+                Base predictions to conformalize.
+
+            alpha:
+                Miscoverage level used for conformalization.
+
+            calibration_context:
+                Calibration context against which predictions are conformalized.
+
+        Returns:
+            Base predictions and their associated conformal prediction sets.
+        """
+
+    def fit(
+        self,
+        X: Iterable[Any],
+        y: Iterable[Any] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        """
+        Fit the underlying predictive model.
+
+        The custom fit_function is used when provided. Otherwise the predictor's own fit method is called.
+
+        Args:
+            X:
+                Training inputs.
+
+            y:
+                Training targets.
+
+            *args:
+                Additional positional arguments forwarded to the fitting function.
+
+            **kwargs:
+                Additional keyword arguments forwarded to the fitting function.
+
+        Returns:
+            The predictor with its underlying model fitted.
+        """
+        self.reset_calibration()
+        y_arg = [y] if y is not None else []
+
+        if self.fit_function is not None:
+            self.model = make_predictor(
+                self.fit_function(self.model, X, *y_arg, *args, **kwargs)
+            )
+            return self
+
+        fit_method = getattr(
+            self.model,
+            "fit",
+            None,
+        )
+        if callable(fit_method):
+            fit_method(
+                X,
+                *y_arg,
+                *args,
+                **kwargs,
+            )
+            return self
+        raise NotImplementedError(
+            "The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function."
+        )
+
+    def __getstate__(self) -> dict[str, Any]:
+        """
+        Return the predictor state for serialization.
+
+        Collect instance attributes stored in ``__dict__`` and in the ``__slots__`` declarations of the class hierarchy.
+
+        The underlying predictive model is excluded from the serialized state and must be supplied separately when restoring the predictor.
+
+        Returns:
+            Dictionary containing the serializable predictor state, excluding the predictive model.
+        """
+        state = {}
+        if getattr(self, "__dict__", None):
+            state = self.__dict__.copy()
+            state.pop("model", None)
+
+        for cls in type(self).mro():
+            slots = getattr(cls, "__slots__", ())
+            if isinstance(slots, str):
+                slots = (slots,)
+            for name in slots:
+                # The predictive model is intentionally not serialized.
+                if name in ("__dict__", "__weakref__", "model"):
+                    continue
+                if hasattr(self, name):
+                    state[name] = getattr(self, name)
+        return state
+
+    def __setstate__(self, state) -> None:
+        """
+        Restore predictor attributes from a serialized state.
+
+        Args:
+            state: Dictionary containing the predictor attributes to restore.
+
+        Notes:
+            This method restores the saved attributes but does not reconstruct the underlying predictive model.
+            The load() method restores the model separately.
+        """
+        for key, value in state.items():
+            setattr(self, key, value)
+
+    def save(self, path: Path | str) -> None:
+        """
+        Save the conformal predictor state to disk.
+
+        The predictive model is not serialized.
+
+        Args:
+            path: Path of the file in which the predictor state is stored.
+        """
+        logger.debug("Saving %s calibration state to %s.", type(self).__name__, path)
+        with open(path, "wb") as f:
+            pickle.dump(self.__getstate__(), f)
+
+    @classmethod
+    def load(cls, path: Path | str, model: Predictor | PredictorLike) -> Self:
+        """
+        Load a conformal predictor state from disk.
+
+        The predictive model is not part of the serialized state and must be provided explicitly.
+
+        Args:
+            path: Path of the serialized conformal predictor state.
+            model: Predictive model associated with the restored predictor.
+
+        Returns:
+            The restored conformal predictor.
+        """
+        with open(path, "rb") as f:
+            state = pickle.load(f)
+        obj = cls.__new__(cls)
+        obj.__setstate__(state)
+        obj.model = make_predictor(model)
+        logger.debug("Loaded %s calibration state from %s.", cls.__name__, path)
+        return obj
+
+
+class GroupConditionalMixin(ConformalPredictor):
+    """
+    Mixin providing group-balanced calibration for conformal predictor.
+
+    Calibration data are partitioned according to group_function and a separate calibration context is computed for each observed group.
+    During prediction, test samples are routed to the calibration context associated with their group before delegating conformalization to the next ConformalPredictor implementation in the MRO.
+
+    If a test sample belongs to a group that was not observed during calibration, a ValueError is raised by default.
+
+    Subclasses may override conformalize_unknown_group() to implement an explicit fallback strategy.
+    Such strategies are responsible for defining their own statistical guarantees.
+
+    Args:
+        group_function:
+            Function assigning a group identifier to each sample.
+            It must be computable at prediction time without access to unknown test targets.
+
+        groups:
+            Optional sequence defining the groups considered by the splitter.
+
+        *args:
+            Positional arguments forwarded to the concrete conformal predictor.
+
+        **kwargs:
+            Keyword arguments forwarded to the concrete conformal predictor.
+    """
+
+    def reset_calibration(self) -> Self:
+        super().reset_calibration()
+        self.group_calibration_contexts.clear()
+        return self
+
+    def __init__(
+        self,
+        *args: Any,
+        group_function: Callable[..., TensorLike],
+        groups: Sequence[Any] | None = None,
+        **kwargs: Any,
+    ):
+        super().__init__(*args, **kwargs)
+        self.group_splitter = FunctionalSplitter(
+            group_function=group_function, groups=groups
+        )
+        self.group_calibration_contexts: dict[Any, CalibrationContext] = {}
+
+    def calibrate(
+        self,
+        X_calib: Iterable[Any],
+        y_calib: Iterable[Any] | None = None,
+    ) -> Self:
+        """
+        Calibrate the predictor separately for each observed group.
+
+        First compute the calibration state on the supplied dataset, then partition the resulting calibration context according to
+        the group identifiers returned by the configured group function.
+
+        The group-specific contexts are stored in ``group_calibration_contexts`` and the global
+        calibration context is cleared after partitioning.
+
+        Args:
+            X_calib: Calibration inputs.
+            y_calib: Calibration targets.
+
+        Returns:
+            The calibrated predictor.
+
+        Notes:
+            Only groups represented in the calibration dataset have
+            a calibration context.
+
+            By default, predictions associated with unseen groups
+            raise a ValueError rather than using a global fallback.
+        """
+        super().calibrate(X_calib, y_calib)
+        self.group_calibration_contexts = self.group_splitter.split_context_by_group(
+            self.calibration_context
+        )
+        self.calibration_context.clear()
+        return self
+
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
+        """
+        Conformalize predictions using group-specific calibration contexts.
+
+        Test samples are partitioned according to the configured group function.
+        Each group is conformalized independently using its corresponding calibration context.
+
+        The resulting prediction sets are reassembled in the original order of the test samples.
+
+        Args:
+            prediction:
+                Base predictions to conformalize.
+
+            alpha:
+                Target miscoverage level.
+
+            calibration_context:
+                Calibration context used for conformalization.
+                When the predictor's own context is provided, the stored group-specific calibration contexts are used.
+                Otherwise, the supplied context is partitioned by group.
+
+            X:
+                Test inputs used to determine group membership.
+                Required for group-conditional conformalization.
+
+        Returns:
+            A ConformalPrediction containing the original predictions and the corresponding group-conditional prediction sets.
+
+        Raises:
+            ValueError:
+                If X is missing or contains no test samples.
+                Also raised by default when a test group was not observed during calibration.
+
+        Notes:
+            Subclasses may override conformalize_unknown_group() to define a fallback strategy for unseen groups.
+
+            Prediction sets may be returned as a tensor or as a list, depending on the representation produced by the underlying
+            conformal prediction method.
+        """
+        if X is None:
+            raise ValueError("X is required for group-conditional conformalization.")
+        if len(X) == 0:
+            raise ValueError(
+                "Group-conditional conformalization requires at least one test sample."
+            )
+
+        if calibration_context is self.calibration_context:
+            group_contexts = self.group_calibration_contexts
+        else:
+            group_contexts = self.group_splitter.split_context_by_group(
+                calibration_context
+            )
+
+        grouped_indices = self.group_splitter.group_indices(
+            X_calib=X, y_pred=prediction
+        )
+        grouped_prediction_sets: list[Any] = []
+        non_empty_indices: list[TensorLike] = []
+
+        missing_group_count = 0
+
+        for group, indices in grouped_indices.items():
+            if len(indices) == 0:
+                continue
+            group_prediction = ops.take(prediction, indices, axis=0)
+            group_context = group_contexts.get(group)
+
+            if group_context is None:
+                group_prediction_set = self.conformalize_unknown_group(
+                    group_prediction, alpha, X=ops.take(X, indices, axis=0)
+                )
+                missing_group_count += 1
+            else:
+                group_prediction_set = super().conformalize(
+                    group_prediction,
+                    alpha,
+                    group_context,
+                    X=ops.take(X, indices, axis=0),
+                )
+            grouped_prediction_sets.append(group_prediction_set.prediction_set)
+            non_empty_indices.append(indices)
+
+        if missing_group_count:
+            warnings.warn(
+                f"{missing_group_count} test group(s) were not observed during calibration. Specific fallback strategy was used for these groups.",
+                CalibrationWarning,
+                stacklevel=2,
+            )
+
+        first_prediction_set = grouped_prediction_sets[0]
+
+        # Preserve tensor structure
+        if isinstance(
+            first_prediction_set,
+            ops.tensor_type,
+        ):
+            prediction_set = ops.concatenate(
+                grouped_prediction_sets,
+                axis=0,
+            )
+            concatenated_indices = ops.concatenate(non_empty_indices, axis=0)
+            original_order = ops.argsort(concatenated_indices, axis=0)
+            prediction_set = ops.take(prediction_set, original_order, axis=0)
+            return ConformalPrediction(
+                prediction=prediction,
+                prediction_set=prediction_set,
+            )
+
+        # Ragged prediction sets cannot generally be represented as a tensor.
+        # Reassemble them directly in Python while preserving sample order.
+        prediction_set_items: list[Any] = [None] * len(prediction)
+
+        for indices, group_prediction_set in zip(
+            non_empty_indices, grouped_prediction_sets, strict=True
+        ):
+            original_indices = ops.tolist(indices)
+            for local_idx, original_idx in enumerate(original_indices):
+                prediction_set_items[original_idx] = group_prediction_set[local_idx]
+
+        return ConformalPrediction(
+            prediction=prediction,
+            prediction_set=prediction_set_items,
+        )
+
+    def conformalize_unknown_group(
+        self, prediction, alpha, *, X=None
+    ) -> ConformalPrediction[Any, Any]:
+        """
+        Handle predictions for groups unseen during calibration.
+
+        The default policy is strict: an exception is raised because no group-specific calibration data are available.
+
+        Subclasses may override this method to implement an explicit fallback strategy.
+
+        Note:
+            A custom fallback does not automatically preserve group-conditional coverage guarantees.
+
+        Raises:
+            ValueError:
+                If the group was not observed during calibration.
+        """
+        raise ValueError(
+            "Test group was not observed during calibration. Please provide a fallback strategy for unknown groups or provide a better calibration set."
+        )
+        # TODO :
+        # for split CP :
+        # call pred set function with q = ops.inf
+        # for CRC :
+        # call post processor with lambda = lambda_max
+        # ?
+
+
+class NoopConformalPredictor(ConformalPredictor):
+    """
+    Conformal predictor that performs no conformalization.
+
+    The base model predictions are returned unchanged as both the predictions and their associated prediction sets.
+
+    No calibration data or method-specific calibration state are retained.
+    This class is intended for testing and debugging rather than providing statistical coverage guarantees.
+
+    Args:
+        model: Underlying predictive model.
+        fit_function: Optional custom function used to fit the model.
+            Defaults to None.
+    """
+
+    def calibrate(
+        self,
+        X_calib: Iterable[Any] | None = None,
+        y_calib: Iterable[Any] | None = None,
+    ) -> Self:
+        """
+        Reset calibration without using the supplied data.
+
+        Args:
+            X_calib: Ignored calibration inputs.
+            y_calib: Ignored calibration targets.
+
+        Returns:
+            The predictor with an empty calibration context.
+        """
+        self.reset_calibration()
+        return self
+
+    def compute_calibration_state(
+        self, calibration_context: CalibrationContext
+    ) -> CalibrationContext:
+        """
+        Return an empty calibration context.
+
+        Args:
+            calibration_context: Ignored calibration context.
+
+        Returns:
+            A new empty CalibrationContext.
+        """
+        return CalibrationContext()
+
+    def conformalize(
+        self,
+        prediction: Any,
+        alpha: float | TensorLike | None,
+        calibration_context: CalibrationContext,
+        *,
+        X: Any | None = None,
+    ) -> ConformalPrediction[Any, Any]:
+        """
+        Return the original predictions without conformalization.
+
+        Args:
+            prediction: Base model predictions.
+            alpha: Ignored miscoverage level.
+            calibration_context: Ignored calibration context.
+            X: Ignored test inputs.
+
+        Returns:
+            A ConformalPrediction whose prediction and prediction_set both reference the original predictions.
+
+        Notes:
+            No coverage guarantee is provided.
+        """
+        return ConformalPrediction(
+            prediction=prediction,
+            prediction_set=prediction,
+        )

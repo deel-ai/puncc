@@ -1,0 +1,152 @@
+# -*- coding: utf-8 -*-
+# Copyright IRT Antoine de Saint Exupéry et Université Paul Sabatier Toulouse III - All
+# rights reserved. DEEL is a research program operated by IVADO, IRT Saint Exupéry,
+# CRIAQ and ANITI - https://www.deel.ai/
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module provides nonconformity scores for conformal prediction. To be used
+when building a ConformalPredictor
+"""
+
+from deel.puncc.typing import TensorLike, NCScoreFunction
+from deel.puncc import ops
+from deel.puncc.backend.keras import random
+
+
+def _difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    return y_pred - y_true
+
+
+def difference() -> NCScoreFunction:
+    return _difference
+
+
+def _absolute_difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    return ops.abs(y_pred - y_true)
+
+
+def absolute_difference() -> NCScoreFunction:
+    return _absolute_difference
+
+
+def _boxwise_difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    return ops.stack(
+        [
+            y_pred[..., 0] - y_true[..., 0],  # xmin
+            y_pred[..., 1] - y_true[..., 1],  # ymin
+            y_true[..., 2] - y_pred[..., 2],  # xmax
+            y_true[..., 3] - y_pred[..., 3],  # ymax
+        ],
+        axis=-1,
+    )
+
+
+def boxwise_difference() -> NCScoreFunction:
+    return _boxwise_difference
+
+
+# def scaled_ad(eps:float=1e-12)-> NCScoreFunction:
+#     def _scaled_ad(y_pred:TensorLike, y_true:TensorLike) -> TensorLike:
+#         mean_pred = ops.take(y_pred, 0, axis=-1)
+#         var_pred = ops.take(y_pred, 1, axis=-1)
+#         if bool(ops.convert_to_numpy(ops.any(var_pred + eps <= 0))):
+#             raise ValueError(
+#                 "The predicted dispersion must be strictly greater "
+#                 "than -eps for all samples."
+#             )
+#         mean_abs_dev = ops.abs(mean_pred - y_true)
+#         return mean_abs_dev / (var_pred + eps)
+#     return _scaled_ad
+
+
+def _cqr_score(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    lower_pred = ops.take(y_pred, 0, axis=-1)
+    upper_pred = ops.take(y_pred, 1, axis=-1)
+    return ops.maximum(lower_pred - y_true, y_true - upper_pred)
+
+
+def cqr_score() -> NCScoreFunction:
+    return _cqr_score
+
+
+def _scaled_bbox_difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
+    dx = ops.abs(x_max - x_min)
+    dy = ops.abs(y_max - y_min)
+    diff = _boxwise_difference(y_pred, y_true)
+    return diff / ops.hstack([dx, dy, dx, dy])
+
+
+def scaled_bbox_difference() -> NCScoreFunction:
+    return _scaled_bbox_difference
+
+
+def _lac_score(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    true_scores = ops.take_along_axis(y_pred, y_true[..., None], axis=-1)
+    return 1 - ops.squeeze(
+        true_scores,
+        axis=-1,
+    )
+
+
+def lac_score() -> NCScoreFunction:
+    return _lac_score
+
+
+def raps_score(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> NCScoreFunction:
+    if lambd < 0:
+        raise ValueError(f"`lambd` must be >= 0, got {lambd}")
+    if k_reg < 0:
+        raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
+
+    def _raps_score(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+        # true proba
+        true_p = ops.squeeze(
+            ops.take_along_axis(y_pred, y_true[..., None], axis=-1), axis=-1
+        )
+
+        # randomization for cases where multiple classes have the same probability as the true class
+        tie_break = random.uniform(ops.shape(y_pred), dtype=y_pred.dtype)
+        true_tie_break = ops.squeeze(
+            ops.take_along_axis(tie_break, y_true[..., None], axis=-1), axis=-1
+        )
+
+        before_true = ops.logical_or(
+            y_pred > true_p[..., None],
+            ops.logical_and(
+                y_pred == true_p[..., None],
+                tie_break < true_tie_break[..., None],
+            ),
+        )
+        rho = ops.sum(ops.where(before_true, y_pred, 0), axis=-1)
+        rank = ops.sum(ops.cast(before_true, "int32"), axis=-1) + 1
+        regul = lambd * ops.maximum(ops.cast(rank, true_p.dtype) - k_reg, 0)
+        if rand:
+            u = random.uniform(ops.shape(true_p))
+        else:
+            u = ops.ones_like(true_p)
+            # or u = ops.zero_like(true_p) ?
+        return rho + u * true_p + regul
+
+    return _raps_score
+
+
+def aps_score(rand: bool = True) -> NCScoreFunction:
+    return raps_score(lambd=0, k_reg=1, rand=rand)
