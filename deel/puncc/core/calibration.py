@@ -48,8 +48,6 @@ from typing import Any, KeysView, Self, ValuesView, ItemsView
 from deel.puncc.typing import TensorLike
 from deel.puncc.backend.keras import ops
 
-import inspect
-
 
 class CalibrationContext:
     """
@@ -83,16 +81,17 @@ class CalibrationContext:
         y_pred: Any = None,
         **kwargs: Any,
     ) -> None:
+        fields = dict(kwargs)
         if X_calib is not None:
-            self.X_calib = X_calib
+            fields["X_calib"] = X_calib
 
         if y_calib is not None:
-            self.y_calib = y_calib
+            fields["y_calib"] = y_calib
 
         if y_pred is not None:
-            self.y_pred = y_pred
+            fields["y_pred"] = y_pred
 
-        self.__dict__.update(kwargs)
+        self.__dict__.update(fields)
 
     @property
     def size(self) -> int:
@@ -111,6 +110,48 @@ class CalibrationContext:
         if not self.__dict__:
             return 0
         return len(next(iter(self.__dict__.values())))
+
+    def _check_field_name(self, name: str) -> None:
+        """Check that a field name does not conflict with a class attribute."""
+        if any(name in cls.__dict__ for cls in type(self).__mro__):
+            raise ValueError(
+                f"Cannot update field '{name}': " "it conflicts with a class attribute."
+            )
+
+    def _check_alignment(self, fields: dict[str, Any]) -> None:
+        """
+        Check that all fields have the same number of samples.
+
+        Raises:
+            ValueError: If fields have different lengths.
+            TypeError: If a field has no length.
+        """
+        ref_field_name, expected_size = next(
+            (
+                (name, len(value))
+                for name, value in self.__dict__.items()
+                if name not in fields
+            ),
+            (None, None),
+        )
+
+        for name, value in fields.items():
+            try:
+                size = len(value)
+            except TypeError as exc:
+                raise TypeError(
+                    f"Field '{name}' must have a sample dimension."
+                ) from exc
+
+            if expected_size is None:
+                expected_size = size
+                ref_field_name = name
+            elif size != expected_size:
+                raise ValueError(
+                    "Inconsistent shapes given to CalibrationContext."
+                    f"Field '{name}' has length {size}, "
+                    f"but field '{ref_field_name}' has length {expected_size}."
+                )
 
     def __iter__(self) -> Iterator[Any]:
         """
@@ -268,10 +309,8 @@ class CalibrationContext:
             The updated context itself.
         """
         for key in kwargs:
-            if any(key in cls.__dict__ for cls in type(self).__mro__):
-                raise ValueError(
-                    f"Cannot update field '{key}': it conflicts with a class attribute."
-                )
+            self._check_field_name(key)
+        self._check_alignment(kwargs)
         self.__dict__.update(kwargs)
         return self
 
@@ -296,6 +335,11 @@ class CalibrationContext:
         """
         return type(self)(**self.__dict__)
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        self._check_field_name(name)
+        self._check_alignment({name: value})
+        object.__setattr__(self, name, value)
+
     def merge(self, other_context: CalibrationContext) -> Self:
         """
         Merge another calibration context into this context.
@@ -312,14 +356,7 @@ class CalibrationContext:
         Raises:
             ValueError: If the two contexts contain different numbers of calibration samples.
         """
-        if self.__dict__ and other_context.__dict__ and self.size != other_context.size:
-            raise ValueError(
-                f"Cannot merge CalibrationContext with different sizes: "
-                f"{self.size} != {other_context.size}"
-            )
-
-        self.__dict__.update(other_context.__dict__)
-        return self
+        return self.update(**other_context.__dict__)
 
     def is_empty(self) -> bool:
         return not bool(self.__dict__)
