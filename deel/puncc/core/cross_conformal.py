@@ -41,6 +41,7 @@ from deel.puncc.typing import Predictor, PredictorLike, TensorLike, FitFunction
 from deel.puncc.cloning import clone_model
 from deel.puncc.regression.split import SplitConformalRegression
 from deel.puncc import ops
+from deel.puncc.validation import as_scalar_vector
 
 logger = logging.getLogger(__name__)
 
@@ -230,11 +231,16 @@ class CVPlusRegressor(CrossConformalPredictor):
         lower_candidates: list[TensorLike] = []
         upper_candidates: list[TensorLike] = []
 
+        n_test = len(X_test)
         for cp in self._conformal_predictors:
-            prediction = cp.model(X_test)
+            prediction = as_scalar_vector(cp.model(X_test), n_samples=n_test)
+            scores = as_scalar_vector(cp.nc_scores, n_samples=cp.len_calibr)
+
             predictions.append(prediction)
+
             prediction = ops.expand_dims(prediction, axis=0)
-            scores = ops.expand_dims(cp.nc_scores, axis=1)
+            scores = ops.expand_dims(scores, axis=1)
+
             lower_candidates.append(prediction - scores)
             upper_candidates.append(prediction + scores)
 

@@ -27,6 +27,7 @@ This module provides conformal prediction metrics.
 from typing import Iterable
 from deel.puncc.typing import TensorLike
 from deel.puncc import ops
+from deel.puncc.validation import check_same_shape
 
 
 def classification_mean_coverage(
@@ -93,6 +94,9 @@ def regression_mean_coverage(
         float: average coverage, indicating the proportion of instances that are
         correctly covered.
     """
+    check_same_shape(
+        y_true=y_true, y_pred_lower=y_pred_lower, y_pred_upper=y_pred_upper
+    )
     return ops.item(
         ops.mean(ops.logical_and(y_true >= y_pred_lower, y_true <= y_pred_upper))
     )
@@ -141,6 +145,10 @@ def regression_sharpness(y_pred_lower: TensorLike, y_pred_upper: TensorLike) -> 
     Returns:
         float: average absolute width of the prediction intervals.
     """
+    check_same_shape(
+        y_pred_lower=y_pred_lower,
+        y_pred_upper=y_pred_upper,
+    )
     return ops.mean(ops.abs(y_pred_upper - y_pred_lower))
 
 

@@ -28,9 +28,11 @@ when building a ConformalPredictor
 from deel.puncc.typing import TensorLike, NCScoreFunction
 from deel.puncc import ops
 from deel.puncc.backend.keras import random
+from deel.puncc.validation import check_same_shape
 
 
 def _difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    check_same_shape(y_pred=y_pred, y_true=y_true)
     return y_pred - y_true
 
 
@@ -39,6 +41,7 @@ def difference() -> NCScoreFunction:
 
 
 def _absolute_difference(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    check_same_shape(y_pred=y_pred, y_true=y_true)
     return ops.abs(y_pred - y_true)
 
 
@@ -77,6 +80,12 @@ def boxwise_difference() -> NCScoreFunction:
 
 
 def _cqr_score(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
+    pred_shape = tuple(ops.shape(y_pred))
+    if len(pred_shape) not in (2, 3) or pred_shape[-1] != 2:
+        raise ValueError(
+            "CQR predictions must have shape (n, 2) or (n, d, 2), " f"got {pred_shape}."
+        )
+
     lower_pred = ops.take(y_pred, 0, axis=-1)
     upper_pred = ops.take(y_pred, 1, axis=-1)
     return ops.maximum(lower_pred - y_true, y_true - upper_pred)
