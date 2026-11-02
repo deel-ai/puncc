@@ -48,6 +48,8 @@ from typing import Any, KeysView, Self, ValuesView, ItemsView
 from deel.puncc.typing import TensorLike
 from deel.puncc.backend.keras import ops
 
+import inspect
+
 
 class CalibrationContext:
     """
@@ -265,6 +267,11 @@ class CalibrationContext:
         Returns:
             The updated context itself.
         """
+        for key in kwargs:
+            if any(key in cls.__dict__ for cls in type(self).__mro__):
+                raise ValueError(
+                    f"Cannot update field '{key}': it conflicts with a class attribute."
+                )
         self.__dict__.update(kwargs)
         return self
 
