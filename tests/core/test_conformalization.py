@@ -68,10 +68,6 @@ def test_fit_calibrate_predict(regression_data):
     )
 
     assert predictor.fit(X_fit, y_fit) is predictor
-
-    with pytest.raises(RuntimeError, match="not been calibrated"):
-        _ = predictor.nc_scores
-
     assert predictor.calibrate(X_calib, y_calib) is predictor
 
     expected_prediction = np.full(
@@ -80,7 +76,7 @@ def test_fit_calibrate_predict(regression_data):
     )
 
     np.testing.assert_allclose(
-        to_numpy(predictor.nc_scores),
+        to_numpy(predictor.calibration_context.nc_scores),
         np.abs(expected_prediction - to_numpy(y_calib)),
     )
 
@@ -146,8 +142,8 @@ def test_save_load_calibration_state(regression_data, tmp_path):
     assert loaded_predictor is not predictor
 
     np.testing.assert_allclose(
-        to_numpy(loaded_predictor.nc_scores),
-        to_numpy(predictor.nc_scores),
+        to_numpy(loaded_predictor.calibration_context.nc_scores),
+        to_numpy(predictor.calibration_context.nc_scores),
     )
 
     original_result = predictor.predict(X_test, alpha=0.2)

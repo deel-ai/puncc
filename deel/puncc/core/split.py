@@ -49,7 +49,6 @@ from deel.puncc.typing import (
     TensorLike,
     WeightFunction,
 )
-from deel.puncc.warnings import ExperimentalWarning
 
 
 class SplitConformalPredictor(ConformalPredictor):
@@ -81,31 +80,6 @@ class SplitConformalPredictor(ConformalPredictor):
 
         self.nc_score_function = nc_score_function
         self.pred_set_function = pred_set_function
-
-    @property
-    def len_calibr(self) -> int:
-        """
-        Size of the calibration set used to compute nonconformity scores.
-        """
-        return len(self.nc_scores)
-
-    @property
-    def nc_scores(self) -> TensorLike:
-        """
-        Nonconformity scores computed on the calibration dataset.
-
-        Returns:
-            Calibration nonconformity scores.
-
-        Raises:
-            RuntimeError: If the predictor has not been calibrated.
-        """
-        if not hasattr(
-            self.calibration_context,
-            "nc_scores",
-        ):
-            raise RuntimeError("The conformal predictor has not been calibrated yet.")
-        return self.calibration_context.nc_scores
 
     def compute_calibration_state(
         self, calibration_context: CalibrationContext

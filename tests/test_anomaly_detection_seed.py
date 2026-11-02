@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 from deel.puncc import ops
-from deel.puncc.anomaly_detection import SplitCAD
+from deel.puncc.anomaly_detection.split import SplitCAD
 from tests._utils import tensor, to_numpy
 
 
@@ -55,9 +55,6 @@ def test_splitcad_fit_calibrate_predict():
     model = DummyScorePredictor()
     cad = SplitCAD(model=model)
 
-    with pytest.raises(RuntimeError, match="not been calibrated"):
-        _ = cad.nc_scores
-
     assert cad.fit(X_fit) is cad
     assert len(model.fit_calls) == 1
     np.testing.assert_array_equal(model.fit_calls[0], to_numpy(X_fit))
@@ -68,7 +65,7 @@ def test_splitcad_fit_calibrate_predict():
     assert cad.len_calibr == len(X_calib)
 
     np.testing.assert_allclose(
-        to_numpy(cad.nc_scores),
+        to_numpy(cad.calibration_context.nc_scores),
         np.arange(9),
     )
 

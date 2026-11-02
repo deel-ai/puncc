@@ -130,7 +130,7 @@ def test_lac(classification_data):
     expected_scores = 1 - calib_prob[np.arange(len(y_calib)), to_numpy(y_calib)]
 
     np.testing.assert_allclose(
-        to_numpy(cp.nc_scores),
+        to_numpy(cp.calibration_context.nc_scores),
         expected_scores,
         atol=1e-6,
     )
@@ -243,7 +243,7 @@ def test_aps_and_raps(classification_data, factory):
     cp.fit(X_fit, y_fit)
     cp.calibrate(X_calib, y_calib)
 
-    scores = to_numpy(cp.nc_scores)
+    scores = to_numpy(cp.calibration_context.nc_scores)
 
     assert scores.shape == (len(X_calib),)
     assert np.all(np.isfinite(scores))
@@ -287,7 +287,7 @@ def test_nonrandomized_aps_scores(classification_data):
     )
 
     np.testing.assert_allclose(
-        to_numpy(cp.nc_scores),
+        to_numpy(cp.calibration_context.nc_scores),
         expected,
         atol=1e-6,
     )

@@ -124,9 +124,7 @@ class EnbPIRegressor:
     def residuals(self) -> TensorLike:
         """Current signed residuals, ordered from oldest to newest."""
         if "residuals" not in self.calibration_context:
-            raise NotCalibratedError(
-                "EnbPIRegressor must be fitted before use."
-            )
+            raise NotCalibratedError("EnbPIRegressor must be fitted before use.")
         return self.calibration_context.residuals
 
     @property
@@ -254,9 +252,7 @@ class EnbPIRegressor:
         prediction = self.model(X_test)
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
-        return self.conformalize(
-            prediction, alpha, self.calibration_context, X=X_test
-        )
+        return self.conformalize(prediction, alpha, self.calibration_context, X=X_test)
 
     def _get_offsets(
         self,
@@ -265,9 +261,7 @@ class EnbPIRegressor:
     ) -> TensorLike:
         """Find the narrowest pair of residual quantiles on the grid."""
         if "residuals" not in calibration_context:
-            raise NotCalibratedError(
-                "The calibration context has no EnbPI residuals."
-            )
+            raise NotCalibratedError("The calibration context has no EnbPI residuals.")
         residuals = calibration_context.residuals
         sorted_residuals = ops.sort(residuals, axis=0)
         n = len(residuals)
@@ -276,9 +270,7 @@ class EnbPIRegressor:
 
         # Inverse empirical CDF: rank ceil(n * q), expressed as a zero-based
         # index. Clipping handles q=0 and numerical rounding near q=1.
-        indices = ops.cast(
-            ops.clip(ops.ceil(n * levels) - 1, 0, n - 1), "int32"
-        )
+        indices = ops.cast(ops.clip(ops.ceil(n * levels) - 1, 0, n - 1), "int32")
         bounds = ops.take(sorted_residuals, indices, axis=0)
         best = ops.argmin(bounds[1] - bounds[0], axis=0)
         # argmin selects the first (smallest-beta) candidate on width ties.
@@ -325,20 +317,14 @@ class EnbPIRegressor:
             recomputed and bootstrap models are not fitted again.
         """
         if self.window_size_ is None:
-            raise NotCalibratedError(
-                "EnbPIRegressor must be fitted before update."
-            )
+            raise NotCalibratedError("EnbPIRegressor must be fitted before update.")
         y = ops.reshape(ops.convert_to_tensor(y), (-1,))
         prediction = ops.reshape(ops.convert_to_tensor(prediction), (-1,))
         if len(y) != len(prediction):
-            raise ValueError(
-                "Targets and predictions must have the same length."
-            )
+            raise ValueError("Targets and predictions must have the same length.")
 
         previous = self.calibration_context
-        targets = ops.concatenate([previous.y_calib, y], axis=0)[
-            -self.window_size_ :
-        ]
+        targets = ops.concatenate([previous.y_calib, y], axis=0)[-self.window_size_ :]
         predictions = ops.concatenate([previous.y_pred, prediction], axis=0)[
             -self.window_size_ :
         ]

@@ -96,7 +96,7 @@ def test_split_cp(regression_data):
 
     expected_scores = np.abs(to_numpy(cp.model(X_calib)) - to_numpy(y_calib))
     np.testing.assert_allclose(
-        to_numpy(cp.nc_scores),
+        to_numpy(cp.calibration_context.nc_scores),
         expected_scores,
         rtol=1e-5,
     )
@@ -173,7 +173,7 @@ def test_weighted_split_cp():
         [1.0, 2.0, 3.0, 4.0],
     )
     np.testing.assert_allclose(
-        to_numpy(cp.nc_scores),
+        to_numpy(cp.calibration_context.nc_scores),
         [0.0, 0.0, 0.0, 2.0],
     )
 
@@ -205,7 +205,7 @@ def test_locally_adaptive_cp(regression_data):
     cp.calibrate(X_calib, y_calib)
 
     assert cp.len_calibr == len(X_calib)
-    assert np.all(np.isfinite(to_numpy(cp.nc_scores)))
+    assert np.all(np.isfinite(to_numpy(cp.calibration_context.nc_scores)))
 
     _, intervals = assert_valid_intervals(
         cp.predict(X_test, alpha=0.1),
@@ -228,7 +228,7 @@ def test_leverage_weighted_cp(regression_data):
     cp.calibrate(X_calib, y_calib)
 
     assert cp.len_calibr == len(X_calib)
-    assert np.all(to_numpy(cp.nc_scores) >= 0)
+    assert np.all(to_numpy(cp.calibration_context.nc_scores) >= 0)
 
     _, intervals = assert_valid_intervals(
         cp.predict(X_test, alpha=0.1),
@@ -294,7 +294,7 @@ def test_cqr(regression_data):
     )
 
     assert prediction.shape == (len(X_test), 2)
-    assert len(cp.nc_scores) == len(X_calib)
+    assert len(cp.calibration_context.nc_scores) == len(X_calib)
 
     assert_reasonable_coverage(y_test, intervals)
 

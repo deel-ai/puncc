@@ -163,6 +163,12 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):
         y_set = self.pred_set_function(prediction, quantiles)
         return ConformalPrediction(prediction, y_set)
 
+    @property
+    def len_calibr(self) -> int:
+        return sum(
+            context.size for context in self.classwise_calibration_contexts.values()
+        )
+
 
 class LAC(PresetSplitConformalPredictor):
     """

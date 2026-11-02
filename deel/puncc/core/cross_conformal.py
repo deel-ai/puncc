@@ -123,7 +123,7 @@ class CrossConformalPredictor(ABC):
             )
             cp.fit(X_fit, y_fit)
             cp.calibrate(X_calib, y_calib)
-            if ops.ndim(cp.nc_scores) != 1:
+            if ops.ndim(cp.calibration_context.nc_scores) != 1:
                 raise ValueError(
                     "CVPlusRegressor currently supports scalar nonconformity scores only."
                 )
@@ -234,7 +234,9 @@ class CVPlusRegressor(CrossConformalPredictor):
         n_test = len(X_test)
         for cp in self._conformal_predictors:
             prediction = as_scalar_vector(cp.model(X_test), n_samples=n_test)
-            scores = as_scalar_vector(cp.nc_scores, n_samples=cp.len_calibr)
+            scores = as_scalar_vector(
+                cp.calibration_context.nc_scores, n_samples=cp.len_calibr
+            )
 
             predictions.append(prediction)
 

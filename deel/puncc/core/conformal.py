@@ -158,6 +158,16 @@ class ConformalPredictor(ABC):
         self.fit_function = fit_function
         self.calibration_context = CalibrationContext()
 
+    @property
+    def len_calibr(self) -> int:
+        """
+        Return the number of samples in the current calibration context.
+
+        Returns:
+            Number of samples in the calibration context.
+        """
+        return self.calibration_context.size
+
     def reset_calibration(self) -> Self:
         """
         Clear the current calibration state.
@@ -458,6 +468,16 @@ class GroupConditionalMixin(ConformalPredictor):
         super().reset_calibration()
         self.group_calibration_contexts.clear()
         return self
+
+    @property
+    def len_calibr(self) -> int:
+        """
+        Return the number of samples in the current calibration context.
+
+        Returns:
+            Number of samples in the calibration context.
+        """
+        return sum(context.size for context in self.group_calibration_contexts.values())
 
     def __init__(
         self,

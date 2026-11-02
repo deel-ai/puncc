@@ -146,9 +146,7 @@ class SplitCAD(SplitConformalPredictor):
     ) -> Self:
         _check_calibration_samples(X_calib, y_calib, require_y=False)
         self.reset_calibration()
-        self.calibration_context.update(
-            X_calib=X_calib, y_pred=self.model(X_calib)
-        )
+        self.calibration_context.update(X_calib=X_calib, y_pred=self.model(X_calib))
         self.calibration_context = self.compute_calibration_state(
             self.calibration_context
         )

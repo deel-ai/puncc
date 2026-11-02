@@ -94,7 +94,7 @@ def test_tensorflow_split_conformal_regression(keras_tf, regression_data):
     expected_scores = np.abs(to_numpy(model(X_calib)) - y_calib)
 
     np.testing.assert_allclose(
-        to_numpy(cp.nc_scores),
+        to_numpy(cp.calibration_context.nc_scores),
         expected_scores,
         rtol=1e-5,
         atol=1e-5,
