@@ -23,19 +23,23 @@
 """
 Calibration data containers used by conformal predictors.
 
-This module defines :class:`CalibrationContext`, a lightweight container used to store data associated with a calibration dataset.
+This module defines :class:`CalibrationContext`, a lightweight container used to store data associated with a
+calibration dataset.
 
 A calibration context typically contains the calibration inputs, targets, model predictions, and nonconformity scores.
 Additional sample-aligned quantities can be stored dynamically when required by specific conformal methods.
 
 All values stored in a context are expected to be aligned along their first dimension.
-This allows a context to be indexed or sliced as a whole while preserving the correspondence between calibration quantities.
+This allows a context to be indexed or sliced as a whole while preserving the correspondence between calibration
+quantities.
 
 ``CalibrationContext`` intentionally behaves like a lightweight mapping without implementing the full mapping protocol.
-Stored fields can be accessed by name, iterated over, copied, updated, sliced, and merged with another compatible context.
+Stored fields can be accessed by name, iterated over, copied, updated, sliced, and merged with another compatible
+context.
 
 The container stores references to the underlying objects.
-Operations such as :meth:`CalibrationContext.copy` therefore perform shallow copies and do not duplicate tensors, arrays, or other calibration data.
+Operations such as :meth:`CalibrationContext.copy` therefore perform shallow copies and do not duplicate tensors,
+arrays, or other calibration data.
 """
 
 from __future__ import annotations
@@ -53,10 +57,12 @@ class CalibrationContext:
     """
     Container for sample-aligned calibration data.
 
-    A calibration context stores quantities associated with a calibration dataset, such as calibration inputs, targets, model predictions, and nonconformity scores.
+    A calibration context stores quantities associated with a calibration dataset, such as calibration
+    inputs, targets, model predictions, and nonconformity scores.
 
     Additional method-specific quantities can be stored dynamically through keyword arguments.
-    All stored values are expected to be aligned along their first dimension so that indexing the context applies the same selection to every field.
+    All stored values are expected to be aligned along their first dimension so that indexing the
+    context applies the same selection to every field.
 
     Args:
         X_calib: Calibration inputs.
@@ -170,7 +176,8 @@ class CalibrationContext:
         Access a field or index all stored calibration quantities.
 
         String keys access individual fields.
-        Integer and slice indices are applied to every value stored in the context and return a new context containing the indexed data.
+        Integer and slice indices are applied to every value stored in the context and return a new
+        context containing the indexed data.
 
         Args:
             key: Field name, sample index, or sample slice.
@@ -328,7 +335,8 @@ class CalibrationContext:
         """
         Create a shallow copy of the context.
 
-        The context object and its field mapping are copied, but the underlying calibration values are shared with the original context.
+        The context object and its field mapping are copied, but the underlying calibration values are
+        shared with the original context.
 
         Returns:
             A shallow copy of the context.
@@ -359,4 +367,7 @@ class CalibrationContext:
         return self.update(**other_context.__dict__)
 
     def is_empty(self) -> bool:
+        """
+        Check whether the context contains any stored fields.
+        """
         return not bool(self.__dict__)

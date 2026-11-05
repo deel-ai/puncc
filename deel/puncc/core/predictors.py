@@ -149,8 +149,9 @@ class MultiPredictorStack:
             if callable(fit_method):
                 fit_method(X_train, y_train)
             else:
-                raise NotImplementedError(
-                    "One of the models does not have a fit method. Please provide pretrained models or expose a fit method."
+                raise RuntimeError(
+                    "One of the models does not have a fit method."
+                    "Please provide pretrained models or expose a fit method."
                 )
         return self
 
@@ -203,7 +204,8 @@ class MeanVarPredictor(MultiPredictorStack):
         Fit the mean model and then the dispersion model.
 
         The mean model is first fitted on ``(X_train, y_train)``.
-        Its predictions on the training samples are then used to compute the targets required to train the dispersion model.
+        Its predictions on the training samples are then used to compute the targets required to train
+        the dispersion model.
 
         Args:
             X_train: Training input samples.
@@ -217,8 +219,9 @@ class MeanVarPredictor(MultiPredictorStack):
         """
         for model in self.models:
             if not callable(getattr(model, "fit", None)):
-                raise NotImplementedError(
-                    "One of the models does not have a fit method. Please provide pretrained models or expose a fit method."
+                raise RuntimeError(
+                    "One of the models does not have a fit method."
+                    "Please provide pretrained modelsor expose a fit method."
                 )
         fit_method_0 = getattr(self.models[0], "fit")
         fit_method_1 = getattr(self.models[1], "fit")
@@ -373,7 +376,8 @@ class SklearnWrapper:
         """
         Run prediction with the wrapped estimator.
 
-        Input tensors are converted to NumPy arrays and the resulting predictions are converted back to the active tensor backend.
+        Input tensors are converted to NumPy arrays and the resulting predictions are converted
+        back to the active tensor backend.
 
         Args:
             X: Input samples.

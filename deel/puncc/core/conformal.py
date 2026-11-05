@@ -62,8 +62,8 @@ TSet = TypeVar("TSet")
 
 def _validate_alpha(alpha: float | TensorLike) -> None:
     """Check that all miscoverage levels belong to (0, 1)."""
-    if isinstance(alpha, Real):
-        valid = 0 < alpha < 1
+    if isinstance(alpha, float):
+        valid = 0.0 < alpha < 1.0
     else:
         alpha_tensor = ops.convert_to_tensor(alpha)
         valid = ops.size(alpha_tensor) > 0 and bool(
@@ -95,7 +95,8 @@ class ConformalPrediction(Generic[TPrediction, TSet]):
     """
     Result of a conformal prediction.
 
-    The container behaves like a two-element tuple while preserving explicit names for the base prediction and its associated conformal prediction set.
+    The container behaves like a two-element tuple while preserving explicit names for the base
+    prediction and its associated conformal prediction set.
 
     Attributes:
         prediction (Any):
@@ -135,7 +136,8 @@ class ConformalPredictor(ABC):
       prediction sets using a calibration context.
 
     Calibration-dependent state should be stored in the provided CalibrationContext rather than in predictor attributes.
-    This makes calibration contexts explicit and allows the same predictor to conformalize predictions against different calibration subsets.
+    This makes calibration contexts explicit and allows the same predictor to conformalize predictions against
+    different calibration subsets.
 
     Args:
         model:
@@ -190,7 +192,8 @@ class ConformalPredictor(ABC):
         Calibrate the conformal predictor.
 
         The underlying model is evaluated once on the calibration inputs.
-        The resulting raw calibration data are stored in a CalibrationContext before method-specific calibration state is computed by compute_calibration_state.
+        The resulting raw calibration data are stored in a CalibrationContext before method-specific
+        calibration state is computed by compute_calibration_state.
 
         Args:
             X_calib:
@@ -229,7 +232,8 @@ class ConformalPredictor(ABC):
         The provided context contains at least the calibration inputs, targets, and corresponding model predictions.
         Implementations may enrich it with additional sample-aligned quantities such as non-conformity scores.
 
-        Calibration-dependent information should be stored in the context whenever possible so that different contexts can be used independently.
+        Calibration-dependent information should be stored in the context whenever possible so that different contexts
+        can be used independently.
 
         Args:
             calibration_context:
@@ -351,7 +355,8 @@ class ConformalPredictor(ABC):
             )
             return self
         raise NotImplementedError(
-            "The model does not have a fit method and no fit_function was provided. Please provide a pretrained model or a fit_function."
+            "The model does not have a fit method and no fit_function was provided."
+            "Please provide a pretrainedmodel or a fit_function."
         )
 
     def __getstate__(self) -> dict[str, Any]:
@@ -360,7 +365,8 @@ class ConformalPredictor(ABC):
 
         Collect instance attributes stored in ``__dict__`` and in the ``__slots__`` declarations of the class hierarchy.
 
-        The underlying predictive model is excluded from the serialized state and must be supplied separately when restoring the predictor.
+        The underlying predictive model is excluded from the serialized state and must be supplied separately when
+        restoring the predictor.
 
         Returns:
             Dictionary containing the serializable predictor state, excluding the predictive model.
@@ -436,8 +442,10 @@ class GroupConditionalMixin(ConformalPredictor):
     """
     Mixin providing group-balanced calibration for conformal predictor.
 
-    Calibration data are partitioned according to group_function and a separate calibration context is computed for each observed group.
-    During prediction, test samples are routed to the calibration context associated with their group before delegating conformalization to the next ConformalPredictor implementation in the MRO.
+    Calibration data are partitioned according to group_function and a separate calibration context is
+    computed for each observed group.
+    During prediction, test samples are routed to the calibration context associated with their group
+    before delegating conformalization to the next ConformalPredictor implementation in the MRO.
 
     If a test sample belongs to a group that was not observed during calibration, a ValueError is raised by default.
 
@@ -495,8 +503,8 @@ class GroupConditionalMixin(ConformalPredictor):
         """
         Calibrate the predictor separately for each observed group.
 
-        First compute the calibration state on the supplied dataset, then partition the resulting calibration context according to
-        the group identifiers returned by the configured group function.
+        First compute the calibration state on the supplied dataset, then partition the resulting
+        calibration context according to the group identifiers returned by the configured group function.
 
         The group-specific contexts are stored in ``group_calibration_contexts`` and the global
         calibration context is cleared after partitioning.
@@ -555,7 +563,8 @@ class GroupConditionalMixin(ConformalPredictor):
                 Required for group-conditional conformalization.
 
         Returns:
-            A ConformalPrediction containing the original predictions and the corresponding group-conditional prediction sets.
+            A ConformalPrediction containing the original predictions and the corresponding
+            group-conditional prediction sets.
 
         Raises:
             ValueError:
@@ -565,8 +574,8 @@ class GroupConditionalMixin(ConformalPredictor):
         Notes:
             Subclasses may override conformalize_unknown_group() to define a fallback strategy for unseen groups.
 
-            Prediction sets may be returned as a tensor or as a list, depending on the representation produced by the underlying
-            conformal prediction method.
+            Prediction sets may be returned as a tensor or as a list, depending on the representation produced
+            by the underlying conformal prediction method.
         """
         if X is None:
             raise ValueError("X is required for group-conditional conformalization.")
@@ -613,7 +622,8 @@ class GroupConditionalMixin(ConformalPredictor):
 
         if missing_group_count:
             warnings.warn(
-                f"{missing_group_count} test group(s) were not observed during calibration. Specific fallback strategy was used for these groups.",
+                f"{missing_group_count} test group(s) were not observed during calibration."
+                "Specific fallback strategy was used for these groups.",
                 CalibrationWarning,
                 stacklevel=2,
             )
@@ -671,7 +681,8 @@ class GroupConditionalMixin(ConformalPredictor):
                 If the group was not observed during calibration.
         """
         raise ValueError(
-            "Test group was not observed during calibration. Please provide a fallback strategy for unknown groups or provide a better calibration set."
+            "Test group was not observed during calibration."
+            "Please provide a fallback strategy for unknown groups or provide a better calibration set."
         )
         # TODO :
         # for split CP :

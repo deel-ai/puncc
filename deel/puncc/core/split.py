@@ -33,8 +33,6 @@ from __future__ import annotations
 from typing import Any, Iterable, Self, TypeAlias
 from collections.abc import Callable
 
-import warnings
-
 from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
@@ -53,14 +51,18 @@ from deel.puncc.typing import (
 
 class SplitConformalPredictor(ConformalPredictor):
     """
-    Base class for split conformal prediction methods
-    The predictor computes nonconformity scores from a calibration dataset and uses their empirical quantile to construct conformal prediction sets.
+    Base class for split conformal prediction methods.
+    The predictor computes nonconformity scores from a calibration dataset and uses their empirical quantile to
+    construct conformal prediction sets.
 
     Args:
         model (Predictor | PredictorLike): underlying model
-        nc_score_function (NCScoreFunction): function to used to compute non conformity scores from the model predictions and the true labels.
-        pred_set_function (PredSetFunction): function to build a prediction set from the model prediction and a non conformity score threshold.
-        fit_function (Callable[[Predictor, Iterable[Any], TensorLike], Predictor], optional): Optional function that trains the model. Defaults to None.
+        nc_score_function (NCScoreFunction): function to used to compute non conformity scores from the model
+        predictions and the true labels.
+        pred_set_function (PredSetFunction): function to build a prediction set from the model prediction and a non
+        conformity score threshold.
+        fit_function (Callable[[Predictor, Iterable[Any], TensorLike], Predictor], optional): Optional function that
+        trains the model. Defaults to None.
     """
 
     __slots__ = (
@@ -157,7 +159,7 @@ class SplitConformalPredictor(ConformalPredictor):
         alpha: float | TensorLike,
         calibration_context: CalibrationContext,
         *,
-        X: Any | None = None,
+        X: Iterable[Any] | None = None,
     ) -> TensorLike:
         """
         Return the conformal quantile associated with a miscoverage level.
@@ -185,7 +187,8 @@ class WeightedQuantileMixin(SplitConformalPredictor):
     Nonconformity scores are weighted using a user-provided weight function.
     The weights are evaluated on the calibration inputs and separately on each test input.
 
-    For each test sample, its weight is appended to the calibration weights and used to compute a test-dependent conformal quantile.
+    For each test sample, its weight is appended to the calibration weights and used to compute a
+    test-dependent conformal quantile.
 
     Args:
         weight_function:
@@ -195,9 +198,11 @@ class WeightedQuantileMixin(SplitConformalPredictor):
     Notes:
         The weight function is evaluated during calibration and prediction.
 
-        Calibration weights are stored in the calibration context, while test weights are computed when conformalizing predictions.
+        Calibration weights are stored in the calibration context, while test weights are computed
+        when conformalizing predictions.
 
-        The validity of weighted conformal coverage guarantees depends on the assumptions underlying the chosen weighting scheme.
+        The validity of weighted conformal coverage guarantees depends on the assumptions underlying
+        the chosen weighting scheme.
     """
 
     def __init__(
@@ -210,7 +215,8 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         """
         Compute nonconformity scores and calibration sample weights.
 
-        The weight function is evaluated on the calibration inputs, and the resulting weights are stored in the calibration context.
+        The weight function is evaluated on the calibration inputs, and the resulting weights are
+        stored in the calibration context.
 
         Args:
             calibration_context:
@@ -230,7 +236,7 @@ class WeightedQuantileMixin(SplitConformalPredictor):
         alpha: float | TensorLike,
         calibration_context: CalibrationContext,
         *,
-        X: Any | None = None,
+        X: Iterable[Any] | None = None,
     ) -> TensorLike:
         """
         Compute a weighted conformal quantile for each test sample.
@@ -247,11 +253,14 @@ class WeightedQuantileMixin(SplitConformalPredictor):
                 Test inputs used to compute sample-specific weights.
 
         Returns:
-            Tensor containing one conformal quantile per test sample, possibly with additional dimensions for multivariate scores.
+            Tensor containing one conformal quantile per test sample, possibly with additional dimensions
+            for multivariate scores.
         """
+        if X is None:
+            raise ValueError("X is required for weighted conformal prediction.")
 
         scores = self.extend_scores_with_inf(calibration_context.nc_scores)
-        calibration_weights = calibration_context.calibration_weights
+        calibration_weights = calibration_context["calibration_weights"]
         test_weights = self.weight_function(X)
 
         quantiles = []
@@ -321,7 +330,8 @@ class LocallyScaledMixin(SplitConformalPredictor):
     Notes:
         The scale function must be available during both calibration and prediction.
         A small epsilon is added to the scale to improve numerical stability. Its default value is 1e-12.
-        The statistical validity of the resulting prediction sets depends on the assumptions of the underlying conformal method.
+        The statistical validity of the resulting prediction sets depends on the assumptions of
+        the underlying conformal method.
     """
 
     eps: float = 1e-12
@@ -365,7 +375,8 @@ class LocallyScaledMixin(SplitConformalPredictor):
         """
         Compute locally normalized calibration scores.
 
-        First compute the nonconformity scores using the parent method, then divide them by the sample-dependent scale estimates.
+        First compute the nonconformity scores using the parent method, then divide them by the
+        sample-dependent scale estimates.
 
         Args:
             calibration_context:
@@ -443,6 +454,31 @@ class LocallyScaledMixin(SplitConformalPredictor):
 
 
 class LocallyAdaptiveMixin(LocallyScaledMixin):
+    """
+    Mixin providing locally adaptive conformal prediction using a learned dispersion estimator.
+
+    An auxiliary model is trained to predict the dispersion of the base model's predictions.
+    The dispersion targets are computed on the training dataset using the base model's predictions and
+    the true targets.
+
+    The fitted dispersion estimator is subsequently used as the scale function
+    for locally normalized conformal calibration and prediction.
+
+    Args:
+        dispersion_estimator:
+            Auxiliary predictive model used to estimate local dispersion.
+        dispersion_estimation_function:
+            Function computing dispersion targets from the base model's
+            predictions and the true targets. Defaults to absolute_difference().
+        dispersion_estimator_fit_function:
+            Optional custom function used to fit the dispersion estimator.
+            If omitted, the estimator's fit method is used.
+
+    Notes:
+        The dispersion estimator must produce strictly positive scale estimates
+        during calibration and prediction, as required by LocallyScaledMixin.
+    """
+
     def __init__(
         self,
         *args,
@@ -488,15 +524,51 @@ class LocallyAdaptiveMixin(LocallyScaledMixin):
             fit_method(X, dispersion)
             return self
         raise NotImplementedError(
-            "The dispersion estimator does not have a fit method and no fit ffunction was provided. Please provide a pretrained model or a fit_function."
+            "The dispersion estimator does not have a fit method and no fit ffunction was provided."
+            "Please provide a pretrained model or a fit_function."
         )
 
 
 def inverse_root_leverage_weight(h: TensorLike) -> TensorLike:
+    """
+    Compute inverse-square-root leverage weights.
+
+    Args:
+        h:
+            Leverage scores associated with the input samples.
+
+    Returns:
+        Weights computed as 1 / sqrt(1 + h), with the same shape as h.
+    """
     return 1 / ops.sqrt(1 + h)
 
 
 class LeverageWeightedMixin(LocallyScaledMixin):
+    """
+    Mixin providing leverage-based local scaling for conformal prediction.
+
+    Training features are standardized and used to compute the pseudoinverse of their Gram matrix.
+    The resulting matrix is used to estimate leverage scores for calibration and test samples.
+
+    Leverage scores are transformed into weights using a configurable function.
+    Their reciprocals are used as local scale estimates by LocallyScaledMixin.
+
+    Args:
+        leverage_weight_function:
+            Function mapping leverage scores to strictly positive weights.
+            Defaults to inverse_root_leverage_weight, resulting in local
+            scales proportional to sqrt(1 + h), where h is the leverage score.
+
+    Notes:
+        The leverage computation assumes two-dimensional numerical features.
+
+        The training dataset must contain more samples than features, and
+        training features must have nonzero standard deviations.
+
+        The feature statistics and Gram matrix pseudoinverse are recomputed
+        whenever fit_leverage() is called.
+    """
+
     def __init__(
         self,
         *args,
@@ -521,6 +593,21 @@ class LeverageWeightedMixin(LocallyScaledMixin):
         return self.fit_leverage(X)
 
     def fit_leverage(self, X) -> Self:
+        """
+        Compute the feature statistics and Gram matrix pseudoinverse.
+
+        Args:
+            X:
+                Training feature matrix with shape (n_samples, n_features).
+
+        Returns:
+            The predictor with initialized leverage statistics.
+
+        Raises:
+            ValueError:
+                If the number of training samples does not exceed the number
+                of features, or if any training feature is constant.
+        """
         X = ops.array(X)
 
         if ops.shape(X)[0] <= ops.shape(X)[1]:

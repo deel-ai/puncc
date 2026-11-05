@@ -254,7 +254,9 @@ def get_tensor_arg(args: Any, kwargs: Any):
     """
     Extract the tensor argument used for backend inference.
 
-    Positional arguments take precedence. If no positional argument is available, a small set of conventional tensor parameter names is searched in ``kwargs``.
+    Positional arguments take precedence.
+    If no positional argument is available, a small set of conventional tensor parameter names is
+    searched in ``kwargs``.
 
     Args:
         args: Positional arguments passed to a numerical operation.
@@ -295,7 +297,8 @@ def set_backend_on_first_call(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     Ensure that a backend is selected before an operation runs.
 
-    If the backend has already been configured, or if Keras has already been imported, the operation is executed directly.
+    If the backend has already been configured, or if Keras has already been imported, the
+    operation is executed directly.
 
     Otherwise, PUNCC first attempts to infer the backend from the operation's tensor argument.
     If this fails, it falls back to inspecting numerical frameworks already imported in the process.
@@ -375,7 +378,8 @@ class OpsBackendManager(BackendManager):
     The manager exposes operations from ``keras.ops`` through lazy attribute resolution,
     allowing PUNCC to postpone Keras initialization until the numerical backend is known.
 
-    In addition to native Keras operations, this class implements a small set of backend-independent utilities required by PUNCC when no directly suitable ``keras.ops`` equivalent is available.
+    In addition to native Keras operations, this class implements a small set of backend-independent utilities
+    required by PUNCC when no directly suitable ``keras.ops`` equivalent is available.
 
     Attributes:
         inf: Positive infinity.
@@ -452,7 +456,8 @@ class OpsBackendManager(BackendManager):
             mask: Boolean tensor of arbitrary rank.
 
         Returns:
-            A two-dimensional tensor of shape ``(n_true, rank(mask))``, where each row contains the coordinates of one true element.
+            A two-dimensional tensor of shape ``(n_true, rank(mask))``, where each row contains the coordinates
+            of one true element.
         """
         idx = self.where(mask)
         if isinstance(idx, tuple):
@@ -541,7 +546,8 @@ class OpsBackendManager(BackendManager):
         Compute weighted empirical quantiles.
 
         Values are sorted along the requested axis together with their associated weights.
-        The returned quantile is the first sorted value whose normalized cumulative weight is greater than or equal to the requested quantile level.
+        The returned quantile is the first sorted value whose normalized cumulative weight is greater than or equal to
+        the requested quantile level.
 
         If ``weights`` is ``None``, all observations receive equal weight.
 
@@ -550,7 +556,8 @@ class OpsBackendManager(BackendManager):
             q: Quantile level or tensor of quantile levels.
                 Values are clipped to ``[0, 1]``.
             weights: Non-negative observation weights.
-                If one-dimensional and ``axis`` is specified, weights are interpreted along that axis and broadcast over the remaining dimensions.
+                If one-dimensional and ``axis`` is specified, weights are interpreted along that axis and broadcast
+                over the remaining dimensions.
                 If ``axis`` is ``None``, weights must have the same shape as ``x``.
             axis: Axis along which to compute the quantile. If ``None``, both ``x`` and ``weights`` are flattened.
             keepdims: Whether to retain the reduced axis with length one.
@@ -559,10 +566,12 @@ class OpsBackendManager(BackendManager):
             The weighted empirical quantile values.
 
         Raises:
-            ValueError: If weights contain negative values, if all weights are zero, or if their shape is incompatible with ``x``.
+            ValueError: If weights contain negative values, if all weights are zero, or if their shape is incompatible
+            with ``x``.
 
         Note:
-            This function computes an inverse weighted empirical cumulative distribution function and does not interpolate between adjacent observations.
+            This function computes an inverse weighted empirical cumulative distribution function and does not
+            interpolate between adjacent observations.
         """
         q = self.convert_to_tensor(q)
         q = self.clip(q, 0.0, 1.0)
@@ -587,7 +596,7 @@ class OpsBackendManager(BackendManager):
                 )
 
             shape = [1] * len(x.shape)
-            shape[axis] = x.shape[axis]
+            shape[axis] = x.shape[axis]  # type: ignore
             weights = self.reshape(weights, shape)
             weights = self.broadcast_to(weights, self.shape(x))
         elif tuple(weights.shape) != tuple(x.shape):
@@ -641,9 +650,18 @@ class OpsBackendManager(BackendManager):
         return res
 
     def item(self, x: TensorLike):
+        """
+        Convert a single-element tensor to a Python scalar.
+        """
         return self.convert_to_numpy(x).item()
 
     def tolist(self, x: TensorLike) -> list:
+        """
+        Convert a tensor to a Python list.
+
+        Returns:
+            list: native python list equivalent of the input tensor
+        """
         return self.convert_to_numpy(x).tolist()
 
 

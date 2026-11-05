@@ -30,10 +30,9 @@ out-of-bag aggregation used by EnbPI, independently of residual calibration.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Sequence
 from numbers import Integral
 from typing import Any, Self
-from collections.abc import Sequence
 
 from deel.puncc import ops
 from deel.puncc.cloning import clone_model
@@ -86,21 +85,20 @@ class BootstrapEnsemble:
     ) -> None:
         if isinstance(B, bool) or not isinstance(B, Integral) or B < 1:
             raise ValueError(f"B must be a positive integer. Provided value: {B}.")
-        if isinstance(aggregation, str):
-            if aggregation not in ("mean", "median"):
-                raise ValueError("aggregation must be 'mean', 'median', or a callable.")
-        elif not callable(aggregation):
+        if aggregation in ("mean", "median"):
+            aggregation = getattr(ops, aggregation.lower().strip())
+        if not callable(aggregation):
             raise TypeError("aggregation must be 'mean', 'median', or a callable.")
 
         self.model = make_predictor(model)
         self.B = int(B)
         self.sampler = sampler if sampler is not None else IIDBootstrapSampler()
-        self.aggregation = aggregation
+        self.aggregation: Callable = aggregation
         self.fit_function = fit_function
 
         self.models_: list[Predictor] = []
-        self.oob_mask_: TensorLike | None = None
-        self.n_train_: int | None = None
+        self.oob_mask_: TensorLike
+        self.n_train_: int
 
     @staticmethod
     def _prediction_vector(
@@ -122,7 +120,7 @@ class BootstrapEnsemble:
         return prediction
 
     def _check_fitted(self) -> None:
-        if not self.models_ or self.oob_mask_ is None:
+        if not hasattr(self, "models_") or not hasattr(self, "oob_mask_"):
             raise RuntimeError("BootstrapEnsemble must be fitted before prediction.")
 
     def _aggregate(self, predictions: TensorLike) -> TensorLike:
@@ -282,7 +280,7 @@ class BootstrapEnsemble:
             result.append(self._aggregate(eligible))
         return ops.stack(result, axis=0)
 
-    def predict_leave_one_out(self, X: Iterable[Any]) -> TensorLike:
+    def predict_leave_one_out(self, X: Sequence[Any]) -> TensorLike:
         """
         Evaluate the predictor associated with each excluded training point.
 
@@ -327,5 +325,5 @@ class BootstrapEnsemble:
             result = self._aggregate(self._leave_one_out_predictions(predictions))
         return self._prediction_vector(result, len(X))
 
-    def __call__(self, X: Iterable[Any]) -> TensorLike:
+    def __call__(self, X: Sequence[Any]) -> TensorLike:
         return self.predict(X)

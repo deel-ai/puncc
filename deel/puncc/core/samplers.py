@@ -95,7 +95,6 @@ class BootstrapSampler(ABC):
         Yields:
             BootstrapSample: Training and out-of-bag indices.
         """
-        ...
 
     def __call__(
         self,
@@ -106,11 +105,7 @@ class BootstrapSampler(ABC):
 
     @staticmethod
     def _check_positive_integer(value: int, name: str) -> None:
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, Integral)
-            or value < 1
-        ):
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
             raise ValueError(
                 f"{name} must be a positive integer. Provided value: {value}."
             )

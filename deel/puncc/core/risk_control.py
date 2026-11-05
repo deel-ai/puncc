@@ -177,7 +177,7 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         """
         alpha = ops.item(alpha)
 
-        if alpha >= self.B:
+        if alpha >= self.B:  # type: ignore
             raise ValueError(
                 f"alpha must be smaller than the loss upper bound B={self.B}."
             )
@@ -192,7 +192,7 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
                     lambd,
                     calibration_context,
                 )
-                + self.B / (n + 1)
+                + self.B / (n + 1)  # type: ignore
                 - alpha
             )
 

@@ -23,17 +23,18 @@
 """
 Cross-conformal prediction methods.
 
-This module provides the common machinery for fitting conformal predictors across multiple data splits and implements CV+ for scalar regression.
+This module provides the common machinery for fitting conformal predictors across multiple data splits and
+implements CV+ for scalar regression.
 """
 
 from __future__ import annotations
 from abc import abstractmethod, ABC
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any, Callable, Never, Self
 import logging
 
 from deel.puncc.core.predictors import make_predictor
-from deel.puncc.core.split import SplitConformalPredictor
+from deel.puncc.core.split import PresetSplitConformalPredictor, SplitConformalPredictor
 from deel.puncc.core.conformal import ConformalPrediction, _validate_alpha
 from deel.puncc.core.splitters import KFoldSplitter, BaseSplitter
 from deel.puncc.corrections import AlphaCorrection
@@ -50,8 +51,10 @@ class CrossConformalPredictor(ABC):
     """
     Base class for cross-conformal prediction methods.
 
-    Cross-conformal predictors train several conformal predictors on different data splits and aggregate their predictions at inference time.
-    Unlike split conformal predictors, calibration is performed internally during fitting and no separate calibration step is required.
+    Cross-conformal predictors train several conformal predictors on different data splits and aggregate
+    their predictions at inference time.
+    Unlike split conformal predictors, calibration is performed internally during fitting and no separate
+    calibration step is required.
 
     Args:
         model: Predictive model used as a template for each data split.
@@ -63,7 +66,7 @@ class CrossConformalPredictor(ABC):
     def __init__(
         self,
         model: Predictor | PredictorLike,
-        conformal_predictor_class: type[SplitConformalPredictor],
+        conformal_predictor_class: type[PresetSplitConformalPredictor],
         splitter: BaseSplitter,
         fit_function: FitFunction | None = None,
     ):
@@ -72,7 +75,7 @@ class CrossConformalPredictor(ABC):
         self.fit_function = fit_function
         self.splitter = splitter
 
-        self._conformal_predictors: list[SplitConformalPredictor] = []
+        self._conformal_predictors: list[PresetSplitConformalPredictor] = []
         self.conformal_predictor_class = conformal_predictor_class
 
     @property
@@ -87,17 +90,20 @@ class CrossConformalPredictor(ABC):
     ) -> Never:
         """
         Raises:
-            RuntimeError: the calibration step is not required for cross-conformal predictors, only the `fit` method should be used to train and calibrate the model.
+            RuntimeError: the calibration step is not required for cross-conformal predictors,
+            only the `fit` method should be used to train and calibrate the model.
         """
         raise RuntimeError(
-            "Cross-conformal predictors do not require a separate calibration step. Please use the `fit` method to train and calibrate the model."
+            "Cross-conformal predictors do not require a separate calibration step."
+            "Please use the `fit` method to train and calibrate the model."
         )
 
     def fit(self, X: Iterable[Any], y: TensorLike) -> Self:
         """
         Fit and calibrate conformal predictors across all data splits.
 
-        For each split, the base predictive model is cloned, fitted on the training subset, and calibrated on the corresponding calibration subset.
+        For each split, the base predictive model is cloned, fitted on the training subset,
+        and calibrated on the corresponding calibration subset.
 
         Args:
             X: Input samples.
@@ -119,14 +125,15 @@ class CrossConformalPredictor(ABC):
                 len(y_calib),
             )
             cp = self.conformal_predictor_class(
-                clone_model(self.model), fit_function=self.fit_function
+                model=clone_model(self.model),
+                fit_function=self.fit_function,
             )
             cp.fit(X_fit, y_fit)
             cp.calibrate(X_calib, y_calib)
-            if ops.ndim(cp.calibration_context.nc_scores) != 1:
-                raise ValueError(
-                    "CVPlusRegressor currently supports scalar nonconformity scores only."
-                )
+            as_scalar_vector(
+                cp.calibration_context.nc_scores,
+                n_samples=cp.len_calibr,
+            )
             self._conformal_predictors.append(cp)
         logger.debug(
             "%s fitted with %d folds and %d total calibration samples.",
@@ -139,7 +146,7 @@ class CrossConformalPredictor(ABC):
     @abstractmethod
     def predict(
         self,
-        X_test: Iterable[Any],
+        X_test: Sequence[Any],
         alpha: float | TensorLike,
         *,
         alpha_correction: AlphaCorrection | None = None,
@@ -155,7 +162,6 @@ class CrossConformalPredictor(ABC):
         Returns:
             Aggregated point predictions and conformal prediction sets.
         """
-        ...
 
 
 class CVPlusRegressor(CrossConformalPredictor):
@@ -192,7 +198,7 @@ class CVPlusRegressor(CrossConformalPredictor):
     # TODO : see what can be moved to the parent class Here
     def predict(
         self,
-        X_test: Iterable[Any],
+        X_test: Sequence[Any],
         alpha: float | TensorLike,
         *,
         alpha_correction: AlphaCorrection | None = None,
@@ -226,6 +232,9 @@ class CVPlusRegressor(CrossConformalPredictor):
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
             _validate_alpha(alpha)
+
+        if ops.ndim(ops.convert_to_tensor(alpha)) != 0:
+            raise ValueError("CVPlusRegressor requires a scalar alpha.")
 
         predictions: list[TensorLike] = []
         lower_candidates: list[TensorLike] = []

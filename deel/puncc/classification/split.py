@@ -90,9 +90,11 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):
         A scalar alpha applies the same miscoverage level to all classes.
         Alternatively, alpha may specify one miscoverage level per class.
 
-        Classes absent from the calibration dataset are assigned an infinite quantile, so they are always included in prediction sets.
+        Classes absent from the calibration dataset are assigned an infinite quantile, so they are always included
+        in prediction sets.
 
-        The class-specific calibration contexts are rebuilt whenever calibrate() is called and cleared by reset_calibration().
+        The class-specific calibration contexts are rebuilt whenever calibrate() is called and cleared by
+        reset_calibration().
 
     Example:
         ClassConditionalLAC combines this mixin with LAC to provide class-conditional prediction sets.
@@ -383,8 +385,8 @@ class APS(PresetSplitConformalPredictor):
     Notes:
         True class labels must be integer indices corresponding to the columns of the predicted probability matrix.
 
-        The predict() method returns a ConformalPrediction containing the class probabilities and a list of prediction sets, each
-        containing the indices of the selected classes.
+        The predict() method returns a ConformalPrediction containing the class probabilities and a list of
+        prediction sets, each containing the indices of the selected classes.
 
         Randomized tie-breaking is used when several classes have identical predicted probabilities.
 
@@ -468,10 +470,11 @@ class RAPS(SplitConformalPredictor):
     """
     Implementation of Regularized Adaptive Prediction Sets (RAPS).
 
-    RAPS extends Adaptive Prediction Sets (APS) by introducing a regularization penalty for classes whose rank exceeds k_reg.
+    RAPS extends Adaptive Prediction Sets (APS) by introducing a regularization penalty for classes whose
+    rank exceeds k_reg.
 
-    Classes are sorted by decreasing predicted probability, and their cumulative probabilities are adjusted using the penalty
-    lambd * max(rank - k_reg, 0).
+    Classes are sorted by decreasing predicted probability, and their cumulative probabilities are adjusted
+    using the penalty lambd * max(rank - k_reg, 0).
 
     Regularization can reduce prediction set sizes by discouraging the inclusion of low-ranked classes.
 
@@ -490,8 +493,8 @@ class RAPS(SplitConformalPredictor):
     Notes:
         True class labels must be integer indices corresponding to the columns of the predicted probability matrix.
 
-        The predict() method returns a ConformalPrediction containing the class probabilities and a list of prediction sets, each
-        containing the indices of the selected classes.
+        The predict() method returns a ConformalPrediction containing the class probabilities and a list of
+        prediction sets, each containing the indices of the selected classes.
 
         Randomized tie-breaking is performed when classes have identical predicted probabilities, independently of rand.
 
