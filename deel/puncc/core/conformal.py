@@ -309,7 +309,6 @@ class ConformalPredictor(ABC):
         self,
         X: Iterable[Any],
         y: Iterable[Any] | None = None,
-        *args: Any,
         **kwargs: Any,
     ) -> Self:
         """
@@ -324,9 +323,6 @@ class ConformalPredictor(ABC):
             y:
                 Training targets.
 
-            *args:
-                Additional positional arguments forwarded to the fitting function.
-
             **kwargs:
                 Additional keyword arguments forwarded to the fitting function.
 
@@ -338,7 +334,7 @@ class ConformalPredictor(ABC):
 
         if self.fit_function is not None:
             self.model = make_predictor(
-                self.fit_function(self.model, X, *y_arg, *args, **kwargs)
+                self.fit_function(self.model, X, *y_arg, **kwargs)
             )
             return self
 
@@ -351,7 +347,6 @@ class ConformalPredictor(ABC):
             fit_method(
                 X,
                 *y_arg,
-                *args,
                 **kwargs,
             )
             return self

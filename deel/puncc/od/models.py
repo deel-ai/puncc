@@ -109,16 +109,14 @@ class PunccODPredictor:
             ]
         )
 
-    def fit(
-        self, X: Iterable[Any], y: ODTargetSequence, *args: Any, **kwargs: Any
-    ) -> Self:
+    def fit(self, X: Iterable[Any], y: ODTargetSequence, **kwargs: Any) -> Self:
         fit_method = getattr(self.model, "fit", None)
 
         if not callable(fit_method):
             raise NotImplementedError(
                 "The underlying OD model does not have a fit method."
             )
-        fit_method(X, y, *args, **kwargs)
+        fit_method(X, y, **kwargs)
         return self
 
 
@@ -264,8 +262,8 @@ class BoxWiseODCP(_ODConformalPredictor):
             calibration_context.assignments,
             strict=True,
         ):
-            aligned_prediction, aligned_target = (
-                assignment.align_prediction_and_target(prediction, target)
+            aligned_prediction, aligned_target = assignment.align_prediction_and_target(
+                prediction, target
             )
 
             predictions.append(aligned_prediction)
@@ -279,9 +277,7 @@ class BoxWiseODCP(_ODConformalPredictor):
             y_calib=self.boxwise_target(ODTargetSequence(targets)),
         )
 
-    def boxwise_prediction(
-        self, prediction: ODPredictionSequence
-    ) -> TensorLike:
+    def boxwise_prediction(self, prediction: ODPredictionSequence) -> TensorLike:
         return self.project_prediction(prediction.boxwise())
 
     def boxwise_target(self, target: ODTargetSequence) -> TensorLike:
@@ -298,12 +294,8 @@ class BoxWiseODCP(_ODConformalPredictor):
     def compute_calibration_state(
         self, calibration_context: CalibrationContext
     ) -> CalibrationContext:
-        calibration_context = self.add_assignments_to_context(
-            calibration_context
-        )
-        calibration_context = self.boxwise_calibration_context(
-            calibration_context
-        )
+        calibration_context = self.add_assignments_to_context(calibration_context)
+        calibration_context = self.boxwise_calibration_context(calibration_context)
         return super().compute_calibration_state(calibration_context)
 
     def conformalize(
@@ -325,15 +317,11 @@ class BoxWiseODCP(_ODConformalPredictor):
             calibration_context=calibration_context,
             X=X_boxwise,
         )
-        prediction_sets = self.unboxwise_prediction_set(
-            cp.prediction_set, prediction
-        )
+        prediction_sets = self.unboxwise_prediction_set(cp.prediction_set, prediction)
 
         return ConformalPrediction(
             prediction=prediction,
-            prediction_set=self.build_od_prediction_set(
-                prediction, prediction_sets
-            ),
+            prediction_set=self.build_od_prediction_set(prediction, prediction_sets),
         )
 
     def unboxwise_prediction_set(
@@ -456,9 +444,7 @@ def conf_threshold_postprocessing(
 
 class ODCRC(_ODConformalPredictor, CRC):
     def compute_calibration_state(self, calibration_context):
-        calibration_context = self.add_assignments_to_context(
-            calibration_context
-        )
+        calibration_context = self.add_assignments_to_context(calibration_context)
         return super().compute_calibration_state(calibration_context)
 
     def _r_hat(
@@ -477,9 +463,7 @@ class ODCRC(_ODConformalPredictor, CRC):
         )
         return ops.item(ops.mean(losses))
 
-    def get_calibration_set_size(
-        self, calibration_context: CalibrationContext
-    ) -> int:
+    def get_calibration_set_size(self, calibration_context: CalibrationContext) -> int:
         loss: ODLoss = self.loss_function
 
         if not loss.boxwise:
@@ -496,9 +480,7 @@ class ODCRC(_ODConformalPredictor, CRC):
         assignments = calibration_context.assignments
 
         if not loss.penalize_unmatched_boxes:
-            return sum(
-                len(assignment.matched_pairs) for assignment in assignments
-            )
+            return sum(len(assignment.matched_pairs) for assignment in assignments)
         raise NotImplementedError(
             "Cannot infer the calibration size for this boxwise OD loss when unmatched target boxes are penalized."
         )
@@ -575,9 +557,7 @@ class ODClassificationCRC(ODCRC):
                 [
                     replace(
                         prediction,
-                        class_sets=pred_set_function(
-                            prediction.class_scores, lambd
-                        ),
+                        class_sets=pred_set_function(prediction.class_scores, lambd),
                     )
                     for prediction in predictions
                 ]
@@ -616,9 +596,7 @@ class ODLocalizationCRC(ODCRC):
                 [
                     replace(
                         prediction,
-                        boxes=box_extension_mode.processor(
-                            prediction.boxes, lambd
-                        ),
+                        boxes=box_extension_mode.processor(prediction.boxes, lambd),
                     )
                     for prediction in predictions
                 ]
@@ -705,9 +683,7 @@ class TripleConformalPredictor:
         )
 
         self.confidence_threshold = confidence_threshold
-        self.splitter = (
-            splitter if splitter is not None else RandomSplitter(ratio=0.5)
-        )
+        self.splitter = splitter if splitter is not None else RandomSplitter(ratio=0.5)
         self.reset_calibration()
 
     def reset_calibration(self) -> Self:
@@ -726,9 +702,7 @@ class TripleConformalPredictor:
         return ODPredictionSequence(
             [
                 replace(pred, class_sets=class_pred.class_sets)
-                for pred, class_pred in zip(
-                    prediction, classification, strict=True
-                )
+                for pred, class_pred in zip(prediction, classification, strict=True)
             ]
         )
 
@@ -758,22 +732,18 @@ class TripleConformalPredictor:
             "or a pair of ODPredictionSequence objects."
         )
 
-    def calibrate(
-        self, X_calib: Iterable[Any], y_calib: ODTargetSequence
-    ) -> Self:
+    def calibrate(self, X_calib: Iterable[Any], y_calib: ODTargetSequence) -> Self:
         _check_calibration_samples(X_calib, y_calib, require_y=True)
         self.reset_calibration()
-        prediction = self.model(X_calib).filter_by_confidence(
-            self.confidence_threshold
-        )
+        prediction = self.model(X_calib).filter_by_confidence(self.confidence_threshold)
         context = CalibrationContext(
             X_calib=X_calib, y_calib=y_calib, y_pred=prediction
         )
 
         # if no conf calibration phase : all calibration goes to localization and classification
         if isinstance(self.confidence_cp, NoopODConformalPredictor):
-            self._localization_context = (
-                self.localization_cp.compute_calibration_state(context.copy())
+            self._localization_context = self.localization_cp.compute_calibration_state(
+                context.copy()
             )
             self._classification_context = (
                 self.classification_cp.compute_calibration_state(context.copy())
@@ -782,16 +752,16 @@ class TripleConformalPredictor:
         elif isinstance(
             self.classification_cp, NoopODConformalPredictor
         ) and isinstance(self.localization_cp, NoopODConformalPredictor):
-            self._confidence_context = (
-                self.confidence_cp.compute_calibration_state(context.copy())
+            self._confidence_context = self.confidence_cp.compute_calibration_state(
+                context.copy()
             )
         else:
             # otherwise : split context in two parts
-            confidence_context, self._downstream_context = (
-                self.splitter.split_context(context)[0]
-            )
-            self._confidence_context = (
-                self.confidence_cp.compute_calibration_state(confidence_context)
+            confidence_context, self._downstream_context = self.splitter.split_context(
+                context
+            )[0]
+            self._confidence_context = self.confidence_cp.compute_calibration_state(
+                confidence_context
             )
         self._calibrated = True
         return self
@@ -839,14 +809,12 @@ class TripleConformalPredictor:
                 self._confidence_context,
                 X=self._downstream_context.X_calib,
             ).prediction_set
-            context = self._downstream_context.copy().update(
-                y_pred=filtered_prediction
+            context = self._downstream_context.copy().update(y_pred=filtered_prediction)
+            localization_context = self.localization_cp.compute_calibration_state(
+                context.copy()
             )
-            localization_context = (
-                self.localization_cp.compute_calibration_state(context.copy())
-            )
-            classification_context = (
-                self.classification_cp.compute_calibration_state(context.copy())
+            classification_context = self.classification_cp.compute_calibration_state(
+                context.copy()
             )
 
         localization = self.localization_cp.conformalize(
@@ -856,13 +824,9 @@ class TripleConformalPredictor:
             confidence_prediction, alpha_class, classification_context, X=X
         ).prediction_set
 
-        prediction_set = self._merge_prediction_sets(
-            localization, classification
-        )
+        prediction_set = self._merge_prediction_sets(localization, classification)
 
-        return ConformalPrediction(
-            prediction=prediction, prediction_set=prediction_set
-        )
+        return ConformalPrediction(prediction=prediction, prediction_set=prediction_set)
 
     def predict(
         self,

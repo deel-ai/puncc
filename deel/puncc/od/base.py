@@ -75,7 +75,8 @@ class Box:
 
     def __post_init__(self):
         shape = ops.shape(self.xyxy)
-        assert shape == (4,), f"box must be of shape (4,), got {shape}"
+        if shape != (4,):
+            raise ValueError(f"box must be of shape (4,), got {shape}. ")
 
     @property
     def xywh(self) -> TensorLike:
@@ -210,9 +211,8 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
 
     def __post_init__(self):
         shape = ops.shape(self.boxes)
-        assert (
-            len(shape) == 2 and shape[-1] == 4
-        ), f"boxes must be of shape (n, 4), got {shape}"
+        if not (len(shape) == 2 and shape[-1] == 4):
+            raise ValueError(f"boxes must be of shape (n, 4), got {shape}. ")
 
     @property
     def x1(self) -> TensorLike:
@@ -285,9 +285,9 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
 
         intersection = inter_width * inter_height
 
-        other_area = ops.maximum(
-            boxes2[..., 2] - boxes2[..., 0], 0.0
-        ) * ops.maximum(boxes2[..., 3] - boxes2[..., 1], 0.0)
+        other_area = ops.maximum(boxes2[..., 2] - boxes2[..., 0], 0.0) * ops.maximum(
+            boxes2[..., 3] - boxes2[..., 1], 0.0
+        )
 
         return intersection / ops.maximum(other_area, 1e-12)
 
@@ -353,29 +353,45 @@ class ODPrediction(BoxSequence[BoxPrediction]):
 
     def __post_init__(self):
         super(ODPrediction, self).__post_init__()
-        assert (
-            ops.shape(self.class_scores)[0] == ops.shape(self.boxes)[0]
-        ), "class_scores and boxes must have the same length"
-        assert (
-            ops.shape(self.confidences)[0] == ops.shape(self.boxes)[0]
-        ), "confidence and boxes must have the same length"
-        assert self.class_scores.ndim == 2, "class_scores must be 2D"
-        assert self.confidences.ndim == 1, "confidence must be 1D"
+        if ops.shape(self.class_scores)[0] != ops.shape(self.boxes)[0]:
+            raise ValueError(
+                "class_scores and boxes must have the same length, "
+                f"got {ops.shape(self.class_scores)[0]} and {ops.shape(self.boxes)[0]}"
+            )
+        if ops.shape(self.confidences)[0] != ops.shape(self.boxes)[0]:
+            raise ValueError(
+                "confidence and boxes must have the same length, "
+                f"got {ops.shape(self.confidences)[0]} and {ops.shape(self.boxes)[0]}"
+            )
+        if self.class_scores.ndim != 2:
+            raise ValueError(
+                "class_scores must be 2D, got shape " f"{ops.shape(self.class_scores)}"
+            )
+        if self.confidences.ndim != 1:
+            raise ValueError(
+                "confidence must be 1D, got shape " f"{ops.shape(self.confidences)}"
+            )
 
         if self.class_sets is not None:
             if not isinstance(self.class_sets, PredictionSetSequence):
                 self.class_sets = PredictionSetSequence(self.class_sets)
 
-            assert len(self.class_sets) == len(self)
+            if len(self.class_sets) != len(self):
+                raise ValueError(
+                    "class_sets must have the same length as boxes, "
+                    f"got {len(self.class_sets)} and {len(self)}"
+                )
 
     @property
     def num_classes(self) -> int:
         return self.class_scores.shape[1]
 
     def __add__(self, other: ODPrediction):
-        assert (
-            ops.shape(self.class_scores)[1] == ops.shape(other.class_scores)[1]
-        ), "Cannot add ODResults with different number of classes"
+        if ops.shape(self.class_scores)[1] != ops.shape(other.class_scores)[1]:
+            raise ValueError(
+                "Cannot add ODPredictions with different number of classes: "
+                f"{ops.shape(self.class_scores)[1]} vs {ops.shape(other.class_scores)[1]}"
+            )
 
         class_sets = None
         if self.class_sets is not None and other.class_sets is not None:
@@ -392,9 +408,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
             class_scores=ops.concatenate(
                 (self.class_scores, other.class_scores), axis=0
             ),
-            confidences=ops.concatenate(
-                (self.confidences, other.confidences), axis=0
-            ),
+            confidences=ops.concatenate((self.confidences, other.confidences), axis=0),
             class_sets=class_sets,
         )
 
@@ -465,10 +479,7 @@ class _ODSequence(IndexableUserList[T_OD], Generic[T_OD]):
             return ops.zeros((0,), dtype="int32")
 
         return ops.concatenate(
-            [
-                ops.full(len(item), i, dtype="int32")
-                for i, item in enumerate(self.data)
-            ],
+            [ops.full(len(item), i, dtype="int32") for i, item in enumerate(self.data)],
             axis=0,
         )
 
@@ -534,11 +545,7 @@ class ODPredictionSequence(_ODSequence[ODPrediction]):
                     "Cannot flatten predictions if only some have class_sets defined."
                 )
             class_sets = PredictionSetSequence(
-                [
-                    class_set
-                    for pred in self.data
-                    for class_set in pred.class_sets
-                ]
+                [class_set for pred in self.data for class_set in pred.class_sets]
             )
         return ODPrediction(
             boxes=boxes,

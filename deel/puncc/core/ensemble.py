@@ -33,6 +33,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from numbers import Integral
 from typing import Any, Self
+from collections.abc import Sequence
 
 from deel.puncc import ops
 from deel.puncc.cloning import clone_model
@@ -144,9 +145,8 @@ class BootstrapEnsemble:
 
     def fit(
         self,
-        X: Iterable[Any],
+        X: Sequence[Any],
         y: TensorLike,
-        *args: Any,
         **kwargs: Any,
     ) -> Self:
         """
@@ -159,7 +159,6 @@ class BootstrapEnsemble:
         Args:
             X: Training inputs, in original observation order.
             y: Scalar targets with the same number of observations as X.
-            *args: Additional arguments forwarded to each fitting function.
             **kwargs: Additional keyword arguments forwarded to each fit.
 
         Returns:
@@ -208,7 +207,7 @@ class BootstrapEnsemble:
             y_fit = tensor_indexing(y, sample.train_indices)
 
             if self.fit_function is not None:
-                fitted_model = self.fit_function(model, X_fit, y_fit, *args, **kwargs)
+                fitted_model = self.fit_function(model, X_fit, y_fit, **kwargs)
                 if fitted_model is None:
                     raise TypeError("fit_function must return the fitted predictor.")
                 model = make_predictor(fitted_model)
@@ -218,7 +217,7 @@ class BootstrapEnsemble:
                     raise NotImplementedError(
                         "The model has no fit method. Provide a fit_function."
                     )
-                fit_method(X_fit, y_fit, *args, **kwargs)
+                fit_method(X_fit, y_fit, **kwargs)
             models.append(model)
 
         self.models_ = models
@@ -226,7 +225,7 @@ class BootstrapEnsemble:
         self.n_train_ = n_samples
         return self
 
-    def predict_members(self, X: Iterable[Any]) -> TensorLike:
+    def predict_members(self, X: Sequence[Any]) -> TensorLike:
         """
         Evaluate every fitted model once on the supplied inputs.
 
@@ -243,7 +242,7 @@ class BootstrapEnsemble:
             axis=0,
         )
 
-    def predict_oob_training(self, X: Iterable[Any]) -> TensorLike:
+    def predict_oob_training(self, X: Sequence[Any]) -> TensorLike:
         """
         Predict each training observation using only models that excluded it.
 
@@ -302,7 +301,7 @@ class BootstrapEnsemble:
         """
         return self._leave_one_out_predictions(self.predict_members(X))
 
-    def predict(self, X: Iterable[Any]) -> TensorLike:
+    def predict(self, X: Sequence[Any]) -> TensorLike:
         """
         Aggregate the observation-specific out-of-bag predictors.
 

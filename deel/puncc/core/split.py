@@ -450,25 +450,46 @@ class LocallyAdaptiveMixin(LocallyScaledMixin):
         dispersion_estimation_function: Callable[
             [TensorLike, TensorLike], TensorLike
         ] = absolute_difference(),
+        dispersion_estimator_fit_function: FitFunction | None = None,
         **kwargs,
     ):
-        self.dispersion_estimator = make_predictor(dispersion_estimator)
+        dispersion_estimator = make_predictor(dispersion_estimator)
         self.dispersion_estimation_function = dispersion_estimation_function
-        super().__init__(*args, scale_function=self.dispersion_estimator, **kwargs)
+        self.dispersion_estimator_fit_function = dispersion_estimator_fit_function
+        super().__init__(*args, scale_function=dispersion_estimator, **kwargs)
 
     def fit(
         self,
         X: Iterable[Any],
         y: Iterable[Any] | None = None,
-        *args: Any,
         **kwargs: Any,
     ) -> Self:
-        super().fit(X, y, *args, **kwargs)
+        super().fit(X, y, **kwargs)
         mu_pred = self.model(X)
-        self.dispersion_estimator.fit(
-            X, self.dispersion_estimation_function(mu_pred, y)
+
+        dispersion = self.dispersion_estimation_function(mu_pred, y)
+
+        if self.dispersion_estimator_fit_function is not None:
+            self.scale_function = make_predictor(
+                self.dispersion_estimator_fit_function(
+                    self.scale_function,
+                    X,
+                    dispersion,
+                )
+            )
+            return self
+
+        fit_method = getattr(
+            self.scale_function,
+            "fit",
+            None,
         )
-        return self
+        if callable(fit_method):
+            fit_method(X, dispersion)
+            return self
+        raise NotImplementedError(
+            "The dispersion estimator does not have a fit method and no fit ffunction was provided. Please provide a pretrained model or a fit_function."
+        )
 
 
 def inverse_root_leverage_weight(h: TensorLike) -> TensorLike:
@@ -495,10 +516,8 @@ class LeverageWeightedMixin(LocallyScaledMixin):
             **kwargs,
         )
 
-    def fit(
-        self, X: Iterable[Any], y: Iterable[Any] | None = None, *args, **kwargs
-    ) -> Self:
-        super().fit(X, y, *args, **kwargs)
+    def fit(self, X: Iterable[Any], y: Iterable[Any] | None = None, **kwargs) -> Self:
+        super().fit(X, y, **kwargs)
         return self.fit_leverage(X)
 
     def fit_leverage(self, X) -> Self:

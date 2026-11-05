@@ -41,30 +41,32 @@ The module exposes two backend managers:
     Provides delayed access to :mod:`keras.random` using the same
     backend initialization mechanism.
 
-The indirection implemented here is intentionally transparent to the rest of PUNCC: numerical code can use ``ops`` and ``random`` without importing a specific tensor framework or importing Keras directly.
+The indirection implemented here is intentionally transparent to the rest of PUNCC: numerical code can use ``ops`` and
+``random`` without importing a specific tensor framework or importing Keras directly.
 
 Notes :
     Keras >= 3.3 is required. In particular, this version is required for support of the NumPy backend.
 
     Backend inference is intended as a convenience.
-    Applications that use multiple numerical frameworks in the same process should explicitly configure the desired backend with :func:`deel.puncc.config.set_backend` before performing numerical operations.
+    Applications that use multiple numerical frameworks in the same process should explicitly configure the desired
+    backend with :func:`deel.puncc.config.set_backend` before performing numerical operations.
 """
 
+import logging
+import sys
 from functools import wraps
 from types import ModuleType
 from typing import Any, Callable
-import logging
+
+from packaging.version import Version
 
 from deel.puncc.config import (
     get_backend,
+    is_backend_explicitly_set,
     is_backend_locked,
     lock_backend,
     set_inferred_backend,
-    is_backend_explicitly_set,
 )
-import sys
-from packaging.version import Version
-
 from deel.puncc.typing import TensorLike
 
 logger = logging.getLogger(__name__)
@@ -86,7 +88,8 @@ class NoBackendSpecifiedError(RuntimeError):
     """
     Error raised when no numerical backend can be selected.
 
-    This exception is raised when PUNCC requires a numerical operation but no backend has been explicitly configured and backend inference from the current runtime context is unsuccessful.
+    This exception is raised when PUNCC requires a numerical operation but no backend has been explicitly
+    configured and backend inference from the current runtime context is unsuccessful.
     """
 
     def __init__(self):
@@ -166,18 +169,23 @@ class BackendManager:
     ``BackendManager`` delays importing Keras until an attribute of the managed module is actually required.
     This allows PUNCC to select a Keras backend before Keras initialization occurs.
 
-    If Keras has already been imported, its active backend is reused when compatible with the current PUNCC configuration.
+    If Keras has already been imported, its active backend is reused when compatible with the current PUNCC
+    configuration.
 
     Subclasses can override ``module`` to expose a Keras submodule such as ``keras.ops`` or ``keras.random``.
     """
 
-    __slots__ = "_keras"
+    __slots__ = ("_keras",)
 
     def __init__(self):
         self._keras = None
 
     @property
     def module(self):
+        """
+        Returns:
+            module: the underlying Keras module managed by this backend manager.
+        """
         return self._keras
 
     def __getattr__(self, name: str):
@@ -564,11 +572,31 @@ class OpsBackendManager(BackendManager):
             if weights is not None:
                 weights = self.flatten(weights)
             axis = 0
-        axis %= len(x.shape)
+        axis %= self.ndim(x)
 
         # Uniform empirical quantile.
         if weights is None:
             return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
+
+        weights = self.convert_to_tensor(weights)
+
+        if self.ndim(weights) == 1:
+            if weights.shape[0] != x.shape[axis]:
+                raise ValueError(
+                    "1D weights must have the same length as x along the quantile axis."
+                )
+
+            shape = [1] * len(x.shape)
+            shape[axis] = x.shape[axis]
+            weights = self.reshape(weights, shape)
+            weights = self.broadcast_to(weights, self.shape(x))
+        elif tuple(weights.shape) != tuple(x.shape):
+            raise ValueError(
+                "Weights must either be one-dimensional along the quantile axis or have the same shape as x."
+            )
+
+        if "float" not in self.dtype(weights):
+            weights = self.cast(weights, "float32")
 
         # Validate weights after broadcasting to x.shape.
         if not self.item(self.all(self.isfinite(weights))):
@@ -592,23 +620,6 @@ class OpsBackendManager(BackendManager):
         # if all weights equals -> fast path to uniform quantile
         if self.item(self.all(weights == self.reshape(weights, (-1,))[0])):
             return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
-        if "float" not in self.dtype(weights):
-            weights = self.cast(weights, "float32")
-
-        if len(weights.shape) == 1:
-            if weights.shape[0] != x.shape[axis]:
-                raise ValueError(
-                    "1D weights must have the same length as x along the quantile axis."
-                )
-
-            shape = [1] * len(x.shape)
-            shape[axis] = x.shape[axis]
-            weights = self.reshape(weights, shape)
-            weights = self.broadcast_to(weights, self.shape(x))
-        elif tuple(weights.shape) != tuple(x.shape):
-            raise ValueError(
-                "Weights must either be one-dimensional along the quantile axis or have the same shape as x."
-            )
 
         # TODO : risk of overflow on sum with very large weights with CP under covariate shift ?
         weights = weights / weight_sums

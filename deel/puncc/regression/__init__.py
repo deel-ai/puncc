@@ -25,4 +25,6 @@ from deel.puncc.regression.split import (
     SplitConformalRegression,
     CQR,
     LocallyAdaptiveCP,
+    LeverageWeightedCP,
 )
+from deel.puncc.regression.sequential import EnbPIRegressor

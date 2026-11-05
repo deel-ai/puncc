@@ -32,10 +32,11 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from numbers import Integral
 from typing import Any, Never, Self
+from collections.abc import Sequence
 
 from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
-from deel.puncc.core.conformal import ConformalPrediction
+from deel.puncc.core.conformal import ConformalPrediction, _validate_alpha
 from deel.puncc.core.ensemble import BootstrapEnsemble
 from deel.puncc.core.samplers import BootstrapSampler
 from deel.puncc.exceptions import NotCalibratedError
@@ -167,9 +168,8 @@ class EnbPIRegressor:
 
     def fit(
         self,
-        X: Iterable[Any],
+        X: Sequence[Any],
         y: TensorLike,
-        *args: Any,
         **kwargs: Any,
     ) -> Self:
         """
@@ -178,7 +178,6 @@ class EnbPIRegressor:
         Args:
             X: Training inputs in chronological order.
             y: Scalar training targets aligned with X.
-            *args: Additional arguments forwarded to each bootstrap fit.
             **kwargs: Additional keyword arguments forwarded to each fit.
 
         Returns:
@@ -194,7 +193,7 @@ class EnbPIRegressor:
             aggregation=self.model.aggregation,
             fit_function=self.model.fit_function,
         )
-        ensemble.fit(X, y, *args, **kwargs)
+        ensemble.fit(X, y, **kwargs)
         context = CalibrationContext(
             y_calib=y,
             y_pred=ensemble.predict_oob_training(X),
@@ -249,9 +248,11 @@ class EnbPIRegressor:
             Increasing batch_size delays feedback until the entire batch
             has been predicted.
         """
+        _validate_alpha(alpha)
         prediction = self.model(X_test)
         if alpha_correction is not None:
             alpha = alpha_correction(alpha)
+            _validate_alpha(alpha)
         return self.conformalize(prediction, alpha, self.calibration_context, X=X_test)
 
     def _get_offsets(

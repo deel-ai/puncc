@@ -24,6 +24,7 @@
 This module provides conformal prediction metrics.
 """
 
+from collections.abc import Sequence
 from typing import Iterable
 from deel.puncc.typing import TensorLike
 from deel.puncc import ops
@@ -31,18 +32,18 @@ from deel.puncc.validation import check_same_shape
 
 
 def classification_mean_coverage(
-    y_true: TensorLike, set_pred: Iterable[Iterable]
+    y_true: TensorLike, set_pred: Sequence[Iterable]
 ) -> float:
     """
     Compute empirical coverage of the prediction sets.
 
     Given the :math:`i`-th prediction set :math:`S(X_i)`, the coverage is:
 
-    * :math:`cov(X_i) = 1` if :math:`y_{true} \in S(X_i)`
+    * :math:`cov(X_i) = 1` if :math:`y_{true} \\in S(X_i)`
     * :math:`cov(X_i) = 0` otherwise
 
     With N the number of examples, the average coverage is
-    :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+    :math:`1/N \\sum_{i=1}^{N} cov(X_i)`.
 
 
     Args:
@@ -53,11 +54,17 @@ def classification_mean_coverage(
         float: average coverage, indicating the proportion of instances that are
         correctly covered.
     """
+    if len(y_true) != len(set_pred):
+        raise ValueError(
+            f"y_true and set_pred must have the same length, but got {len(y_true)} and {len(set_pred)}"
+        )
+    if len(y_true) == 0:
+        raise ValueError("y_true and set_pred must not be empty")
     return sum([y in s for y, s in zip(y_true, set_pred)]) / len(y_true)
     # return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
 
 
-def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
+def classification_mean_size(set_pred: Sequence[TensorLike]) -> float:
     """
     Compute average size of the prediction sets.
 
@@ -67,6 +74,8 @@ def classification_mean_size(set_pred: Iterable[TensorLike]) -> float:
     Returns:
         float: Average size of the prediction sets
     """
+    if len(set_pred) == 0:
+        raise ValueError("set_pred must not be empty")
     return sum([len(s) for s in set_pred]) / len(set_pred)
     # return ops.mean(ops.array([len(s) for s in set_pred]))
 
@@ -79,11 +88,11 @@ def regression_mean_coverage(
 
     Given the :math:`i`-th prediction interval :math:`C(X_i)`, the coverage is:
 
-        * :math:`cov(X_i) = 1` if :math:`y_{true} \in C(X_i)`
+        * :math:`cov(X_i) = 1` if :math:`y_{true} \\in C(X_i)`
         * :math:`cov(X_i) = 0` otherwise
 
     With N the number of examples, the average coverage is
-    :math:`1/N \sum_{i=1}^{N} cov(X_i)`.
+    :math:`1/N \\sum_{i=1}^{N} cov(X_i)`.
 
     Args:
         y_true (TensorLike): label true values.
@@ -149,7 +158,7 @@ def regression_sharpness(y_pred_lower: TensorLike, y_pred_upper: TensorLike) -> 
         y_pred_lower=y_pred_lower,
         y_pred_upper=y_pred_upper,
     )
-    return ops.mean(ops.abs(y_pred_upper - y_pred_lower))
+    return ops.item(ops.mean(ops.abs(y_pred_upper - y_pred_lower)))
 
 
 def object_detection_mean_coverage(
@@ -176,7 +185,7 @@ def object_detection_mean_coverage(
         * (x_max >= x_max_true)
         * (y_max >= y_max_true)
     )
-    return ops.mean(cov)
+    return ops.item(ops.mean(cov))
 
 
 def object_detection_mean_area(y_pred: TensorLike) -> float:
@@ -190,7 +199,7 @@ def object_detection_mean_area(y_pred: TensorLike) -> float:
         float: average area of the bounding boxes
     """
     x_min, y_min, x_max, y_max = ops.split(y_pred, 4, axis=1)
-    return ops.mean((x_max - x_min) * (y_max - y_min))
+    return ops.item(ops.mean((x_max - x_min) * (y_max - y_min)))
 
 
 # pairwise iou

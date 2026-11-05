@@ -52,9 +52,7 @@ class Predictor(Protocol[TPrediction_co]):
 
 @runtime_checkable
 class Fittable(Protocol):
-    def fit(
-        self, X: Iterable[Any], y: TensorLike, *args: Any, **kwargs: Any
-    ) -> Any: ...
+    def fit(self, X: Iterable[Any], y: TensorLike, **kwargs: Any) -> Any: ...
 
 
 @runtime_checkable
@@ -80,9 +78,7 @@ WeightFunction = Callable[
 ]
 
 # A fit function takes as input a model, features and targets and returns a predictor fitted to given dataset
-FitFunction: TypeAlias = Callable[
-    [Predictor, Iterable[Any], Iterable[Any]], Predictor
-]
+FitFunction: TypeAlias = Callable[[Predictor, Iterable[Any], Iterable[Any]], Predictor]
 
 # A function that takes a float or tensor and returns a float or tensor, used for alpha correction in conformal prediction methods.
 AlphaCorrection: TypeAlias = Callable[[float | TensorLike], float | TensorLike]

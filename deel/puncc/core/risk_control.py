@@ -114,7 +114,7 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         self.lambda_bounds = lambda_bounds
 
     @property
-    def len_calib(self) -> int:
+    def len_calibr(self) -> int:
         return self.get_calibration_set_size(self.calibration_context)
 
     def _r_hat(

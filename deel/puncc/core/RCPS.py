@@ -29,4 +29,6 @@ from __future__ import annotations
 from deel.puncc.core.conformal import ConformalPredictor
 
 
-class RCPS(ConformalPredictor): ...
+class RCPS(ConformalPredictor):
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError("RCPS is not yet implemented.")

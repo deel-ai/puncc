@@ -59,12 +59,11 @@ FitCalSplits: TypeAlias = list[FitCalSplit]
 def tensor_indexing(item: Any, indices: IndexTensor) -> Any:
     if isinstance(item, ops.tensor_type):
         return ops.take(item, indices, axis=0)
-
     idx = ops.tolist(indices)
     if isinstance(item, list):
-        return [item[i] for i in ops.tolist(indices)]
+        return [item[i] for i in idx]
     elif isinstance(item, tuple):
-        return tuple(item[i] for i in ops.tolist(indices))
+        return tuple(item[i] for i in idx)
     return item[indices]
 
 

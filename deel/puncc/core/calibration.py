@@ -91,7 +91,7 @@ class CalibrationContext:
         if y_pred is not None:
             fields["y_pred"] = y_pred
 
-        self.__dict__.update(fields)
+        self.update(**fields)
 
     @property
     def size(self) -> int:

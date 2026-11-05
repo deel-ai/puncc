@@ -45,21 +45,6 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-# TODO : improve this whole module (preferably before it achieves self-awareness) !
-# TODO : add better torch model cloning
-# TODO : add warnings where weights can't or must be cloned !
-# TODO : praise the mighty GPU spirits for not segfaulting during cloning
-# TODO : figure out how to clone advanced models without breaking the space–time continuum
-# TODO : ensure this code works on Mondays (historically problematic)
-# TODO : rewrite this in fewer hacks and more science
-# TODO : investigate why deepcopy behaves like a gremlin after midnight
-# TODO : implement a universal clone that also makes coffee
-# TODO : write unit tests that also judge our life choices
-# TODO : maybe train a deep learning model to clone other models ?
-# TODO : optimize for quantum computers (just in case)
-# TODO : make the module emit confetti on successful clone
-# TODO : add few more TODOs
-
 ML_MODULES = {"keras", "torch", "tensorflow", "sklearn", "transformers", "jax"}
 
 

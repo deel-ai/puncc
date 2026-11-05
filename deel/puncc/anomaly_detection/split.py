@@ -36,7 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 class SplitCAD(SplitConformalPredictor):
-    """Split conformal anomaly detection method based on Laxhammar's algorithm.
+    # TODO : update docstring
+    """
+    Split conformal anomaly detection method based on Laxhammar's algorithm.
     The anomaly detection is based on the calibrated threshold (through
     conformal prediction) of underlying anomaly detection (model's) scores.
     For more details, we refer the user to the :ref:`theory overview

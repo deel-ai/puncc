@@ -104,8 +104,6 @@ def raps_set(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> PredSetFunc
         shuffled_p = ops.take_along_axis(y_pred, tie_order, axis=-1)
         order = ops.argsort(-shuffled_p, axis=-1)
         sorted_index = ops.take_along_axis(tie_order, order, axis=-1)
-
-        # sorted_index = ops.argsort(-y_pred, axis=-1)
         sorted_p = ops.take_along_axis(y_pred, sorted_index, axis=-1)
 
         cs = ops.cumsum(sorted_p, axis=-1)
@@ -115,10 +113,13 @@ def raps_set(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> PredSetFunc
         penalty = lambd * ops.maximum(ranks - k_reg, 0)
         penal_cs = cs + penalty
 
-        if ops.ndim(quantile) == 1:
-            quantile = ops.expand_dims(quantile, axis=-1)
+        # if ops.ndim(quantile) == 1:
+        #     quantile = ops.expand_dims(quantile, axis=-1)
+        # index_limit = ops.sum(penal_cs <= quantile, axis=-1) + 1
+        quantile = ops.reshape(ops.convert_to_tensor(quantile), (-1,))
+        index_limit = ops.sum(penal_cs <= quantile[:, None], axis=-1) + 1
+        #
 
-        index_limit = ops.sum(penal_cs <= quantile, axis=-1) + 1
         index_limit = ops.minimum(index_limit, K)
 
         if rand:
