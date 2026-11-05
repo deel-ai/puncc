@@ -6,9 +6,10 @@ disable=
     C0103, # allow variable name such as `x` and `y`
     C0123, # allow use of type()
     C0201, # allow iterating the dictionary by calling .keys()
-    C0206, # allow iterating without .items()
+    #C0206, # allow iterating without .items()
     C0302, # allow too many lines in module
     C0411, # allow custom import order
+    C0415, # allow import outside toplevel
 
     E0606, # allow false positive used-before-assignment
 
@@ -18,14 +19,14 @@ disable=
 
 
     W0105, # allow no effect string statement
-    W0102, # allow dangerous default value []
+    #W0102, # allow dangerous default value []
     W0212, # allow access to protected member 
     W0511, # allow todos
-    W0632, # allow unbalanced-tuple-unpacking
+    #W0632, # allow unbalanced tuple unpacking
     W0221, # allow arguments override
-    W0707, #
+    #W0707, # allow raise missing from
     W0718, # allow catching too general exception Exception
-    W0719, # allow catching too general exception Exception
+    #W0719, # allow catching too general exception Exception
     W1203, # allow using f-strings as logging message
     W1401, # alow anomalous backslash in string
 
