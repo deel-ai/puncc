@@ -85,15 +85,18 @@ class BootstrapEnsemble:
     ) -> None:
         if isinstance(B, bool) or not isinstance(B, Integral) or B < 1:
             raise ValueError(f"B must be a positive integer. Provided value: {B}.")
-        if aggregation in ("mean", "median"):
-            aggregation = getattr(ops, aggregation.lower().strip())
-        if not callable(aggregation):
-            raise TypeError("aggregation must be 'mean', 'median', or a callable.")
+
+        if isinstance(aggregation, str):
+            aggregation = aggregation.strip().lower()
+            if aggregation not in ("mean", "median"):
+                raise ValueError("aggregation must be 'mean', 'median', or a callable.")
+        elif not callable(aggregation):
+            raise ValueError("aggregation must be 'mean', 'median', or a callable.")
 
         self.model = make_predictor(model)
         self.B = int(B)
         self.sampler = sampler if sampler is not None else IIDBootstrapSampler()
-        self.aggregation: Callable = aggregation
+        self.aggregation = aggregation
         self.fit_function = fit_function
 
         self.models_: list[Predictor] = []

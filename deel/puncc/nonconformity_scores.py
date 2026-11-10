@@ -88,6 +88,7 @@ def _cqr_score(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
 
     lower_pred = ops.take(y_pred, 0, axis=-1)
     upper_pred = ops.take(y_pred, 1, axis=-1)
+    check_same_shape(lower_pred=lower_pred, upper_pred=upper_pred, y_true=y_true)
     return ops.maximum(lower_pred - y_true, y_true - upper_pred)
 
 

@@ -358,6 +358,10 @@ class _DeferredBackendOperation:
         self.backend_manager._load_keras()
         return getattr(self.backend_manager, self.name)(*args, **kwargs)
 
+    @property
+    def __name__(self):
+        return self.name
+
 
 class RandomBackendManager(BackendManager):
     """

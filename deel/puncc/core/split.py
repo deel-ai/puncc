@@ -524,7 +524,7 @@ class LocallyAdaptiveMixin(LocallyScaledMixin):
             fit_method(X, dispersion)
             return self
         raise NotImplementedError(
-            "The dispersion estimator does not have a fit method and no fit ffunction was provided."
+            "The dispersion estimator does not have a fit method and no fit function was provided."
             "Please provide a pretrained model or a fit_function."
         )
 
