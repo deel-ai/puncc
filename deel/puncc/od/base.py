@@ -34,6 +34,13 @@ from deel.puncc.typing import TensorLike
 
 
 class BoxExtensionMode(StrEnum):
+    """
+    Available modes for extending bounding boxes.
+
+    ADDITIVE applies a constant offset to each coordinate.
+    MULTIPLICATIVE applies offsets proportional to the box width and height.
+    """
+
     ADDITIVE = "additive"
     MULTIPLICATIVE = "multiplicative"
 
@@ -104,6 +111,12 @@ class Box:
         return self.height * self.width
 
     def contains(self, other_box: Box) -> TensorLike:
+        """
+        Return whether this box fully contains another box.
+
+        Returns:
+            Boolean tensor indicating whether all four boundaries of the other box lie within this box.
+        """
         x1, y1, x2, y2 = self.xyxy
         ox1, oy1, ox2, oy2 = other_box.xyxy
 
@@ -113,6 +126,13 @@ class Box:
         )
 
     def intersection(self, other_box: Box) -> Box:
+        """
+        Compute the intersection with another bounding box.
+
+        Returns:
+            A new Box representing the intersection.
+            Non-overlapping boxes produce a box with zero area.
+        """
         x1, y1, x2, y2 = self.xyxy
         ox1, oy1, ox2, oy2 = other_box.xyxy
 
@@ -150,6 +170,12 @@ class Box:
         )
 
     def iou(self, other_box: Box) -> TensorLike:
+        """
+        Compute the intersection over union (IOU) with another box.
+
+        Returns:
+            Scalar intersection-over-union value.
+        """
         intersection_area = self.intersection(other_box).area
         union_area = self.area + other_box.area - intersection_area
         return intersection_area / ops.maximum(union_area, 1e-12)
@@ -196,6 +222,20 @@ class Box:
         *,
         inplace: bool = False,
     ) -> Box:
+        """
+        Extend or shrink a bounding box.
+
+        Args:
+            value:
+                Extension magnitude. Positive values expand the box.
+            mode:
+                Additive or multiplicative extension mode.
+            inplace:
+                Whether to modify the current box.
+
+        Returns:
+            The modified box if inplace is True, otherwise a new box.
+        """
         mode = BoxExtensionMode(mode)
         xyxy = mode.processor(self.xyxy, value)
         if inplace:
@@ -209,6 +249,15 @@ TBox = TypeVar("TBox", bound=Box)
 
 @dataclass(slots=True)
 class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
+    """
+    Collection of bounding boxes for a single image.
+
+    Attributes:
+        boxes:
+            Tensor of shape (n_boxes, 4), with coordinates ordered
+            as (xmin, ymin, xmax, ymax).
+    """
+
     item_type: ClassVar[type[Box]] = Box
     boxes: TensorLike  # n, x1, y1, x2, y2
 
@@ -249,6 +298,16 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
         self,
         other: BoxSequence,
     ) -> TensorLike:
+        """
+        Compute pairwise intersection over union between two box collections.
+
+        Args:
+            other:
+                Collection of boxes to compare against.
+
+        Returns:
+            Tensor of shape (len(self), len(other)) containing the intersection-over-union values.
+        """
         boxes1 = ops.expand_dims(self.boxes, axis=1)
         boxes2 = ops.expand_dims(other.boxes, axis=0)
 
@@ -275,6 +334,20 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
         self,
         other: BoxSequence,
     ) -> TensorLike:
+        """
+        Compute pairwise intersection over area between box collections.
+
+        For each pair, the intersection area is divided by the
+        area of the corresponding box in ``other``.
+
+        Args:
+            other:
+                Collection of boxes used as the area reference.
+
+        Returns:
+            Tensor of shape (len(self), len(other)) containing
+            the intersection-over-area values.
+        """
         boxes1 = ops.expand_dims(self.boxes, axis=1)
         boxes2 = ops.expand_dims(other.boxes, axis=0)
 
@@ -301,6 +374,20 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
         *,
         inplace: bool = False,
     ) -> Self:
+        """
+        Extend or shrink all bounding boxes in the collection.
+
+        Args:
+            value:
+                Extension magnitude.
+            mode:
+                Additive or multiplicative extension mode.
+            inplace:
+                Whether to modify the current collection.
+
+        Returns:
+            The modified collection if inplace is True, otherwise a new collection.
+        """
         mode = BoxExtensionMode(mode)
         boxes = mode.processor(self.boxes, value)
         if inplace:
@@ -314,6 +401,21 @@ class BoxSequence(IterableDataclassMixin[Box], Generic[TBox]):
 
 @dataclass(slots=True)
 class BoxPrediction(Box):
+    """
+    Bounding box with classification and confidence predictions.
+
+    Attributes:
+        xyxy:
+            Bounding-box coordinates with shape (4,).
+        class_scores:
+            Class scores with shape (n_classes,).
+        confidence:
+            Confidence score associated with the detection.
+        class_set:
+            Optional prediction set containing class indices.
+            If omitted, prediction_set returns the predicted class.
+    """
+
     class_scores: TensorLike
     confidence: TensorLike
     class_set: TensorLike | None = None
@@ -344,10 +446,28 @@ class BoxPrediction(Box):
 
 
 class PredictionSetSequence(IndexableUserList[TensorLike]): ...
+    """
+    Indexable collection of class prediction sets.
 
+    Each element contains the class indices associated with one predicted bounding box.
+    """
 
 @dataclass(slots=True)
 class ODPrediction(BoxSequence[BoxPrediction]):
+    """
+    Object detection predictions for a single image.
+
+    Attributes:
+        boxes:
+            Predicted bounding boxes with shape (n_boxes, 4).
+        class_scores:
+            Class scores with shape (n_boxes, n_classes).
+        confidences:
+            Confidence scores with shape (n_boxes,).
+        class_sets:
+            Optional collection containing one class prediction
+            set per bounding box.
+    """
     item_type: ClassVar[type[Box]] = BoxPrediction
 
     class_scores: TensorLike  # (n, n_classes)
@@ -403,7 +523,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
             )
         elif self.class_sets is not None or other.class_sets is not None:
             raise ValueError(
-                "Cannot add ODResults if only one of them has class_sets defined"
+                "Cannot concatenate ODPrediction instances when only one has class_sets defined."
             )
 
         return ODPrediction(
@@ -460,11 +580,23 @@ class ODPrediction(BoxSequence[BoxPrediction]):
 
 @dataclass(slots=True)
 class BoxTarget(Box):
+    """
+    Ground-truth bounding box with its associated class label.
+    """
     label: TensorLike
 
 
 @dataclass(slots=True)
 class ODTarget(BoxSequence[BoxTarget]):
+    """
+    Ground-truth annotations for a single image.
+
+    Attributes:
+        boxes:
+            Ground-truth bounding boxes with shape (n_boxes, 4).
+        labels:
+            Class labels with shape (n_boxes,).
+    """
     item_type: ClassVar[type[Box]] = BoxTarget
     labels: TensorLike  # (n_true,)
 
@@ -478,6 +610,13 @@ class _ODSequence(IndexableUserList[T_OD], Generic[T_OD]):
         return [item.boxes for item in self.data]
 
     def box_image_indices(self) -> TensorLike:
+        """
+        Return the image index associated with each bounding box.
+
+        Returns:
+            One-dimensional integer tensor containing the index
+            of the source image for each box, in sequence order.
+        """
         if not self:
             return ops.zeros((0,), dtype="int32")
 
@@ -488,6 +627,12 @@ class _ODSequence(IndexableUserList[T_OD], Generic[T_OD]):
 
 
 class ODTargetSequence(_ODSequence[ODTarget]):
+    """
+    Collection of object detection targets for multiple images.
+
+    Each element contains the ground-truth boxes and labels associated with one image.
+    """
+
     @property
     def labels(self):
         return [target.labels for target in self.data]
@@ -502,12 +647,32 @@ class ODTargetSequence(_ODSequence[ODTarget]):
 
 
 class ODPredictionSequence(_ODSequence[ODPrediction]):
+    """
+    Collection of object detection predictions for multiple images.
+
+    Each element contains the predicted boxes, class scores,
+    confidence scores, and optional prediction sets for one image.
+    """
     def filter_by_confidence(
         self,
         threshold: float,
         *,
         inplace: bool = False,
     ) -> ODPredictionSequence:
+        """
+        Filter detections using a confidence threshold.
+
+        Detections with confidence greater than or equal to the threshold are retained.
+
+        Args:
+            threshold:
+                Minimum confidence required to retain a detection.
+            inplace:
+                Whether to modify the current prediction.
+
+        Returns:
+            The filtered prediction.
+        """
         if inplace:
             for pred in self.data:
                 pred.filter_by_confidence(
@@ -535,6 +700,19 @@ class ODPredictionSequence(_ODSequence[ODPrediction]):
         return [res.confidences for res in self.data]
 
     def boxwise(self) -> ODPrediction:
+        """
+        Flatten image-wise targets into a single collection of boxes.
+
+        Returns:
+            An ODTarget containing all boxes and labels concatenated in image order.
+
+        Raises:
+            ValueError:
+                If the sequence is empty.
+
+        Notes:
+            Image boundaries are not retained in the returned object.
+        """
         if not self:
             raise ValueError("Cannot flatten an empty ODPredictionSequence.")
         boxes = ops.concatenate(self.boxes)

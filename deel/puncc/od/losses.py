@@ -77,18 +77,33 @@ class ODLoss(ABC):
         y_true: Sequence[ODTarget],
         assignments: Sequence[AssignmentResult | None] | None = None,
     ) -> TensorLike:
-        assignments = (
-            [None] * len(y_pred) if assignments is None else assignments
-        )
+        """
+        Evaluate the loss over a sequence of object detection predictions.
+
+        Args:
+            y_pred:
+                Sequence of object detection predictions, one per image.
+            y_true:
+                Sequence of corresponding ground-truth annotations.
+            assignments:
+                Optional matching assignments, one per image.
+                Defaults to None.
+
+        Returns:
+            One-dimensional tensor containing either one loss per image
+            or the concatenated box-wise losses, depending on boxwise.
+
+        Notes:
+            If no losses are produced, an empty float32 tensor is returned.
+        """
+        assignments = [None] * len(y_pred) if assignments is None else assignments
 
         if self.boxwise:
             losses: list[TensorLike] = []
             for prediction, target, assignment in zip(
                 y_pred, y_true, assignments, strict=True
             ):
-                losses.extend(
-                    self.compute_boxwise(prediction, target, assignment)
-                )
+                losses.extend(self.compute_boxwise(prediction, target, assignment))
         else:
             losses = [
                 self.compute_imagewise(prediction, target, assignment)
@@ -133,9 +148,18 @@ class ODLoss(ABC):
             f"{type(self).__name__} does not support box-wise computation."
         )
 
-    def matched_pairs(
-        self, assignment: AssignmentResult
-    ) -> zip[tuple[int, int]]:
+    def matched_pairs(self, assignment: AssignmentResult) -> zip[tuple[int, int]]:
+        """
+        Iterate over matched ground-truth and prediction indices.
+
+        Args:
+            assignment:
+                Matching result containing the source-to-target assignments.
+
+        Returns:
+            Iterator yielding (true_index, prediction_index) pairs,
+            independently of the assignment direction.
+        """
         return zip(*assignment.matched_indices(), strict=True)
 
     def _add_unmatched_penalties(
@@ -148,16 +172,33 @@ class ODLoss(ABC):
         return losses
 
 
-class ConfidenceLoss(ODLoss): ...
+class ConfidenceLoss(ODLoss):
+    """
+    Base class for confidence-based losses.
+    """
 
 
-class LocalizationLoss(ODLoss): ...
+class LocalizationLoss(ODLoss):
+    """
+    Base class for bounding-box localization losses.
+    """
 
 
 class ClassificationLoss(ODLoss): ...
-
+    """
+    Base class for object classification losses.
+    """
 
 class BoxCountThresholdLoss(ConfidenceLoss):
+    """
+    Binary loss indicating whether the number of predictions is smaller than the number of ground-truth objects.
+
+    The loss is 1 when fewer boxes are predicted than annotated, and 0 otherwise.
+
+    Notes:
+        This loss depends only on the number of boxes, not on their
+        locations, predicted classes, or matching assignments.
+    """
     def __init__(self):
         super().__init__(boxwise=False, penalize_unmatched_boxes=False)
 
@@ -181,8 +222,12 @@ class BoxCountRecallLoss(ConfidenceLoss):
 
 class BoxCountTwoSidedLoss(ConfidenceLoss):
     """
-    Binary loss based on the difference between the number of predicted
-    and target boxes.
+    Binary loss based on the difference between the number of predicted and target boxes.
+
+    Notes:
+        This loss is generally non-monotonic with respect to the number of predictions.
+        It is therefore not directly suitable for CRC procedures requiring a non-increasing risk
+        function without monotonization.
     """
 
     def __init__(self, threshold: int = 3):
@@ -226,7 +271,23 @@ class DetectionRecallLoss(ConfidenceLoss):
 
 class ThresholdedDistanceConfidenceLoss(ConfidenceLoss):
     """
-    Fraction of target objects whose closest prediction is farther than ``distance_threshold``.
+    Thresholded minimum-distance loss for ground-truth objects.
+
+    For each ground-truth object, the loss is 1 if its minimum
+    pairwise cost across all predicted boxes exceeds distance_threshold, and 0 otherwise.
+
+    Args:
+        distance_threshold:
+            Maximum accepted matching cost.
+        distance_metric:
+            Metric used to compute pairwise costs. Defaults to
+            AsymmetricHausdorffDistance.
+        boxwise:
+            Whether to return one loss per target object instead of
+            averaging the losses within each image.
+
+    Notes:
+        Ground-truth objects without any predicted boxes receive the maximum loss.
     """
 
     def __init__(
@@ -256,9 +317,7 @@ class ThresholdedDistanceConfidenceLoss(ConfidenceLoss):
         if not len(y_true):
             return []
         if self.boxwise:
-            check_assignment(
-                assignment, direction=MatchingDirection.TRUE_TO_PRED
-            )
+            check_assignment(assignment, direction=MatchingDirection.TRUE_TO_PRED)
 
         if not len(y_pred):
             return [ops.array(self.upper_bound) for _ in range(len(y_true))]
@@ -295,9 +354,7 @@ class ClassificationCoverageLoss(ClassificationLoss):
         losses = [
             ops.cast(
                 ops.logical_not(
-                    ops.any(
-                        y_pred.class_sets[pred_idx] == y_true.labels[true_idx]
-                    )
+                    ops.any(y_pred.class_sets[pred_idx] == y_true.labels[true_idx])
                 ),
                 "float32",
             )
@@ -309,6 +366,18 @@ class ClassificationCoverageLoss(ClassificationLoss):
 
 
 class BoxCoverageLoss(LocalizationLoss):
+    """
+    Measure whether predicted boxes fully contain their assigned targets.
+
+    For each ground-truth object, the loss is 0 if at least one assigned
+    prediction fully contains its bounding box, and 1 otherwise.
+
+    Unmatched targets are penalized with the loss upper bound when
+    penalize_unmatched_boxes is True.
+
+    By default, image-wise loss is the mean of the individual
+    target-box losses.
+    """
     def compute_boxwise(
         self,
         y_pred: ODPrediction,
@@ -357,9 +426,9 @@ class PixelCoverageLoss(LocalizationLoss):
         for true_idx, pred_idx in self.matched_pairs(assignment):
             true_box = y_true[true_idx]
             pred_box = y_pred[pred_idx]
-            covered_fraction = true_box.intersection(
-                pred_box
-            ).area / ops.maximum(true_box.area, 1e-12)
+            covered_fraction = true_box.intersection(pred_box).area / ops.maximum(
+                true_box.area, 1e-12
+            )
             losses.append(ops.array(1.0) - covered_fraction)
         return self._add_unmatched_penalties(
             losses, assignment.unmatched_true_indices()
@@ -479,9 +548,7 @@ class JointCoverageLoss(ODLoss):
         pairs = list(self.matched_pairs(assignment))
 
         if pairs and y_pred.class_sets is None:
-            raise ValueError(
-                "JointCoverageLoss requires prediction class_sets."
-            )
+            raise ValueError("JointCoverageLoss requires prediction class_sets.")
 
         losses = []
         for true_idx, pred_idx in pairs:
