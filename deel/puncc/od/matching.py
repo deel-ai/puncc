@@ -37,7 +37,7 @@ from scipy.optimize import linear_sum_assignment
 from deel.puncc import ops, random
 from deel.puncc.typing import TensorLike
 
-from .base import ODPrediction, ODTarget
+from deel.puncc.od.base import ODPrediction, ODTarget
 
 
 class MatchingDirection(StrEnum):
@@ -91,7 +91,19 @@ class AssignmentResult:
     def filter_predictions(
         self,
         kept_indices: Sequence[int],
-    ) -> "AssignmentResult":
+    ) -> AssignmentResult:
+        """
+        Update the assignment after filtering predicted boxes.
+        Source or target indices are updated according to the matching direction.
+
+        Args:
+            kept_indices:
+                Indices of predictions retained after filtering in their new order.
+
+        Returns:
+            A new AssignmentResult with updated prediction indices and unmatched assignments.
+        """
+
         if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
             return self.filter_targets(kept_indices)
         return self.filter_sources(kept_indices)
@@ -100,6 +112,20 @@ class AssignmentResult:
         self,
         kept_indices: Sequence[int],
     ) -> AssignmentResult:
+        """
+        Filter the target side of the assignment.
+
+        Retained target indices are remapped to their positions in kept_indices.
+        Assignments to removed targets become unmatched.
+
+        Args:
+            kept_indices:
+                Original target indices to retain, in their new order.
+
+        Returns:
+            A new AssignmentResult with remapped target indices.
+        """
+
         kept = list(map(int, kept_indices))
         remap = {old: new for new, old in enumerate(kept)}
 
@@ -120,6 +146,20 @@ class AssignmentResult:
         self,
         kept_indices: Sequence[int],
     ) -> AssignmentResult:
+        """
+        Filter the source side of the assignment.
+
+        Only the selected sources are retained.
+        Targets that are no longer assigned to any retained source become unmatched.
+
+        Args:
+            kept_indices:
+                Original source indices to retain, in their new order.
+
+        Returns:
+            A new AssignmentResult containing the filtered sources and updated unmatched target indices.
+        """
+
         kept = list(map(int, kept_indices))
 
         source_to_target = [self.source_to_target_index[i] for i in kept]
@@ -139,6 +179,12 @@ class AssignmentResult:
     def matched_indices(
         self,
     ) -> list[list[int]]:
+        """
+        Return matched indices in ground-truth/prediction order.
+
+        Returns:
+            Two lists containing matched ground-truth indices and their corresponding prediction indices.
+        """
         pairs = self.matched_pairs
         matched_indices = [
             [source_idx for source_idx, _ in pairs],
@@ -167,6 +213,22 @@ class AssignmentResult:
         prediction: ODPrediction,
         target: ODTarget,
     ) -> tuple[ODPrediction, ODTarget]:
+        """
+        Align predicted and ground-truth boxes according to the assignment.
+
+        Only matched boxes are retained, and both collections are
+        reordered so that corresponding elements refer to the same
+        matched pair.
+
+        Args:
+            prediction:
+                Object detection predictions.
+            target:
+                Ground-truth annotations.
+
+        Returns:
+            A tuple containing the aligned ODPrediction and ODTarget.
+        """
         true_indices, pred_indices = self.matched_indices()
         return prediction[pred_indices], target[true_indices]
 
@@ -289,6 +351,28 @@ class AsymmetricHausdorffDistance:
 
 
 class MixedDistance:
+    """
+    Combine localization and classification matching costs.
+
+    The pairwise cost matrix is computed as::
+
+        (1 - class_weight) * localization_cost + class_weight * classification_cost
+
+    Args:
+        localization_distance:
+            Distance metric used for bounding-box localization.
+            Defaults to IoUDistance.
+        classification_distance:
+            Distance metric used for classification.
+            Defaults to LACDistance.
+        class_weight:
+            Weight assigned to the classification cost.
+            Defaults to 0.25.
+
+    Notes:
+        Both distance metrics must return matrices of shape (n_true, n_pred).
+    """
+
     def __init__(
         self,
         localization_distance: DistanceMetric = IoUDistance(),
@@ -319,11 +403,31 @@ class MixedDistance:
 
 @runtime_checkable
 class CostMatrixMatcher(Protocol):
+    """
+    Protocol for assignment algorithms operating on cost matrices.
+    Implementations select pairs of source and target indices from a pairwise cost matrix.
+    The assignment may be one-to-one or many-to-one depending on the matching algorithm.
+    """
+
     def match(
         self,
         cost_matrix: TensorLike,
         valid_mask: TensorLike | None = None,
-    ) -> list[tuple[int, int]]: ...
+    ) -> list[tuple[int, int]]:
+        """
+        Compute assignments from a pairwise cost matrix.
+
+        Args:
+            cost_matrix:
+                Matrix of shape (n_sources, n_targets), where lower
+                values indicate preferable assignments.
+            valid_mask:
+                Optional boolean matrix of the same shape indicating
+                which source-target pairs are admissible.
+
+        Returns:
+            List of (source_index, target_index) pairs.
+        """
 
 
 class ArgminMatcher:
@@ -434,7 +538,8 @@ class AssignmentStrategy:
 
         matcher:
             Cost-matrix matching algorithm.
-
+        direction:
+            Direction of the assignment. Defaults to TRUE_TO_PRED.
         iou_threshold:
             If provided, pairs whose IoU is below this threshold are
             considered invalid.
@@ -490,6 +595,22 @@ class AssignmentStrategy:
         y_pred: ODPrediction,
         y_true: ODTarget,
     ) -> AssignmentResult:
+        """
+        Match predicted boxes with ground-truth objects.
+
+        A pairwise cost matrix is computed using the configured distance metric.
+        Optional IoU and class constraints are applied before passing the matrix to the matching algorithm.
+
+        Args:
+            y_pred:
+                Object detection predictions for one image.
+            y_true:
+                Ground-truth annotations for the same image.
+
+        Returns:
+            An AssignmentResult containing the computed assignments, unmatched indices, and matching direction.
+        """
+
         n_true = len(y_true)
         n_pred = len(y_pred)
 
@@ -541,6 +662,25 @@ class AssignmentStrategy:
 
 
 class RandomMatcher:
+    """
+    Randomly assign sources to admissible targets.
+    Used mostly for testing and debugging.
+
+    Random costs are generated and passed to either ArgminMatcher or HungarianMatcher
+    depending on whether an injective assignment is required.
+
+    Args:
+        injective:
+            Whether to enforce one-to-one matching.
+            Defaults to False.
+        seed:
+            Optional random seed used to generate matching costs.
+            Defaults to None.
+
+    Notes:
+        The provided cost matrix determines the number of sources and targets but its values are ignored.
+    """
+
     def __init__(
         self,
         injective: bool = False,
@@ -576,6 +716,22 @@ def check_assignment(
     *,
     direction: MatchingDirection | None = None,
 ) -> AssignmentResult:
+    """
+    Validate the presence and direction of a matching assignment.
+
+    Args:
+        assignment:
+            Assignment result to validate.
+        direction:
+            Optional required matching direction.
+
+    Returns:
+        The original AssignmentResult.
+
+    Raises:
+        ValueError:
+            If no assignment is provided or if its direction differs from the required direction.
+    """
     if assignment is None:
         raise ValueError("This loss requires an AssignmentResult.")
 

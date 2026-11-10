@@ -445,12 +445,13 @@ class BoxPrediction(Box):
         yield self.confidence
 
 
-class PredictionSetSequence(IndexableUserList[TensorLike]): ...
+class PredictionSetSequence(IndexableUserList[TensorLike]):
     """
     Indexable collection of class prediction sets.
 
     Each element contains the class indices associated with one predicted bounding box.
     """
+
 
 @dataclass(slots=True)
 class ODPrediction(BoxSequence[BoxPrediction]):
@@ -468,6 +469,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
             Optional collection containing one class prediction
             set per bounding box.
     """
+
     item_type: ClassVar[type[Box]] = BoxPrediction
 
     class_scores: TensorLike  # (n, n_classes)
@@ -583,6 +585,7 @@ class BoxTarget(Box):
     """
     Ground-truth bounding box with its associated class label.
     """
+
     label: TensorLike
 
 
@@ -597,6 +600,7 @@ class ODTarget(BoxSequence[BoxTarget]):
         labels:
             Class labels with shape (n_boxes,).
     """
+
     item_type: ClassVar[type[Box]] = BoxTarget
     labels: TensorLike  # (n_true,)
 
@@ -653,6 +657,7 @@ class ODPredictionSequence(_ODSequence[ODPrediction]):
     Each element contains the predicted boxes, class scores,
     confidence scores, and optional prediction sets for one image.
     """
+
     def filter_by_confidence(
         self,
         threshold: float,

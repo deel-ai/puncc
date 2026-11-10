@@ -184,10 +184,11 @@ class LocalizationLoss(ODLoss):
     """
 
 
-class ClassificationLoss(ODLoss): ...
+class ClassificationLoss(ODLoss):
     """
     Base class for object classification losses.
     """
+
 
 class BoxCountThresholdLoss(ConfidenceLoss):
     """
@@ -199,6 +200,7 @@ class BoxCountThresholdLoss(ConfidenceLoss):
         This loss depends only on the number of boxes, not on their
         locations, predicted classes, or matching assignments.
     """
+
     def __init__(self):
         super().__init__(boxwise=False, penalize_unmatched_boxes=False)
 
@@ -378,6 +380,7 @@ class BoxCoverageLoss(LocalizationLoss):
     By default, image-wise loss is the mean of the individual
     target-box losses.
     """
+
     def compute_boxwise(
         self,
         y_pred: ODPrediction,
