@@ -171,7 +171,7 @@ def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
 
     origin_guess = get_origin_from_model(model)
     logger.debug(
-        "Cloning model type=%s.%s, backend=%s, origin=%s, " "clone_weights=%s.",
+        "Cloning model type=%s.%s, backend=%s, origin=%s, clone_weights=%s.",
         type(model).__module__,
         type(model).__qualname__,
         backend_guess,
@@ -327,12 +327,12 @@ def _reinit_torch_module_(m):
 
     # Handle common buffer-like state (BatchNorm running stats)
     # Most BN layers handle it in reset_parameters, but not all custom ones.
-    if hasattr(m, "running_mean") and m.running_mean is not None:
-        m.running_mean.zero_()
-    if hasattr(m, "running_var") and m.running_var is not None:
-        m.running_var.fill_(1)
-    if hasattr(m, "num_batches_tracked") and m.num_batches_tracked is not None:
-        m.num_batches_tracked.zero_()
+    # if hasattr(m, "running_mean") and m.running_mean is not None:
+    #     m.running_mean.zero_()
+    # if hasattr(m, "running_var") and m.running_var is not None:
+    #     m.running_var.fill_(1)
+    # if hasattr(m, "num_batches_tracked") and m.num_batches_tracked is not None:
+    #     m.num_batches_tracked.zero_()
 
 
 def _clone_torch(model, *, clone_weights: bool = False):

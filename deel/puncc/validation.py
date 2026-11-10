@@ -64,7 +64,7 @@ def as_scalar_vector(
     value = ops.convert_to_tensor(value)
     shape = tuple(ops.shape(value))
 
-    if allow_scalar and shape == ():
+    if allow_scalar and not shape:
         value = ops.reshape(value, (1,))
     elif len(shape) == 2 and shape[1] == 1:
         value = ops.squeeze(value, axis=-1)

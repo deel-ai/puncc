@@ -156,7 +156,7 @@ def infer_backend_from_modules() -> str | None:
 
     if len(detected_backends) == 1:
         return detected_backends.pop()
-    elif len(detected_backends) == 0 and "numpy" in imported_modules:
+    if len(detected_backends) == 0 and "numpy" in imported_modules:
         return "numpy"
 
     return None

@@ -67,7 +67,7 @@ class BoxExtensionMode(StrEnum):
     def processor(self) -> Callable[[TensorLike, float], TensorLike]:
         if self == BoxExtensionMode.ADDITIVE:
             return self.additive_processing
-        elif self == BoxExtensionMode.MULTIPLICATIVE:
+        if self == BoxExtensionMode.MULTIPLICATIVE:
             return self.multiplicative_processing
         else:
             raise ValueError(
@@ -421,7 +421,7 @@ class BoxPrediction(Box):
     class_set: TensorLike | None = None
 
     def __post_init__(self):
-        super(BoxPrediction, self).__post_init__()
+        super().__post_init__()
         if ops.ndim(self.class_scores) != 1:
             raise ValueError("class_scores must be 1D.")
 
@@ -477,7 +477,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
     class_sets: PredictionSetSequence | None = None
 
     def __post_init__(self):
-        super(ODPrediction, self).__post_init__()
+        super().__post_init__()
         if ops.shape(self.class_scores)[0] != ops.shape(self.boxes)[0]:
             raise ValueError(
                 "class_scores and boxes must have the same length, "

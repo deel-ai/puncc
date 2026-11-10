@@ -80,7 +80,7 @@ def tensor_indexing(item: Any, indices: IndexTensor) -> Any:
     idx = ops.tolist(indices)
     if isinstance(item, list):
         return [item[i] for i in idx]
-    elif isinstance(item, tuple):
+    if isinstance(item, tuple):
         return tuple(item[i] for i in idx)
     return item[indices]
 
