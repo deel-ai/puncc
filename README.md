@@ -98,28 +98,31 @@ Conformal prediction enables to transform point predictions into interval predic
 Many conformal prediction algorithms can easily be applied using *puncc*.  The code snippet below shows the example of split conformal prediction with a pretrained linear model:
 
  ```python
- from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.regression import SplitCP
+from deel.puncc.config import set_backend
+from deel.puncc.regression import SplitConformalRegression
+
+# Specify the backend for computations.
+set_backend("numpy")
 
 # Load calibration and test data
-# ...
+X_train, y_train = ...
+X_test, y_test = ...
+X_calib, y_calib = ...
 
 # Pretrained regression model
-# trained_linear_model = ...
-
-# Wrap the model to enable interoperability with different ML libraries
-trained_predictor =  BasePredictor(trained_linear_model)
+trained_predictor = ...
 
 # Instanciate the split conformal wrapper for the linear model.
 # Train argument is set to False because we do not want to retrain the model
-split_cp = SplitCP(trained_predictor, train=False)
+split_cp = SplitConformalRegression(trained_predictor)
 
 # With a calibration dataset, compute (and store) nonconformity scores
-split_cp.fit(X_calib=X_calib, y_calib=y_calib)
+split_cp.calibrate(X_calib, y_calib)
 
 # Obtain the model's point prediction y_pred and prediction interval
 # PI = [y_pred_lower, y_pred_upper] for a target coverage of 90% (1-alpha).
-y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=0.1)
+y_pred, y_conformal = split_cp.predict(X_test, alpha=0.1)
+y_pred_lower, y_pred_upper = y_conformal[:, 0], y_conformal[:, 1]
 ```
 
 
