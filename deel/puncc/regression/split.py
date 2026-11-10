@@ -23,15 +23,12 @@
 """
 This module implements usual conformal regression wrappers.
 """
-
-from deel.puncc.nonconformity_scores import (
-    absolute_difference,
-    cqr_score,
-)  # ,scaled_ad
-from deel.puncc.prediction_sets import (
+from deel.puncc.core.nonconformity_scores import absolute_difference
+from deel.puncc.regression.nonconformity_scores import cqr_score
+from deel.puncc.regression.prediction_sets import (
     constant_interval,
     cqr_interval,
-)  # , scaled_interval
+)
 from deel.puncc.core.split import (
     PresetSplitConformalPredictor,
     LocallyAdaptiveMixin,

@@ -48,7 +48,7 @@ from deel.puncc.core.conformal import (
 from deel.puncc.core.predictors import make_predictor
 from deel.puncc.core.risk_control import CRC, Postprocessor, RiskLossFunction
 from deel.puncc.core.calibration import CalibrationContext
-from deel.puncc.prediction_sets import lac_set
+from deel.puncc.classification.prediction_sets import lac_set
 from deel.puncc.core.splitters import BaseSplitter, RandomSplitter
 from deel.puncc.od.losses import (
     ClassificationLoss,

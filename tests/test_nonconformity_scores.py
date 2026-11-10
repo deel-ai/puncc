@@ -26,7 +26,7 @@ import pytest
 
 from tests._utils import tensor, to_numpy
 
-from deel.puncc.nonconformity_scores import scaled_bbox_difference
+from deel.puncc.od.nonconformity_scores import scaled_bbox_difference
 
 
 @pytest.mark.parametrize("n_samples", [1, 10])

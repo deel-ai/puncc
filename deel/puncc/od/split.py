@@ -30,12 +30,11 @@ from deel.puncc.core.conformal import ConformalPrediction
 from deel.puncc.core.split import SplitConformalPredictor
 from deel.puncc.od.base import BoxExtensionMode
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
-from deel.puncc.nonconformity_scores import (
+from deel.puncc.od.nonconformity_scores import (
     boxwise_difference,
-    difference,
     scaled_bbox_difference,
 )
-from deel.puncc.prediction_sets import constant_bbox, scaled_bbox
+from deel.puncc.od.prediction_sets import constant_bbox, scaled_bbox
 from deel.puncc.corrections import AlphaCorrection, bonferroni
 
 

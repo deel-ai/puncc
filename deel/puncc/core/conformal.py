@@ -34,7 +34,6 @@ from collections.abc import (
     Sequence,
 )
 from dataclasses import dataclass
-from numbers import Real
 from pathlib import Path
 from typing import Any, Generic, SupportsIndex, TypeVar, Self
 import pickle
@@ -605,7 +604,7 @@ class GroupConditionalMixin(ConformalPredictor):
             group_prediction = ops.take(prediction, indices, axis=0)
             group_context = group_contexts.get(group)
 
-            if group_context is None:
+            if group_context is None or group_context.size == 0:
                 group_prediction_set = self.conformalize_unknown_group(
                     group_prediction, alpha, X=ops.take(X, indices, axis=0)
                 )

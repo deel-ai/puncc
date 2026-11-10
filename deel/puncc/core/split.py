@@ -37,7 +37,7 @@ from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPredictor, ConformalPrediction
 from deel.puncc.core.predictors import make_predictor
-from deel.puncc.nonconformity_scores import absolute_difference
+from deel.puncc.core.nonconformity_scores import absolute_difference
 from deel.puncc.typing import (
     FitFunction,
     NCScoreFunction,

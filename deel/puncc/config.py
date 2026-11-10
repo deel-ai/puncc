@@ -38,6 +38,14 @@ def lock_backend() -> None:
 
 
 def set_backend(name: str) -> None:
+    """
+    Specify the backend to use in puncc session.
+    This function should be called before any other operations using puncc or keras.
+    Possible values for backend are: "torch", "tensorflow", "jax" and "numpy".
+
+    Args:
+        name (str): "torch", "tensorflow", "jax" or "numpy"
+    """
     global _backend, _backend_explicitly_set
     name = (name or "").strip().lower()
     if name not in _VALID:
@@ -55,6 +63,12 @@ def set_backend(name: str) -> None:
 
 
 def set_inferred_backend(name: str) -> None:
+    """
+    Set the backend to use in puncc session if it has not been explicitly set by the user.
+
+    Args:
+        name (str): backend name ("torch", "tensorflow", "jax" or "numpy")
+    """
     global _backend
     name = (name or "").strip().lower()
 

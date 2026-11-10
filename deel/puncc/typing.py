@@ -60,7 +60,7 @@ class PredictorLike(Protocol[TPrediction_co]):
     def predict(self, X: Any, *args: Any, **kwargs: Any) -> TPrediction_co: ...
 
 
-# A nonconformity score function takes as input the true labels and the model's predictions, and outputs a sequence of nonconformity scores.
+# A nonconformity score function takes model predictions and true targets and returns nonconformity scores.
 NCScoreFunction: TypeAlias = Callable[
     [TensorLike, TensorLike],
     TensorLike,
