@@ -174,7 +174,8 @@ class MeanVarPredictor(MultiPredictorStack):
     Combine a mean predictor and a dispersion predictor.
 
     The mean model is fitted directly on the training targets.
-    The dispersion model is then fitted on dispersion targets computed from the mean-model predictions and the observed targets.
+    The dispersion model is then fitted on dispersion targets computed from the mean-model predictions
+    and the observed targets.
     By default, the dispersion target is the absolute residual between the mean prediction and the observed target.
     """
 

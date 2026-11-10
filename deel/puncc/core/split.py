@@ -88,7 +88,8 @@ class SplitConformalPredictor(ConformalPredictor):
     ) -> CalibrationContext:
         """
         Compute the nonconformity scores associated with a calibration context.
-        The scores are computed from the stored model predictions and calibration targets and added to the provided context.
+        The scores are computed from the stored model predictions and calibration targets and added to
+        the provided context.
 
         Args:
             calibration_context: Context containing calibration predictions and targets.

@@ -103,12 +103,8 @@ def raps_set(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> PredSetFunc
         penalty = lambd * ops.maximum(ranks - k_reg, 0)
         penal_cs = cs + penalty
 
-        # if ops.ndim(quantile) == 1:
-        #     quantile = ops.expand_dims(quantile, axis=-1)
-        # index_limit = ops.sum(penal_cs <= quantile, axis=-1) + 1
         quantile = ops.reshape(ops.convert_to_tensor(quantile), (-1,))
         index_limit = ops.sum(penal_cs <= quantile[:, None], axis=-1) + 1
-        #
 
         index_limit = ops.minimum(index_limit, K)
 
@@ -140,7 +136,7 @@ def aps_set(rand: bool = True) -> PredSetFunction:
     Args:
         rand:
             Whether to randomize inclusion of the boundary class.
-            Defaults to False.
+            Defaults to True.
 
     Returns:
         A function returning one tensor of selected class indices per sample.

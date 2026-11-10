@@ -156,7 +156,8 @@ class SplitBoxWise(SplitConformalPredictor):
             pred_set_function = scaled_bbox()
         else:
             raise ValueError(
-                f"Unknown method '{box_extension_mode}' for SplitBoxWise. Supported methods are 'additive' and 'multiplicative'."
+                f"Unknown method '{box_extension_mode}' for SplitBoxWise."
+                "Supported methods are 'additive' and 'multiplicative'."
             )
         super().__init__(
             model=model,

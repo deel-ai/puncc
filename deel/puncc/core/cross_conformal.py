@@ -34,7 +34,7 @@ from typing import Any, Callable, Never, Self
 import logging
 
 from deel.puncc.core.predictors import make_predictor
-from deel.puncc.core.split import PresetSplitConformalPredictor, SplitConformalPredictor
+from deel.puncc.core.split import PresetSplitConformalPredictor
 from deel.puncc.core.conformal import ConformalPrediction, _validate_alpha
 from deel.puncc.core.splitters import KFoldSplitter, BaseSplitter
 from deel.puncc.corrections import AlphaCorrection
@@ -170,7 +170,8 @@ class CVPlusRegressor(CrossConformalPredictor):
 
     The dataset is partitioned into K folds.
     For each fold, a predictive model is trained on the remaining folds and calibrated on the held-out fold.
-    Prediction intervals are then obtained from the pooled lower and upper CV+ candidates across all calibration samples.
+    Prediction intervals are then obtained from the pooled lower and upper CV+ candidates across all
+    calibration samples.
 
     Args:
         model: Underlying regression model.
@@ -206,7 +207,8 @@ class CVPlusRegressor(CrossConformalPredictor):
         """
         Compute CV+ prediction intervals.
 
-        Predictions from each fold-specific model are combined with their calibration nonconformity scores to form lower and upper CV+ candidates.
+        Predictions from each fold-specific model are combined with their calibration nonconformity scores to form lower
+        and upper CV+ candidates.
         The corresponding empirical order statistics define the prediction interval.
 
         The point prediction returned alongside the interval is the mean prediction across the fold-specific models.

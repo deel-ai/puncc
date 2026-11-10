@@ -102,6 +102,7 @@ def cqr_interval() -> PredSetFunction:
 
     Given predicted lower and upper quantiles and a calibration threshold ``q``,
     the returned function computes::
+
         [lower_pred - q, upper_pred + q]
 
     Returns:

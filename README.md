@@ -112,8 +112,7 @@ X_calib, y_calib = ...
 # Pretrained regression model
 trained_predictor = ...
 
-# Instanciate the split conformal wrapper for the linear model.
-# Train argument is set to False because we do not want to retrain the model
+# Instantiate the split conformal wrapper for the linear model.
 split_cp = SplitConformalRegression(trained_predictor)
 
 # With a calibration dataset, compute (and store) nonconformity scores

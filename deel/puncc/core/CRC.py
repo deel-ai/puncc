@@ -21,9 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Conformal Risk Control components.
+Conformal Risk Control (CRC) components.
 
-This module implements the generic machinery required to calibrate postprocessing parameters according to a bounded empirical risk.
+This module implements the generic machinery required to calibrate postprocessing parameters according
+to a bounded empirical risk.
 """
 
 from __future__ import annotations
@@ -61,10 +62,18 @@ RiskLossFunction: TypeAlias = Callable[
 
 class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction]):
     """
-    Generic Conformal Risk Control predictor.
+    Generic Conformal Risk Control (CRC) predictor.
 
-    CRC calibrates a scalar postprocessing parameter so that an upper bound on
-    the empirical risk satisfies a requested risk level.
+    CRC calibrates a scalar postprocessing parameter to control the
+    expected value of a bounded loss at a target risk level.
+
+    For a calibration set of size n, the parameter is selected to
+    satisfy the finite-sample corrected empirical risk constraint::
+
+        (n * R_hat(lambda) + B) / (n + 1) <= alpha
+
+    where R_hat is the mean calibration loss and B is an upper bound
+    on the loss.
 
     Args:
         model: Underlying predictive model.
@@ -75,8 +84,21 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
             If omitted, the ``upper_bound`` attribute of ``loss_function`` is used.
             A ValueError is raised if neither is provided.
         fit_function: Optional custom function used to fit the predictive model.
-        optimizer: Scalar optimizer used to calibrate the postprocessing parameter. Defaults to :class:`BinarySearchOptimizer`.
+        optimizer: Scalar optimizer used to calibrate the postprocessing parameter.
+            Defaults to :class:`BinarySearchOptimizer`.
         lambda_bounds: Lower and upper bounds of the parameter search interval.
+
+    Notes:
+        The standard CRC guarantee requires exchangeable calibration and test observations,
+        a loss bounded between zero and B, and a loss that is non-increasing and
+        right-continuous with respect to the postprocessing parameter.
+
+        The search interval must contain a sufficiently conservative parameter for the desired risk level.
+        In particular, the standard CRC guarantee assumes a safe upper endpoint.
+
+        These statistical assumptions are the responsibility of the caller and are not verified automatically.
+
+        The calibrated parameter is computed when conformalizing predictions, not during the calibrate() call.
     """
 
     __slots__ = (
@@ -142,6 +164,19 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         return ops.item(ops.mean(losses))
 
     def get_calibration_set_size(self, calibration_context: CalibrationContext) -> int:
+        """
+        Return the number of calibration units used for risk correction.
+
+        By default, each calibration observation contributes one loss.
+        Subclasses may override this method when the statistical unit differs from the stored observation.
+
+        Args:
+            calibration_context:
+                Context containing the calibration data.
+
+        Returns:
+            Number of calibration units used in the finite-sample risk correction.
+        """
         return calibration_context.size
 
     def _get_lambda_from_alpha(
@@ -230,7 +265,11 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
         X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
         """
-        Conformalize model predictions.
+        Apply Conformal Risk Control to base model predictions.
+
+        The postprocessing parameter is calibrated using the provided
+        calibration context and the requested risk level.
+        The resulting parameter is then applied to the supplied predictions.
 
         Args:
             prediction: Base predictions to conformalize.

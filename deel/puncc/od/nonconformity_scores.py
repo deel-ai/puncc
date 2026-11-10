@@ -79,6 +79,7 @@ def scaled_bbox_difference() -> NCScoreFunction:
     Return a size-normalized bounding-box nonconformity score function.
 
     Returns:
-        A function accepting predicted and target boxes of shape ``(n, 4)`` and returning normalized scores of shape ``(n, 4)``.
+        A function accepting predicted and target boxes of shape ``(n, 4)`` and returning normalized
+        scores of shape ``(n, 4)``.
     """
     return _scaled_bbox_difference

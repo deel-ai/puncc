@@ -138,7 +138,7 @@ class AssignmentResult:
 
     def matched_indices(
         self,
-    ) -> list[list[int], list[int]]:
+    ) -> list[list[int]]:
         pairs = self.matched_pairs
         matched_indices = [
             [source_idx for source_idx, _ in pairs],

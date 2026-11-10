@@ -47,6 +47,7 @@ def cqr_score() -> NCScoreFunction:
     Return a Conformalized Quantile Regression (CQR) score function.
 
     For predicted lower and upper bounds, the score is defined as::
+
         max(lower_bound - y_true, y_true - upper_bound)
 
     The returned function expects predictions with shape ``(n, 2)``

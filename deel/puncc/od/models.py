@@ -46,7 +46,7 @@ from deel.puncc.core.conformal import (
     _check_calibration_samples,
 )
 from deel.puncc.core.predictors import make_predictor
-from deel.puncc.core.risk_control import CRC, Postprocessor, RiskLossFunction
+from deel.puncc.core.CRC import CRC
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.classification.prediction_sets import lac_set
 from deel.puncc.core.splitters import BaseSplitter, RandomSplitter
@@ -56,7 +56,7 @@ from deel.puncc.od.losses import (
     LocalizationLoss,
     ODLoss,
 )
-from deel.puncc.od.matching import AssignmentMethod, MatchingDirection
+from deel.puncc.od.matching import AssignmentMethod
 from deel.puncc.od.utils import IndexableUserList
 from deel.puncc.typing import (
     FitFunction,

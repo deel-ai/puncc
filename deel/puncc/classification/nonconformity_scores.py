@@ -87,7 +87,6 @@ def raps_score(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> NCScoreFu
         raise ValueError(f"`k_reg` must be >= 0, got {k_reg}")
 
     def _raps_score(y_pred: TensorLike, y_true: TensorLike) -> TensorLike:
-        # true proba
         true_p = ops.squeeze(
             ops.take_along_axis(y_pred, y_true[..., None], axis=-1), axis=-1
         )
@@ -112,7 +111,6 @@ def raps_score(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> NCScoreFu
             u = random.uniform(ops.shape(true_p))
         else:
             u = ops.ones_like(true_p)
-            # or u = ops.zero_like(true_p) ?
         return rho + u * true_p + regul
 
     return _raps_score
