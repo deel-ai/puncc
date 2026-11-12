@@ -109,18 +109,34 @@ class BoxTensorOpsMixin:
 
     @property
     def width(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Width of the box(es)
+        """
         return self.coordinates[..., 2] - self.coordinates[..., 0]
 
     @property
     def height(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Height of the box(es)
+        """
         return self.coordinates[..., 3] - self.coordinates[..., 1]
 
     @property
     def area(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Area of the box(es)
+        """
         return ops.maximum(self.width, 0) * ops.maximum(self.height, 0)
 
     @property
     def center(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Coordinates of the center(s) of the box(es)
+        """
         return ops.stack(
             (
                 (self.coordinates[..., 0] + self.coordinates[..., 2]) / 2,
@@ -131,14 +147,25 @@ class BoxTensorOpsMixin:
 
     @property
     def xyxy(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Coordinates in xyxy format (x_min, y_min, x_max, y_max)
+        """
         return self.coordinates
 
     @xyxy.setter
     def xyxy(self, new_box: TensorLike):
+        new_box = ops.array(new_box)
+        if ops.shape(new_box) != ops.shape(self.coordinates):
+            raise ValueError("New coordinates must preserve the existing shape.")
         self.coordinates = new_box
 
     @property
     def xywh(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Coordinates in xywh format (x_min, y_min, width, height)
+        """
         return ops.stack(
             (
                 self.coordinates[..., 0],
@@ -220,6 +247,22 @@ class BoxTensorOpsMixin:
         *,
         inplace: bool = False,
     ) -> Self:
+        """
+        Extend or shrink bounding boxes.
+
+        Args:
+            value:
+                Extension magnitude. Positive values expand the boxes.
+            mode:
+                Additive or multiplicative extension mode.
+                Defaults to BoxExtensionMode.ADDITIVE.
+            inplace:
+                Whether to modify the current object. Defaults to False.
+
+        Returns:
+            The modified object if inplace is True, otherwise a new instance of the same type.
+        """
+
         mode = BoxExtensionMode(mode)
         coordinates = mode.processor(self.coordinates, value)
 
@@ -306,41 +349,6 @@ class Box(BoxTensorOpsMixin):
         union_area = self.area + other_box.area - intersection_area
         return intersection_area / ops.maximum(union_area, 1e-12)
 
-    @classmethod
-    def from_xywh(cls, box: TensorLike) -> Box:
-        """
-        Creates a box from (x, y, width, height) coordinates.
-
-        Args:
-            box (TensorLike): tensor of xywh coordinates
-
-        Returns:
-            Box: Fresh new box
-        """
-        return cls(cls.xywh_to_xyxy(box))
-
-    @staticmethod
-    def xywh_to_xyxy(box: TensorLike) -> TensorLike:
-        """
-        Convert tensor from (x, y, width, height) to (x_min, y_min, x_max, y_max) format.
-
-        Args:
-            box (TensorLike): tensor of xywh coordinates
-
-        Returns:
-            TensorLike: tensor of xyxy coordinates
-        """
-        x, y, w, h = box
-
-        return ops.stack(
-            (
-                x,
-                y,
-                x + w,
-                y + h,
-            )
-        )
-
     def equals(self, other: Box) -> bool:
         """
         Args:
@@ -349,22 +357,22 @@ class Box(BoxTensorOpsMixin):
         Returns:
             bool: True of the two boxes have the same coordinates, False otherwise.
         """
-        return ops.item(ops.all(self.xyxy == other.xyxy))
+        return ops.item(ops.all(self.coordinates == other.coordinates))
 
     def __len__(self) -> int:
         return 4
 
     def __getitem__(self, idx: int | slice) -> TensorLike:
-        return self.xyxy[idx]
+        return self.coordinates[idx]
 
     def __iter__(self):
-        return iter(self.xyxy)
+        return iter(self.coordinates)
 
     def __repr__(self) -> str:
-        return f"Box(xyxy={self.xyxy})"
+        return f"Box(coordinates={self.coordinates})"
 
     def __str__(self) -> str:
-        return f"Box(xyxy={self.xyxy})"
+        return f"Box(xycoordinatesxy={self.coordinates})"
 
 
 TBox = TypeVar("TBox", bound=Box)
@@ -376,7 +384,7 @@ class BoxSequence(BoxTensorOpsMixin, IterableDataclassMixin[TBox], Generic[TBox]
     Collection of bounding boxes for a single image.
 
     Attributes:
-        boxes:
+        coordinates:
             Tensor of shape (n_boxes, 4), with coordinates ordered
             as (xmin, ymin, xmax, ymax).
     """
@@ -481,10 +489,18 @@ class BoxPrediction(Box):
 
     @property
     def predicted_class(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Index of the predicted class with shape ().
+        """
         return ops.argmax(self.class_scores)
 
     @property
     def prediction_set(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Class prediction set with shape (1,) if class_set is None, otherwise returns class_set.
+        """
         if self.class_set is not None:
             return self.class_set
 
@@ -513,7 +529,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
     Object detection predictions for a single image.
 
     Attributes:
-        boxes:
+        coordinates:
             Predicted bounding boxes with shape (n_boxes, 4).
         class_scores:
             Class scores with shape (n_boxes, n_classes).
@@ -561,6 +577,21 @@ class ODPrediction(BoxSequence[BoxPrediction]):
         return self.class_scores.shape[1]
 
     def __add__(self, other: ODPrediction):
+        """
+        Concatenate the detections of two ODPrediction instances.
+
+        Args:
+            other:
+                Object detection predictions to concatenate.
+
+        Returns:
+            A new ODPrediction containing all detections from both objects.
+
+        Raises:
+            ValueError:
+                If the predictions have different numbers of classes or if only one instance contains
+                class prediction sets.
+        """
         if ops.shape(self.class_scores)[1] != ops.shape(other.class_scores)[1]:
             raise ValueError(
                 "Cannot add ODPredictions with different number of classes: "
@@ -597,6 +628,20 @@ class ODPrediction(BoxSequence[BoxPrediction]):
         *,
         inplace: bool = False,
     ) -> ODPrediction:
+        """
+        Filter detections according to their confidence scores.
+
+        Detections with confidence greater than or equal to the specified threshold are retained.
+
+        Args:
+            threshold:
+                Minimum confidence required to retain a detection.
+            inplace:
+                Whether to modify the current object. Defaults to False.
+
+        Returns:
+            The filtered ODPrediction instance.
+        """
         indices = ops.where_1d(self.confidences >= threshold)
         filtered = self[indices]
 
@@ -610,6 +655,10 @@ class ODPrediction(BoxSequence[BoxPrediction]):
 
     @property
     def predicted_classes(self) -> TensorLike:
+        """
+        Returns:
+            TensorLike: Tensor of shape (n_boxes,) containing the predicted classes  for each bounding box.
+        """
         return ops.argmax(
             self.class_scores,
             axis=-1,
@@ -617,6 +666,11 @@ class ODPrediction(BoxSequence[BoxPrediction]):
 
     @property
     def prediction_sets(self) -> list[TensorLike]:
+        """
+        Returns:
+            list[TensorLike]: List of class prediction sets for each bounding box.
+            If class_sets is None, returns a list of single-element tensors containing the predicted classes.
+        """
         if self.class_sets is not None:
             return list(self.class_sets)
 
@@ -664,7 +718,11 @@ T_OD = TypeVar("T_OD", bound=BoxSequence)
 
 class _ODSequence(IndexableUserList[T_OD], Generic[T_OD]):
     @property
-    def coordinates(self):
+    def coordinates(self) -> list[TensorLike]:
+        """
+        Returns:
+            list[Tensorlike]: bounding-box coordinate tensors for each image.
+        """
         return [item.coordinates for item in self.data]
 
     def box_image_indices(self) -> TensorLike:
@@ -692,11 +750,25 @@ class ODTargetSequence(_ODSequence[ODTarget]):
     """
 
     @property
-    def labels(self):
+    def labels(self) -> list[TensorLike]:
+        """
+        Returns:
+            list[Tensorlike]: class label tensors for each image.
+        """
         return [target.labels for target in self.data]
 
     # TODO : avoid duplication with ODPredictionSequence
     def boxwise(self) -> ODTarget:
+        """
+        Flatten image-wise targets into a single collection of boxes.
+
+        Returns:
+            An ODTarget containing all bounding boxes and labels concatenated in image order.
+
+        Raises:
+            ValueError:
+                If the sequence is empty.
+        """
         if not self:
             raise ValueError("Cannot flatten an empty ODTargetSequence.")
         boxes = ops.concatenate(self.coordinates)
@@ -751,16 +823,24 @@ class ODPredictionSequence(_ODSequence[ODPrediction]):
         )
 
     @property
-    def class_scores(self):
+    def class_scores(self) -> list[TensorLike]:
+        """
+        Returns:
+            list[TensorLike]: class score tensors for each image.
+        """
         return [res.class_scores for res in self.data]
 
     @property
-    def confidences(self):
+    def confidences(self) -> list[TensorLike]:
+        """
+        Returns:
+            list[TensorLike]: confidence score tensors for each image.
+        """
         return [res.confidences for res in self.data]
 
     def boxwise(self) -> ODPrediction:
         """
-        Flatten image-wise targets into a single collection of boxes.
+        Flatten image-wise predictions into a single collection of boxes.
 
         Returns:
             An ODPrediction containing all bounding boxes, class scores,
