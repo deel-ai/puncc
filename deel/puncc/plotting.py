@@ -23,6 +23,7 @@
 """
 This module provides plotting functions for conformal prediction.
 """
+
 from typing import Optional
 
 import matplotlib
@@ -40,7 +41,7 @@ LARGE_SIZE = 15
 HUGE_SIZE = 16
 
 custom_rc_params = {
-    "font.family": "Times New Roman",
+    "font.family": "serif",
     "ytick.labelsize": BIGGER_SIZE,
     "xtick.labelsize": BIGGER_SIZE,
     "axes.labelsize": LARGE_SIZE,
@@ -236,10 +237,20 @@ def plot_prediction_intervals(  # pylint: disable=too-many-branches
 
         # plot interval
         ax.plot(
-            X, y_pred_upper, "--", color=interval_color, linewidth=1.2, alpha=0.85
+            X,
+            y_pred_upper,
+            "--",
+            color=interval_color,
+            linewidth=1.2,
+            alpha=0.85,
         )
         ax.plot(
-            X, y_pred_lower, "--", color=interval_color, linewidth=1.2, alpha=0.85
+            X,
+            y_pred_lower,
+            "--",
+            color=interval_color,
+            linewidth=1.2,
+            alpha=0.85,
         )
         ax.fill_between(
             x=X,

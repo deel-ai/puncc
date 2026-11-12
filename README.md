@@ -78,6 +78,7 @@ We highly recommend following the introductory tutorials to get familiar with th
 | **API Tutorial** | Learn about *puncc*'s API. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/api_intro.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/api_intro.ipynb) |
 | **Tutorial on CP with PyTorch** | Learn how to use *puncc* with PyTorch. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_pytorch.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_pytorch.ipynb) |
 | **Tutorial on CP with TensorFlow** | Learn how to use *puncc* with TensorFlow / Keras. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_tensorflow.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb) |
+| **Multi-backend Tutorial** | Use the same conformal API with PyTorch, TensorFlow, and a mixed PyTorch/scikit-learn pipeline. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_multi_backend.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_multi_backend.ipynb) |
 | **Adaptive Conformal Regression** | Learn how conformalize regression models to obtain adaptive prediction intervals using methods such as LACP, LWCP and CQR. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_adaptive_methods.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb) |
 | **Conformal Object Detection** | Learn to conformalize an object detector. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_cod.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_cod.ipynb) |
 | **Conformal Text Classification** | Learn to conformalize pretrained HuggingFace NLP model. | [![Open In Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](docs/puncc_nlp.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_nlp.ipynb) |
@@ -97,28 +98,30 @@ Conformal prediction enables to transform point predictions into interval predic
 Many conformal prediction algorithms can easily be applied using *puncc*.  The code snippet below shows the example of split conformal prediction with a pretrained linear model:
 
  ```python
- from deel.puncc.api.prediction import BasePredictor
-from deel.puncc.regression import SplitCP
+from deel.puncc.config import set_backend
+from deel.puncc.regression import SplitConformalRegression
+
+# Specify the backend for computations.
+set_backend("numpy")
 
 # Load calibration and test data
-# ...
+X_train, y_train = ...
+X_test, y_test = ...
+X_calib, y_calib = ...
 
 # Pretrained regression model
-# trained_linear_model = ...
+trained_predictor = ...
 
-# Wrap the model to enable interoperability with different ML libraries
-trained_predictor =  BasePredictor(trained_linear_model)
-
-# Instanciate the split conformal wrapper for the linear model.
-# Train argument is set to False because we do not want to retrain the model
-split_cp = SplitCP(trained_predictor, train=False)
+# Instantiate the split conformal wrapper for the linear model.
+split_cp = SplitConformalRegression(trained_predictor)
 
 # With a calibration dataset, compute (and store) nonconformity scores
-split_cp.fit(X_calib=X_calib, y_calib=y_calib)
+split_cp.calibrate(X_calib, y_calib)
 
 # Obtain the model's point prediction y_pred and prediction interval
 # PI = [y_pred_lower, y_pred_upper] for a target coverage of 90% (1-alpha).
-y_pred, y_pred_lower, y_pred_upper = split_cp.predict(X_test, alpha=0.1)
+y_pred, y_conformal = split_cp.predict(X_test, alpha=0.1)
+y_pred_lower, y_pred_upper = y_conformal[:, 0], y_conformal[:, 1]
 ```
 
 
