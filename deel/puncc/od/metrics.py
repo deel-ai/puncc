@@ -330,4 +330,4 @@ def mean_box_area(
     if len(y_pred) == 0:
         return _nan()
 
-    return ops.mean(y_pred.areas)
+    return ops.mean(y_pred.area)

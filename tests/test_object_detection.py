@@ -78,34 +78,45 @@ def test_hungarian_matcher():
         ]
     )
 
-    assert matcher.match(tensor(costs, "float32"), tensor(valid_mask, "bool")) == [(0, 1)]
+    assert matcher.match(tensor(costs, "float32"), tensor(valid_mask, "bool")) == [
+        (0, 1)
+    ]
 
 
 def test_assignment_strategy_filters_by_iou():
     predictions = ODPrediction(
-        boxes=tensor(np.array(
-            [
-                [0.0, 0.0, 2.0, 2.0],
-                [9.0, 9.0, 10.0, 10.0],
-            ],
-            dtype=np.float32,
-        ), "float32"),
-        class_scores=tensor(np.array(
-            [[0.9, 0.1], [0.1, 0.9]],
-            dtype=np.float32,
-        ), "float32"),
+        coordinates=tensor(
+            np.array(
+                [
+                    [0.0, 0.0, 2.0, 2.0],
+                    [9.0, 9.0, 10.0, 10.0],
+                ],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
+        class_scores=tensor(
+            np.array(
+                [[0.9, 0.1], [0.1, 0.9]],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
         confidences=tensor(np.array([0.9, 0.8], dtype=np.float32), "float32"),
     )
 
     targets = ODTarget(
-        boxes=tensor(np.array(
-            [
-                [0.0, 0.0, 2.0, 2.0],
-                [5.0, 5.0, 7.0, 7.0],
-                [20.0, 20.0, 22.0, 22.0],
-            ],
-            dtype=np.float32,
-        ), "float32"),
+        coordinates=tensor(
+            np.array(
+                [
+                    [0.0, 0.0, 2.0, 2.0],
+                    [5.0, 5.0, 7.0, 7.0],
+                    [20.0, 20.0, 22.0, 22.0],
+                ],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
         labels=tensor(np.array([0, 1, 0], dtype=np.int32), "int32"),
     )
 
@@ -126,36 +137,45 @@ def test_assignment_strategy_filters_by_iou():
     )
 
     np.testing.assert_allclose(
-        to_numpy(aligned_pred.boxes),
+        to_numpy(aligned_pred.coordinates),
         [[0.0, 0.0, 2.0, 2.0]],
     )
     np.testing.assert_allclose(
-        to_numpy(aligned_true.boxes),
+        to_numpy(aligned_true.coordinates),
         [[0.0, 0.0, 2.0, 2.0]],
     )
 
 
 def test_assignment_strategy_respects_classes():
     predictions = ODPrediction(
-        boxes=tensor(np.array(
-            [
-                [0.0, 0.0, 2.0, 2.0],
-                [0.0, 0.0, 2.0, 2.0],
-            ],
-            dtype=np.float32,
-        ), "float32"),
-        class_scores=tensor(np.array(
-            [[0.9, 0.1], [0.1, 0.9]],
-            dtype=np.float32,
-        ), "float32"),
+        coordinates=tensor(
+            np.array(
+                [
+                    [0.0, 0.0, 2.0, 2.0],
+                    [0.0, 0.0, 2.0, 2.0],
+                ],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
+        class_scores=tensor(
+            np.array(
+                [[0.9, 0.1], [0.1, 0.9]],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
         confidences=tensor(np.array([0.9, 0.9], dtype=np.float32), "float32"),
     )
 
     targets = ODTarget(
-        boxes=tensor(np.array(
-            [[0.0, 0.0, 2.0, 2.0]],
-            dtype=np.float32,
-        ), "float32"),
+        coordinates=tensor(
+            np.array(
+                [[0.0, 0.0, 2.0, 2.0]],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
         labels=tensor(np.array([1], dtype=np.int32), "int32"),
     )
 
@@ -174,16 +194,19 @@ def test_assignment_strategy_respects_classes():
 
 def test_assignment_strategy_handles_empty_predictions():
     predictions = ODPrediction(
-        boxes=tensor(np.empty((0, 4), dtype=np.float32), "float32"),
+        coordinates=tensor(np.empty((0, 4), dtype=np.float32), "float32"),
         class_scores=tensor(np.empty((0, 2), dtype=np.float32), "float32"),
         confidences=tensor(np.empty((0,), dtype=np.float32), "float32"),
     )
 
     targets = ODTarget(
-        boxes=tensor(np.array(
-            [[0.0, 0.0, 2.0, 2.0]],
-            dtype=np.float32,
-        ), "float32"),
+        coordinates=tensor(
+            np.array(
+                [[0.0, 0.0, 2.0, 2.0]],
+                dtype=np.float32,
+            ),
+            "float32",
+        ),
         labels=tensor(np.array([0], dtype=np.int32), "int32"),
     )
 

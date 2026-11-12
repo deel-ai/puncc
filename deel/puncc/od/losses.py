@@ -242,8 +242,6 @@ class BoxCountTwoSidedLoss(ConfidenceLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> TensorLike:
-        if len(y_true) == 0:
-            return ops.array(0.0)
         return ops.array(float(abs(len(y_true) - len(y_pred)) > self.threshold))
 
 
@@ -494,10 +492,7 @@ class BoxPrecisionLoss(LocalizationLoss):
 
 class IoUThresholdLoss(LocalizationLoss):
     """
-    Fraction of target boxes whose assigned prediction has an IoU
-    below the given threshold.
-
-    Unassigned targets count as errors.
+    Fraction of target boxes whose assigned prediction has an IoU below the given threshold.
     """
 
     def __init__(

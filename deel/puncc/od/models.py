@@ -101,7 +101,7 @@ class PunccODPredictor:
         return ODPredictionSequence(
             [
                 ODPrediction(
-                    boxes=boxes,
+                    coordinates=boxes,
                     class_scores=class_scores,
                     confidences=confidences,
                 )
@@ -201,9 +201,9 @@ class ODClassificationMixin:
 
 
 class ODLocalizationMixin:
-    prediction_attr_name: ClassVar[str] = "boxes"
-    target_attr_name: ClassVar[str] = "boxes"
-    # prediction_set_attr_name: ClassVar[str] = "boxes"
+    prediction_attr_name: ClassVar[str] = "coordinates"
+    target_attr_name: ClassVar[str] = "coordinates"
+    # prediction_set_attr_name: ClassVar[str] = "coordinates"
 
     def build_od_prediction_set(
         self,
@@ -213,7 +213,7 @@ class ODLocalizationMixin:
 
         inner = ODPredictionSequence(
             [
-                replace(prediction_i, boxes=prediction_set_i[..., 0])
+                replace(prediction_i, coordinates=prediction_set_i[..., 0])
                 for prediction_i, prediction_set_i in zip(
                     prediction, prediction_set, strict=True
                 )
@@ -222,7 +222,7 @@ class ODLocalizationMixin:
 
         outer = ODPredictionSequence(
             [
-                replace(prediction_i, boxes=prediction_set_i[..., 1])
+                replace(prediction_i, coordinates=prediction_set_i[..., 1])
                 for prediction_i, prediction_set_i in zip(
                     prediction, prediction_set, strict=True
                 )
@@ -596,7 +596,9 @@ class ODLocalizationCRC(ODCRC):
                 [
                     replace(
                         prediction,
-                        boxes=box_extension_mode.processor(prediction.boxes, lambd),
+                        coordinates=box_extension_mode.processor(
+                            prediction.coordinates, lambd
+                        ),
                     )
                     for prediction in predictions
                 ]

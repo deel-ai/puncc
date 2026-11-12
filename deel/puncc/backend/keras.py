@@ -54,7 +54,7 @@ Notes :
 
 import logging
 import sys
-from functools import wraps
+from functools import wraps, reduce
 from types import ModuleType
 from typing import Any, Callable
 
@@ -363,19 +363,27 @@ class _DeferredBackendOperation:
         return self.name
 
 
-class RandomBackendManager(BackendManager):
+class SubmoduleManager(BackendManager):
     """
-    Provide lazily initialized access to ``keras.random``.
+    Provide lazily initialized access to a Keras submodule.
     """
+
+    __name__: str
+
+    def __init__(self, submodule_name: str | None = None):
+        super().__init__()
+        if submodule_name is not None:
+            self.__name__ = submodule_name
 
     @property
     def module(self):
         if self._keras is None:
             raise RuntimeError("Keras has not been loaded.")
-        return self._keras.random
+        return reduce(getattr, self.__name__.split("."), self._keras)
+        #return getattr(self._keras, self.__name__)
 
 
-class OpsBackendManager(BackendManager):
+class OpsBackendManager(SubmoduleManager):
     """
     Provide backend-agnostic tensor operations for PUNCC.
 
@@ -390,6 +398,7 @@ class OpsBackendManager(BackendManager):
         ninf: Negative infinity.
     """
 
+    __name__: str = "ops"
     inf = float("inf")
     ninf = float("-inf")
 
@@ -406,12 +415,6 @@ class OpsBackendManager(BackendManager):
         if get_backend() is None:
             raise NoBackendSpecifiedError()
         return type(self.array(0.0))
-
-    @property
-    def module(self):
-        if self._keras is None:
-            raise RuntimeError("Keras has not been loaded.")
-        return self._keras.ops
 
     @set_backend_on_first_call
     def flatten(self, x: TensorLike):
@@ -670,4 +673,6 @@ class OpsBackendManager(BackendManager):
 
 
 ops = OpsBackendManager()
-random = RandomBackendManager()
+random = SubmoduleManager("random")
+metrics = SubmoduleManager("metrics")
+utils = SubmoduleManager("utils")

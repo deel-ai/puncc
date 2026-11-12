@@ -321,8 +321,8 @@ class AsymmetricHausdorffDistance:
         y_pred: ODPrediction,
         y_true: ODTarget,
     ) -> TensorLike:
-        true_boxes = y_true.boxes
-        pred_boxes = y_pred.boxes
+        true_boxes = y_true.coordinates
+        pred_boxes = y_pred.coordinates
 
         true_x1 = true_boxes[:, 0][:, None]
         true_y1 = true_boxes[:, 1][:, None]
