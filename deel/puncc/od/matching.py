@@ -157,7 +157,9 @@ class AssignmentResult:
         Args:
             indices (list[int]): indices of predictions to keep in new matching.
         """
-        indices = list(set(indices))
+        if len(indices) != len(set(indices)):
+            raise ValueError("Prediction indices must be unique.")
+
         if any(i < 0 or i >= self.n_pred for i in indices):
             raise IndexError("Prediction index out of bounds.")
 

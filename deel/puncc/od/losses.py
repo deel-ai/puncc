@@ -466,11 +466,9 @@ class ThresholdedRecallLoss(LocalizationLoss):
         return ops.cast(loss > self.beta, "float32")
 
 
-class BoxPrecisionLoss(LocalizationLoss):
+class BoxOverextensionLoss(LocalizationLoss):
     """
-    Fraction of predicted boxes not entirely contained in their
-    assigned target box.
-
+    Fraction of predicted boxes not entirely contained in their assigned target box.
     Unassigned predictions count as errors.
     """
 

@@ -109,10 +109,7 @@ def mean_iou(
     Returns:
         Mean IoU over matched pairs. Returns NaN if no pair is matched.
     """
-    assignment = check_assignment(
-        assignment,
-        direction=MatchingDirection.TRUE_TO_PRED,
-    )
+    assignment = check_assignment(assignment)
 
     if not assignment.pairs:
         return _nan()
