@@ -129,10 +129,10 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):
         X: Any | None = None,
     ) -> ConformalPrediction[Any, Any]:
         if isinstance(alpha, Real):
-            alpha_is_scalar = True
+            alpha_vector = None
         else:
             alpha_array = ops.array(alpha)
-            alpha_is_scalar = ops.ndim(alpha_array) == 0
+            alpha_vector = alpha_array if ops.ndim(alpha_array) > 0 else None
 
         if calibration_context is self.calibration_context:
             classwise_contexts = self.classwise_calibration_contexts
@@ -145,7 +145,9 @@ class ClassConditionalSplitConformalMixin(SplitConformalPredictor):
         quantiles = []
 
         for k in range(n_classes):
-            alpha_k = alpha if alpha_is_scalar else alpha[k]
+            alpha_k = (
+                alpha if alpha_vector is None else ops.take(alpha_vector, k, axis=0)
+            )
             class_context = classwise_contexts.get(k)
 
             if class_context is not None and class_context.size > 0:

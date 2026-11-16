@@ -217,7 +217,7 @@ class CalibrationContext:
 
         def select(value):
             if isinstance(value, UserList):
-                return value[key]
+                return value[key]  # type: ignore
             if isinstance(value, list):
                 return [value[i] for i in key]
             if isinstance(value, tuple):

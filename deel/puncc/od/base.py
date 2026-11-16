@@ -867,7 +867,7 @@ class ODPredictionSequence(_ODSequence[ODPrediction]):
                     "Cannot flatten predictions if only some have class_sets defined."
                 )
             class_sets = PredictionSetSequence(
-                [class_set for pred in self.data for class_set in pred.class_sets]
+                [class_set for pred in self.data for class_set in pred.class_sets]  # type: ignore
             )
         return ODPrediction(
             coordinates=boxes,

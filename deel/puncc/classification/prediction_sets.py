@@ -104,7 +104,13 @@ def raps_set(lambd: float = 0, k_reg: int = 1, rand: bool = True) -> PredSetFunc
         penal_cs = cs + penalty
 
         quantile = ops.reshape(ops.convert_to_tensor(quantile), (-1,))
-        index_limit = ops.sum(penal_cs <= quantile[:, None], axis=-1) + 1
+        index_limit = (
+            ops.sum(
+                penal_cs <= ops.expand_dims(quantile, axis=-1),
+                axis=-1,
+            )
+            + 1
+        )
 
         index_limit = ops.minimum(index_limit, K)
 

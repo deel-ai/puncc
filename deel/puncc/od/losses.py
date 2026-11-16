@@ -21,7 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Losses for object detection.
+Object-detection losses for conformal risk control.
+
+Losses can be evaluated per image or per ground-truth box.
+Assignment-based losses support multiple predictions per ground truth.
 """
 from __future__ import annotations
 
@@ -385,7 +388,10 @@ class ClassificationCoverageLoss(ClassificationLoss):
     ) -> list[TensorLike]:
         assignment = check_assignment(assignment=assignment)
 
-        if assignment.pairs and y_pred.class_sets is None:
+        if not assignment.pairs:
+            return self._aggregate_pair_losses(assignment, [])
+
+        if y_pred.class_sets is None:
             raise ValueError(
                 "ClassificationCoverageLoss requires prediction class_sets."
             )
@@ -490,8 +496,16 @@ class ThresholdedRecallLoss(LocalizationLoss):
 
 class BoxOverextensionLoss(LocalizationLoss):
     """
-    Fraction of predicted boxes not entirely contained in their assigned target box.
-    Unassigned predictions count as errors.
+    Measure whether matched predictions extend beyond their ground truths.
+
+    A ground truth receives zero loss if at least one matched predicted
+    box is entirely contained within its bounding box, and one otherwise.
+
+    Notes:
+        The loss is evaluated per ground truth, not per prediction.
+
+        Unmatched predictions do not contribute to the loss.
+        Unmatched ground truths are penalized or excluded according to penalize_unmatched_boxes.
     """
 
     def compute_boxwise(
@@ -568,7 +582,11 @@ class JointCoverageLoss(ODLoss):
         if len(y_true) == 0:
             return []
         assignment = check_assignment(assignment)
-        if assignment.pairs and y_pred.class_sets is None:
+
+        if not assignment.pairs:
+            return self._aggregate_pair_losses(assignment, [])
+
+        if y_pred.class_sets is None:
             raise ValueError("JointCoverageLoss requires prediction class_sets.")
 
         pair_losses = []

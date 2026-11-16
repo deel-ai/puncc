@@ -128,10 +128,8 @@ class BootstrapEnsemble:
 
     def _aggregate(self, predictions: TensorLike) -> TensorLike:
         """Reduce the first axis, keeping every remaining prediction axis."""
-        if self.aggregation == "mean":
-            result = ops.mean(predictions, axis=0)
-        elif self.aggregation == "median":
-            result = ops.median(predictions, axis=0)
+        if isinstance(self.aggregation, str):
+            result = getattr(ops, self.aggregation)(predictions, axis=0)
         else:
             result = self.aggregation(predictions, axis=0)
         result = ops.convert_to_tensor(result)

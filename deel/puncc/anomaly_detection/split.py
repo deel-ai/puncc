@@ -138,7 +138,7 @@ class SplitCAD(SplitConformalPredictor):
             model=model,
             # TODO : revoir l'archi pour rendre ceci moins sale
             # deviendrait valide si nc_score_function méthode de SplitCP plutôt que argument du constructeur
-            nc_score_function=None,  # Unused in CAD
+            nc_score_function=lambda scores, _: scores,  # Unused in CAD
             pred_set_function=self._is_anomaly,
             fit_function=fit_function,
         )
