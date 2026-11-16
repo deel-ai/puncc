@@ -26,6 +26,10 @@ Basic error and exception classes.
 
 
 class NotCalibratedError(RuntimeError):
+    """
+    Raised when a model is used without being calibrated.
+    """
+
     default_message = """
         The model has not been calibrated, therefore, no prediction can be made.
         Please use model.calibrate(x_calib, y_calib).

@@ -236,9 +236,11 @@ class LocallyAdaptiveCP(LocallyAdaptiveMixin, SplitConformalRegression):
             Defaults to None.
 
     Notes:
-        The dispersion estimator is fitted automatically when fit() is called, using residuals computed on the training dataset.
+        The dispersion estimator is fitted automatically when fit() is called, using residuals computed on
+        the training dataset.
 
-        The predict() method returns a ConformalPrediction containing the point predictions and the locally adaptive prediction
+        The predict() method returns a ConformalPrediction containing the point predictions and the locally
+        adaptive prediction
         intervals, with shape (n_samples, 2).
 
         The dispersion estimates must be strictly positive during calibration and prediction.

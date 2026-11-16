@@ -20,6 +20,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+Losses for object detection.
+"""
 from __future__ import annotations
 
 from abc import ABC
@@ -47,13 +50,9 @@ class ODLoss(ABC):
     - box-wise:
         one scalar loss is returned for each statistical box unit.
 
-    For assignment-based box-wise losses, unmatched source boxes may either
-    be ignored or penalized with ``upper_bound``.
-
     Args:
         boxwise:
-            Whether the loss should return one value per box instead of one
-            value per image.
+            Whether the loss should return one value per box instead of one value per image.
 
         penalize_unmatched_boxes:
             Whether unmatched boxes belonging to the population evaluated by the loss are penalized.
@@ -124,8 +123,24 @@ class ODLoss(ABC):
         """
         Compute the image-wise loss.
 
-        For box-decomposable losses, the default implementation simply
-        averages the elementary box-wise losses.
+        By default, this method averages the evaluated ground-truth losses
+        returned by compute_boxwise.
+
+        Args:
+            y_pred:
+                Predictions for one image.
+            y_true:
+                Ground-truth annotations for the same image.
+            assignment:
+                Optional matching assignment.
+
+        Returns:
+            Mean loss over the evaluated ground truths.
+            Returns zero when the image contains no ground truths.
+
+        Raises:
+            ValueError:
+                If the image contains ground truths but none are evaluated.
         """
         losses = self.compute_boxwise(y_pred, y_true, assignment)
         if not losses:
@@ -139,10 +154,17 @@ class ODLoss(ABC):
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
         """
-        Compute elementary box-wise losses for one image.
+        Compute individual ground-truth losses for one image.
 
-        Losses that are intrinsically image-wise should override
-        ``compute_imagewise`` only.
+        Returns:
+            A list containing one scalar loss per evaluated ground truth,
+            preserving ground-truth order.
+
+            The list may be empty if no ground truths are evaluated.
+
+        Raises:
+            NotImplementedError:
+                If the loss does not support box-wise computation.
         """
         raise NotImplementedError(
             f"{type(self).__name__} does not support box-wise computation."

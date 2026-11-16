@@ -42,15 +42,20 @@ from deel.puncc.od.base import ODPrediction, ODTarget
 
 class MatchingDirection(StrEnum):
     """
-    Direction of the assignment
+    Direction used to construct an object-detection assignment.
 
-    TRUE_TO_PRED
-    source = ground truths
-    target = predictions
+    TRUE_TO_PRED:
+        Each ground-truth box is independently assigned to at most
+        one predicted box.
 
-    PRED_TO_TRUE
-    source = predictions
-    target = ground truths
+    PRED_TO_TRUE:
+        Each predicted box is independently assigned to at most
+        one ground-truth box.
+
+    Notes:
+        The matching direction determines the source and candidate
+        sets, but does not change the representation of matched pairs.
+        AssignmentResult always stores (true_idx, pred_idx) pairs.
     """
 
     TRUE_TO_PRED = "true_to_pred"
@@ -60,8 +65,28 @@ class MatchingDirection(StrEnum):
 @dataclass(slots=True)
 class AssignmentResult:
     """
-    Results of an assignment between a source set and a target set.
-    pairs are always stored in the order (true_idx, pred_idx) regardless of the matching direction.
+    Store the result of an object-detection assignment.
+
+    Matched pairs are always represented as (true_idx, pred_idx), independently of the matching direction.
+
+    Args:
+        pairs:
+            List of matched ground-truth and prediction indices.
+        n_true:
+            Total number of ground-truth boxes.
+        n_pred:
+            Total number of predicted boxes.
+        matching_direction:
+            Direction used to construct the assignment.
+            Defaults to TRUE_TO_PRED.
+
+    Notes:
+        Each source can be assigned to at most one candidate.
+        Multiple sources may share the same candidate.
+
+        The source corresponds to ground truths for TRUE_TO_PRED and predictions for PRED_TO_TRUE.
+
+        Unassigned indices are inferred from pairs and the total numbers of ground-truth and predicted boxes.
     """
 
     pairs: list[tuple[int, int]]  # (true_idx, pred_idx)
@@ -154,8 +179,29 @@ class AssignmentResult:
 
     def filter_predictions(self, indices: list[int], inplace: bool = False):
         """
+        Update the assignment after filtering predicted boxes.
+
+        Retained prediction indices are remapped to their positions in the filtered prediction collection.
+        Matched pairs referring to removed predictions are discarded.
+
         Args:
-            indices (list[int]): indices of predictions to keep in new matching.
+            indices:
+                Unique indices of the predictions to retain, in their new order.
+            inplace:
+                Whether to update the current assignment.
+                Defaults to False.
+
+        Returns:
+            The updated AssignmentResult. A new instance is returned unless inplace is True.
+
+        Raises:
+            IndexError:
+                If a prediction index is out of bounds.
+            ValueError:
+                If prediction indices contain duplicates.
+
+        Notes:
+            Ground-truth indices and the matching direction remain unchanged.
         """
         if len(indices) != len(set(indices)):
             raise ValueError("Prediction indices must be unique.")
@@ -218,7 +264,19 @@ class AssignmentMethod(Protocol):
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-    ) -> AssignmentResult: ...
+    ) -> AssignmentResult:
+        """
+        Compute an assignment between predicted and ground-truth boxes.
+
+        Args:
+            y_pred:
+                Predicted boxes for one image.
+            y_true:
+                Ground-truth boxes for the same image.
+
+        Returns:
+            An AssignmentResult containing matched pairs in canonical (true_idx, pred_idx) order.
+        """
 
 
 @runtime_checkable
@@ -253,14 +311,16 @@ class IoUDistance:
         y_true: ODTarget,
     ) -> TensorLike:
         """
-        Compute the pairwise cost matrix based on Intersection over Union (IoU) between predicted and ground-truth boxes.
+        Compute the pairwise cost matrix based on Intersection over Union (IoU) between predicted
+        and ground-truth boxes.
 
         Args:
             y_pred (ODPrediction): Predicted bounding boxes.
             y_true (ODTarget): Ground-truth bounding boxes.
 
         Returns:
-            TensorLike: A matrix of shape (n_true, n_pred) containing the pairwise costs, where each cost is defined as 1 - IoU.
+            TensorLike: A matrix of shape (n_true, n_pred) containing the pairwise costs, where each
+            cost is defined as 1 - IoU.
         """
         return 1.0 - y_true.pairwise_iou(y_pred)
 
@@ -276,6 +336,16 @@ class LACDistance:
         y_pred: ODPrediction,
         y_true: ODTarget,
     ) -> TensorLike:
+        """
+        Compute Pairwise classification cost matrix based on predicted class scores and ground-truth labels.
+
+        Args:
+            y_pred (ODPrediction): Predicted bounding boxes with class scores.
+            y_true (ODTarget): Ground-truth bounding boxes with labels.
+
+        Returns:
+            TensorLike: Cost matrix of shape (n_true, n_pred).
+        """
         # (n_pred, n_classes) -> (n_classes, n_pred)
         scores_by_class = ops.transpose(
             y_pred.class_scores,
@@ -441,7 +511,7 @@ class CostMatrixMatcher(Protocol):
                 which source-target pairs are admissible.
 
         Returns:
-            List of (source_index, target_index) pairs.
+            list[tuple[int, int]]: List of (source_idx, candidate_idx) pairs.
         """
 
 
@@ -457,6 +527,17 @@ class ArgminMatcher:
         cost_matrix: TensorLike,
         valid_mask: TensorLike | None = None,
     ) -> list[tuple[int, int]]:
+        """
+        Assign each source to its lowest-cost admissible candidate.
+
+        Args:
+            cost_matrix (TensorLike): Pairwise costs of shape (n_sources, n_candidates).
+            valid_mask (TensorLike | None, optional): Optional boolean mask indicating admissible pairs.
+                Defaults to None.
+
+        Returns:
+            list[tuple[int, int]]: List of (source_idx, candidate_idx) pairs.
+        """
         n_source, n_target = ops.shape(cost_matrix)
 
         if not n_source or not n_target:
@@ -490,6 +571,17 @@ class HungarianMatcher:
         cost_matrix: TensorLike,
         valid_mask: TensorLike | None = None,
     ) -> list[tuple[int, int]]:
+        """
+        Compute a minimum-cost one-to-one assignment.
+
+        Args:
+            cost_matrix (TensorLike): Pairwise costs of shape (n_sources, n_candidates).
+            valid_mask (TensorLike | None, optional): Optional boolean mask indicating admissible pairs.
+                Defaults to None.
+
+        Returns:
+            list[tuple[int, int]]: List of (source_idx, candidate_idx) pairs.
+        """
         costs = ops.convert_to_numpy(cost_matrix)
         n_source, n_target = costs.shape
 
@@ -584,6 +676,16 @@ class AssignmentStrategy:
         y_pred: ODPrediction,
         y_true: ODTarget,
     ) -> TensorLike | None:
+        """
+        Compute the admissibility mask for candidate associations.
+
+        Pairs can be restricted by a minimum IoU and by equality between
+        the predicted class and ground-truth label.
+
+        Returns:
+            A boolean tensor of shape (n_true, n_pred), or None when
+            no matching constraints are configured.
+        """
         valid_mask = None
 
         if self.iou_threshold is not None:
@@ -705,6 +807,18 @@ class RandomMatcher:
         cost_matrix: TensorLike,
         valid_mask: TensorLike | None = None,
     ) -> list[tuple[int, int]]:
+        """
+        Randomly assign sources to admissible targets based on generated random costs.
+
+        Args:
+            cost_matrix (TensorLike): Pairwise costs of shape (n_sources, n_candidates).
+                The values are ignored, but the shape is used to determine the number of sources and targets.
+            valid_mask (TensorLike | None, optional): Boolean mask of admissible pairs.
+                Defaults to None.
+
+        Returns:
+            list[tuple[int, int]]: List of (source_idx, candidate_idx) pairs.
+        """
         random_costs = random.uniform(
             ops.shape(cost_matrix),
             seed=self.seed,
