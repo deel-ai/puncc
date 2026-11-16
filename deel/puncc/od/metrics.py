@@ -24,6 +24,7 @@
 """Metrics for object detection."""
 
 from __future__ import annotations
+from collections.abc import Iterable, Sequence
 
 from deel.puncc.backend import ops
 from deel.puncc.od.base import ODPrediction, ODTarget
@@ -57,13 +58,10 @@ def detection_recall(
     if len(y_true) == 0:
         return _nan()
 
-    assignment = check_assignment(
-        assignment,
-        direction=MatchingDirection.TRUE_TO_PRED,
-    )
+    assignment = check_assignment(assignment)
 
     return ops.array(
-        len(assignment.matched_pairs) / len(y_true),
+        len(set(assignment.assigned_true_indices)) / len(y_true),
         dtype="float32",
     )
 
@@ -86,13 +84,10 @@ def detection_precision(
     if len(y_pred) == 0:
         return _nan()
 
-    assignment = check_assignment(
-        assignment,
-        direction=MatchingDirection.PRED_TO_TRUE,
-    )
+    assignment = check_assignment(assignment)
 
     return ops.array(
-        len(assignment.matched_pairs) / len(y_pred),
+        len(set(assignment.assigned_pred_indices)) / len(y_pred),
         dtype="float32",
     )
 
@@ -119,19 +114,37 @@ def mean_iou(
         direction=MatchingDirection.TRUE_TO_PRED,
     )
 
-    if not assignment.matched_pairs:
+    if not assignment.pairs:
         return _nan()
 
     ious = y_pred.pairwise_iou(y_true)
 
     return ops.mean(
-        ops.stack(
-            [
-                ious[pred_idx, true_idx]
-                for true_idx, pred_idx in assignment.matched_pairs
-            ]
-        )
+        ops.stack([ious[pred_idx, true_idx] for true_idx, pred_idx in assignment.pairs])
     )
+
+
+def _mean_gt_coverage(
+    n_true: int,
+    assignment: AssignmentResult,
+    pair_coverages: Iterable[TensorLike],
+) -> TensorLike:
+    """Compute mean GT coverage, keeping the best matched prediction.
+
+    Unmatched ground truths contribute zero coverage.
+    """
+    if n_true == 0:
+        return _nan()
+
+    coverages = [ops.array(0.0, dtype="float32") for _ in range(n_true)]
+
+    for (true_idx, _), coverage in zip(assignment.pairs, pair_coverages, strict=True):
+        coverages[true_idx] = ops.maximum(
+            coverages[true_idx],
+            ops.cast(coverage, "float32"),
+        )
+
+    return ops.mean(ops.stack(coverages))
 
 
 def box_coverage(
@@ -155,20 +168,16 @@ def box_coverage(
     if len(y_true) == 0:
         return _nan()
 
-    assignment = check_assignment(
+    assignment = check_assignment(assignment)
+
+    return _mean_gt_coverage(
+        len(y_true),
         assignment,
-        direction=MatchingDirection.TRUE_TO_PRED,
+        (
+            y_pred[pred_idx].contains(y_true[true_idx])
+            for true_idx, pred_idx in assignment.pairs
+        ),
     )
-
-    covered = ops.array(0.0)
-
-    for true_idx, pred_idx in assignment.matched_pairs:
-        covered += ops.cast(
-            y_pred[pred_idx].contains(y_true[true_idx]),
-            "float32",
-        )
-
-    return covered / len(y_true)
 
 
 def pixel_coverage(
@@ -189,21 +198,18 @@ def pixel_coverage(
     Returns:
         Mean target-area coverage. Returns NaN if there are no target objects.
     """
+    assignment = check_assignment(assignment)
+
     if len(y_true) == 0:
         return _nan()
 
-    assignment = check_assignment(
-        assignment,
-        direction=MatchingDirection.TRUE_TO_PRED,
-    )
-
     ioas = y_pred.pairwise_ioa(y_true)
-    coverage = ops.array(0.0)
 
-    for true_idx, pred_idx in assignment.matched_pairs:
-        coverage += ioas[pred_idx, true_idx]
-
-    return coverage / len(y_true)
+    return _mean_gt_coverage(
+        len(y_true),
+        assignment,
+        (ioas[pred_idx, true_idx] for true_idx, pred_idx in assignment.pairs),
+    )
 
 
 def classification_coverage(
@@ -223,24 +229,17 @@ def classification_coverage(
     Returns:
         Classification coverage. Returns NaN if there are no target objects.
     """
-    if len(y_true) == 0:
-        return _nan()
-
-    assignment = check_assignment(
-        assignment,
-        direction=MatchingDirection.TRUE_TO_PRED,
-    )
-
+    assignment = check_assignment(assignment)
     prediction_sets = y_pred.prediction_sets
-    covered = ops.array(0.0)
 
-    for true_idx, pred_idx in assignment.matched_pairs:
-        covered += ops.cast(
-            ops.any(prediction_sets[pred_idx] == y_true.labels[true_idx]),
-            "float32",
-        )
-
-    return covered / len(y_true)
+    return _mean_gt_coverage(
+        len(y_true),
+        assignment,
+        (
+            ops.any(prediction_sets[pred_idx] == y_true.labels[true_idx])
+            for true_idx, pred_idx in assignment.pairs
+        ),
+    )
 
 
 def mean_prediction_set_size(
@@ -287,33 +286,20 @@ def joint_coverage(
     Returns:
         Joint coverage. Returns NaN if there are no target objects.
     """
-    if len(y_true) == 0:
-        return _nan()
-
-    assignment = check_assignment(
-        assignment,
-        direction=MatchingDirection.TRUE_TO_PRED,
-    )
-
+    assignment = check_assignment(assignment)
     prediction_sets = y_pred.prediction_sets
-    covered = ops.array(0.0)
 
-    for true_idx, pred_idx in assignment.matched_pairs:
-        localization_covered = y_pred[pred_idx].contains(y_true[true_idx])
-
-        classification_covered = ops.any(
-            prediction_sets[pred_idx] == y_true.labels[true_idx]
-        )
-
-        covered += ops.cast(
+    return _mean_gt_coverage(
+        len(y_true),
+        assignment,
+        (
             ops.logical_and(
-                localization_covered,
-                classification_covered,
-            ),
-            "float32",
-        )
-
-    return covered / len(y_true)
+                y_pred[pred_idx].contains(y_true[true_idx]),
+                ops.any(prediction_sets[pred_idx] == y_true.labels[true_idx]),
+            )
+            for true_idx, pred_idx in assignment.pairs
+        ),
+    )
 
 
 def mean_box_area(

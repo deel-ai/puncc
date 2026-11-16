@@ -148,27 +148,47 @@ class ODLoss(ABC):
             f"{type(self).__name__} does not support box-wise computation."
         )
 
-    def matched_pairs(self, assignment: AssignmentResult) -> zip[tuple[int, int]]:
+    def _aggregate_pair_losses(
+        self,
+        assignment: AssignmentResult,
+        pair_losses: Sequence[TensorLike],
+    ) -> list[TensorLike]:
         """
-        Iterate over matched ground-truth and prediction indices.
+        Aggregate matched-pair losses by ground-truth box.
+
+        Multiple losses associated with the same ground truth are reduced to their minimum.
 
         Args:
             assignment:
-                Matching result containing the source-to-target assignments.
+                Assignment containing (true_idx, pred_idx) pairs.
+            pair_losses:
+                One loss per matched pair, in assignment.pairs order.
 
         Returns:
-            Iterator yielding (true_index, prediction_index) pairs,
-            independently of the assignment direction.
+            Ground-truth losses ordered by their original indices.
+            Unmatched ground truths receive upper_bound when penalization is enabled, otherwise they are omitted.
+
+        Raises:
+            ValueError:
+                If the number of pair losses does not match the number of assignments.
         """
-        return zip(*assignment.matched_indices(), strict=True)
+        if len(pair_losses) != len(assignment.pairs):
+            raise ValueError(
+                "Expected one loss per matched pair. "
+                f"Got {len(pair_losses)} losses for "
+                f"{len(assignment.pairs)} pairs."
+            )
 
-    def _add_unmatched_penalties(
-        self, losses: list[TensorLike], unmatched_indices: Sequence[int]
-    ) -> list[TensorLike]:
-        if not self.penalize_unmatched_boxes:
-            return losses
+        losses_by_true: list[list[TensorLike]] = [[] for _ in range(assignment.n_true)]
+        for (true_idx, _), loss in zip(assignment.pairs, pair_losses, strict=True):
+            losses_by_true[true_idx].append(loss)
 
-        losses.extend(ops.array(self.upper_bound) for _ in unmatched_indices)
+        losses: list[TensorLike] = []
+        for true_losses in losses_by_true:
+            if true_losses:
+                losses.append(ops.min(ops.stack(true_losses)))
+            elif self.penalize_unmatched_boxes:
+                losses.append(ops.array(self.upper_bound))
         return losses
 
 
@@ -262,7 +282,7 @@ class DetectionRecallLoss(ConfidenceLoss):
         if len(y_true) == 0:
             return []
         assignment = check_assignment(assignment=assignment)
-        unmatched = set(assignment.unmatched_true_indices())
+        unmatched = set(assignment.unassigned_true_indices)
         return [
             ops.array(self.upper_bound if i in unmatched else 0.0)
             for i in range(len(y_true))
@@ -314,12 +334,10 @@ class ThresholdedDistanceConfidenceLoss(ConfidenceLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
-        if not len(y_true):
+        if len(y_true) == 0:
             return []
-        if self.boxwise:
-            check_assignment(assignment, direction=MatchingDirection.TRUE_TO_PRED)
 
-        if not len(y_pred):
+        if len(y_pred) == 0:
             return [ops.array(self.upper_bound) for _ in range(len(y_true))]
 
         distances = self.distance_metric.cost_matrix(y_pred, y_true)
@@ -344,25 +362,21 @@ class ClassificationCoverageLoss(ClassificationLoss):
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
         assignment = check_assignment(assignment=assignment)
-        pairs = list(self.matched_pairs(assignment))
 
-        if pairs and y_pred.class_sets is None:
+        if assignment.pairs and y_pred.class_sets is None:
             raise ValueError(
                 "ClassificationCoverageLoss requires prediction class_sets."
             )
-
-        losses = [
+        pair_losses = [
             ops.cast(
                 ops.logical_not(
                     ops.any(y_pred.class_sets[pred_idx] == y_true.labels[true_idx])
                 ),
                 "float32",
             )
-            for true_idx, pred_idx in pairs
+            for true_idx, pred_idx in assignment.pairs
         ]
-        return self._add_unmatched_penalties(
-            losses, assignment.unmatched_true_indices()
-        )
+        return self._aggregate_pair_losses(assignment, pair_losses)
 
 
 class BoxCoverageLoss(LocalizationLoss):
@@ -385,26 +399,18 @@ class BoxCoverageLoss(LocalizationLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
-        assignment = check_assignment(assignment=assignment)
-
-        true_to_losses: dict[int, list[TensorLike]] = {}
-
-        for true_idx, pred_idx in self.matched_pairs(assignment):
-            loss = ops.cast(
+        assignment = check_assignment(assignment)
+        pair_losses = [
+            ops.cast(
                 ops.logical_not(y_pred[pred_idx].contains(y_true[true_idx])),
                 "float32",
             )
-            true_to_losses.setdefault(true_idx, []).append(loss)
-
-        losses = []
-
-        for true_idx in range(len(y_true)):
-            if true_idx in true_to_losses:
-                losses.append(ops.min(ops.stack(true_to_losses[true_idx])))
-            elif self.penalize_unmatched_boxes:
-                losses.append(ops.array(self.upper_bound))
-
-        return losses
+            for true_idx, pred_idx in assignment.pairs
+        ]
+        return self._aggregate_pair_losses(
+            assignment,
+            pair_losses,
+        )
 
 
 class PixelCoverageLoss(LocalizationLoss):
@@ -421,19 +427,16 @@ class PixelCoverageLoss(LocalizationLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
+        if len(y_true) == 0:
+            return []
         assignment = check_assignment(assignment)
-
-        losses = []
-        for true_idx, pred_idx in self.matched_pairs(assignment):
+        pair_losses = []
+        for true_idx, pred_idx in assignment.pairs:
             true_box = y_true[true_idx]
-            pred_box = y_pred[pred_idx]
-            covered_fraction = true_box.intersection(pred_box).area / ops.maximum(
-                true_box.area, 1e-12
-            )
-            losses.append(ops.array(1.0) - covered_fraction)
-        return self._add_unmatched_penalties(
-            losses, assignment.unmatched_true_indices()
-        )
+            intersection_area = true_box.intersection(y_pred[pred_idx]).area
+            coverage = intersection_area / ops.maximum(true_box.area, 1e-12)
+            pair_losses.append(ops.array(1.0, dtype="float32") - coverage)
+        return self._aggregate_pair_losses(assignment, pair_losses)
 
 
 class ThresholdedRecallLoss(LocalizationLoss):
@@ -477,17 +480,17 @@ class BoxPrecisionLoss(LocalizationLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
+        if len(y_true) == 0:
+            return []
         assignment = check_assignment(assignment)
-        losses = [
+        pair_losses = [
             ops.cast(
                 ops.logical_not(y_true[true_idx].contains(y_pred[pred_idx])),
                 "float32",
             )
-            for true_idx, pred_idx in self.matched_pairs(assignment)
+            for true_idx, pred_idx in assignment.pairs
         ]
-        return self._add_unmatched_penalties(
-            losses, assignment.unmatched_pred_indices()
-        )
+        return self._aggregate_pair_losses(assignment, pair_losses)
 
 
 class IoUThresholdLoss(LocalizationLoss):
@@ -513,17 +516,17 @@ class IoUThresholdLoss(LocalizationLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
+        if len(y_true) == 0:
+            return []
         assignment = check_assignment(assignment)
-        losses = [
+        pair_losses = [
             ops.cast(
                 y_true[true_idx].iou(y_pred[pred_idx]) < self.iou_threshold,
                 "float32",
             )
-            for true_idx, pred_idx in self.matched_pairs(assignment)
+            for true_idx, pred_idx in assignment.pairs
         ]
-        return self._add_unmatched_penalties(
-            losses, assignment.unmatched_true_indices()
-        )
+        return self._aggregate_pair_losses(assignment, pair_losses)
 
 
 class JointCoverageLoss(ODLoss):
@@ -542,24 +545,23 @@ class JointCoverageLoss(ODLoss):
         y_true: ODTarget,
         assignment: AssignmentResult | None = None,
     ) -> list[TensorLike]:
+        if len(y_true) == 0:
+            return []
         assignment = check_assignment(assignment)
-        pairs = list(self.matched_pairs(assignment))
-
-        if pairs and y_pred.class_sets is None:
+        if assignment.pairs and y_pred.class_sets is None:
             raise ValueError("JointCoverageLoss requires prediction class_sets.")
 
-        losses = []
-        for true_idx, pred_idx in pairs:
+        pair_losses = []
+        for true_idx, pred_idx in assignment.pairs:
             loc_covered = y_pred[pred_idx].contains(y_true[true_idx])
             cls_covered = ops.any(
                 y_pred.class_sets[pred_idx] == y_true.labels[true_idx]
             )
-            losses.append(
+            pair_losses.append(
                 ops.cast(
                     ops.logical_not(ops.logical_and(loc_covered, cls_covered)),
                     "float32",
                 )
             )
-        return self._add_unmatched_penalties(
-            losses, assignment.unmatched_true_indices()
-        )
+
+        return self._aggregate_pair_losses(assignment, pair_losses)

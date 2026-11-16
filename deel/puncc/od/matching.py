@@ -61,152 +61,124 @@ class MatchingDirection(StrEnum):
 class AssignmentResult:
     """
     Results of an assignment between a source set and a target set.
+    pairs are always stored in the order (true_idx, pred_idx) regardless of the matching direction.
     """
 
-    # source_to_target_index[source_idx] corresponds to the index of the target assigned to source_idx, or None if unassigned.
-    source_to_target_index: list[int | None]
-    # list of the indices of the targets that were not assigned to any source.
-    unassigned_target_indices: list[int]
+    pairs: list[tuple[int, int]]  # (true_idx, pred_idx)
+    n_true: int
+    n_pred: int
     matching_direction: MatchingDirection = MatchingDirection.TRUE_TO_PRED
 
-    def get(self, source_index: int) -> int | None:
-        return self.source_to_target_index[source_index]
+    def __post_init__(self) -> None:
+        if self.n_true < 0:
+            raise ValueError(f"n_true must be non-negative, got {self.n_true}")
+        if self.n_pred < 0:
+            raise ValueError(f"n_pred must be non-negative, got {self.n_pred}")
+
+        sources = set()
+        for t, p in self.pairs:
+            if t < 0 or t >= self.n_true:
+                raise IndexError(
+                    f"True index {t} out of bounds for n_true={self.n_true}"
+                )
+            if p < 0 or p >= self.n_pred:
+                raise IndexError(
+                    f"Pred index {p} out of bounds for n_pred={self.n_pred}"
+                )
+            source_idx = (
+                t if self.matching_direction == MatchingDirection.TRUE_TO_PRED else p
+            )
+            if source_idx in sources:
+                raise ValueError(
+                    f"Source index {source_idx} is assigned to multiple targets."
+                )
+            sources.add(source_idx)
 
     @property
-    def matched_pairs(self) -> list[tuple[int, int]]:
-        return [
-            (source_index, target_index)
-            for source_index, target_index in enumerate(self.source_to_target_index)
-            if target_index is not None
-        ]
+    def assigned_true_indices(self) -> list[int]:
+        """
+        Returns:
+            list[int]: list of indices of groundtruths that were assigned to at least one prediction.
+        """
+        return sorted({true_idx for true_idx, _ in self.pairs})
 
     @property
-    def unassigned_source_indices(self) -> list[int]:
-        return [
-            source_index
-            for source_index, target_index in enumerate(self.source_to_target_index)
-            if target_index is None
+    def assigned_pred_indices(self) -> list[int]:
+        """
+        Returns:
+            list[int]: list of indices of predictions that were assigned to at least one ground-truth object.
+        """
+        return sorted({pred_idx for _, pred_idx in self.pairs})
+
+    @property
+    def unassigned_true_indices(self) -> list[int]:
+        """
+        Returns:
+            list[int]: list of indices of groundtruths that were not assigned to any prediction.
+        """
+        return [i for i in range(self.n_true) if i not in self.assigned_true_indices]
+
+    @property
+    def unassigned_pred_indices(self) -> list[int]:
+        """
+        Returns:
+            list[int]: list of indices of predictions that were not assigned to any ground-truth object.
+        """
+        return [i for i in range(self.n_pred) if i not in self.assigned_pred_indices]
+
+    @property
+    def is_injective(self) -> bool:
+        """Whether each candidate is matched to at most one source."""
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return len(self.assigned_pred_indices) == len(self.pairs)
+        return len(self.assigned_true_indices) == len(self.pairs)
+
+    @property
+    def is_surjective(self) -> bool:
+        """Whether every candidate has at least one assigned source."""
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return len(self.assigned_pred_indices) == self.n_pred
+        return len(self.assigned_true_indices) == self.n_true
+
+    @property
+    def is_total(self) -> bool:
+        """Whether every source has an assignment."""
+        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
+            return len(self.assigned_true_indices) == self.n_true
+        return len(self.assigned_pred_indices) == self.n_pred
+
+    @property
+    def is_bijective(self) -> bool:
+        """Whether the matching defines a bijection between both sets."""
+        return self.is_total and self.is_injective and self.is_surjective
+
+    def filter_predictions(self, indices: list[int], inplace: bool = False):
+        """
+        Args:
+            indices (list[int]): indices of predictions to keep in new matching.
+        """
+        indices = list(set(indices))
+        if any(i < 0 or i >= self.n_pred for i in indices):
+            raise IndexError("Prediction index out of bounds.")
+
+        remap = {old: new for new, old in enumerate(indices)}
+
+        pairs = [
+            (true_idx, remap[pred_idx])
+            for true_idx, pred_idx in self.pairs
+            if pred_idx in remap
         ]
 
-    def filter_predictions(
-        self,
-        kept_indices: Sequence[int],
-    ) -> AssignmentResult:
-        """
-        Update the assignment after filtering predicted boxes.
-        Source or target indices are updated according to the matching direction.
-
-        Args:
-            kept_indices:
-                Indices of predictions retained after filtering in their new order.
-
-        Returns:
-            A new AssignmentResult with updated prediction indices and unmatched assignments.
-        """
-
-        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
-            return self.filter_targets(kept_indices)
-        return self.filter_sources(kept_indices)
-
-    def filter_targets(
-        self,
-        kept_indices: Sequence[int],
-    ) -> AssignmentResult:
-        """
-        Filter the target side of the assignment.
-
-        Retained target indices are remapped to their positions in kept_indices.
-        Assignments to removed targets become unmatched.
-
-        Args:
-            kept_indices:
-                Original target indices to retain, in their new order.
-
-        Returns:
-            A new AssignmentResult with remapped target indices.
-        """
-
-        kept = list(map(int, kept_indices))
-        remap = {old: new for new, old in enumerate(kept)}
-
+        if inplace:
+            self.pairs = pairs
+            self.n_pred = len(indices)
+            return self
         return AssignmentResult(
-            source_to_target_index=[
-                remap.get(target) if target is not None else None
-                for target in self.source_to_target_index
-            ],
-            unassigned_target_indices=[
-                remap[target]
-                for target in self.unassigned_target_indices
-                if target in remap
-            ],
+            pairs=pairs,
+            n_true=self.n_true,
+            n_pred=len(indices),
             matching_direction=self.matching_direction,
         )
-
-    def filter_sources(
-        self,
-        kept_indices: Sequence[int],
-    ) -> AssignmentResult:
-        """
-        Filter the source side of the assignment.
-
-        Only the selected sources are retained.
-        Targets that are no longer assigned to any retained source become unmatched.
-
-        Args:
-            kept_indices:
-                Original source indices to retain, in their new order.
-
-        Returns:
-            A new AssignmentResult containing the filtered sources and updated unmatched target indices.
-        """
-
-        kept = list(map(int, kept_indices))
-
-        source_to_target = [self.source_to_target_index[i] for i in kept]
-
-        all_targets = set(self.unassigned_target_indices) | {
-            target for target in self.source_to_target_index if target is not None
-        }
-
-        assigned_targets = {target for target in source_to_target if target is not None}
-
-        return AssignmentResult(
-            source_to_target_index=source_to_target,
-            unassigned_target_indices=sorted(all_targets - assigned_targets),
-            matching_direction=self.matching_direction,
-        )
-
-    def matched_indices(
-        self,
-    ) -> list[list[int]]:
-        """
-        Return matched indices in ground-truth/prediction order.
-
-        Returns:
-            Two lists containing matched ground-truth indices and their corresponding prediction indices.
-        """
-        pairs = self.matched_pairs
-        matched_indices = [
-            [source_idx for source_idx, _ in pairs],
-            [target_idx for _, target_idx in pairs],
-        ]
-        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
-            return matched_indices
-        return matched_indices[::-1]
-
-    def unmatched_true_indices(
-        self,
-    ) -> list[int]:
-        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
-            return self.unassigned_source_indices
-        return list(self.unassigned_target_indices)
-
-    def unmatched_pred_indices(
-        self,
-    ) -> list[int]:
-        if self.matching_direction == MatchingDirection.TRUE_TO_PRED:
-            return list(self.unassigned_target_indices)
-        return self.unassigned_source_indices
 
     def align_prediction_and_target(
         self,
@@ -229,7 +201,8 @@ class AssignmentResult:
         Returns:
             A tuple containing the aligned ODPrediction and ODTarget.
         """
-        true_indices, pred_indices = self.matched_indices()
+        true_indices = [true_idx for true_idx, _ in self.pairs]
+        pred_indices = [pred_idx for _, pred_idx in self.pairs]
         return prediction[pred_indices], target[true_indices]
 
 
@@ -256,7 +229,17 @@ class DistanceMetric(Protocol):
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-    ) -> TensorLike: ...
+    ) -> TensorLike:
+        """
+        Compute the pairwise cost matrix between predicted and ground-truth boxes.
+
+        Args:
+            y_pred (ODPrediction): Predicted bounding boxes.
+            y_true (ODTarget): Ground-truth bounding boxes.
+
+        Returns:
+            TensorLike: A matrix of shape (n_true, n_pred) containing the pairwise costs.
+        """
 
 
 class IoUDistance:
@@ -267,6 +250,16 @@ class IoUDistance:
         y_pred: ODPrediction,
         y_true: ODTarget,
     ) -> TensorLike:
+        """
+        Compute the pairwise cost matrix based on Intersection over Union (IoU) between predicted and ground-truth boxes.
+
+        Args:
+            y_pred (ODPrediction): Predicted bounding boxes.
+            y_true (ODTarget): Ground-truth bounding boxes.
+
+        Returns:
+            TensorLike: A matrix of shape (n_true, n_pred) containing the pairwise costs, where each cost is defined as 1 - IoU.
+        """
         return 1.0 - y_true.pairwise_iou(y_pred)
 
 
@@ -321,6 +314,16 @@ class AsymmetricHausdorffDistance:
         y_pred: ODPrediction,
         y_true: ODTarget,
     ) -> TensorLike:
+        """
+        Compute the asymmetric Hausdorff distance between predicted and ground-truth boxes.
+
+        Args:
+            y_pred (ODPrediction): Predicted bounding boxes.
+            y_true (ODTarget): Ground-truth bounding boxes.
+
+        Returns:
+            TensorLike: A matrix of shape (n_true, n_pred) containing the asymmetric Hausdorff distances.
+        """
         true_boxes = y_true.coordinates
         pred_boxes = y_pred.coordinates
 
@@ -387,7 +390,17 @@ class MixedDistance:
         self,
         y_pred: ODPrediction,
         y_true: ODTarget,
-    ):
+    ) -> TensorLike:
+        """
+        Compute the mixed cost matrix combining localization and classification costs.
+
+        Args:
+            y_pred (ODPrediction): Predicted bounding boxes and class scores.
+            y_true (ODTarget): Ground-truth bounding boxes and labels.
+
+        Returns:
+            TensorLike: A matrix of shape (n_true, n_pred) containing the mixed costs.
+        """
         loc = self.localization_distance.cost_matrix(
             y_pred,
             y_true,
@@ -616,12 +629,11 @@ class AssignmentStrategy:
 
         reverse = self.direction == MatchingDirection.PRED_TO_TRUE
 
-        n_source, n_target = (n_pred, n_true) if reverse else (n_true, n_pred)
-
-        if not n_source or not n_target:
+        if n_true == 0 or n_pred == 0:
             return AssignmentResult(
-                source_to_target_index=[None] * n_source,
-                unassigned_target_indices=list(range(n_target)),
+                pairs=[],
+                n_true=n_true,
+                n_pred=n_pred,
                 matching_direction=self.direction,
             )
 
@@ -640,23 +652,20 @@ class AssignmentStrategy:
             if valid_mask is not None:
                 valid_mask = ops.transpose(valid_mask)
 
-        matched_pairs = self.matcher.match(
+        source_candidate_pairs = self.matcher.match(
             costs,
             valid_mask,
         )
 
-        source_to_target = [None] * n_source
-
-        for source, target in matched_pairs:
-            source_to_target[source] = target
-
-        assigned_targets = {target for _, target in matched_pairs}
+        pairs = [
+            (candidate_idx, source_idx) if reverse else (source_idx, candidate_idx)
+            for source_idx, candidate_idx in source_candidate_pairs
+        ]
 
         return AssignmentResult(
-            source_to_target_index=source_to_target,
-            unassigned_target_indices=[
-                target for target in range(n_target) if target not in assigned_targets
-            ],
+            pairs=pairs,
+            n_true=n_true,
+            n_pred=n_pred,
             matching_direction=self.direction,
         )
 

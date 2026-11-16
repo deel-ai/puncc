@@ -56,7 +56,12 @@ from deel.puncc.od.losses import (
     LocalizationLoss,
     ODLoss,
 )
-from deel.puncc.od.matching import AssignmentMethod
+from deel.puncc.od.matching import (
+    AssignmentMethod,
+    AssignmentStrategy,
+    HungarianMatcher,
+    MatchingDirection,
+)
 from deel.puncc.od.utils import IndexableUserList
 from deel.puncc.typing import (
     FitFunction,
@@ -237,13 +242,31 @@ class BoxWiseODCP(_ODConformalPredictor):
     Apply conformal calibration at the matched-box level.
 
     Notes:
-        Finite-sample conformal coverage requires the box-level
-        calibration scores and test score to satisfy the relevant
-        exchangeability assumptions.
+        Finite-sample conformal coverage requires the box-level calibration scores and test score to
+        satisfy the relevant exchangeability assumptions.
 
-        Exchangeability of images alone does not imply exchangeability
-        of all boxes pooled across images.
+        Exchangeability of images alone does not imply exchangeability of all boxes pooled across images.
     """
+
+    def __init__(
+        self,
+        model: ODPredictor | ODPredictorLike,
+        fit_function: FitFunction | None = None,
+        assignment_method: AssignmentMethod | None = None,
+        **kwargs: Any,
+    ):
+        if assignment_method is None:
+            assignment_method = AssignmentStrategy(
+                matcher=HungarianMatcher(),
+                direction=MatchingDirection.PRED_TO_TRUE,
+            )
+
+        super().__init__(
+            model=model,
+            fit_function=fit_function,
+            assignment_method=assignment_method,
+            **kwargs,
+        )
 
     def boxwise_calibration_context(
         self, calibration_context: CalibrationContext
@@ -461,6 +484,11 @@ class ODCRC(_ODConformalPredictor, CRC):
         losses = self.loss_function(
             predictions, calibration_context.y_calib, assignments
         )
+        if ops.shape(losses)[0] == 0:
+            raise ValueError(
+                f"No losses were computed in {self.__class__.__name__}."
+                "Check that the calibration datasets contains ground-truth boxes and that the postprocessor does not filter out all predictions."
+            )
         return ops.item(ops.mean(losses))
 
     def get_calibration_set_size(self, calibration_context: CalibrationContext) -> int:
@@ -468,27 +496,49 @@ class ODCRC(_ODConformalPredictor, CRC):
 
         if not loss.boxwise:
             return calibration_context.size
-        # TODO : get the good number of calculated losses on the calibration set.
-        warnings.warn(
-            "ODCRC is using box-level losses and the number of box-level losses as the calibration size. This is statistically valid "
-            "only if the corresponding box-level losses satisfy the exchangeability assumptions required by CRC. "
-            "Exchangeability of images alone does not imply exchangeability of boxes pooled across images.",
-            CalibrationWarning,
-            stacklevel=2,
-        )
 
-        assignments = calibration_context.assignments
+        if "y_calib" not in calibration_context:
+            if calibration_context.size == 0:
+                return 0
+            raise ValueError("Ground-truth annotations are required for box-wise CRC.")
 
-        if not loss.penalize_unmatched_boxes:
-            return sum(len(assignment.matched_pairs) for assignment in assignments)
-        raise NotImplementedError(
-            "Cannot infer the calibration size for this boxwise OD loss when unmatched target boxes are penalized."
-        )
-        # return sum(
-        #     len(assignment.matched_pairs)
-        #     + len(assignment.unassigned_source_indices) # TODO : check that
-        #     for assignment in assignments
-        # )
+        if loss.penalize_unmatched_boxes:
+            n = sum(len(target) for target in calibration_context.y_calib)
+        else:
+            if "assignments" not in calibration_context:
+                raise ValueError(
+                    "Assignments are required to determine the number "
+                    "of evaluated ground truths when unmatched boxes "
+                    "are excluded."
+                )
+
+            n = 0
+
+            for target, assignment in zip(
+                calibration_context.y_calib,
+                calibration_context.assignments,
+                strict=True,
+            ):
+                if assignment is None:
+                    raise ValueError("Missing assignment for a calibration image.")
+
+                if assignment.n_true != len(target):
+                    raise ValueError(
+                        "Assignment size does not match the number "
+                        "of ground-truth boxes."
+                    )
+
+                n += len(assignment.assigned_true_indices)
+
+        if n > 0:
+            warnings.warn(
+                "Box-wise CRC uses ground-truth boxes as calibration units."
+                "Image-level exchangeability alone does not guarantee exchangeability of box-wise losses.",
+                CalibrationWarning,
+                stacklevel=2,
+            )
+
+        return n
 
 
 class ODConfidenceCRC(ODCRC):

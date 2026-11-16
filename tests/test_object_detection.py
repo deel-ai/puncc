@@ -127,9 +127,9 @@ def test_assignment_strategy_filters_by_iou():
 
     assignment = strategy.assign(predictions, targets)
 
-    assert assignment.matched_pairs == [(0, 0)]
-    assert assignment.unmatched_true_indices() == [1, 2]
-    assert assignment.unmatched_pred_indices() == [1]
+    assert assignment.pairs == [(0, 0)]
+    assert assignment.unassigned_true_indices == [1, 2]
+    assert assignment.unassigned_pred_indices == [1]
 
     aligned_pred, aligned_true = assignment.align_prediction_and_target(
         predictions,
@@ -188,8 +188,8 @@ def test_assignment_strategy_respects_classes():
 
     # Both predicted boxes have IoU=1, but only the second
     # predicts the correct class.
-    assert assignment.matched_pairs == [(0, 1)]
-    assert assignment.unmatched_pred_indices() == [0]
+    assert assignment.pairs == [(0, 1)]
+    assert assignment.unassigned_pred_indices == [0]
 
 
 def test_assignment_strategy_handles_empty_predictions():
@@ -214,6 +214,6 @@ def test_assignment_strategy_handles_empty_predictions():
         matcher=HungarianMatcher(),
     ).assign(predictions, targets)
 
-    assert assignment.matched_pairs == []
-    assert assignment.unmatched_true_indices() == [0]
-    assert assignment.unmatched_pred_indices() == []
+    assert assignment.pairs == []
+    assert assignment.unassigned_true_indices == [0]
+    assert assignment.unassigned_pred_indices == []
