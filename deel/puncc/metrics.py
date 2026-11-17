@@ -60,7 +60,7 @@ def classification_mean_coverage(
         )
     if len(y_true) == 0:
         raise ValueError("y_true and set_pred must not be empty")
-    return sum([y in s for y, s in zip(y_true, set_pred)]) / len(y_true)
+    return sum(y in s for y, s in zip(y_true, set_pred)) / len(y_true)
     # return ops.sum(ops.array([y in s for y, s in zip(y_true, set_pred)])) / len(y_true)
 
 
@@ -76,7 +76,7 @@ def classification_mean_size(set_pred: Sequence[TensorLike]) -> float:
     """
     if len(set_pred) == 0:
         raise ValueError("set_pred must not be empty")
-    return sum([len(s) for s in set_pred]) / len(set_pred)
+    return sum(len(s) for s in set_pred) / len(set_pred)
     # return ops.mean(ops.array([len(s) for s in set_pred]))
 
 

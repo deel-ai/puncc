@@ -23,7 +23,7 @@
 """
 Public exports of conformal prediction set functions.
 """
-
+# pylint: disable=unused-import
 from deel.puncc.regression.prediction_sets import (
     constant_interval,
     scaled_interval,

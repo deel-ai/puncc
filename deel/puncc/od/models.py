@@ -84,16 +84,29 @@ from deel.puncc.warnings import CalibrationWarning
 @runtime_checkable
 class ODPredictor(
     Predictor[Sequence[tuple[TensorLike, TensorLike, TensorLike]]], Protocol
-): ...
+):
+    """
+    An Object Detection predictor is a predictor that takes as input a sequence of features and returns a
+    sequence of predictions (tuples of boxes, classes scores and confidences).
+    """
 
 
 @runtime_checkable
 class ODPredictorLike(
     PredictorLike[Sequence[tuple[TensorLike, TensorLike, TensorLike]]], Protocol
-): ...
+):
+    """
+    An object detection predictor that exposes a "predict" method that takes as input a sequence of
+    features and returns a sequence of predictions (tuples of boxes, classes scores and confidences).
+    """
 
 
 class PunccODPredictor:
+    """
+    Puncc wrapper for object detection predictors.
+    It ensures that the output of the underlying predictor is an ODPredictionSequence.
+    """
+
     def __init__(self, model: ODPredictor | ODPredictorLike):
         self.model = make_predictor(model)
 
@@ -115,6 +128,19 @@ class PunccODPredictor:
         )
 
     def fit(self, X: Iterable[Any], y: ODTargetSequence, **kwargs: Any) -> Self:
+        """
+        Fit the underlying OD model to the given dataset.
+
+        Args:
+            X (Iterable[Any]): features
+            y (ODTargetSequence): targets
+
+        Raises:
+            NotImplementedError: if not fit method has been provided by the underlying OD model or the user.
+
+        Returns:
+            Self: fitted PunccODPredictor instance
+        """
         fit_method = getattr(self.model, "fit", None)
 
         if not callable(fit_method):
@@ -126,12 +152,25 @@ class PunccODPredictor:
 
 
 def make_puncc_od_predictor(model: Any) -> PunccODPredictor:
+    """
+    Wrapps the object betection model with the appropriate Puncc adapter
+
+    Args:
+        model (Any): OD Model
+
+    Raises:
+        ValueError:if the model does not exposes prediction method (in __call__ or predict)
+
+    Returns:
+        PunccODPredictor: Wrapped model
+    """
     if isinstance(model, PunccODPredictor):
         return model
     if isinstance(model, (ODPredictor, ODPredictorLike)):
         return PunccODPredictor(model)
     raise ValueError(
-        f"Model of type {type(model)} is not compatible with ODPredictor. Please provide an ODModel or an ODPredictor instance."
+        f"Model of type {type(model)} is not compatible with ODPredictor."
+        "Please provide an ODModel oran ODPredictor instance."
     )
 
 
@@ -142,7 +181,7 @@ class _ODConformalPredictor(ConformalPredictor):
 
     def __init__(
         self,
-        model: ODPredictor | ODPredictorLike,
+        model: ODPredictor | ODPredictorLike | PunccODPredictor,
         fit_function: FitFunction | None = None,
         assignment_method: AssignmentMethod | None = None,
         **kwargs: Any,
@@ -157,14 +196,43 @@ class _ODConformalPredictor(ConformalPredictor):
         return self
 
     def project_prediction(self, prediction: ODPrediction) -> Any:
+        """
+        Project the prediction to the relevant attribute for conformal prediction.
+
+        Args:
+            prediction (ODPrediction): object detection prediction
+
+        Returns:
+            Any: The relevant attribute of the prediction for conformal
+            prediction (e.g., class scores, coordinates, etc.)
+        """
         return getattr(prediction, self.prediction_attr_name)
 
     def project_target(self, target: ODTarget) -> Any:
+        """
+        Project the target to the relevant attribute for conformal prediction.
+
+        Args:
+            target (ODTarget): object detection target
+
+        Returns:
+            Any: The relevant attribute of the target for conformal prediction (e.g., labels, coordinates, etc.)
+        """
         return getattr(target, self.target_attr_name)
 
     def add_assignments_to_context(
         self, calibration_context: CalibrationContext
     ) -> CalibrationContext:
+        """
+        Add assignments to the calibration context if an assignment method is provided and
+        assignments are not already present.
+
+        Args:
+            calibration_context (CalibrationContext): The calibration context containing predictions and targets.
+
+        Returns:
+            CalibrationContext: The updated calibration context with assignments added if applicable.
+        """
         if (
             self.assignment_method is not None
             and "assignments" not in calibration_context
@@ -186,6 +254,17 @@ class _ODConformalPredictor(ConformalPredictor):
     def build_od_prediction_set(
         self, prediction: ODPredictionSequence, prediction_set: Sequence[Any]
     ) -> ODPredictionSequence:
+        """
+        Build an ODPredictionSequence with the prediction sets added to the relevant attribute.
+
+        Args:
+            prediction (ODPredictionSequence): The original object detection predictions.
+            prediction_set (Sequence[Any]): The corresponding prediction sets to be added to the predictions.
+
+        Returns:
+            ODPredictionSequence: A new ODPredictionSequence with the prediction sets added
+            to the relevant attribute (e.g., class_sets, coordinates, etc.) of each prediction.
+        """
         return ODPredictionSequence(
             [
                 replace(
@@ -200,12 +279,20 @@ class _ODConformalPredictor(ConformalPredictor):
 
 
 class ODClassificationMixin:
+    """
+    Mixin for object detection conformal predictors that operate on classification outputs.
+    """
+
     prediction_attr_name: ClassVar[str] = "class_scores"
     target_attr_name: ClassVar[str] = "labels"
     prediction_set_attr_name: ClassVar[str] = "class_sets"
 
 
 class ODLocalizationMixin:
+    """
+    Mixin for object detection conformal predictors that operate on localization outputs.
+    """
+
     prediction_attr_name: ClassVar[str] = "coordinates"
     target_attr_name: ClassVar[str] = "coordinates"
     # prediction_set_attr_name: ClassVar[str] = "coordinates"
@@ -215,6 +302,18 @@ class ODLocalizationMixin:
         prediction: ODPredictionSequence,
         prediction_set: Sequence[Any],
     ) -> tuple[ODPredictionSequence, ODPredictionSequence]:
+        """
+        Build an ODPredictionSequence with the prediction sets added to the relevant attribute.
+
+        Args:
+            prediction (ODPredictionSequence): The original object detection predictions.
+            prediction_set (Sequence[Any]): The corresponding prediction sets to be added to the predictions.
+
+        Returns:
+            tuple[ODPredictionSequence, ODPredictionSequence]: A tuple of two ODPredictionSequence objects,
+                one for the inner prediction sets and one for the outer prediction sets,
+                with the prediction sets added to the relevant attribute (e.g., coordinates) of each prediction.
+        """
 
         inner = ODPredictionSequence(
             [
@@ -250,7 +349,7 @@ class BoxWiseODCP(_ODConformalPredictor):
 
     def __init__(
         self,
-        model: ODPredictor | ODPredictorLike,
+        model: ODPredictor | ODPredictorLike | PunccODPredictor,
         fit_function: FitFunction | None = None,
         assignment_method: AssignmentMethod | None = None,
         **kwargs: Any,
@@ -271,6 +370,21 @@ class BoxWiseODCP(_ODConformalPredictor):
     def boxwise_calibration_context(
         self, calibration_context: CalibrationContext
     ) -> CalibrationContext:
+        """
+        Transform the calibration context to a box-wise context by aligning predictions and
+        targets according to the assignments.
+
+        Args:
+            calibration_context (CalibrationContext): The original calibration context containing image-level
+            predictions, targets, and assignments.
+
+        Raises:
+            ValueError: If the calibration context does not contain assignments.
+
+        Returns:
+            CalibrationContext: A new calibration context where predictions and targets are aligned at the box level,
+            and the corresponding features are repeated for each box.
+        """
         X_boxwise = []
         predictions = []
         targets = []
@@ -282,7 +396,7 @@ class BoxWiseODCP(_ODConformalPredictor):
             calibration_context.X_calib,
             calibration_context.y_pred,
             calibration_context.y_calib,
-            calibration_context.assignments,
+            getattr(calibration_context, "assignments"),
             strict=True,
         ):
             aligned_prediction, aligned_target = assignment.align_prediction_and_target(
@@ -301,14 +415,45 @@ class BoxWiseODCP(_ODConformalPredictor):
         )
 
     def boxwise_prediction(self, prediction: ODPredictionSequence) -> TensorLike:
+        """
+        Project the box-wise predictions to the relevant attribute for conformal prediction.
+
+        Args:
+            prediction (ODPredictionSequence): The original object detection predictions.
+
+        Returns:
+            TensorLike: The relevant attribute of the box-wise predictions for conformal
+            prediction (e.g., class scores, coordinates, etc.)
+        """
         return self.project_prediction(prediction.boxwise())
 
     def boxwise_target(self, target: ODTargetSequence) -> TensorLike:
+        """
+        Project the box-wise targets to the relevant attribute for conformal prediction.
+
+        Args:
+            target (ODTargetSequence): The original object detection targets.
+
+        Returns:
+            TensorLike: The relevant attribute of the box-wise targets for
+            conformal prediction (e.g., labels, coordinates, etc.)
+        """
         return self.project_target(target.boxwise())
 
     def boxwise_X(
         self, X: Iterable[Any], prediction: ODPredictionSequence
     ) -> IndexableUserList:
+        """
+        Repeat each image feature for each predicted box in the corresponding prediction.
+
+        Args:
+            X (Iterable[Any]): The original image features.
+            prediction (ODPredictionSequence): The original object detection predictions.
+
+        Returns:
+            IndexableUserList: A list of image features repeated for each predicted
+                box, aligned with the box-wise predictions.
+        """
         X_boxwise = []
         for x, pred in zip(X, prediction, strict=True):
             X_boxwise.extend([x] * len(pred))
@@ -350,6 +495,17 @@ class BoxWiseODCP(_ODConformalPredictor):
     def unboxwise_prediction_set(
         self, prediction_set: Any, prediction: ODPredictionSequence
     ) -> IndexableUserList:
+        """
+        roll back the prediction set from box-wise to image-wise by grouping the box-wise prediction sets
+
+        Args:
+            prediction_set (Any): The box-wise prediction sets obtained from the conformalization process.
+            prediction (ODPredictionSequence): The original object detection predictions.
+
+        Returns:
+            IndexableUserList: A list of image-wise prediction sets, where each element
+            corresponds to the prediction set for the respective image, reconstructed from the box-wise prediction sets.
+        """
         prediction_sets = []
         start = 0
         for prediction_i in prediction:
@@ -359,113 +515,20 @@ class BoxWiseODCP(_ODConformalPredictor):
         return IndexableUserList(prediction_sets)
 
 
-### TO DO IMAGE WISE CONFORMAL PREDICTION, USE ODCRC AND ODLOSS FUNCTION
-
-
-# class ImageWisePostprocessor:
-#     def __init__(self, postprocessor):
-#         self.postprocessor = postprocessor
-
-#     def __call__(self, predictions: IndexableUserList, lambd: float) -> IndexableUserList:
-#         return IndexableUserList([self.postprocessor(prediction, lambd) for prediction in predictions])
-
-# class ImageWiseCP(_ODConformalPredictor, CRC):
-#     def __init__(self, *args,
-#                  postprocessor: Postprocessor,
-#                  penalize_unmatched_boxes:bool=True, **kwargs):
-#         postprocessor = ImageWisePostprocessor(postprocessor)
-#         super().__init__(*args, postprocessor=postprocessor, **kwargs)
-#         self.penalize_unmatched_boxes = penalize_unmatched_boxes
-
-#     def imagewise_prediction(self, prediction: ODPredictionSequence) -> IndexableUserList:
-#         return IndexableUserList([self.project_prediction(prediction_i) for prediction_i in prediction])
-
-#     def conformalize(self, prediction: ODPredictionSequence,alpha: float | TensorLike, calibration_context: CalibrationContext, *, X: Iterable[Any] | None = None) -> ConformalPrediction[Any, Any]:
-#         cp = super().conformalize(
-#             prediction=self.imagewise_prediction(prediction),
-#             alpha=alpha,
-#             calibration_context=calibration_context,
-#             X=X)
-#         return ConformalPrediction(
-#             prediction=prediction,
-#             prediction_set=self.build_od_prediction_set(prediction, cp.prediction_set)
-#         )
-
-#     def imagewise_calibration_context(self, calibration_context: CalibrationContext) -> CalibrationContext:
-#         predictions = []
-#         targets = []
-
-#         if "assignments" not in calibration_context:
-#             raise ValueError("Calibration context must contain assignments.")
-
-#         for prediction, target, assignment in zip(
-#             calibration_context.y_pred,
-#             calibration_context.y_calib,
-#             calibration_context.assignments,
-#             strict=True,
-#         ):
-#             prediction, target = assignment.align_prediction_and_target(prediction, target)
-#             predictions.append(self.project_prediction(prediction))
-#             targets.append(self.project_target(target))
-
-#         calibration_context.update(
-#             y_pred=IndexableUserList(predictions),
-#             y_calib=IndexableUserList(targets),
-#         )
-#         return calibration_context
-
-#     def compute_calibration_state(
-#         self,
-#         calibration_context: CalibrationContext,
-#     ) -> CalibrationContext:
-#         calibration_context = self.add_assignments_to_context(calibration_context)
-#         calibration_context = self.imagewise_calibration_context(calibration_context)
-#         return super().compute_calibration_state(calibration_context)
-
-#     def compute_loss(
-#         self,
-#         y_pred: IndexableUserList,
-#         y_true: IndexableUserList,
-#         calibration_context: CalibrationContext,
-#     ) -> TensorLike:
-#         image_losses = []
-
-#         for prediction_i, target_i, assignment in zip(
-#             y_pred,
-#             y_true,
-#             calibration_context.assignments,
-#             strict=True,
-#         ):
-#             n_matched = len(prediction_i)
-#             n_unmatched = 0
-#             if self.penalize_unmatched_boxes:
-#                 n_unmatched = len(assignment.unmatched_true_indices())
-
-#             if n_matched == 0:
-#                 image_losses.append(ops.convert_to_tensor(self.B if n_unmatched > 0 else 0.0))
-#                 continue
-
-#             total_loss = ops.sum(self.loss_function(prediction_i, target_i))
-
-#             if self.penalize_unmatched_boxes:
-#                 total_loss += len(assignment.unmatched_true_indices()) * self.B
-
-#             image_losses.append(total_loss / (n_matched + n_unmatched))
-#         return ops.stack(image_losses, axis=0)
-
-#     def _r_hat(self, lambd: float, calibration_context: CalibrationContext) -> float:
-#         predictions = self.postprocessor(calibration_context.y_pred, lambd)
-#         losses = self.compute_loss(predictions, calibration_context.y_calib, calibration_context)
-#         return ops.item(ops.mean(losses))
-
-
 def conf_threshold_postprocessing(
     predictions: ODPredictionSequence, lambd: float
 ) -> ODPredictionSequence:
+    """
+    Base postprocessor for OD conformal predictors that filter predictions by confidence threshold.
+    """
     return predictions.filter_by_confidence(1 - lambd)
 
 
 class ODCRC(_ODConformalPredictor, CRC):
+    """
+    Base class for object detection conformal risk control (CRC) methods.
+    """
+
     def compute_calibration_state(self, calibration_context):
         calibration_context = self.add_assignments_to_context(calibration_context)
         return super().compute_calibration_state(calibration_context)
@@ -477,7 +540,7 @@ class ODCRC(_ODConformalPredictor, CRC):
     ) -> float:
         predictions = self.postprocessor(calibration_context.y_pred, lambd)
         assignments = (
-            calibration_context.assignments
+            getattr(calibration_context, "assignments")
             if "assignments" in calibration_context
             else None
         )
@@ -487,7 +550,8 @@ class ODCRC(_ODConformalPredictor, CRC):
         if ops.shape(losses)[0] == 0:
             raise ValueError(
                 f"No losses were computed in {self.__class__.__name__}."
-                "Check that the calibration datasets contains ground-truth boxes and that the postprocessor does not filter out all predictions."
+                "Check that the calibration datasets contains ground-truth boxes and that"
+                "the postprocessordoes not filter out all predictions."
             )
         return ops.item(ops.mean(losses))
 
@@ -516,7 +580,7 @@ class ODCRC(_ODConformalPredictor, CRC):
 
             for target, assignment in zip(
                 calibration_context.y_calib,
-                calibration_context.assignments,
+                getattr(calibration_context, "assignments"),
                 strict=True,
             ):
                 if assignment is None:
@@ -542,6 +606,10 @@ class ODCRC(_ODConformalPredictor, CRC):
 
 
 class ODConfidenceCRC(ODCRC):
+    """
+    CRC for confidence step of object detection process
+    """
+
     def __init__(
         self,
         model,
@@ -571,7 +639,7 @@ class ODConfidenceCRC(ODCRC):
         predictions = []
         if "assignments" in calibration_context:
             filtered_assignments = []
-            assignments = calibration_context.assignments
+            assignments = getattr(calibration_context, "assignments")
         else:
             filtered_assignments = None
             assignments = None
@@ -582,7 +650,7 @@ class ODConfidenceCRC(ODCRC):
             if filtered_assignments is not None:
                 # assignments is not None
                 filtered_assignments.append(
-                    assignments[i].filter_predictions(ops.tolist(kept_indices))
+                    assignments[i].filter_predictions(ops.tolist(kept_indices))  # type: ignore
                 )
 
         losses = self.loss_function(
@@ -598,8 +666,21 @@ class ODConfidenceCRC(ODCRC):
 
 
 class ODClassificationCRC(ODCRC):
+    """
+    CRC for classification step of object detection process
+    """
+
     @staticmethod
     def get_postprocessor(pred_set_function: PredSetFunction):
+        """
+        Create a postprocessor function that applies the given prediction set function to the class scores of each
+        prediction.
+
+        Args:
+            pred_set_function (PredSetFunction): A function that takes class scores and a threshold (lambda) and
+            returns the corresponding prediction sets.
+        """
+
         def postprocessor(
             predictions: ODPredictionSequence, lambd: float
         ) -> ODPredictionSequence:
@@ -617,7 +698,7 @@ class ODClassificationCRC(ODCRC):
 
     def __init__(
         self,
-        model: ODPredictor | ODPredictorLike,
+        model: ODPredictor | ODPredictorLike | PunccODPredictor,
         *,
         loss_function: ODLoss,
         pred_set_function: PredSetFunction = lac_set(),
@@ -636,8 +717,19 @@ class ODClassificationCRC(ODCRC):
 
 
 class ODLocalizationCRC(ODCRC):
+    """
+    CRC for localization step of object detection process
+    """
+
     @staticmethod
     def get_postprocessor(box_extension_mode: BoxExtensionMode):
+        """
+        Create a postprocessor function that applies the given box extension mode to the coordinates of each
+
+        Args:
+            box_extension_mode (BoxExtensionMode): additive or multiplicative
+        """
+
         def postprocessor(
             predictions: ODPredictionSequence,
             lambd: float,
@@ -658,7 +750,7 @@ class ODLocalizationCRC(ODCRC):
 
     def __init__(
         self,
-        model: ODPredictor | ODPredictorLike,
+        model: ODPredictor | ODPredictorLike | PunccODPredictor,
         *,
         loss_function: ODLoss,
         box_extension_mode: BoxExtensionMode = BoxExtensionMode.ADDITIVE,
@@ -677,7 +769,9 @@ class ODLocalizationCRC(ODCRC):
 
 
 class NoopODConformalPredictor(_ODConformalPredictor, NoopConformalPredictor):
-    pass
+    """
+    A no-op conformal predictor for object detection that does not perform any conformalization.
+    """
 
 
 class TripleConformalPredictor:
@@ -699,7 +793,7 @@ class TripleConformalPredictor:
 
     def __init__(
         self,
-        model: ODPredictor | ODPredictorLike,
+        model: ODPredictor | ODPredictorLike | PunccODPredictor,
         *,
         confidence_cp: _ODConformalPredictor | None = None,
         localization_cp: _ODConformalPredictor | None = None,
@@ -739,6 +833,12 @@ class TripleConformalPredictor:
         self.reset_calibration()
 
     def reset_calibration(self) -> Self:
+        """
+        Reset the calibration state of the TripleConformalPredictor.
+
+        Returns:
+            Self: The TripleConformalPredictor instance with its calibration state reset.
+        """
         self._calibrated = False
         self._confidence_context = CalibrationContext()
         self._downstream_context = CalibrationContext()
@@ -785,6 +885,16 @@ class TripleConformalPredictor:
         )
 
     def calibrate(self, X_calib: Iterable[Any], y_calib: ODTargetSequence) -> Self:
+        """
+        Calibrate the TripleConformalPredictor using the provided calibration dataset.
+
+        Args:
+            X_calib (Iterable[Any]): The calibration features.
+            y_calib (ODTargetSequence): The calibration targets.
+
+        Returns:
+            Self: The calibrated TripleConformalPredictor instance.
+        """
         _check_calibration_samples(X_calib, y_calib, require_y=True)
         self.reset_calibration()
         prediction = self.model(X_calib).filter_by_confidence(self.confidence_threshold)
@@ -827,6 +937,27 @@ class TripleConformalPredictor:
         alpha_class: float | TensorLike | None = None,
         X: Iterable[Any] | None = None,
     ) -> ConformalPrediction[ODPredictionSequence, Any]:
+        """
+        Conformalize the given object detection predictions using the calibrated TripleConformalPredictor.
+
+        Args:
+            prediction (ODPredictionSequence): The object detection predictions to be conformalized.
+            alpha_conf (float | TensorLike | None, optional): The coverage level for the confidence step
+                of the conformal prediction. Defaults to None.
+            alpha_loc (float | TensorLike | None, optional): The coverage level for the localization step
+                of the conformal prediction. Defaults to None.
+            alpha_class (float | TensorLike | None, optional):The coverage level for the classification step
+                of the conformal prediction. Defaults to None.
+            X (Iterable[Any] | None, optional): The input features corresponding to the predictions.
+                Defaults to None.
+
+        Raises:
+            RuntimeError: _description_
+            ValueError: _description_
+
+        Returns:
+            ConformalPrediction[ODPredictionSequence, Any]: _description_
+        """
         if self._calibrated is False:
             raise RuntimeError(
                 "The TripleConformalPredictor must be calibrated before conformalization."
@@ -840,6 +971,10 @@ class TripleConformalPredictor:
                 raise ValueError(
                     f"Alpha value is required for {cp.__class__.__name__}."
                 )
+
+        alpha_conf = -1 if alpha_conf is None else alpha_conf
+        alpha_loc = -1 if alpha_loc is None else alpha_loc
+        alpha_class = -1 if alpha_class is None else alpha_class
 
         thresholded_prediction = prediction.filter_by_confidence(
             self.confidence_threshold
@@ -888,6 +1023,22 @@ class TripleConformalPredictor:
         alpha_loc: float | TensorLike | None = None,
         alpha_class: float | TensorLike | None = None,
     ) -> ConformalPrediction[ODPredictionSequence, Any]:
+        """
+        Make predictions with conformal prediction sets for object detection.
+
+        Args:
+            X (Iterable[Any]): The input features for which predictions are to be made.
+            alpha_conf (float | TensorLike | None, optional): The coverage level for the confidence
+                step of the conformal prediction. Defaults to None.
+            alpha_loc (float | TensorLike | None, optional): The coverage level for the localization step
+                of the conformal prediction. Defaults to None.
+            alpha_class (float | TensorLike | None, optional): The coverage level for the classification
+                step of the conformal prediction.
+
+        Returns:
+            ConformalPrediction[ODPredictionSequence, Any]: A ConformalPrediction object containing
+                the predictions and the corresponding prediction sets for object detection.
+        """
         prediction = self.model(X)
 
         return self.conformalize(
@@ -900,9 +1051,14 @@ class TripleConformalPredictor:
 
 
 class TripleCRC(TripleConformalPredictor):
+    """
+    Triple Conformal Risk Control (CRC) for object detection, orchestrating
+    confidence, localization, and classification CRCs.
+    """
+
     def __init__(
         self,
-        model: ODPredictor | ODPredictorLike,
+        model: ODPredictor | ODPredictorLike | PunccODPredictor,
         confidence_loss: ConfidenceLoss | None = None,
         localization_loss: LocalizationLoss | None = None,
         classification_loss: ClassificationLoss | None = None,
@@ -916,7 +1072,7 @@ class TripleCRC(TripleConformalPredictor):
         localization_kwargs: dict | None = None,
         classification_kwargs: dict | None = None,
     ):
-        model = make_puncc_od_predictor(model)
+        _model = make_puncc_od_predictor(model)
 
         confidence_cp = None
         localization_cp = None
@@ -926,7 +1082,7 @@ class TripleCRC(TripleConformalPredictor):
             kwargs = dict(confidence_kwargs or {})
             kwargs["assignment_method"] = assignment_method
             confidence_cp = ODConfidenceCRC(
-                model=model,
+                model=_model,
                 loss_function=confidence_loss,
                 **kwargs,
             )
@@ -935,7 +1091,7 @@ class TripleCRC(TripleConformalPredictor):
             kwargs = dict(localization_kwargs or {})
             kwargs["assignment_method"] = assignment_method
             localization_cp = ODLocalizationCRC(
-                model=model,
+                model=_model,
                 loss_function=localization_loss,
                 box_extension_mode=box_extension_mode,
                 **kwargs,
@@ -945,14 +1101,14 @@ class TripleCRC(TripleConformalPredictor):
             kwargs = dict(classification_kwargs or {})
             kwargs["assignment_method"] = assignment_method
             classification_cp = ODClassificationCRC(
-                model=model,
+                model=_model,
                 loss_function=classification_loss,
                 pred_set_function=pred_set_function,
                 **kwargs,
             )
 
         super().__init__(
-            model=model,
+            model=_model,
             confidence_cp=confidence_cp,
             localization_cp=localization_cp,
             classification_cp=classification_cp,

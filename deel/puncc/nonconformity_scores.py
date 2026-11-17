@@ -23,7 +23,7 @@
 """
 Public nonconformity score function exports.
 """
-
+# pylint: disable=unused-import
 from deel.puncc.core.nonconformity_scores import (
     difference,
     absolute_difference,

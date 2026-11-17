@@ -25,20 +25,30 @@ Basic definitions of type aliases and protocols used by conformal prediction met
 """
 
 from __future__ import annotations
-from typing import Any, TypeVar, TypeAlias, Protocol, runtime_checkable
-from collections.abc import Iterable, Callable
 
-# from typing import TYPE_CHECKING
-# if TYPE_CHECKING:
-#     import numpy as _np
-#     import torch as _torch
-#     import tensorflow as _tf
-#     from jax import Array as _JaxArray
-#     TensorLike: TypeAlias = Union[_np.ndarray, _torch.Tensor, _tf.Tensor, _JaxArray]
-# else:
-#     TensorLike = Any
+from collections.abc import Callable, Iterable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+    Union,
+    runtime_checkable,
+)
 
-TensorLike: TypeAlias = Any
+if TYPE_CHECKING:
+    import numpy as _np
+    import tensorflow as _tf
+    import torch as _torch
+    import jax as _jax
+
+    TensorLike: TypeAlias = Union[_np.ndarray, _torch.Tensor, _tf.Tensor, _jax.Array]
+else:
+    TensorLike = Any
+
+
+# TensorLike: TypeAlias = Any
 TPrediction_co = TypeVar(
     "TPrediction_co",
     covariant=True,
@@ -47,17 +57,48 @@ TPrediction_co = TypeVar(
 
 @runtime_checkable
 class Predictor(Protocol[TPrediction_co]):
+    """
+    A predictor is a callable that takes as input a sequence of features and returns a sequence of predictions.
+    """
+
     def __call__(self, X: Any, *args: Any, **kwargs: Any) -> TPrediction_co: ...
 
 
 @runtime_checkable
 class Fittable(Protocol):
-    def fit(self, X: Iterable[Any], y: TensorLike, **kwargs: Any) -> Any: ...
+    """
+    A fittable is an object that can be fitted to a dataset.
+    It has a fit method that takes as input a sequence of features and a sequence of targets.
+    """
+
+    def fit(self, X: Iterable[Any], y: TensorLike, **kwargs: Any) -> Any:
+        """
+        fit the model to the given dataset.
+
+        Args:
+            X (Iterable[Any]): features
+            y (TensorLike): targets
+        """
 
 
 @runtime_checkable
 class PredictorLike(Protocol[TPrediction_co]):
-    def predict(self, X: Any, *args: Any, **kwargs: Any) -> TPrediction_co: ...
+    """
+    A predictor-like object is an object that has a predict method that takes as input a sequence of
+    features and returns a sequence of predictions.
+    """
+
+    def predict(self, X: Any, *args: Any, **kwargs: Any) -> TPrediction_co:
+        """
+        predict the targets for the given features.
+
+        Args:
+            X (Any): features
+
+        Returns:
+            TPrediction_co: predictions
+        """
+        ...
 
 
 # A nonconformity score function takes model predictions and true targets and returns nonconformity scores.
@@ -65,13 +106,16 @@ NCScoreFunction: TypeAlias = Callable[
     [TensorLike, TensorLike],
     TensorLike,
 ]
-# A prediction set function takes as input the model's predictions and a threshold (float or tensor), and outputs a sequence of prediction sets (e.g., list of sets of labels for classification, list of intervals for regression).
+# A prediction set function takes as input the model's predictions and a threshold (float or tensor),
+# and outputs a sequence of prediction sets (e.g., list of sets of labels for classification,
+# list of intervals for regression).
 PredSetFunction: TypeAlias = Callable[
     [TensorLike, float | TensorLike],
     Any,
 ]
 
-# A weight function takes as input a sequence of features and outputs a sequence of positive weights (float or tensor) for each instance in the input sequence.
+# A weight function takes as input a sequence of features and outputs a sequence of positive
+# weights (float or tensor) for each instance in the input sequence.
 WeightFunction = Callable[
     [Iterable[Any]],
     TensorLike,
@@ -80,5 +124,6 @@ WeightFunction = Callable[
 # A fit function takes as input a model, features and targets and returns a predictor fitted to given dataset
 FitFunction: TypeAlias = Callable[[Predictor, Iterable[Any], Iterable[Any]], Predictor]
 
-# A function that takes a float or tensor and returns a float or tensor, used for alpha correction in conformal prediction methods.
+# A function that takes a float or tensor and returns a float or tensor, used for alpha correction in
+# conformal prediction methods.
 AlphaCorrection: TypeAlias = Callable[[float | TensorLike], float | TensorLike]

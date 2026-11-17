@@ -29,10 +29,9 @@ updates their empirical distribution as new outcomes become available.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from numbers import Integral
 from typing import Any, Never, Self
-from collections.abc import Sequence
 
 from deel.puncc import ops
 from deel.puncc.core.calibration import CalibrationContext
@@ -126,7 +125,7 @@ class EnbPIRegressor:
         """Current signed residuals, ordered from oldest to newest."""
         if "residuals" not in self.calibration_context:
             raise NotCalibratedError("EnbPIRegressor must be fitted before use.")
-        return self.calibration_context.residuals
+        return getattr(self.calibration_context, "residuals")
 
     @property
     def len_calibr(self) -> int:
@@ -207,7 +206,7 @@ class EnbPIRegressor:
 
     def predict(
         self,
-        X_test: Iterable[Any],
+        X_test: Sequence[Any],
         alpha: float | TensorLike,
         *,
         alpha_correction: AlphaCorrection | None = None,
@@ -257,17 +256,17 @@ class EnbPIRegressor:
 
     def _get_offsets(
         self,
-        alpha: float,
+        alpha: float | TensorLike,
         calibration_context: CalibrationContext,
     ) -> TensorLike:
         """Find the narrowest pair of residual quantiles on the grid."""
         if "residuals" not in calibration_context:
             raise NotCalibratedError("The calibration context has no EnbPI residuals.")
-        residuals = calibration_context.residuals
+        residuals = getattr(calibration_context, "residuals")
         sorted_residuals = ops.sort(residuals, axis=0)
         n = len(residuals)
         beta = ops.linspace(0.0, alpha, self.beta_grid_size)
-        levels = ops.stack([beta, 1 - alpha + beta], axis=0)
+        levels = ops.stack([beta, ops.subtract(1.0, alpha) + beta], axis=0)
 
         # Inverse empirical CDF: rank ceil(n * q), expressed as a zero-based
         # index. Clipping handles q=0 and numerical rounding near q=1.

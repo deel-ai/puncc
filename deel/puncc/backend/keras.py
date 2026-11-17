@@ -51,7 +51,6 @@ Notes :
     Applications that use multiple numerical frameworks in the same process should explicitly configure the desired
     backend with :func:`deel.puncc.config.set_backend` before performing numerical operations.
 """
-
 import logging
 import sys
 from functools import wraps, reduce
@@ -380,7 +379,7 @@ class SubmoduleManager(BackendManager):
         if self._keras is None:
             raise RuntimeError("Keras has not been loaded.")
         return reduce(getattr, self.__name__.split("."), self._keras)
-        #return getattr(self._keras, self.__name__)
+        # return getattr(self._keras, self.__name__)
 
 
 class OpsBackendManager(SubmoduleManager):
@@ -545,7 +544,7 @@ class OpsBackendManager(SubmoduleManager):
         self,
         x: TensorLike,
         q: float | TensorLike,
-        weights: TensorLike = None,
+        weights: TensorLike | None = None,
         axis: int | None = None,
         keepdims: bool = False,
     ):
@@ -592,12 +591,14 @@ class OpsBackendManager(SubmoduleManager):
 
         # Uniform empirical quantile.
         if weights is None:
-            return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
+            return self._uniform_quantile(
+                x, self.convert_to_tensor(q), axis=axis, keepdims=keepdims
+            )
 
         weights = self.convert_to_tensor(weights)
 
         if self.ndim(weights) == 1:
-            if weights.shape[0] != x.shape[axis]:
+            if weights.shape[0] != ops.take(x.shape, axis, axis=0):
                 raise ValueError(
                     "1D weights must have the same length as x along the quantile axis."
                 )
@@ -635,7 +636,9 @@ class OpsBackendManager(SubmoduleManager):
 
         # if all weights equals -> fast path to uniform quantile
         if self.item(self.all(weights == self.reshape(weights, (-1,))[0])):
-            return self._uniform_quantile(x, q, axis=axis, keepdims=keepdims)
+            return self._uniform_quantile(
+                x, self.convert_to_tensor(q), axis=axis, keepdims=keepdims
+            )
 
         # TODO : risk of overflow on sum with very large weights with CP under covariate shift ?
         weights = weights / weight_sums

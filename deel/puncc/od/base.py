@@ -70,8 +70,8 @@ class BoxExtensionMode(StrEnum):
         Returns:
             TensorLike: transformed boxes
         """
-        width = boxes[..., 2] - boxes[..., 0]
-        height = boxes[..., 3] - boxes[..., 1]
+        width = ops.take(boxes, 2, axis=-1) - ops.take(boxes, 0, axis=-1)
+        height = ops.take(boxes, 3, axis=-1) - ops.take(boxes, 1, axis=-1)
         extension = ops.stack(
             [
                 -value * width,
@@ -93,10 +93,9 @@ class BoxExtensionMode(StrEnum):
             return self.additive_processing
         if self == BoxExtensionMode.MULTIPLICATIVE:
             return self.multiplicative_processing
-        else:
-            raise ValueError(
-                f"Invalid mode: {self}. Must be one of {list(BoxExtensionMode)}"
-            )
+        raise ValueError(
+            f"Invalid mode: {self}. Must be one of {list(BoxExtensionMode)}"
+        )
 
 
 @dataclass(slots=True, eq=False)
@@ -113,7 +112,9 @@ class BoxTensorOpsMixin:
         Returns:
             TensorLike: Width of the box(es)
         """
-        return self.coordinates[..., 2] - self.coordinates[..., 0]
+        return ops.take(self.coordinates, 2, axis=-1) - ops.take(
+            self.coordinates, 0, axis=-1
+        )
 
     @property
     def height(self) -> TensorLike:
@@ -121,7 +122,9 @@ class BoxTensorOpsMixin:
         Returns:
             TensorLike: Height of the box(es)
         """
-        return self.coordinates[..., 3] - self.coordinates[..., 1]
+        return ops.take(self.coordinates, 3, axis=-1) - ops.take(
+            self.coordinates, 1, axis=-1
+        )
 
     @property
     def area(self) -> TensorLike:
@@ -139,8 +142,16 @@ class BoxTensorOpsMixin:
         """
         return ops.stack(
             (
-                (self.coordinates[..., 0] + self.coordinates[..., 2]) / 2,
-                (self.coordinates[..., 1] + self.coordinates[..., 3]) / 2,
+                (
+                    ops.take(self.coordinates, 0, axis=-1)
+                    + ops.take(self.coordinates, 2, axis=-1)
+                )
+                / 2,
+                (
+                    ops.take(self.coordinates, 1, axis=-1)
+                    + ops.take(self.coordinates, 3, axis=-1)
+                )
+                / 2,
             ),
             axis=-1,
         )
@@ -168,8 +179,8 @@ class BoxTensorOpsMixin:
         """
         return ops.stack(
             (
-                self.coordinates[..., 0],
-                self.coordinates[..., 1],
+                ops.take(self.coordinates, 0, axis=-1),
+                ops.take(self.coordinates, 1, axis=-1),
                 self.width,
                 self.height,
             ),
@@ -180,11 +191,11 @@ class BoxTensorOpsMixin:
     def xywh_to_xyxy(boxes: TensorLike) -> TensorLike:
         """Convert boxes from xywh to xyxy format."""
         boxes = ops.array(boxes)
+
+        xy, wh = ops.split(boxes, 2, axis=-1)
+
         return ops.concatenate(
-            (
-                boxes[..., :2],
-                boxes[..., :2] + boxes[..., 2:],
-            ),
+            (xy, ops.add(xy, wh)),
             axis=-1,
         )
 
@@ -198,7 +209,7 @@ class BoxTensorOpsMixin:
         Returns:
             TensorLike: first coordinate of the boxes (x_min) with shape (n_boxes,).
         """
-        return self.coordinates[..., 0]
+        return ops.take(self.coordinates, 0, axis=-1)
 
     @property
     def y1(self) -> TensorLike:
@@ -206,7 +217,7 @@ class BoxTensorOpsMixin:
         Returns:
             TensorLike: second coordinate of the boxes (y_min) with shape (n_boxes,).
         """
-        return self.coordinates[..., 1]
+        return ops.take(self.coordinates, 1, axis=-1)
 
     @property
     def x2(self) -> TensorLike:
@@ -214,7 +225,7 @@ class BoxTensorOpsMixin:
         Returns:
             TensorLike: third coordinate of the boxes (x_max) with shape (n_boxes,).
         """
-        return self.coordinates[..., 2]
+        return ops.take(self.coordinates, 2, axis=-1)
 
     @property
     def y2(self) -> TensorLike:
@@ -222,23 +233,7 @@ class BoxTensorOpsMixin:
         Returns:
             TensorLike: fourth coordinate of the boxes (y_max) with shape (n_boxes,).
         """
-        return self.coordinates[..., 3]
-
-    @property
-    def top_left(self) -> TensorLike:
-        """
-        Returns:
-            TensorLike: coordinates of the top left corner of the box in (x, y) format.
-        """
-        return self.xyxy[..., :2]
-
-    @property
-    def bottom_right(self) -> TensorLike:
-        """
-        Returns:
-            TensorLike: coordinates of the bottom right corner of the box in (x, y) format.
-        """
-        return self.xyxy[..., 2:]
+        return ops.take(self.coordinates, 3, axis=-1)
 
     def extend(
         self,
@@ -332,8 +327,8 @@ class Box(BoxTensorOpsMixin):
         return bool(
             ops.item(
                 ops.logical_or(
-                    self.width <= 0,
-                    self.height <= 0,
+                    ops.less_equal(self.width, 0),
+                    ops.less_equal(self.height, 0),
                 )
             )
         )
@@ -346,7 +341,7 @@ class Box(BoxTensorOpsMixin):
             Scalar intersection-over-union value.
         """
         intersection_area = self.intersection(other_box).area
-        union_area = self.area + other_box.area - intersection_area
+        union_area = self.area + other_box.area - intersection_area  # type: ignore
         return intersection_area / ops.maximum(union_area, 1e-12)
 
     def equals(self, other: Box) -> bool:
@@ -363,7 +358,7 @@ class Box(BoxTensorOpsMixin):
         return 4
 
     def __getitem__(self, idx: int | slice) -> TensorLike:
-        return self.coordinates[idx]
+        return ops.take(self.coordinates, idx, axis=0)
 
     def __iter__(self):
         return iter(self.coordinates)
@@ -436,7 +431,11 @@ class BoxSequence(BoxTensorOpsMixin, IterableDataclassMixin[TBox], Generic[TBox]
             Tensor of shape (len(self), len(other)) containing the intersection-over-union values.
         """
         intersection = self.pairwise_intersection_area(other)
-        union = self.area[:, None] + other.area[None, :] - intersection
+        union = (
+            ops.expand_dims(self.area, axis=1)
+            + ops.expand_dims(other.area, axis=0)
+            - intersection
+        )
         return intersection / ops.maximum(union, 1e-12)
 
     def pairwise_ioa(
@@ -458,7 +457,7 @@ class BoxSequence(BoxTensorOpsMixin, IterableDataclassMixin[TBox], Generic[TBox]
             the intersection-over-area values.
         """
         intersection = self.pairwise_intersection_area(other)
-        return intersection / ops.maximum(other.area[None, :], 1e-12)
+        return intersection / ops.maximum(ops.expand_dims(other.area, axis=0), 1e-12)
 
 
 @dataclass(slots=True, eq=False)
@@ -483,7 +482,9 @@ class BoxPrediction(Box):
     class_set: TensorLike | None = None
 
     def __post_init__(self):
-        super(BoxPrediction, self).__post_init__()
+        super(  # pylint: disable=super-with-arguments
+            BoxPrediction, self
+        ).__post_init__()
         if ops.ndim(self.class_scores) != 1:
             raise ValueError("class_scores must be 1D.")
 
@@ -547,7 +548,9 @@ class ODPrediction(BoxSequence[BoxPrediction]):
     class_sets: PredictionSetSequence | None = None
 
     def __post_init__(self):
-        super(ODPrediction, self).__post_init__()
+        super(  # pylint: disable=super-with-arguments
+            ODPrediction, self
+        ).__post_init__()
         n_boxes = len(self)
         if (
             ops.ndim(self.class_scores) != 2
@@ -574,7 +577,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
         Returns:
             int: The number of classes in the prediction.
         """
-        return self.class_scores.shape[1]
+        return ops.take(self.class_scores.shape, 1)
 
     def __add__(self, other: ODPrediction):
         """
@@ -642,7 +645,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
         Returns:
             The filtered ODPrediction instance.
         """
-        indices = ops.where_1d(self.confidences >= threshold)
+        indices = ops.where_1d(ops.greater_equal(self.confidences, threshold))
         filtered = self[indices]
 
         if inplace:
@@ -676,7 +679,7 @@ class ODPrediction(BoxSequence[BoxPrediction]):
 
         return [
             ops.expand_dims(
-                self.predicted_classes[i],
+                ops.take(self.predicted_classes, i, axis=0),
                 axis=0,
             )
             for i in range(len(self))
@@ -708,7 +711,7 @@ class ODTarget(BoxSequence[BoxTarget]):
     labels: TensorLike  # (n_true,)
 
     def __post_init__(self):
-        super(ODTarget, self).__post_init__()
+        super(ODTarget, self).__post_init__()  # pylint: disable=super-with-arguments
         if ops.ndim(self.labels) != 1 or ops.shape(self.labels)[0] != len(self):
             raise ValueError("labels must have shape (n_boxes,).")
 

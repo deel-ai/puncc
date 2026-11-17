@@ -24,13 +24,12 @@
 """Metrics for object detection."""
 
 from __future__ import annotations
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 
 from deel.puncc.backend import ops
 from deel.puncc.od.base import ODPrediction, ODTarget
 from deel.puncc.od.matching import (
     AssignmentResult,
-    MatchingDirection,
     check_assignment,
 )
 from deel.puncc.typing import TensorLike
@@ -117,7 +116,16 @@ def mean_iou(
     ious = y_pred.pairwise_iou(y_true)
 
     return ops.mean(
-        ops.stack([ious[pred_idx, true_idx] for true_idx, pred_idx in assignment.pairs])
+        ops.stack(
+            [
+                ops.take(
+                    ops.take(ious, pred_idx, axis=0),
+                    true_idx,
+                    axis=0,
+                )
+                for true_idx, pred_idx in assignment.pairs
+            ]
+        )
     )
 
 
@@ -205,7 +213,14 @@ def pixel_coverage(
     return _mean_gt_coverage(
         len(y_true),
         assignment,
-        (ioas[pred_idx, true_idx] for true_idx, pred_idx in assignment.pairs),
+        (
+            ops.take(
+                ops.take(ioas, pred_idx, axis=0),
+                true_idx,
+                axis=0,
+            )
+            for true_idx, pred_idx in assignment.pairs
+        ),
     )
 
 
@@ -233,7 +248,9 @@ def classification_coverage(
         len(y_true),
         assignment,
         (
-            ops.any(prediction_sets[pred_idx] == y_true.labels[true_idx])
+            ops.any(
+                prediction_sets[pred_idx] == ops.take(y_true.labels, true_idx, axis=0)
+            )
             for true_idx, pred_idx in assignment.pairs
         ),
     )
@@ -292,7 +309,10 @@ def joint_coverage(
         (
             ops.logical_and(
                 y_pred[pred_idx].contains(y_true[true_idx]),
-                ops.any(prediction_sets[pred_idx] == y_true.labels[true_idx]),
+                ops.any(
+                    prediction_sets[pred_idx]
+                    == ops.take(y_true.labels, true_idx, axis=0)
+                ),
             )
             for true_idx, pred_idx in assignment.pairs
         ),

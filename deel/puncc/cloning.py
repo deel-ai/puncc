@@ -67,7 +67,16 @@ def get_imported_ml_modules() -> list[str]:
     return [module for module in ML_MODULES if module in imported]
 
 
-def get_origin_from_model(obj) -> str | None:
+def get_origin_from_model(obj: object) -> str | None:
+    """
+    Infer the origin of a model based on its class's module.
+
+    Args:
+        obj (object): The model object whose origin is to be inferred.
+
+    Returns:
+        str | None: string desribing the origin of the model, or None if the origin cannot be determined.
+    """
     for cls in type(obj).__mro__:
         module = getattr(cls, "__module__", "") or ""
         root = module.split(".", 1)[0]
@@ -77,6 +86,10 @@ def get_origin_from_model(obj) -> str | None:
 
 
 class ModelCloningError(RuntimeError):
+    """
+    Error raised when a model cannot be cloned using the available strategies.
+    """
+
     poem = """
         Oh weary dev, take heart, take rest,
         This model resists your cloning quest.
@@ -106,6 +119,19 @@ class ModelCloningError(RuntimeError):
         super().__init__(msg)
 
 
+def check_cloned_model_is_different(model, cloned_model):
+    """
+    Assert that the cloned model is not the same object as the original model.
+
+    Raises:
+        ModelCloningError: If the cloned model is the same object as the original model.
+    """
+    if cloned_model is model:
+        raise ModelCloningError(
+            model, strategy="cloning strategy returned the original object"
+        )
+
+
 def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
     """
     Clone a model across popular ML frameworks.
@@ -129,20 +155,13 @@ def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
         if signature is not None and "clone_weights" in signature.parameters:
             try:
                 clone = clone_method(clone_weights=clone_weights)
-                if clone is model:
-                    raise ModelCloningError(
-                        model,
-                        strategy="model.clone() returned the original object",
-                    )
+                check_cloned_model_is_different(model, clone)
                 return clone
             except Exception as e:
                 raise ModelCloningError(model, strategy="model.clone()") from e
         if clone_weights:
             clone = clone_method()
-            if clone is model:
-                raise ModelCloningError(
-                    model, strategy="model.clone() returned the original object"
-                )
+            check_cloned_model_is_different(model, clone)
             return clone
         warnings.warn(
             (
@@ -208,11 +227,7 @@ def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
             continue
         if cloned is not None:
             logger.debug("Model cloned successfully using strategy=%s.", guess)
-            if cloned is model:
-                raise ModelCloningError(
-                    model,
-                    strategy=f"{guess} cloner returned the original object",
-                )
+            check_cloned_model_is_different(model, cloned)
             return cloned
 
     # if model is from a known ML library but no cloner worked,
@@ -240,10 +255,7 @@ def clone_model(model: Any, *, clone_weights: bool = False) -> Any:
             model_type.__qualname__,
         )
         clone = copy.deepcopy(model)
-        if clone is model:
-            raise ModelCloningError(
-                model, strategy="deepcopy returned the original object"
-            )
+        check_cloned_model_is_different(model, clone)
         return clone
     except Exception as e:
         # If even deepcopy fails, raise a custom error

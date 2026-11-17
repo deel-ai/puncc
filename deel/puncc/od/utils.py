@@ -27,7 +27,16 @@ Object detection various tools (should be placed somewhere else)
 from collections import UserList
 from dataclasses import Field, fields, replace
 from numbers import Integral
-from typing import Any, ClassVar, Generic, Iterator, Self, TypeVar, overload
+from typing import (
+    Any,
+    ClassVar,
+    Generic,
+    Iterator,
+    Self,
+    SupportsIndex,
+    TypeVar,
+    overload,
+)
 
 from deel.puncc.typing import TensorLike
 from deel.puncc.backend import ops
@@ -80,7 +89,7 @@ class IterableDataclassMixin(Generic[T]):
         values = {
             field.name: (
                 value[idx]
-                if isinstance(value, UserList)
+                if isinstance(value, IndexableUserList)
                 else ops.take(value, idx, axis=0)
             )
             for field in fields(self)
@@ -99,12 +108,15 @@ class IndexableUserList(UserList[T]):
     """
 
     @overload
-    def __getitem__(self, idx: Integral) -> T: ...
+    def __getitem__(self, idx: SupportsIndex) -> T: ...
+
+    @overload
+    def __getitem__(self, idx: slice) -> Self: ...
 
     @overload
     def __getitem__(
         self,
-        idx: list[Integral] | tuple[Integral, ...] | slice | TensorLike,
+        idx: list[Integral] | tuple[Integral, ...] | TensorLike,
     ) -> Self: ...
 
     def __getitem__(self, idx):

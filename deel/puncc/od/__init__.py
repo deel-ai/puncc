@@ -21,5 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
+"""
+Conformal Object Detection Methods
+"""
 from deel.puncc.od.split import SplitBoxWise

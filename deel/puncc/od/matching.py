@@ -26,7 +26,6 @@ Matching utilities for object detection.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
@@ -277,6 +276,7 @@ class AssignmentMethod(Protocol):
         Returns:
             An AssignmentResult containing matched pairs in canonical (true_idx, pred_idx) order.
         """
+        ...
 
 
 @runtime_checkable
@@ -300,6 +300,7 @@ class DistanceMetric(Protocol):
         Returns:
             TensorLike: A matrix of shape (n_true, n_pred) containing the pairwise costs.
         """
+        ...
 
 
 class IoUDistance:
@@ -322,7 +323,7 @@ class IoUDistance:
             TensorLike: A matrix of shape (n_true, n_pred) containing the pairwise costs, where each
             cost is defined as 1 - IoU.
         """
-        return 1.0 - y_true.pairwise_iou(y_pred)
+        return ops.subtract(1.0, y_true.pairwise_iou(y_pred))
 
 
 class LACDistance:
@@ -396,18 +397,13 @@ class AsymmetricHausdorffDistance:
         Returns:
             TensorLike: A matrix of shape (n_true, n_pred) containing the asymmetric Hausdorff distances.
         """
-        true_boxes = y_true.coordinates
-        pred_boxes = y_pred.coordinates
+        true_x1, true_y1, true_x2, true_y2 = ops.split(y_true.coordinates, 4, axis=-1)
+        pred_x1, pred_y1, pred_x2, pred_y2 = ops.split(y_pred.coordinates, 4, axis=-1)
 
-        true_x1 = true_boxes[:, 0][:, None]
-        true_y1 = true_boxes[:, 1][:, None]
-        true_x2 = true_boxes[:, 2][:, None]
-        true_y2 = true_boxes[:, 3][:, None]
-
-        pred_x1 = pred_boxes[:, 0][None, :]
-        pred_y1 = pred_boxes[:, 1][None, :]
-        pred_x2 = pred_boxes[:, 2][None, :]
-        pred_y2 = pred_boxes[:, 3][None, :]
+        pred_x1 = ops.expand_dims(pred_x1, axis=0)
+        pred_y1 = ops.expand_dims(pred_y1, axis=0)
+        pred_x2 = ops.expand_dims(pred_x2, axis=0)
+        pred_y2 = ops.expand_dims(pred_y2, axis=0)
 
         distances = ops.stack(
             (
@@ -513,6 +509,7 @@ class CostMatrixMatcher(Protocol):
         Returns:
             list[tuple[int, int]]: List of (source_idx, candidate_idx) pairs.
         """
+        ...
 
 
 class ArgminMatcher:
@@ -689,7 +686,9 @@ class AssignmentStrategy:
         valid_mask = None
 
         if self.iou_threshold is not None:
-            valid_mask = y_true.pairwise_iou(y_pred) >= self.iou_threshold
+            valid_mask = ops.greater_equal(
+                y_true.pairwise_iou(y_pred), self.iou_threshold
+            )
 
         if self.class_matching:
             predicted_labels = ops.argmax(
@@ -697,7 +696,9 @@ class AssignmentStrategy:
                 axis=1,
             )
 
-            same_class = y_true.labels[:, None] == predicted_labels[None, :]
+            same_class = ops.expand_dims(y_true.labels, axis=1) == ops.expand_dims(
+                predicted_labels, axis=0
+            )
 
             valid_mask = (
                 same_class

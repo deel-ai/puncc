@@ -398,7 +398,10 @@ class ClassificationCoverageLoss(ClassificationLoss):
         pair_losses = [
             ops.cast(
                 ops.logical_not(
-                    ops.any(y_pred.class_sets[pred_idx] == y_true.labels[true_idx])
+                    ops.any(
+                        y_pred.class_sets[pred_idx]
+                        == ops.take(y_true.labels, true_idx, axis=0)
+                    )
                 ),
                 "float32",
             )
@@ -491,7 +494,7 @@ class ThresholdedRecallLoss(LocalizationLoss):
         assignment: AssignmentResult | None = None,
     ) -> TensorLike:
         loss = self.base_loss.compute_imagewise(y_pred, y_true, assignment)
-        return ops.cast(loss > self.beta, "float32")
+        return ops.cast(ops.greater(loss, self.beta), "float32")
 
 
 class BoxOverextensionLoss(LocalizationLoss):
@@ -555,7 +558,7 @@ class IoUThresholdLoss(LocalizationLoss):
         assignment = check_assignment(assignment)
         pair_losses = [
             ops.cast(
-                y_true[true_idx].iou(y_pred[pred_idx]) < self.iou_threshold,
+                ops.less(y_true[true_idx].iou(y_pred[pred_idx]), self.iou_threshold),
                 "float32",
             )
             for true_idx, pred_idx in assignment.pairs
@@ -593,7 +596,7 @@ class JointCoverageLoss(ODLoss):
         for true_idx, pred_idx in assignment.pairs:
             loc_covered = y_pred[pred_idx].contains(y_true[true_idx])
             cls_covered = ops.any(
-                y_pred.class_sets[pred_idx] == y_true.labels[true_idx]
+                y_pred.class_sets[pred_idx] == ops.take(y_true.labels, true_idx, axis=0)
             )
             pair_losses.append(
                 ops.cast(
