@@ -28,11 +28,13 @@ to a bounded empirical risk.
 """
 
 from __future__ import annotations
+import math
 from typing import Any, Callable, Generic, TypeAlias, TypeVar
 
 import logging
 import warnings
 
+from deel.puncc.config import unguaranteed_predictions_allowed
 from deel.puncc.core.calibration import CalibrationContext
 from deel.puncc.core.conformal import ConformalPrediction, ConformalPredictor
 from deel.puncc.typing import FitFunction, Predictor, PredictorLike, TensorLike
@@ -201,16 +203,22 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
                 If alpha is greater than or equal to the loss upper bound.
 
         Warns:
-            RuntimeWarning:
-                If the risk constraint is not satisfied at the upper bound of the parameter search interval.
             CalibrationWarning:
-                If the optimizer returns a parameter that does not satisfy the corrected empirical risk constraint.
+                If the risk constraint is infeasible and unguaranteed
+                predictions are enabled, or if the optimizer returns
+                an infeasible parameter despite a feasible upper bound.
 
         Notes:
-            When the upper search bound is infeasible, the method returns lambda_max with a warning rather
-            than raising an exception.
+            By default, the method rejects predictions for which the risk constraint
+            cannot be satisfied within the specified bounds.
+
+            This behavior can be relaxed by calling config.allow_unguaranteed_predictions().
+
+            When the optimizer returns an infeasible parameter but lambda_max is
+            feasible, lambda_max is used as a fallback.
         """
-        alpha = ops.item(alpha)
+        if isinstance(alpha, ops.tensor_type):
+            alpha = ops.item(alpha)
 
         if alpha >= self.B:  # type: ignore
             raise ValueError(
@@ -240,20 +248,33 @@ class CRC(ConformalPredictor, Generic[TPrediction, TTarget, TConformalPrediction
             return lambda_min
 
         if loss_max > 0:
+            message = (
+                "The risk constraint is not satisfied at the upper bound of the parameter search interval."
+                "Statistical risk control cannot be guaranteed."
+            )
+
+            if not unguaranteed_predictions_allowed():
+                raise ValueError(message)
+
             warnings.warn(
-                "The risk constraint is not satisfied at lambda_max.",
-                RuntimeWarning,
+                message,
+                CalibrationWarning,
                 stacklevel=2,
             )
             return lambda_max
 
         lambd = self.optimizer(_lambda_loss, lambda_min, lambda_max)
+
+        if not math.isfinite(lambd) or not lambda_min <= lambd <= lambda_max:
+            raise ValueError(f"The optimizer returned an invalid parameter : {lambd}.")
+
         if _lambda_loss(lambd) > 0:
             warnings.warn(
                 "No feasible lambda found within the specified bounds. The risk constraint may not be satisfied.",
                 CalibrationWarning,
                 stacklevel=2,
             )
+            return lambda_max
         return lambd
 
     def conformalize(

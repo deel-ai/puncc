@@ -108,3 +108,25 @@ def is_backend_explicitly_set() -> bool:
     Return whether the PUNCC backend has been explicitly set.
     """
     return _backend_explicitly_set
+
+
+_allow_unguaranteed_predictions: bool = False
+
+
+def allow_unguaranteed_predictions(allow: bool = True) -> None:
+    """
+    Allow unguaranteed prediction in puncc session.
+    This function should be called before any other operations using puncc or keras.
+    """
+    global _allow_unguaranteed_predictions
+    _allow_unguaranteed_predictions = bool(allow)
+
+
+def unguaranteed_predictions_allowed() -> bool:
+    """
+    Return whether predictions without statistical guarantees are allowed.
+
+    Returns:
+        True if unguaranteed predictions are allowed, False otherwise.
+    """
+    return _allow_unguaranteed_predictions
