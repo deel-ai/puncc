@@ -50,7 +50,9 @@ def regression_data():
     rng = np.random.default_rng(42)
 
     X = rng.normal(size=(96, 2)).astype(np.float32)
-    y = (2.0 * X[:, 0] - X[:, 1] + rng.normal(scale=0.3, size=96)).astype(np.float32)
+    y = (2.0 * X[:, 0] - X[:, 1] + rng.normal(scale=0.3, size=96)).astype(
+        np.float32
+    )
 
     return X, y
 

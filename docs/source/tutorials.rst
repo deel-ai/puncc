@@ -41,6 +41,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Conformal Classwise Classification**
      - Learn to use classwise CP for class-conditional coverage.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__
+   * - **Mondrian Classification and Regression (V1)**
+     - Calibrate by class or difficulty category with the V1 API, and compare coverage, set size and interval width within categories.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_mondrian.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_mondrian.ipynb>`__
    * - **Custom Conformal Workflow**
      - Build new conformal predictors with custom nonconformity scores, prediction sets and conformalization logic.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_custom_conformalization.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_custom_conformalization.ipynb>`__ 
