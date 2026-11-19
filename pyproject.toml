@@ -33,6 +33,7 @@ dependencies = [
   "numpy",
   "scipy",
   "packaging",
+  "seaborn",
 ]
 
 [project.optional-dependencies]

@@ -676,6 +676,20 @@ class OpsBackendManager(SubmoduleManager):
 
 
 ops = OpsBackendManager()
+backend = SubmoduleManager("backend")
 random = SubmoduleManager("random")
 metrics = SubmoduleManager("metrics")
 utils = SubmoduleManager("utils")
+
+
+def set_floatx(floatx: str):
+    """
+    Set the default floating-point type for Keras operations.
+
+    Args:
+        floatx: The desired floating-point type, e.g., "float32" or "float64".
+
+    Raises:
+        RuntimeError: If Keras has already been loaded and the floatx type cannot be changed.
+    """
+    backend.set_floatx(floatx)

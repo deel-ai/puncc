@@ -30,3 +30,18 @@ from deel.puncc.regression.split import (
     LeverageWeightedCP,
 )
 from deel.puncc.regression.sequential import EnbPIRegressor
+import warnings
+
+
+class SplitCP(SplitConformalRegression):
+    """
+    Alias for SplitConformalRegression class.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        warnings.warn(
+            "SplitCP is deprecated and will be removed in future versions. "
+            "Please use SplitConformalRegression instead.",
+            DeprecationWarning,
+        )

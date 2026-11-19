@@ -124,7 +124,6 @@ class SplitConformalPredictor(ConformalPredictor):
             The base predictions and their associated conformal prediction sets.
         """
         quantile = self._get_quantile(alpha, calibration_context, X=X)
-
         prediction_sets = self.pred_set_function(prediction, quantile)
         return ConformalPrediction(prediction, prediction_sets)
 

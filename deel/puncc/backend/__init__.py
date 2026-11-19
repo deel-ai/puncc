@@ -23,4 +23,4 @@
 """
 Puncc interface with Keras backend.
 """
-from deel.puncc.backend.keras import ops, random
+from deel.puncc.backend.keras import ops, random, set_floatx
