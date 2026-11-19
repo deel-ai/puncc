@@ -26,6 +26,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Tutorial on CP with TensorFlow**
      - Learn how to use *puncc* with TensorFlow / Keras.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_tensorflow.ipynb>`__
+   * - **Multi-backend Tutorial**
+     - Use the same conformal API with PyTorch, TensorFlow, and a mixed PyTorch/scikit-learn pipeline.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_multi_backend.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_multi_backend.ipynb>`__
    * - **Tutorial on Adaptive Conformal Regression**
      - Learn how conformalize regression models to obtain adaptive prediction intervals using methods such as LACP, LWCP and CQR.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_adaptive_methods.ipynb>`__
@@ -38,6 +41,9 @@ Pick a tutorial below and run it either on GitHub or in Google Colab.
    * - **Conformal Classwise Classification**
      - Learn to use classwise CP for class-conditional coverage.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_classwise.ipynb>`__
+   * - **Mondrian Classification and Regression (V1)**
+     - Learn to implement Mondrian conformal classification and regression.
+     - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_mondrian.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_mondrian.ipynb>`__
    * - **Custom Conformal Workflow**
      - Build new conformal predictors with custom nonconformity scores, prediction sets and conformalization logic.
      - `Github <https://github.com/deel-ai/puncc/blob/main/docs/puncc_custom_conformalization.ipynb>`__ or `colab <https://githubtocolab.com/deel-ai/puncc/blob/main/docs/puncc_custom_conformalization.ipynb>`__ 
