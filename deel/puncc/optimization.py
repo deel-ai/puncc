@@ -178,7 +178,7 @@ class ScipyOptimizer(ScalarOptimizer):
         )
 
 
-__Scipy_subclass_doc = """
+_Scipy_subclass_doc = """
     A root-finding optimizer using SciPy's {method} method.
 
     Args:
@@ -192,20 +192,20 @@ __Scipy_subclass_doc = """
 
 
 class BrentqOptimizer(ScipyOptimizer):
-    __doc__ = __Scipy_subclass_doc.format(method="brentq")
+    __doc__ = _Scipy_subclass_doc.format(method="brentq")
     method: str = "brentq"
 
 
 class BrenthOptimizer(ScipyOptimizer):
-    __doc__ = __Scipy_subclass_doc.format(method="brenth")
+    __doc__ = _Scipy_subclass_doc.format(method="brenth")
     method: str = "brenth"
 
 
 class RidderOptimizer(ScipyOptimizer):
-    __doc__ = __Scipy_subclass_doc.format(method="ridder")
+    __doc__ = _Scipy_subclass_doc.format(method="ridder")
     method: str = "ridder"
 
 
 class TomsOptimizer(ScipyOptimizer):
-    __doc__ = __Scipy_subclass_doc.format(method="toms748")
+    __doc__ = _Scipy_subclass_doc.format(method="toms748")
     method: str = "toms748"
