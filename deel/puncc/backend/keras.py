@@ -676,7 +676,6 @@ class OpsBackendManager(SubmoduleManager):
 
 
 ops = OpsBackendManager()
-backend = SubmoduleManager("backend")
 random = SubmoduleManager("random")
 metrics = SubmoduleManager("metrics")
 utils = SubmoduleManager("utils")
@@ -692,4 +691,4 @@ def set_floatx(floatx: str):
     Raises:
         RuntimeError: If Keras has already been loaded and the floatx type cannot be changed.
     """
-    backend.set_floatx(floatx)
+    SubmoduleManager("backend").set_floatx(floatx)
