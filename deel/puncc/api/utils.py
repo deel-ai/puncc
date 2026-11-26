@@ -674,7 +674,7 @@ def generate_leverage_func(X):
     def leverage_function(x):
         b_x = get_backend(x)
         x_np = b_x.to_numpy(b_x.asarray(x))
-        # compute norm L2 of leverage scores
-        return np.linalg.norm(leverage_matrix @ x_np.T, ord=2, axis=0)
+        # compute squared L2 norm of leverage projection: ||Sigma^-1 V^T x||_2^2
+        return np.linalg.norm(leverage_matrix @ x_np.T, ord=2, axis=0) ** 2
 
     return leverage_function
