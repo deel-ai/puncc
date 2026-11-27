@@ -50,7 +50,7 @@ from deel.puncc.regression import SplitCP
 RESULTS = {
     "scp": {"cov": 0.95, "width": 218.98},
     "nescp": {"cov": 0.96, "width": 230.1},
-    "lwcp": {"cov": 0.93, "width": 211.90},
+    "lwcp": {"cov": 0.95, "width": 217.81},
     "lacp": {"cov": 0.96, "width": 347.87},
     "cqr": {"cov": 0.93, "width": 204.52},
     "cqr_new_sklearn": {"cov": 0.94, "width": 204.624497},
